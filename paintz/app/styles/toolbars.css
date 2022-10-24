@@ -1,0 +1,253 @@
+.icon {
+	display: inline-block;
+	pointer-events: none;
+	z-index: -1;
+}
+
+.divider {
+	display: inline-block;
+	vertical-align: top;
+	padding: 0;
+	width: 1px;
+}
+
+#toolbar,
+#bottomBar {
+	overflow: hidden;
+}
+
+#toolbar {
+	padding: 0;
+	white-space: nowrap;
+	overflow-x: auto;
+	
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+}
+	#toolbar .divider {
+		height: 76px;
+		margin: 10px 4px;
+	}
+	#toolbar button,
+	#toolbar [role="button"] {
+		margin: 4px;
+		
+		-webkit-transition: margin 0.2s linear;
+		   -moz-transition: margin 0.2s linear;
+		    -ms-transition: margin 0.2s linear;
+		     -o-transition: margin 0.2s linear;
+		        transition: margin 0.2s linear;
+	}
+		#toolbar button svg,
+		#toolbar [role="button"] svg {
+			-webkit-transition: fill 0.15s linear;
+			   -moz-transition: fill 0.15s linear;
+			    -ms-transition: fill 0.15s linear;
+			     -o-transition: fill 0.15s linear;
+			        transition: fill 0.15s linear;
+		}
+			#toolbar input[type="checkbox"] + label[role="button"],
+			#toolbar input[type="radio"] + label[role="button"] {
+				-webkit-box-shadow: inset 0 0 0 0;
+				   -moz-box-shadow: inset 0 0 0 0;
+				        box-shadow: inset 0 0 0 0;
+				-webkit-transition: -webkit-box-shadow 0.15s linear;
+				   -moz-transition:    -moz-box-shadow 0.15s linear;
+				    -ms-transition:         box-shadow 0.15s linear;
+				     -o-transition:         box-shadow 0.15s linear;
+				        transition:         box-shadow 0.15s linear;
+			}
+				#toolbar input[type="checkbox"]:checked + label[role="button"],
+				#toolbar input[type="radio"]:checked + label[role="button"] {
+					-webkit-box-shadow: inset 0 0 0 22px;
+					   -moz-box-shadow: inset 0 0 0 22px;
+					        box-shadow: inset 0 0 0 22px;
+				}
+				#toolbar input[type="checkbox"]:disabled + label[role="button"],
+				#toolbar input[type="radio"]:disabled + label[role="button"],
+				#toolbar select:disabled + .icon {
+					opacity: 0.3;
+					cursor: default;
+					cursor: not-allowed;
+				}
+
+.toolbox {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0px;
+}
+	.toolbox input[type="checkbox"],
+	.toolbox input[type="radio"] {
+		display: none;
+	}
+	.toolbox .icon {
+		vertical-align: top;
+		width: 24px;
+		height: 24px;
+		margin: 12px;
+		margin-right: -36px;
+	}
+		.toolbox .icon + select {
+			padding-left: 40px;
+		}
+
+#fontFamilySelect {
+	margin-right: 0;
+	width: 194px;
+}
+#fontSizeSelect {
+	margin-right: 0;
+	width: 110px;
+}
+#outlineOptions input[type="radio"] + label[role="button"],
+#textFormatOptions input[type="checkbox"] + label[role="button"],
+#textFillOff + label[role="button"] {
+	margin-left: 1px;
+	margin-right: 1px;
+}
+#textFillOn + label[role="button"] {
+	margin-left: 1px;
+}
+
+#noToolOptionsMessage {
+	opacity: 0.8;
+	font-size: 80%;
+	margin: 28px 1em;
+}
+
+#bottomBar {
+	top: auto;
+	bottom: 0;
+	height: 32px;
+	padding: 0;
+	font-size: inherit; /* Override .appBar larger font */
+	
+	-webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 4px 17px 0, rgba(0, 0, 0, 0.19) 0 2px 20px 0;
+	   -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 4px 17px 0, rgba(0, 0, 0, 0.19) 0 2px 20px 0;
+	        box-shadow: rgba(0, 0, 0, 0.2) 0 4px 17px 0, rgba(0, 0, 0, 0.19) 0 2px 20px 0;
+}
+	#bottomBar .divider {
+		height: 16px;
+		margin: 8px 4px;
+	}
+	#bottomBar button {
+		padding: 11px 8px 10px;
+		margin: -4px 0;
+	}
+	#bottomBar img,
+	#bottomBar [role="img"] {
+		width: 24px;
+		height: 24px;
+		margin: 4px;
+		-webkit-transform: scale(0.875);
+		   -moz-transform: scale(0.875);
+		    -ms-transform: scale(0.875);
+		     -o-transform: scale(0.875);
+		        transform: scale(0.875);
+	}
+		#bottomBar button img,
+		#bottomBar button [role="img"] {
+			margin: -6px 6px -6px 0;
+		}
+
+button#resolutionBtn {
+	color: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	text-transform: inherit;
+}
+#pointerCoords {
+	display: inline-block;
+	margin: 7px 0;
+}
+
+#zoomToolbox {
+	float: right;
+}
+	#zoomToolbox button [role="img"] {
+		margin: -3px 0 -6px;
+		-webkit-transform: scale(1);
+		   -moz-transform: scale(1);
+		    -ms-transform: scale(1);
+		     -o-transform: scale(1);
+		        transform: scale(1);
+	}
+button#zoomOutBtn {
+	margin-right: -2px;
+}
+button#zoomInBtn {
+	margin-left: -2px;
+	margin-right: -2px;
+}
+#zoomPercent {
+	text-align: right;
+	width: 3em;
+	padding-right: 1em;
+	padding-top: 5px;
+	padding-bottom: 3px;
+	-webkit-appearance: none;
+			appearance: none;
+}
+	#zoomPercent::-webkit-inner-spin-button,
+	#zoomPercent::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+				appearance: none;
+	}
+	#zoomPercent + .icon {
+		vertical-align: baseline;
+		width: auto;
+		height: auto;
+		margin: 0;
+		margin-left: -14px;
+	}
+#zoomSlider {
+	width: 128px;
+	max-width: 80%;
+	margin: 0 4px;
+	position: relative;
+	top: -2px;
+}
+
+@media (max-width: 600px) {
+	#toolbar .divider {
+		height: 68px;
+	}
+	#toolbar button,
+	#toolbar [role="button"] {
+		margin: 2px;
+	}
+	
+	.toolbox .icon {
+		margin-top: 10px;
+		margin-bottom: 10px;
+		margin-left: 10px;
+	}
+		.toolbox .icon + select {
+			margin-top: 2px;
+			margin-bottom: 2px;
+		}
+	
+	#noToolOptionsMessage {
+		margin-top: 24px;
+		margin-bottom: 24px;
+	}
+}
+@media (max-width: 480px) {
+	#dimensionsToolbox {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#toolbar button svg,
+	#toolbar [role="button"] svg,
+	#toolbar input[type="checkbox"] + label[role="button"],
+	#toolbar input[type="radio"] + label[role="button"] {
+		-webkit-transition-duration: 0s;
+		   -moz-transition-duration: 0s;
+		    -ms-transition-duration: 0s;
+		     -o-transition-duration: 0s;
+		        transition-duration: 0s;
+	}
+}

@@ -1,0 +1,358 @@
+#progressContainer,
+#dialogsContainer,
+#bottomSheetsContainer {
+	display: none;
+	
+	z-index: 4;
+	
+	position: fixed;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	
+	overflow: auto;
+	
+	-webkit-transition-duration: 0.2s;
+	   -moz-transition-duration: 0.2s;
+	    -ms-transition-duration: 0.2s;
+	     -o-transition-duration: 0.2s;
+	        transition-duration: 0.2s;
+	-webkit-transition-property: background-color;
+	   -moz-transition-property: background-color;
+	    -ms-transition-property: background-color;
+	     -o-transition-property: background-color;
+	        transition-property: background-color;
+}
+	#dialogsContainer,
+	#progressContainer {
+		/* Prevent scrolling the canvas. */
+		overscroll-behavior: contain;
+	}
+	#dialogsContainer {
+		padding-top: 64px;
+	}
+	#progressContainer {
+		cursor: wait;
+		-webkit-user-select: none;
+		   -moz-user-select: none;
+		        user-select: none;
+	}
+	#bottomSheetsContainer {
+		overflow: visible;
+		top: auto;
+		pointer-events: none;
+	}
+
+.dialog {
+	margin: 0 auto 16px;
+	max-width: 96%;
+	overflow: visible;
+	
+	opacity: 0;
+	-webkit-transform: scale(0);
+	   -moz-transform: scale(0);
+	    -ms-transform: scale(0);
+	     -o-transform: scale(0);
+	        transform: scale(0);
+	-webkit-transform-origin: 50% 10%;
+	   -moz-transform-origin: 50% 10%;
+	    -ms-transform-origin: 50% 10%;
+	     -o-transform-origin: 50% 10%;
+	        transform-origin: 50% 10%;
+
+	-webkit-transition-duration: 0.15s;
+	   -moz-transition-duration: 0.15s;
+	    -ms-transition-duration: 0.15s;
+	     -o-transition-duration: 0.15s;
+	        transition-duration: 0.15s;
+	-webkit-transition-property: opacity, -webkit-transform, transform;
+	   -moz-transition-property: opacity, -moz-transform, transform;
+	    -ms-transition-property: opacity, -ms-transform, transform;
+	     -o-transition-property: opacity, -o-transform, transform;
+	        transition-property: opacity, transform;
+}
+	.dialog.open {
+		opacity: 1;
+		-webkit-transform: scale(1);
+		   -moz-transform: scale(1);
+		    -ms-transform: scale(1);
+		     -o-transform: scale(1);
+		        transform: scale(1);
+	}
+	.dialog h1 {
+		margin-top: 0;
+		font-weight: 300;
+	}
+	.dialog button[type="submit"],
+	[role="button"].submitLink {
+		background-color: #3f51b5;
+		color: white;
+	}
+		.dialog button[type="submit"]:not(:disabled):hover,
+		.dialog button[type="submit"]:not(:disabled):focus,
+		[role="button"].submitLink:not(:disabled):hover,
+		[role="button"].submitLink:not(:disabled):focus {
+			background-color: #4b5cb9;
+		}
+		.dialog button[type="submit"]:not(:disabled):active,
+		.dialog button[type="submit"]:not(:disabled).active,
+		[role="button"].submitLink:not(:disabled):active,
+		[role="button"].submitLink:not(:disabled).active {
+			background-color: #5767bd;
+		}
+	.dialog#settingsDialog select:not([size]),
+	.dialog#settingsDialog select[size="1"] {
+		display: block;
+		width: 100%;
+		width: calc(100% + 32px);
+		margin: -16px;
+		padding-top: 16px;
+		padding-bottom: 16px;
+		text-align: right;
+		text-align-last: right;
+		-webkit-border-radius: 0;
+		   -moz-border-radius: 0;
+		        border-radius: 0;
+	}
+		.dialog#settingsDialog select:not([size]) + label,
+		.dialog#settingsDialog select[size="1"] + label {
+			/* Move it up to align with the <select>'s text. */
+			display: block;
+			margin-top: -35px;
+			/* Keep it on top of the <select> so it does not get covered by its background color. */
+			position: relative;
+			pointer-events: none;
+		}
+	
+	.dialog .dialog-header,
+	.dialog .dialog-footer {
+		position: sticky;
+		z-index: 1;
+	}
+		.dialog .dialog-header {
+			top: -64px;
+			margin: -16px;
+			padding: 16px;
+			margin-bottom: 4px;
+			padding-bottom: 8px;
+			
+			-webkit-border-top-left-radius:  2px;
+			-webkit-border-top-right-radius: 2px;
+			   -moz-border-radius-topleft:   2px;
+			   -moz-border-radius-topright:  2px;
+			        border-top-left-radius:  2px;
+			        border-top-right-radius: 2px;
+			
+			font-weight: 500;
+		}
+			.dialog .dialog-header .icon {
+				float: left;
+				width: 24px;
+				height: 24px;
+				margin-right: 8px;
+			}
+			.dialog .dialog-header .closeButton {
+				float: right;
+				margin-right: -8px;
+			}
+		.dialog .dialog-footer {
+			bottom: 0;
+			text-align: right;
+			margin: -16px;
+			padding: 12px;
+			margin-top: -4px;
+			padding-top: 8px;
+			
+			-webkit-border-bottom-left-radius:  2px;
+			-webkit-border-bottom-right-radius: 2px;
+			   -moz-border-radius-bottomleft:   2px;
+			   -moz-border-radius-bottomright:  2px;
+			        border-bottom-left-radius:  2px;
+			        border-bottom-right-radius: 2px;
+		}
+	
+	.dialog .list {
+		margin: 0 -16px;
+	}
+		.dialog .list li {
+			border-style: none;
+		}
+			.dialog .list button,
+			.dialog .list [role="button"] {
+				color: inherit;
+			}
+			.dialog .list li [role="button"]:not(:first-child) {
+				margin-left: 0;
+			}
+			.dialog .list li [role="button"]:not(:last-child) {
+				margin-right: 0;
+			}
+			.dialog .list li svg {
+				width: 24px;
+				height: 24px;
+			}
+				.dialog .list li svg:first-child {
+					box-sizing: content-box;
+					vertical-align: bottom;
+					margin: -16px 0 -8px;
+					padding: 14px 8px 14px 0;
+					float: left;
+				}
+			
+			.dialog .list li .social-links {
+				display: inline-block;
+			}
+				.dialog .list li .social-links [role="button"] {
+					margin-left: -2px;
+					margin-right: -2px;
+					padding: 8px 6px;
+					-webkit-border-radius: 24px;
+					   -moz-border-radius: 24px;
+					        border-radius: 24px;
+				}
+					.dialog .list li .social-links [role="button"] svg {
+						padding: 0;
+						margin: 2px 4px;
+					}
+
+#bottomSheetsContainer .dialog {
+	max-width: 100%;
+	margin-bottom: -1px;
+	pointer-events: auto;
+	
+	-webkit-border-bottom-left-radius:  0;
+	-webkit-border-bottom-right-radius: 0;
+	   -moz-border-radius-bottomleft:   0;
+	   -moz-border-radius-bottomright:  0;
+	        border-bottom-left-radius:  0;
+	        border-bottom-right-radius: 0;
+	
+	-webkit-transform: translateY(120%);
+	   -moz-transform: translateY(120%);
+	    -ms-transform: translateY(120%);
+	     -o-transform: translateY(120%);
+	        transform: translateY(120%);
+}
+	#bottomSheetsContainer .dialog.open {
+		-webkit-transform: translateY(0%);
+		   -moz-transform: translateY(0%);
+		    -ms-transform: translateY(0%);
+		     -o-transform: translateY(0%);
+		        transform: translateY(0%);
+	}
+	#bottomSheetsContainer .dialog .dialog-footer {
+		bottom: -1px;
+	}
+
+kbd {
+	margin: 0 4px;
+}
+
+input[type="radio"] {
+	margin: -4px 4px;
+}
+input[type="checkbox"] {
+	margin: -3px 5px;
+}
+[role="button"] input[type="checkbox"] {
+	margin: 0px 2px;
+}
+input[type=range]::-ms-tooltip {
+	display: none;
+}
+
+hr {
+	height: 0;
+	margin: 0;
+}
+
+small,
+.small {
+	font-size: 87.5%;
+	opacity: 0.6;
+}
+	h1 > small,
+	h1 > .small {
+		font-size: 65.625%; /* Counter the <h1>'s 150% font size in addition to shrinking to 87.5%. */
+		font-weight: normal;
+	}
+
+#autoRestoreDialog {
+	padding-top: 0;
+	padding-bottom: 0;
+	padding-right: 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+#saveDialog progress {
+	display: none;
+}
+	#saveDialog.loading progress {
+		display: inline-block;
+	}
+	#saveDialog.loading #shareButton,
+	#saveDialog.loading #downloadLink {
+		display: none;
+	}
+
+#keyboardDialog table td:first-child {
+	white-space: nowrap;
+}
+#helpDialog table {
+	text-align: left;
+}
+.dialog th {
+	text-align: left;
+}
+.dialog .helpIcon {
+	box-sizing: content-box;
+	
+	width: 24px;
+	height: 24px;
+	
+	-webkit-border-radius: 50%;
+	   -moz-border-radius: 50%;
+	        border-radius: 50%;
+	
+	padding: 8px;
+	margin-right: 8px;
+	margin-top: 2px;
+}
+.dialog .welcomeIcon {
+	vertical-align: top;
+	padding: 4px;
+	margin: -8px 2px;
+}
+
+progress.circular.small {
+	width: 24px;
+	height: 24px;
+	margin: -4px 0;
+	border-width: 3px;
+}
+	progress.circular.small::before,
+	progress.circular.small::after {
+		margin: -3px; /* Counter the parent element's border width */
+	}
+
+#progressContainer progress.circular {
+	display: block;
+	margin: auto;
+	top: 40%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#progressContainer,
+	#dialogsContainer,
+	#bottomSheetsContainer,
+	.dialog {
+		-webkit-transition-duration: 0s;
+		   -moz-transition-duration: 0s;
+		    -ms-transition-duration: 0s;
+		     -o-transition-duration: 0s;
+		        transition-duration: 0s;
+	}
+}
