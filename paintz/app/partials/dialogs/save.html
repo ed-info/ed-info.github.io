@@ -1,0 +1,21 @@
+<h1 role="toolbar" class="dialog-header">
+	<button type="button" title="Закрити" class="closeButton">
+		<svg role="img">
+			<title>Закрити</title>
+			<use xlink:href="images/icons/clear.svg#icon" href="images/icons/clear.svg#icon"></use>
+		</svg>
+	</button>
+	Зберегти як
+</h1>
+<input name="fileName" type="text" placeholder="File name" value="untitled.png" style="margin: 0 8px; width: 96%; width: calc(100% - 16px);" />
+<br />
+<select name="fileType">
+	<option value="image/jpeg">JPEG (Joint Photographic Experts Group)</option>
+	<option value="image/png" selected="selected">PNG (Portable Network Graphics)</option>
+</select>
+<div class="dialog-footer">
+	<button type="button" class="closeButton">Скасувати</button><!--
+	--><button type="button" id="shareButton">Поширити</button><!--
+	--><a role="button" class="submitLink" id="downloadLink" type="image/png" download="untitled.png" target="_blank">Зберегти</a><!--
+	--><progress class="circular small" style="margin-right: 12px;"></progress>
+</div>

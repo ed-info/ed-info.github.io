@@ -1,0 +1,72 @@
+<h1 role="toolbar" class="dialog-header">
+	<button type="button" title="Close" class="closeButton">
+		<svg role="img">
+			<title>Закрити</title>
+			<use xlink:href="images/icons/clear.svg#icon" href="images/icons/clear.svg#icon"></use>
+		</svg>
+	</button>
+	Налаштування
+</h1>
+<ul class="list">
+	<li>
+		<select dir="rtl" name="theme" id="themeSelect">
+			<option value="default">За замовчуванням</option>
+			<option value="dark">Темна</option>
+			<option value="light">Світла</option>
+		</select>
+		<label for="themeSelect">
+			Тема інтерфейсу
+		</label>
+	</li>
+	<li>
+		<label for="systemThemeOverrideCheckbox" role="button">
+			<input type="checkbox" name="systemThemeOverride" id="systemThemeOverrideCheckbox" style="float: right;" />
+			Перевизначення системною темою
+			<br />
+			<small>Налаштування темної теми системи замінює налаштування програми</small>
+		</label>
+	</li>
+	<li>
+		<select dir="rtl" name="colorPalette" id="colorPaletteSelect">
+			<option value="material">Material</option>
+			<option value="classic">Windows Classic</option>
+			<option value="win7">Windows 7</option>
+		</select>
+		<label for="colorPaletteSelect">
+			Палітра кольорів
+		</label>
+	</li>
+	<li>
+		<label for="gridCheckbox" role="button">
+			<input type="checkbox" name="grid" id="gridCheckbox" style="float: right;" />
+			Показати сітку
+		</label>
+	</li>
+	<li>
+		<label for="ghostDrawCheckbox" role="button">
+			<input type="checkbox" name="ghostDraw" id="ghostDrawCheckbox" style="float: right;" />
+			Напівпрозорий передперегляд малювання
+		</label>
+	</li>
+	<li>
+		<label for="antiAliasCheckbox" role="button">
+			<input type="checkbox" name="antiAlias" id="antiAliasCheckbox" style="float: right;" />
+			Згладжування країв фігур
+			<br />
+			<small>Увімкніть для більш гладких країв або вимкніть для більш чистих заливок</small>
+		</label>
+	</li>
+	<li>
+		<label for="maxUndoStackDepthInput">
+			<input type="number" min="1" max="1000" step="1" required="required" name="maxUndoStackDepth" id="maxUndoStackDepthInput" style="float: right;" />
+			Максимум скасувань операцій
+			<br />
+			<small>Зменшіть для економії пам'яті</small>
+		</label>
+	</li>
+</ul>
+<div class="dialog-footer">
+	<button type="button" id="resetButton" style="float: left;">Скинути</button><!--
+	--><button type="button" class="closeButton">Скасувати</button><!--
+	--><button type="submit">Зберегти</button>
+</div>

@@ -1,0 +1,41 @@
+<h1 role="toolbar" class="dialog-header">
+	<button type="button" title="Закрити" class="closeButton">
+		<svg role="img">
+			<title>Закрити</title>
+			<use xlink:href="images/icons/clear.svg#icon" href="images/icons/clear.svg#icon"></use>
+		</svg>
+	</button>
+	Змінити розмір
+</h1>
+<ul class="list">
+	<li>
+		<input name="width" type="number" placeholder="Width" value="640" min="1" max="99999" style="width: 31%;" /><!--
+		-->&nbsp;&nbsp;&times;&nbsp;&nbsp;<!--
+		--><input name="height" type="number" placeholder="Height" value="480" min="1" max="99999" style="width: 31%;" /><!--
+		--><select name="units">
+			<option value="percentage"><abbr title="percentage">%</abbr></option>
+			<option value="pixels"><abbr title="pixels">px</abbr></option>
+		</select>
+	</li>
+	<li style="padding-top: 0;">
+		<label for="maintainAspectRatio">
+			<input type="checkbox" name="maintainAspectRatio" id="maintainAspectRatio" checked="checked" />
+			Зберегти пропорції
+		</label>
+	</li>
+	<li>
+		<label for="resizeCrop">
+			<input type="radio" name="resizeMode" value="crop" checked="checked" id="resizeCrop" />
+			Обрізка
+		</label>
+		&nbsp;&nbsp;&nbsp;&nbsp;
+		<label for="resizeScale">
+			<input type="radio" name="resizeMode" value="scale" id="resizeScale" />
+			Масштаб
+		</label>
+	</li>
+</ul>
+<div class="dialog-footer">
+	<button type="button" class="closeButton">Скасувати</button><!--
+	--><button type="submit">Змінити розмір</button>
+</div>
