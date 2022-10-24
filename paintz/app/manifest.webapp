@@ -1,7 +1,7 @@
 {
-	"short_name": "PaintZ",
-	"name": "PaintZ",
-	"description": "Create and edit drawings.",
+	"short_name": "Ти - маляр!",
+	"name": "Ти - маляр!",
+	"description": "Створюйте та змінюйте малюнки.",
 	
 	"start_url": "/",
 	"display": "standalone",
