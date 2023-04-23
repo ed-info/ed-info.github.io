@@ -1,0 +1,95 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.4a: Vielecke</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Ein Vieleck aus Eckpunkten bauen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>In der Kategorie "Grundformen" gibt es ganz unten den Block "Vieleck zeichnen". In diesen Block kann man Eckpunkte einbauen und daraus ein gefülltes Vieleck (Polygon) zeichnen lassen.</p>
+        <p>Jeder Punkt wird mit einer x- und einer y-Koordinate festgelegt und dann der Reihe nach verbunden. Der erste und der letzte Punkt wird automatisch zu einer geschlossenen Fläche verbunden.</p>
+        <p>Man kann ein Vieleck aus beliebig vielen Eckpunkten zeichnen lassen.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_04_01.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_04_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Gefülltes Vieleck</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_04_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_04_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.4b: Zufalls-Vielecke</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Zufalls-Vielecke</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn man folgende Blöcke zusammenbaut, dann zeichnet der Computer sehr oft hintereinander zufällige Vierecke. Es werden so viele Vierecke pro Sekunde gezeichnet, dass unser Auge nicht mehr folgen kann.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_04_02.jpg">
+      </li> 
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_04_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Zufalls-Vielecke</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_04_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_04_02.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.4c: Etwas langsamer</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Bildwiederholrate ändern</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Der Block "draw()" wird 60 Mal pro Sekunde durchlaufen. Das ist ziemlich schnell. Mit Hilfe des Blocks "Frames pro Sekunde" kann man einen niedrigeren Wert einstellen.</p>
+          <p>Im folgenden Beispiel wird die Bildwiederholrate (Framerate) auf 5 Frames pro Sekunde (5 Bilder pro Sekunde) eingestellt. Deswegen wird der Block "draw()" nur noch 5 Mal pro Sekunde durchlaufen.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_04_03.jpg">
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_04_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Zufalls-Vielecke etwas langsamer</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_04_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_04_03.p5xml');
+};
+</script>

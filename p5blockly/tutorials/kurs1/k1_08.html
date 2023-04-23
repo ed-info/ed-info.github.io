@@ -1,0 +1,186 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.8a: Verschieben</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Die Zeichenebene verschieben</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Mit dem Block "Verschieben" aus der Kategorie "p5-Helfer" kann die Zeichenebene verschoben werden. Wenn die Zeichenebene verschoben wird, dann wird auch der Koordinatenursprung mit verschoben.</p>
+        <p>Ein Kreis, der am Punkt (0/0) gezeichnet wird, verändert durch den Block "Verschieben" seine Koordinaten nicht, denn das gesamte Koordinatensystem wird verschoben.</p>
+        <p>Alle Figuren, die nach dem Block "Verschieben" gezeichnet werden, werden genau gleich verschoben. Figuren, die vor dem Block "Verschieben" gezeichnet werden, bleiben unverändert an ihrer Position.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_01a.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Mit folgendem Programm kannst du das Verhalten von Figuren beim Verschieben beobachten.</p>
+        <p>Hinweis: Die Mauskoordinaten werden auch bei der Verschiebung der Zeichenfläche immer in Bezug auf die obere linke Ecke angegeben.</p>
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_08_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Koordinatensystem verschieben</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_08_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_08_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.8b: Drehung</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Um den Ursprung drehen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Mit dem Block "Drehung" aus der Kategorie "p5-Helfer" kann die Zeichenebene gedreht werden. Die Zeichenebene wird immer um den Koordinatenursprung beim Punkt P(0/0) gedreht.</p>
+          <p>Wenn man den Drehwinkel mit einer positiven Zahl angibt, dann erfolgt die Drehung <b>im Uhrzeigersinn</b>.</p>
+      </li>      
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_02a.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p>Im folgenden Programm kannst du beobachten, wie die Zeichenebene gedreht wird.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_02.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_08_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Koordinatensystem drehen</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_08_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_08_02.p5xml');
+};
+</script>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Um einen Punkt auf der Zeichenfläche drehen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn eine Figur um einen Punkt auf der Zeichenebene gedreht werden soll, dann kann man das erreichen, indem man eine Verschiebung und eine Drehung kombiniert.</p>
+          <p>Zuerst verschiebt man das Koordinatensystem auf den Punkt, um den man drehen möchte und dreht danach die Zeichenebene um den gewünschten Winkel.</p>
+      </li>      
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_03a.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p>Im folgenden Programm wurde die Zeile "Verschieben in..." vor den Block "Drehung"  eingefügt.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_03.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_08_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Um einen Punkt in der Zeichenfläche drehen</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_08_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_08_03.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.8c: Animierte Drehung</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Variable als Winkelweite</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn eine Figur animiert rotieren soll, ohne dass das mit der Maus gesteuert wird, dann kann das mit Hilfe einer Variablen erreicht werden, deren Wert sich ändert.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_05a.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p>Bei jedem Durchlauf im "draw"-Block wird die Variable "winkel" um 2 vergrößert, so dass sich das Rechteck in jedem Frame etwas weiter dreht. Dadurch entsteht der Eindruck einer Animation.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_05.jpg">
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_08_bsp05" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Animierte Drehung</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_08_bsp05').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_08_05.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.8d: Unterschiedlich drehen und verschieben</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">push - pop</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn manche Figuren anders gedreht und verschoben werden sollen, als andere, dann kann man den Block "push - pop" aus der Kategorie "p5-Helfer" verwenden, um die Wirkung von Blöcken einzuschränken.</p>
+          <p>Im folgenden Beispiel soll der weiße Kreis und das Kreuz unverändert an ihrer Position bleiben, während der gelbe Kreis rotieren soll.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_06a.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p>Die schwarzen Linien und der weiße Kreis werden in dem "push-pop"-Block erst verschoben und dann wird die Farbe festgelegt. Diese Blöcke wirken nur auf die Figuren, die auch im gleichen "push-pop"-Block stehen.</p>
+          <p>Die beiden gelben Kreise stehen in einem anderen "push-pop"-Block und drehen sich um den Koordinatenursprung, der in die Mitte der Zeichenfläche verschoben wurde. Da der kleine Kreis genau auf dem Drehzentrum sitzt, bemerkt man seine Drehung nicht.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_08_06.jpg">
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_08_bsp06" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Der "push-pop"-Block</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_08_bsp06').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_08_06.p5xml');
+};
+</script>

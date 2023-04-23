@@ -1,0 +1,62 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.2a: Bunte Figuren</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Aussehen einer Figur festlegen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Eine Figur hat einen Rand und eine Füllung</p>
+          <p>Den Rand legt man mit den Blöcken "Liniendicke" und "Linienfarbe" fest. Wenn kein Rand gezeichnet werden soll, dann legt man die "Liniendicke" mit 0 Pixel fest.</p>
+          <p>Die Füllfarbe legt man mit dem Block "Füllfarbe" fest. Wenn die Figur nicht gefüllt sein soll, dan fügt man vor der Figur den Block "ohne Füllfarbe" ein.</p>
+          <p>Die Figuren werden in der Reihenfolge gezeichnet, in welche die Blöcke gebaut sind. Die als letztes gebaute Figur wird ganz vorne gezeichnet.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_02_01.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_02_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Bunte Figuren</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_02_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_02_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.2b: Durchsichtige Figuren</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Durchsichtigkeit einer Figur festlegen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Die Durchsichtigkeit (Transparenz) einer Figur kann über den Parameter "Durchsichtigkeit" festgelegt werden. Dabei bedeutet die Zahl 0, dass die Figur voll durchsichtig ist. Man kann sie nicht sehen. Die Zahl 255 bedeutet, dass die Figur nicht durchsichtig ist.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_02_02.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_02_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Durchsichtige Figuren</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_02_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_02_02.p5xml');
+};
+</script>

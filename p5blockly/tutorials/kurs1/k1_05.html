@@ -1,0 +1,78 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.5a: Variable Eigenschaften</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Eine Variable festlegen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Es sollen 4 Kreise gezeichnet werden. Dazu baut man folgendes Programm:</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_05_01.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Jetzt soll der Durchmesser der 4 Kreise geändert werden. Dazu müssten 8 Zahlen geändert werden. Das ist mühsam.</p>
+        <p>Leichter wäre es, wenn man einen Platzhalter (Variable) in die Felder für "Breite" und "Höhe" einsetzt und dieser Variablen einen Wert zuordnet. Wenn man später den Durchmesser ändern will, muss man nur eine einzige Stelle im Programm ändern.</p>
+        <p>Um diese Variable festzulegen, klickt man auf die Kategorie "Variablen" und dort auf "Variable erstellen ...". Im Dialog gibt man den Namen "durchmesser" ein und sollte dann folgendes sehen:</p>        
+      </li>  
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_05_03.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Der Block "setze durchmesser auf" wird an den Anfang des Blocks "setup()" gesetzt und die Zahl 100 angehängt und der Block "durchmesser" wird in die freien Felder eingebaut:</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_05_04.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Jetzt kann man den Durchmesser der Kreise leicht ändern, indem man die Zahl beim Block "setze durchmesser auf ..." ändert.</p>
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_05_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Variabler Durchmesser</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_05_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_05_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.5b: Zufalls-Durchmesser</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Variable und Zufallsgenerator</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Man kann den Durchmesser auch mit einem Zufallsgenerator verändern lassen. Da sich jetzt ständig Werte während des Programmablaufs ändern sollen, brauchen wir wieder den Block "draw()", der im folgenden Programm 20 Mal pro Sekunde durchlaufen wird.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_05_05.jpg">
+      </li> 
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_05_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Zufalls-Durchmesser</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_05_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_05_02.p5xml');
+};
+</script>
