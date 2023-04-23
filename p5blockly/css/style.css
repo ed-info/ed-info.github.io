@@ -1,0 +1,63 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#blocklyArea {
+    height: calc(100vh - 100px);
+    width: 100%;
+}
+
+#blocklyDiv {
+    position: absolute;
+}
+
+div#blocklyDiv .blocklyToolboxDiv {
+    background: #ecf0f1;
+}
+
+.split {
+    display: flex;
+    flex-direction: row;
+}
+
+.gutter {
+    background-color: #eee;
+    background-repeat: no-repeat;
+    background-position: 50%;
+    z-index: 100;
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    cursor: col-resize;
+}
+
+.offcanvas {
+  width: 600px;
+}
+
+.wrap {
+  background-color: #fafafa;
+  padding: 20px;
+  white-space: pre-wrap;      /* CSS3 */   
+  white-space: -moz-pre-wrap; /* Firefox */    
+  white-space: -pre-wrap;     /* Opera <7 */   
+  white-space: -o-pre-wrap;   /* Opera 7 */    
+  word-wrap: break-word;      /* IE */
+}
+
+/* Abstand in der Toolbox zwischen Farbe und Text ändern */
+.blocklyTreeIcon {
+    width: 3px;
+}
+
+/* Schriftfarbe der Kategorie ändern */
+.blocklyTreeLabel {
+    color: #555;
+}
+
+/* Hover-Hintergrund ändern */
+.blocklyToolboxCategory:hover {
+    background-color: #ddd;
+}
