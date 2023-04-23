@@ -1,0 +1,55 @@
+<!-- Pt 2021 - MIT-License -->
+
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="factory_base" id="|@tG.lIHpF@7uL,616Wf" deletable="false" movable="false" x="10" y="10">
+    <mutation connections="LEFT"></mutation>
+    <field name="NAME">object_getattribut</field>
+    <field name="INLINE">AUTO</field>
+    <field name="CONNECTIONS">LEFT</field>
+    <statement name="INPUTS">
+      <block type="input_dummy" id="2JF:}s2w^-Xc)H9$MVcC">
+        <field name="ALIGN">LEFT</field>
+        <statement name="FIELDS">
+          <block type="field_static" id="?roT#2PPc,TcP7e,FmJW">
+            <field name="TEXT">Objektattribut:</field>
+            <next>
+              <block type="field_input" id="+|bIwz5Le;fLx3{s*d:I">
+                <field name="TEXT">Objektname</field>
+                <field name="FIELDNAME">objekt_name</field>
+                <next>
+                  <block type="field_static" id="`Ui2Ax9TS7(x;}_-Bi25">
+                    <field name="TEXT">.</field>
+                    <next>
+                      <block type="field_input" id="l:DnMLsZXP/GHbvxt3;f">
+                        <field name="TEXT">Attributname</field>
+                        <field name="FIELDNAME">attribut_name</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+    <value name="TOOLTIP">
+      <block type="text" id="/vd:CD{LMla|Nr:m0rPH" deletable="false" movable="false">
+        <field name="TEXT">Einen Wert aus einem Objekt auslesen.</field>
+      </block>
+    </value>
+    <value name="HELPURL">
+      <block type="text" id="}it[16.2}2mVmY*ojC+#" deletable="false" movable="false">
+        <field name="TEXT"></field>
+      </block>
+    </value>
+    <value name="OUTPUTTYPE">
+      <shadow type="type_null" id="wF)-V9Swji]hdHbXLW]^"></shadow>
+    </value>
+    <value name="COLOUR">
+      <block type="colour_hue" id="%H+PF@T$d#o`{{/M9RLv">
+        <mutation colour="#5b67a5"></mutation>
+        <field name="HUE">230</field>
+      </block>
+    </value>
+  </block></xml>
