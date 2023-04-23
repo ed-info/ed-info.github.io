@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="p5.js-Blockly-Editor">
+
+    <title>Редактор P5/Blockly</title>
+    
+    <link rel="shortcut icon" href="favicon.ico"/>
+    <link href="lib/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="lib/prism/prism.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <script src="lib/jquery/jquery.min.js"></script>
+    <script src="lib/p5js/p5.min.js"></script>
+    <script src="lib/p5turtle/p5turtle.js"></script>
+    <script src="lib/bootstrap/v5/js/bootstrap.min.js"></script>
+    <script src="lib/prism/prism.js"></script>  
+    <script src="lib/lz-string/lz-string.js"></script> 
+    <script src="lib/split/split.min.js"></script> 
+    <script src="js/toolbox.js" defer></script>
+    <script src="lib/blockly/blockly_compressed.js" defer></script>
+    <script src="lib/blockly/blocks_compressed.js" defer></script>
+    <script src="lib/blockly/javascript_compressed.js" defer></script>
+    <script src="lib/blockly/msg/js/de.js" defer></script>
+    <script src="js/custom-dialog.js" defer></script>
+    <script src="js/adt_stack.js" defer></script>
+    <script src="js/adt_queue.js" defer></script>
+    <script src="js/adt_dynArray.js" defer></script>
+    <script src="js/adt_bintree.js" defer></script>    
+    <script src="js/bloecke_overwrite.js" defer></script>
+    <script src="js/bloecke_p5turtle.js" defer></script>
+    <script src="js/bloecke_grundformen.js" defer></script>
+    <script src="js/bloecke_aussehen.js" defer></script>
+    <script src="js/bloecke_text.js" defer></script>
+    <script src="js/bloecke_werte.js" defer></script>
+    <script src="js/bloecke_p5helfer.js" defer></script>
+    <script src="js/bloecke_p5funktionen.js" defer></script>
+    <script src="js/bloecke_objekte.js" defer></script> 
+    <script src="js/bloecke_mathe.js" defer></script>     
+    <script src="js/p5jsblockly.js" defer></script>
+    <script src="js/helper.js" defer></script>
+    
+</head>
+
+<body onload = "setTimeout(p5Init, 1000)">
+
+<xml id="startBlocks" style="display: none">
+<block type="setup" id="3VVNR;H8H.Yd_[q)}flY" x="30" y="30"><field name="canvasBreite">400</field><field name="canvasHoehe">400</field></block><block type="draw" id="Ha%@Ajt-O?4M~Wy.f_]E" x="30" y="110"></block></xml>
+
+
+
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light pt-1">
+  <div class="container-fluid">
+    <form class="d-flex">
+        <div class="navbar-brand">Редактор P5/Blockly</div>
+    </form>
+    <form class="d-flex">
+      <div class="btn-group btn-group-sm" role="group" aria-label="navi1">
+        <button id="jsAnzeigen" type="button" class="btn btn-outline-secondary " data-bs-toggle="modal" data-bs-target="#JavaScriptModal">
+          <i class="bi bi-code-square"></i>&nbsp;&nbsp;Код JavaScript
+        </button>
+        <button id="flemsAnzeigen" type="button" class="btn btn-outline-secondary" >
+          <i class="bi bi-file-text"></i>&nbsp;&nbsp;Редактор P5*js
+        </button>
+ <!--       <button id="traceAnzeigen" type="button" class="btn btn-outline-secondary" >
+          <i class="bi bi-file-text"></i>&nbsp;&nbsp;Trace-Editor
+        </button>        -->    
+      </div>
+    </form>
+    <form class="d-flex">
+      <div class="btn-group btn-group-sm" role="group" aria-label="navi2">
+        <button id="HilfeAnzeigen" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#HilfeOffCanvas" aria-controls="HilfeOffCanvas">
+          <i class="bi bi-question-circle"></i>
+        </button>            
+        <button id="InfoAnzeigen" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#InfoModal">
+          <i class="bi bi-info-circle"></i>
+        </button>        
+      </div>
+    </form>
+  </div>
+</nav>
+
+<!-- Preview-Editor -->
+<div class="container-fluid">
+    <div class="split">
+        <div id="split-0">
+          <div class="row ml-10">
+            <div class="container-fluid">
+              <div id="p5jsContainer">
+                <div class="d-flex justify-content-center">
+                  <div class="spinner-border text-secondary m-5" role="status">
+                    <span class="visually-hidden">Завантаження...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="container-fluid" style="min-width: 350px">
+              <button id="p5Run" type="button" class="btn btn-sm btn-outline-primary me-1 mt-2 mb-2"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Виконати код</button>
+ <!--              <button id="p5loeschen" type="button" class="btn btn-sm btn-outline-primary me-1 mt-2 mb-2"><i class="bi bi-arrow-clockwise"></i>&nbsp;&nbsp;Вилучити програму</button> -->
+            </div>
+          </div>
+          <div class="row">
+            <div class="container-fluid">
+              <div id="loggerDiv" class="alert alert-light" role="alert">
+              </div>
+            </div>
+          </div>
+        </div>  
+        <div id="split-1"> 
+            <div id="blocklyArea">  
+                <div id="blocklyDiv">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light pt-2">
+  <div class="container-fluid">
+    <form class="d-flex">
+      <div class="input-group input-group-sm">
+        <input id="p5saveDateiname" type="text" class="form-control" aria-label="Dateiname" aria-describedby="p5Save">
+        <button id="p5Save" class="btn btn-outline-secondary" type="button"><i class="bi bi-download"></i> Зберегти</button>
+      </div>
+    </form>
+    <form class="d-flex">
+      <div class="input-group input-group-sm">
+        <label class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-upload"></i> Відкрити програму <input type="file" accept=".p5xml" id="p5Dateiwahl" hidden>
+        </label>
+      </div>
+    </form>
+    <form class="d-flex">
+ <!--     <button id="URLSave" class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#URLModal"><i class="bi bi-file-zip"></i> LZ-Codierung</button> -->
+      <button id="p5loeschen" type="button" class="btn btn-sm btn-outline-primary me-1 mt-2 mb-2"><i class="bi bi-arrow-clockwise"></i>&nbsp;&nbsp;Вилучити програму</button>
+    </form> 		    
+  </div>
+</nav>
+
+<!-- Modal-JavaScript -->
+<div class="modal fade" id="JavaScriptModal" tabindex="-1" aria-labelledby="JavaScriptModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="JavaScriptModalLabel"><i class="bi bi-code-square"></i>&nbsp;&nbsp;JavaScript-Code</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="container">
+            <div class="row">
+                <pre><code class="language-js" id="codeDiv"></code></pre>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal-URL -->
+<div class="modal fade" id="URLModal" tabindex="-1" aria-labelledby="URLModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="URLModalLabel"><i class="bi bi-file-zip"></i>&nbsp;&nbsp;LZ-Codierung</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="container">
+            <div class="row">
+                <div class="wrap" id="URLDiv"></div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal-Info -->
+<div class="modal fade" id="InfoModal" tabindex="-1" aria-labelledby="InfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="InfoModalLabel"><i class="bi bi-info-circle"></i>&nbsp;&nbsp;Über p5.js-Blockly-Editor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Der <strong>p5.js-Blockly-Editor</strong> ermöglicht Grafik-Programmierung auf Basis der p5.js-Bibliothek mit Blöcken. Aus den Blöcken kann JavaScript-Code erzeugt werden, der dann z.B. im p5.js-Flems-Editor <a href="https://www.p5js-blockly-editor.de/p5jsflems/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> oder im p5.js Web Editor <a href="https://editor.p5js.org/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> ausgeführt werden kann.</p>
+        <hr>
+        <p>Der p5.js-Blockly-Editor ist ein unterrichtsbegleitendes Projekt für den Informatik-Unterricht am Gymnasium Westerstede <a href="https://www.informatik.gym-wst.de" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>.</p>
+        <p><strong>Autor:</strong> Matthias Perenthaler<br><strong>Version:</strong> V1.01.01<br><strong>Lizenz:</strong> MIT License <a href="https://de.wikipedia.org/wiki/MIT-Lizenz" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a><br><strong>Repository:</strong> Github <a href="https://github.com/pt69/p5jsblocklyeditor" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a></p>
+        <hr>
+        <ul class="list-group">
+            <li class="list-group-item active">Verwendete Bibliotheken</li>
+            <li class="list-group-item">Blockly&nbsp;&nbsp;<a href="https://github.com/google/blockly" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/google/blockly/blob/master/LICENSE" class="link-secondary" target="_blank">Apache License 2.0</a></li>
+            <li class="list-group-item">p5.js&nbsp;&nbsp;<a href="https://p5js.org/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/processing/p5.js/blob/main/license.txt" class="link-secondary" target="_blank">GNU Lesser General Public License v2.1</a></li>            
+            <li class="list-group-item">p.turtle&nbsp;&nbsp;<a href="https://github.com/jan-martinek/p.turtle" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/jan-martinek/p.turtle/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>              
+            <li class="list-group-item">Bootstrap&nbsp;&nbsp;<a href="https://getbootstrap.com/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/twbs/bootstrap/blob/main/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>
+            <li class="list-group-item">JQuery&nbsp;&nbsp;<a href="https://jquery.com/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://jquery.org/license/" class="link-secondary" target="_blank">MIT License</a></li>  
+            <li class="list-group-item">Prism&nbsp;&nbsp;<a href="https://prismjs.com/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/PrismJS/prism/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li> 
+            <li class="list-group-item">LZ_String&nbsp;&nbsp;<a href="https://github.com/pieroxy/lz-string/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/pieroxy/lz-string/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>
+            <li class="list-group-item">Split&nbsp;&nbsp;<a href="https://github.com/nathancahill/split" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Lizenz: <a href="https://github.com/nathancahill/split/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>             
+        </ul>        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="HilfeOffCanvas" aria-labelledby="HilfeOffCanvasLabel" data-width="100%">
+  <div class="offcanvas-header">
+    <button id="backToContent" type="button" class="btn btn-light btn-sm"> Zurück zur Auswahl</button>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div id="divTutorials" class="offcanvas-body">
+    <div class="d-flex justify-content-center">
+      <div class="spinner-border text-secondary m-5" role="status">
+        <span class="visually-hidden">Завантаження...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Programm löschen Modal -->
+<div class="modal fade" id="programmLoeschenModal" tabindex="-1" aria-labelledby="programmLoeschenModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        Ви справді хочете видалити програму?
+      </div>
+      <div class="modal-footer">
+        <button id="btnLoeschNein" type="button" class="btn btn-sm btn-outline-secondary">Скасувати</button>
+        <button id="btnLoeschJa" type="button" class="btn btn-sm btn-outline-primary">Видалити програму</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
