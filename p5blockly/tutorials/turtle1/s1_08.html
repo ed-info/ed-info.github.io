@@ -1,0 +1,78 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.8 - Rekursion</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_08_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte - Grundprogramm</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_08_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_08_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Einen Baum zeichnen lassen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Die Schildkröte soll einen Baum zeichnen. Dazu wird eine Funktion "baum_zeichnen" festgelegt. Einer Funktion kann ein Wert übergeben werden, mit welchem die Funktion dann rechnet.</p>
+        <p>Ein Übergabeparameter wird festgelegt, indem man im Funktionsblock auf das Zahnradsymbol klickt und den linken Block "Variable" mit der Maus in den rechten Block "Parameter" zieht.</p>
+        <p>Der Variable kann ein eigener Name gegeben werden. Die Schildkröte soll einen Baum zeichnen, bei dem sich die Astlänge ändert, deswegen bekommt die Variable den Namen "astlaenge".</p>
+        <p><img src="tutorials/turtle1/s1_08_01a.jpg"></p>
+        <p>In der Funktionsliste steht die Funktion "baum_zeichnen" als folgender Block:</p>
+        <p><img src="tutorials/turtle1/s1_08_01b.jpg"></p>
+        <p>An die Andockstelle kann ein Wert angedockt werden. Die Startlänge eines Astes soll 75 Pixel lang sein, als wird der Wert 75 angedockt. Den Zahlenblock findet man in der Kategorie "Mathematik".</p>
+        <p><img src="tutorials/turtle1/s1_08_01c.jpg"></p>
+        <p>In der Funktion "baum_zeichnen" wird der Schildkröte beigebracht, wie sie den Baum zeichnen soll. Zuerst wird der Stift abgesetzt, damit die Schildkröte zeichnet.</p>
+        <p><img src="tutorials/turtle1/s1_08_01d.jpg"></p>
+        <p>Die Äste des Baumes sollen immer kürzer werden, je höher der Baum ist. Aber bei einer bestimmten Länge eines Astes, soll die Schildkröte nicht mehr weiterzeichnen.</p>
+        <p>Mit Hilfe einer "falls-mache"-Abfrage wird die Länge des Astes mit einer Grenze verglichen und die Schildkröte zeichnet nur den Baum, wenn die Astlänge größer als die festgelegte Grenze ist.</p>
+        <p><img src="tutorials/turtle1/s1_08_01e.jpg"></p>
+        <p>Ein Baum hat sehr viele Äste. Wenn diese alle einzeln programmiert werden müssten, dann wäre das notwendige Programm sehr sehr lang. Mit einem genialen Programmiertrick kann man einen Baum mit sehr vielen Ästen mit nur wenigen Blöcken programmieren.</p>
+        <p>Die Funktion "baum_zeichnen" ruft sich selbst wieder auf. Das nennt man <b>Rekursion</b>. Beim erneuten Aufruf wird für die Astlänge ein kleinerer Wert übergeben, so dass die Äste immer kürzer werden.</p>
+        <p><img src="tutorials/turtle1/s1_08_01f.jpg"></p>
+        <p>Die Schildkröte zeichnet also einen Ast und dreht sich 20° nach rechts, bis die Astlänge kleiner als 5 Pixel geworden ist. Dabei wird die Funktion "baum_zeichnen" 7 Mal aufgerufen, denn es gibt 7 Äste die mit einem Winkel von 20° aneinander gesetzt sind und immer kürzer werden.</p>
+        <p><img src="tutorials/turtle1/s1_08_01g.jpg"></p>
+        <p>Sobald das Ende des Baums erreicht wurde, springt das Programm von der 7. Stufe der Funktion "baum_zeichnen" in die 6. Stufe zurück und führt die weiteren Anweisungen aus.</p>
+        <p>Wenn in der 6. Stufe alles erledigt ist, springt das Programm in die 5. Stufe zurück und arbeitet dort weiter, Das wiederholt sich solange, bis die 1. Stufe der Funktion "baum_zeichnen" abgearbeitet wurde und die Schildkröte wieder an der Wuzel des Baums sitzt.</p>
+        <p><img src="tutorials/turtle1/s1_08_01j.jpg"></p>
+        <p>Insgesamt sieht die Funktion "baum_zeichnen" wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_08_01h.jpg"></p>
+        <p>Damit ein hübsches Bild entsteht, wird noch eine Sonne und eine Wiese gezeichnet:</p>
+        <p><img src="tutorials/turtle1/s1_08_01i.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_08_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte zeichnet Baum</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_08_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_08_01.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Viele Äste zeichnen lassen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Wenn die Astlänge kleiner gewählt wird, die Grenze für die Astlänge und die Änderung der Astlänge verkleinert wird, dann kann auch ein Baum mit sehr vielen Ästen gezeichnet werden. Einfach ausprobieren:</p>
+        <p><img src="tutorials/turtle1/s1_08_01k.jpg"></p>
+      </li>
+    </ul>
+</div>

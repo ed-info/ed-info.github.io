@@ -1,0 +1,195 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.5 - Regelmäßige Vielecke</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte malt Quadrate</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Dreiecke zeichnen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Anstelle des Quadrats sollen jetzt gleichseitige Dreiecke mit unterschiedlichen Seitenlängen gezeichnet werden.</p>
+        <p>Die Innenwinkel in einem Quadrat sind 90° groß, bei einem Dreieck ist der Innenwinkel in einer Ecke kleiner. In einem Dreieck ist die Summe der Innenwinkel 180° groß. Da es drei Ecken hat, muss bei einer Ecke in einem regelmäßigen Dreieck der Innenwinkel 60° groß sein.</p>
+        <p><img src="tutorials/turtle1/s1_05_01a.jpg"></p>
+        <p>Also ändern wir das Programm für die Schildkröte entsprechend ab:</p>
+        <p><img src="tutorials/turtle1/s1_05_01b.jpg"></p>
+        <p>Die Schildkröte malt aber keine Dreiecke. Irgendwo ist ein Denkfehler.</p>
+        <p><img src="tutorials/turtle1/s1_05_01c.jpg"></p>
+        <p>Die Schildkröte ändert ihre Laufrichtung um einen Winkel von 60° relativ zu ihrer Laufrichtung:</p>
+        <p><img src="tutorials/turtle1/s1_05_01d.jpg"></p>
+        <p>Wenn an einer Ecke des Dreiecks ein Innenwinkel von 60° entstehen soll, dann muss die Schildkröte ihre Richtung um 120° ändern, damit im Dreieck ein Winkel von 60° entsteht:</p>
+        <p><img src="tutorials/turtle1/s1_05_01e.jpg"></p>
+        <p>Mit dieser Einsicht wird das Programm wie folgt geändert:</p>
+        <p><img src="tutorials/turtle1/s1_05_01.jpg"></p>
+        <p>Jetzt werden gleichseitige Dreiecke von der Schildkröte gezeichnet:</p>
+        <p><img src="tutorials/turtle1/s1_05_01f.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;gleichseitige Dreiecke zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_01.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>regelmäßige Vielecke zeichnen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>In einem Dreieck ist die Summe der Innenwinkel 180° groß.</p>
+        <p><img src="tutorials/turtle1/s1_05_02a.jpg"></p>
+        <p>Um aus einem Dreieck ein Viereck zu bauen, wird eine vierte Ecke angebaut. Ein Viereck besteht aus zwei Dreiecken, weswegen die Summe der Innenwinkel in einem Viereck 360° groß ist.</p>
+        <p><img src="tutorials/turtle1/s1_05_02b.jpg"></p>
+        <p>In einem Fünfeck wird an das Viereck ein weiteres Dreieck angebaut, weswegen die Innenwinkelsumme in einem Fünfeck 360° + 180° = 540° groß ist.</p>
+        <p><img src="tutorials/turtle1/s1_05_02c.jpg"></p>
+        <p>In einem Sechseck wird an das Fünfeck ein weiteres Dreieck angebaut, weswegen die Innenwinkelsumme in einem Sechseck 540° + 180° = 720° groß ist.</p>
+        <p><img src="tutorials/turtle1/s1_05_02d.jpg"></p>
+        <p>Allgemein kann man sagen, dass ein N-Eck eine Innenwinkelsumme von (N-2) · 180° hat.</p>
+        <p>Wenn die Schildkröte ein N-Eck zeichnen soll, dann kann sie sich selbst ausrechnen, wie groß der Winkel sein muss, um den sie ihre Richtung ändern soll. Wir müssen aber daran denken, dass wir den gewünschten Innenwinkel von 180° abziehen, um den Richtungswinkel der Schildkröte zu bekommen:</p>
+        <p><img src="tutorials/turtle1/s1_05_01e.jpg"></p>
+        <p>Zusätzlich zur Variablen "seitenlaenge" werden die Variablen "anzahlecken", "innenwinkelsumme" und "richtungswinkel" eingefügt:</p>
+        <p><img src="tutorials/turtle1/s1_05_02f.jpg"></p>
+        <p>Für die Innenwinkelsumme gilt: "innenwinkelsumme" = ("anzahlecken"-2)·180°</p>
+        <p>In Blockly gibt es keine Klammern. Es gilt bei der Berechnung eines Terms die Regel, dass zwei Zahlen, die in einem gemeinsamen Block stehen, zuerst verrechnet werden. Im folgenden Ausdruck wird also zuerst "anzahlecken"-2 gerechnet und dann das Ergebnis mit 180 multipliziert. Den Rechenblock findet man in der Kategorie "Mathematik".</p>
+        <p><img src="tutorials/turtle1/s1_05_02g.jpg"></p>
+        <p>Für einen Innenwinkel in einem regelmäßigen Vieleck gilt folglich: innenwinkel = innenwinkelsumme / anzahlecken. Um den Richtungswinkel der Schildkröte zu berechnen, müssen wir den Innenwinkel von 180° abziehen:</p>
+        <p>"richtungswinkel" = 180° - ("innenwinkelsumme" / "anzahlecken")</p>
+        <p><img src="tutorials/turtle1/s1_05_02h.jpg"></p>
+        <p>Der berechnete Richtungswinkel wird in den Block "Drehung nach links" eingetragen.</p>
+        <p><img src="tutorials/turtle1/s1_05_02i.jpg"></p>
+        <p>Damit die Schildkröte ein N-Eck zeichnet, wird als Anzahl der Wiederholungen die Anzahl der Ecken eingetragen.</p>
+        <p><img src="tutorials/turtle1/s1_05_02j.jpg"></p>
+        <p>Das vollständige Programm sieht dann wie folgt aus. Wenn man die Anzahl der Ecken ändert, wird von der Schildkröte ein entsprechendes Vieleck gezeichnet.</p>
+        <p><img src="tutorials/turtle1/s1_05_02.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;regelmäßige Vielecke zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_02.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Die Schildkröte malt einen Kreis</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Wenn man die Seitenlänge des Vielecks sehr klein und die Anzahl der Ecken sehr groß macht, dann malt die Schildkröte ein regelmäßiges Vieleck, das in guter Näherung aussieht, wie ein Kreis.</p>
+        <p><img src="tutorials/turtle1/s1_05_03a.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_05_03.jpg"></p>
+        <p>Den Radius kann man verändern, indem man die Seitenlänge und die Anzahl der Ecken variiert.</p>
+        <p><img src="tutorials/turtle1/s1_05_03b.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_05_03c.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte malt einen Kreis</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_03.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Regelmäßige Vielecke</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Mit einer zweiten Wiederholungsschleife, in welcher die Anzahl der Ecken automatisch vergrößert wird, kann die Schildkröte viele verschiedene regelmäßige Vielecke zeichnen.</p>
+        <p><img src="tutorials/turtle1/s1_05_04a.jpg"></p>
+        <p>Das Programm wird dazu wie folgt verändert:</p>
+        <p><img src="tutorials/turtle1/s1_05_04.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp04" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Vom Dreieck zum Kreis</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp04').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_04.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Viele Kreise</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Mit einer geeigneten Kombination von Seitenlänge, Anzahl der Ecken und Erhöhung der Anzahl der Ecken, kann man der Schildkröte beibringen ein, paar Kreise zu zeichen.</p>
+        <p><img src="tutorials/turtle1/s1_05_05a.jpg"></p>
+        <p>Das Programm wird dazu wie folgt verändert:</p>
+        <p><img src="tutorials/turtle1/s1_05_05.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_05_bsp05" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Viele Kreise</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_05_bsp05').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_05_05.p5xml');
+};
+</script>
