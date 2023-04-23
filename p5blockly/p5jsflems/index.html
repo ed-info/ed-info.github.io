@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="p5.js-Flems-Editor">
+
+    <title>P5*js-Редактор коду</title>
+  
+    <link rel="shortcut icon" href="favicon.ico"/>
+    <link href="lib/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/flemsstyle.css" rel="stylesheet">
+    <script src="lib/jquery/jquery.min.js"></script>
+    <script src="lib/p5js/p5.min.js"></script>
+    <script src="lib/bootstrap/v5/js/bootstrap.min.js"></script>
+    <script src="lib/lz-string/lz-string.js"></script>
+    <script src="flems.html" type="text/javascript" charset="utf-8"></script>        
+    <script src="js/helperflems.js" defer></script>
+</head>
+
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light pt-1 pb-1 mb-2">
+    <div class="container-fluid">
+        <div class="navbar-brand">P5*js-Редактор коду</div>
+          <form class="d-flex">
+            <div class="input-group input-group-sm">
+              <input style="max-width: 180px;" id="p5saveDateiname" type="text" class="form-control" aria-label="Dateiname" aria-describedby="p5Save">
+              <button id="p5Save" class="btn btn-outline-secondary" type="button"><i class="bi bi-download"></i> Зберегти</button>
+            </div>
+          </form>
+          <form class="d-flex">
+            <label class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-upload"></i> Відкрити <input type="file" accept=".p5txt" id="p5Dateiwahl" hidden>
+            </label>
+          </form>
+          <form class="d-flex">
+            <button id="URLSave" class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#URLModal"><i class="bi bi-file-zip"></i> LZ-Codierung</button>
+          </form>    
+      <form class="d-flex">
+        <div class="btn-group btn-group-sm" role="group" aria-label="navi2">
+          <button id="HilfeAnzeigen" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#HilfeOffCanvas" aria-controls="HilfeOffCanvas">
+            <i class="bi bi-question-circle"></i>
+          </button>            
+          <button id="InfoAnzeigen" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#InfoModal">
+            <i class="bi bi-info-circle"></i>
+          </button>        
+        </div>
+      </form>
+    </div>
+</nav>
+
+<!-- Preview-Editor -->
+<div class="container-fluid">
+    <div class="row">
+      <div id="flems">
+    </div>
+</div>
+
+<!-- Modal-URL -->
+<div class="modal fade" id="URLModal" tabindex="-1" aria-labelledby="URLModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="URLModalLabel"><i class="bi bi-file-zip"></i>&nbsp;&nbsp;LZ-Codierung</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="container">
+            <div class="row">
+                <div class="wrap" id="URLDiv"></div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal-Info -->
+<div class="modal fade" id="InfoModal" tabindex="-1" aria-labelledby="InfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="InfoModalLabel"><i class="bi bi-info-circle"></i>&nbsp;&nbsp;Про P5*js-Редактор коду</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Програма <strong>P5*js-Редактор коду</strong> - середовище програмування для p5.js на основі Flems-Sandbox <a href="https://github.com/porsager/flems" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> та бібліотеки p5.js <a href="https://p5js.org/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>.</p>
+        <hr>
+        <p>P5*js-Редактор коду є супровідним проектом для уроків інформатики в Gymnasium Westerstede <a href="https://www.informatik.gym-wst.de" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>.</p>
+        <p><strong>Автор:</strong> Matthias Perenthaler<br><strong>Версія:</strong> V1.01.01<br><strong>Ліцензія:</strong> MIT License <a href="https://de.wikipedia.org/wiki/MIT-Ліцензія" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a><br><strong>Repository:</strong> Github <a href="https://github.com/pt69/p5jsblocklyeditor" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a></p>
+        <hr>
+        <ul class="list-group">
+            <li class="list-group-item active">Використані бібліотеки</li>
+            <li class="list-group-item">Flems&nbsp;&nbsp;<a href="https://github.com/porsager/flems" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - ліцензія: <a href="https://github.com/porsager/flems/blob/master/LICENSE" class="link-secondary" target="_blank">DWTFYWTP License</a></li>  
+            <li class="list-group-item">p5.js&nbsp;&nbsp;<a href="https://p5js.org/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - ліцензія: <a href="https://github.com/processing/p5.js/blob/main/license.txt" class="link-secondary" target="_blank">GNU Lesser General Public License v2.1</a></li>
+            <li class="list-group-item">p.turtle&nbsp;&nbsp;<a href="https://github.com/jan-martinek/p.turtle" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - ліцензія: <a href="https://github.com/jan-martinek/p.turtle/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>            
+            <li class="list-group-item">Bootstrap&nbsp;&nbsp;<a href="https://getbootstrap.com/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - Ліцензія: <a href="https://github.com/twbs/bootstrap/blob/main/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>
+            <li class="list-group-item">JQuery&nbsp;&nbsp;<a href="https://jquery.com/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - ліцензія: <a href="https://jquery.org/license/" class="link-secondary" target="_blank">MIT License</a></li>
+            <li class="list-group-item">LZ_String&nbsp;&nbsp;<a href="https://github.com/pieroxy/lz-string/" class="link-secondary" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a> - ліцензія: <a href="https://github.com/pieroxy/lz-string/blob/master/LICENSE" class="link-secondary" target="_blank">MIT License</a></li>
+        </ul>        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="HilfeOffCanvas" aria-labelledby="HilfeOffCanvasLabel" data-width="100%">
+  <div class="offcanvas-header">
+    <button id="backToContent" type="button" class="btn btn-light btn-sm"> Повернутися до вибору</button>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div id="divTutorials" class="offcanvas-body">
+    <div class="d-flex justify-content-center">
+      <div class="spinner-border text-secondary m-5" role="status">
+        <span class="visually-hidden">Завантаження...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
