@@ -1,0 +1,52 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.9 - Zwei Schildkröten</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_08_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte - Grundprogramm</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_08_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_08_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Einen Baum zeichnen lassen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>In einem Programm können zwei Schildkröten unterwegs sein. Dazu legt man zwei Schildkröten-Variablen (z.B. "turtle1" und "turtle2") fest und fügt diese in das Programm ein.</p>
+        <p><img src="tutorials/turtle1/s1_09_01a.jpg"></p>
+        <p>Für beide Schildkröten setzt man an das Ende von "setup()" die Blöcke "Bewegung aufzeichnen". Für die Aufzeichnung der Bewegung legt man zwei weitere Variablen z.B. "turtleRun1" und "turtleRun2" fest.</p>
+        <p><img src="tutorials/turtle1/s1_09_01b.jpg"></p>
+        <p>In "draw()" setzt man für beide Schildkröten den Block "Animation starten". Die Geschwindigkeiten können für beide Schildkröten verschieden sein und auch die Liniendicke kann für beide Schildkröten unterschiedlich festgelegt werden.</p>
+        <p><img src="tutorials/turtle1/s1_09_01c.jpg"></p>
+        <p>Jeder Schildkröte bringt man jetzt bei, was sie tun soll. In jedem Schildkröten-Block muss man die gewünschte Schildkröten-Variable angeben (z.B. "turtle1" oder "turtle2").</p>
+        <p><img src="tutorials/turtle1/s1_09_01d.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_09_01e.jpg"></p>
+        <p>Sobald die Schildkröten wissen, was sie tun sollen, kann es los gehen:</p>
+        <p><img src="tutorials/turtle1/s1_09_01.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_09_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Zwei Schildkröten zeichnen Wiese, Haus und Baum</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_09_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_09_01.p5xml');
+};
+</script>

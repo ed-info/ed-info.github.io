@@ -1,0 +1,124 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.6 - Spiralen</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_06_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte malt ein Quadrat</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_06_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_06_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Eine Spirale</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Die Schildkröte soll eine Spirale zeichnen. Eine Spirale sieht z.B. wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_06_01a.jpg"></p>
+        <p>Wenn man die Spirale betrachtet, fällt auf, dass die Strecke, welche die Schildkröte vorwärts geht, nach jeder Richtungsänderung länger wird. Der Richtungswinkel ist 45° groß. Das soll der Schildkröte jetzt beigebracht werden.</p>
+        <p>Im Programm wird eine Variable "streckenlaenge" festgelegt, welche nach jeder Richtungsänderung erhöht wird. Dazu klickt man in der Kategorie "Variablen" auf "Variable erstellen..." und nennt die neue Variable z.B. "streckenlaenge".</p>
+        <p>In das Programm wird der Block "setze streckenlaenge auf" eingefügt und mit dem Wert 0 ergänzt</p>
+        <p>Die Wiederholungsschleife wird 150 mal wiederholt und der Drehwinkel wird auf 45° gesetzt.</p>
+        <p>Das Programm sieht dann wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_06_01.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_06_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Spirale zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_06_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_06_01.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Eine bunte Spirale</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Die Spirale soll etwas bunter werden:</p>
+        <p><img src="tutorials/turtle1/s1_06_02a.jpg"></p>
+        <p>Dazu fügt man den Block "Malfarbe" mit dem RGB-Code ein und lässt einen Zufallsgenerator die Farbe zufällig festlegen.</p>
+        <p><img src="tutorials/turtle1/s1_06_02b.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_06_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Bunte Spirale zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_06_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_06_02.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Richtungswinkel kleiner als 45°</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Wenn man einen Richtungswinkel wählt, der kleiner als 45° ist, dann wird der Abstand zwischen den Spiralarmen größer:</p>
+        <p><img src="tutorials/turtle1/s1_06_03a.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_06_03b.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Richtungswinkel größer als 45°</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Wenn man einen Richtungswinkel wählt, der größer als 45° ist, dann liegen die Spiralarme übereinander:</p>
+        <p><img src="tutorials/turtle1/s1_06_04a.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_06_04b.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_06_04c.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Richtungswinkel gleich 120°</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Bei einem Richtungswinkel von 120° ist die Spirale dreiecksförmig. Hier kann man auch die Änderung der Streckenlänge verändern. Auch die Änderung der Liniendicke verändert die entstehende Spirale. Einfach ausprobieren.</p>
+        <p><img src="tutorials/turtle1/s1_06_05a.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Richtungswinkel zwischen 135° und 180°</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Bei Richtungswinkeln zwischen 135° und 180° entstehen Sterne:</p>
+        <p><img src="tutorials/turtle1/s1_06_06a.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_06_06b.jpg"></p>
+      </li>
+    </ul>
+</div>

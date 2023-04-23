@@ -1,0 +1,92 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.7 - Funktionen</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_07_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte malt bunte Quadrate</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_07_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_07_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Anweisungen in Funktion auslagern</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>In der Vorlage malt die Schildkröte zwei Quadrate:</p>
+        <p><img src="tutorials/turtle1/s1_07_01a.jpg"></p>
+        <p>Bei komplizierteren Programmen können die Anweisungen für die Schildkröte umfangreicher werden. Anweisungen können in eine "Funktion" ausgelagert werden. In den Programmablauf setzt man nur den Namen der Funktion ein und alle Anweisungen, die in der Funktion stehen, werden ausgeführt.</p>
+        <p>Eine <b>Funktion</b> legt man fest, indem man in der Kategorie "js-Funktionen" den "um-etwas-tun"-Block in den Editor zieht.</p>
+        <p><img src="tutorials/turtle1/s1_07_01b.jpg"></p>
+        <p>Den Ausdruck "etwas tun" ersetzt man mit einer Bezeichnung die beschreibt, was die Funktion leisten soll. Hier soll die Funktion ein Quadrat zeichnen, also bekommt die Funktion den Namen "quadrat_zeichnen".</p>
+        <p><img src="tutorials/turtle1/s1_07_01c.jpg"></p>
+        <p>In die Funktion "quadrat_zeichnen" werden alle Anweisungen eingesetzt, mit denen ein Quadrat gezeichnet wird.</p>
+        <p><img src="tutorials/turtle1/s1_07_01d.jpg"></p>
+        <p>Der Name der Funktion wird dann an die Stellen ins Programm eingesetzt, an denen ein Quadrat gezeichnet werden soll. Den Block der Funktion mit dem Namen "quadrat_zeichnen" findet man in der Kategorie "js-Funktionen", sobald man die Funktion festgelegt hat.</p>
+        <p><img src="tutorials/turtle1/s1_07_01e.jpg"></p>
+        <p>Das vollständige Programm sieht jetzt wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_07_01.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_07_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Bunte Quadrate mit einer Funktion zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_07_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_07_01.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Drei Häuser zeichnen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Mit der folgenden Funktion zeichnet die Schildkröte ein Haus:</p>
+        <p><img src="tutorials/turtle1/s1_07_02a.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_07_02b.jpg"></p>
+      </li>
+      <li class="list-group-item">
+        <p>Diese Funktion kann man so in das Programm einbauen, dass die Schildkröte drei Häuser zeichnet:</p>
+        <p><img src="tutorials/turtle1/s1_07_02.jpg"></p>
+        <p>Die Funktion kann in nur einer Zeile angezeigt werden, um Platz im Editor zu sparen. Dazu klickt man mit der rechten Maustaste auf den Funktionsblock und klickt mit der linken Maustaste "Baustein zusammenfalten" an.</p>
+        <p><img src="tutorials/turtle1/s1_07_02c.jpg"></p>
+        <p>Entfalten kann man den Baustein wieder auf die gleiche Weise: mit der rechten Maustaste auf den Funktionsblock klicken und mit der linken Maustaste "Baustein entfalten" anklicken.</p>
+        <p><img src="tutorials/turtle1/s1_07_02d.jpg"></p>
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_07_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Häuser mit einer Funktion zeichnen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_07_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_07_02.p5xml');
+};
+</script>
+
+<hr>

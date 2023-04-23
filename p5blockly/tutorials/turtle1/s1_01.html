@@ -1,0 +1,35 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.1: Erste Schritte der Schildkröte</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Das Grundprogramm</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Damit die Schildkröte (= Turtle) in einem Programm genutzt werden kann, muss diese in einer bestimmten Weise eingefügt werden. Ein minimales Schildkröten-Programm sieht wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_01_01.jpg"></p>
+        <p>Die Schildkröte wird mit "Turtle einfügen" an der gewünschten Stelle (x/y) auf die Zeichenfläche gesetzt.</p>
+        <p><img src="tutorials/turtle1/s1_01_01a.jpg"></p>
+        <p>Es folgen Anweisungen, welche die Bewegung der Schildkröte steuern.</p>
+        <p><img src="tutorials/turtle1/s1_01_01b.jpg"></p>
+        <p>Mit dem Block "Turtle: Bewegung aufzeichnen" wird die Bewegung der Schildkröte gespeichert.</p>
+        <p><img src="tutorials/turtle1/s1_01_01c.jpg"></p>
+        <p>Im Block "draw()" fügt man am Anfang den Block "Hintergrundfarbe" ein, damit bei jedem Durchlauf die Zeichenfläche gelöscht wird.</p>
+        <p>Mit dem Block "Turtle: Animation starten" wird die aufgezeichnete Bewegung der Schildkröte animiert ausgeführt. Die Zahl bei "Geschwindigkeit" legt fest, wie schnell sich die Turtle bewegt.</p>
+        <p><img src="tutorials/turtle1/s1_01_01d.jpg"></p>
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_01_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Erste Schritte</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_01_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_01_01.p5xml');
+};
+</script>

@@ -1,0 +1,122 @@
+<h4><i class="bi bi-easel"></i>&nbsp;S1.4 - Variable Seitenlänge</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Vorlage laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_04_bsp00" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Schildkröte malt ein Quadrat</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_04_bsp00').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_04_00.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Seitenlänge des Quadrats ändern</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Wenn die Strecke, welche die Schildkröte vorwärts geht, verkürzt oder verlängert wird, entstehen unterschiedlich große Quadrate.</p>
+        <p><img src="tutorials/turtle1/s1_04_01a.jpg"></p>
+        <p>Für jedes Quadrat legt man die Seitenlänge fest und erstellt eine Wiederholungsschleife, um das Quadrat zu zeichnen.</p>
+        <p><img src="tutorials/turtle1/s1_04_01.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_04_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Quadrate mit unterschiedlichen Seitenlängen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_04_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_04_01.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Seitenlänge mit einer Variablen verändern</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Eine Größe, die sich während eines Programmablaufs ändert, nennt man eine <b>Variable</b>. Die Seitenlänge des Quadrats soll mit Hilfe einer Variablen verändert werden.</p>
+        <p>Um eine Variable festzulegen, klickt man in der Werkzeugleiste auf "<b>Variablen</b>". Es sind bereits die Variablen vorhanden, die für die Zeichenfläche und die Schildkröte benötigt werden. Diese sollten nicht verändert werden, damit das Programm fehlerfrei ablaufen kann.</p>
+        <p><img src="tutorials/turtle1/s1_04_02a.jpg"></p>
+        <p>Um eine neue Variable festzulegen klickt man auf "<b>Variable erstellen...</b>" und gibt als Variablennamen z.B. den Namen "<b>seitenlaenge</b>" ein. Im Variablennamen sollten keine Umlaute oder Sonderzeichen verwendet werden.</p>
+        <p><img src="tutorials/turtle1/s1_04_02b.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_04_02c.jpg"></p>
+        <p>Die neue Variable "seitenlaenge" wird in die Liste der vorhandenen Variablen eingefügt.</p>
+        <p><img src="tutorials/turtle1/s1_04_02d.jpg"></p>
+        <p>Die Variable "seitenlaenge" wird in das Programm eingefügt, indem man den Block "setze xxxxxx auf" in das Programm einfügt, Die "xxxxxx" stehen für irgendeinen Variablennamen.</p>
+        <p><img src="tutorials/turtle1/s1_04_02e.jpg"></p>
+        <p>Falls als Variablenname nicht bereits "seitenlaenge" angezeigt wird, klickt man auf den Variablennamen und klickt in der Liste der Variabeln die Variable "seitenlaenge" an.</p>
+        <p><img src="tutorials/turtle1/s1_04_02f.jpg"></p>
+        <p>Als Wert der neuen Variablen soll die Zahl 10 festgelegt werden. Dazu fügt man aus der Kategorie "Mathematik" den Zahlblock an die Variable an und setzt den Zahlenwert auf 10.</p>
+        <p><img src="tutorials/turtle1/s1_04_02g.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_04_02h.jpg"></p>
+        <p>Schließlich ersetzt man im Block "Vorwärts" den Zahlenwert mit dem Variablennamen, indem man den Block "seitenlaenge" aus der Kategorie "Variablen" holt und den Zahlenwert im Block "Vorwärts" damit ersetzt.</p>
+        <p><img src="tutorials/turtle1/s1_04_02i.jpg"></p>
+        <p><img src="tutorials/turtle1/s1_04_02j.jpg"></p>
+        <p>Die beiden anderen Wiederholungsblöcke brauchen wir nicht mehr. Diese können gelöscht werden. Dazu zieht man den Block "Bewegung aufzeichnen" unter den ersten Wiederholungsblock und schiebt die anderen beiden Wiederholungsblocks auf den Mülleimer.</p>
+        <p><img src="tutorials/turtle1/s1_04_02k.jpg"></p>
+        <p>Das Programm sollte jetzt wie folgt aussehen. Die Seitenlänge kann man ändern, indem man den Zahlenwert im Block "setze seitenlaenge auf" ändert.</p>
+        <p><img src="tutorials/turtle1/s1_04_02.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_04_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Seitenlänge mit einer Variablen festlegen</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_04_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_04_02.p5xml');
+};
+</script>
+
+<hr>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header"><b>Viele verschiedene Quadrate zeichnen</b></div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Mit Hilfe der Variablen "seitenlaenge" können viele Quadrate mit größer werdender Seitenlängen automatisiert gezeichnet werden.</p>
+        <p>Dazu fügt man eine zweite Wiederholungsschleife in das Programm ein, die dafür sorgt, dass bei jedem Durchlauf die Variable "seitenlaenge" um einen bestimmten Betrag vergrößert wird.</p>
+        <p><img src="tutorials/turtle1/s1_04_03a.jpg"></p>
+        <p>Das vollständige Programm sieht wie folgt aus:</p>
+        <p><img src="tutorials/turtle1/s1_04_03.jpg"></p>
+      </li>
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="s1_04_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Viele verschiedene Quadrate</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('s1_04_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/turtle1/s1_04_03.p5xml');
+};
+</script>
