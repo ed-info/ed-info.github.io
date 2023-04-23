@@ -1,0 +1,96 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.3a: Bewegter Kreis</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">draw()</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn ein Kreis mit der Maus bewegt werden soll, dann müssen die Anweisungen dazu in den Block "draw()" gesetzt werden, da dieser viele Male pro Sekunde durchlaufen wird.</p>
+          <p>Wenn die Maustaste gedrückt ist, soll sich das Aussehen des Kreises ändern. Dazu wird ein "Falls-Mache-Sonst"-Block verwendet:</p>
+          <p><b>Falls</b> die Maustaste gedrückt ist, <b>mache</b>: setze die Liniendicke auf 0 und die Füllfarbe auf rot, <b>sonst</b>: zeichne ohne Füllfarbe mit der Linienfarbe gelb und einer Liniendicke von 2 Pixeln.
+          <p>Nachdem das Aussehen des Kreises in dem "Falls-Mache-Sonst"-Block festgelegt wurde, wird der Kreis an der aktuellen Maus-Position gezeichnet. Dazu wird die x- und die y-Koordinate der Maus als Position in den Ellipsen-Block eingetragen.</p>
+          <p>Die benötigten Blöcke findest du in den Kategorien in der Werkzeugleiste - einfach suchen.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_03_01.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_03_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Bewegter Kreis</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_03_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_03_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.3b: Nur ein Kreis</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Hintergrund neu zeichnen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn der Kreis im letzten Beispiel bewegt wird, übermalt er die ganze Zeichenfläche.</p>
+          <p>Um das zu verhindern, kann man auch in den "draw()"-Block den Block "Hintergrundfarbe" einbauen, so dass bei jedem Durchlauf des "draw()"-Blocks der Hintergrund übermalt wird. Dann sieht man bei der Bewegung der Maus nur einen einzigen Kreis, der sich bewegt.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_03_03.jpg">
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_03_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Nur ein Kreis</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_03_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_03_02.p5xml');
+};
+</script>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.3c: Kunst</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Kreative Entscheidung</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Manchmal möchte man, dass der Hintergrund nicht übermalt wird.</p>
+          <p>Wenn man die Farben mit Hilfe eines Zufallsgenerators erzeugen lässt, dann wird die Zeichnung bunt.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_03_04.jpg">
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_03_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Kunst</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_03_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_03_03.p5xml');
+};
+</script>

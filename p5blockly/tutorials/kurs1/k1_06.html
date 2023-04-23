@@ -1,0 +1,110 @@
+<h4><i class="bi bi-easel"></i>&nbsp;K1.6a: Kopien von Figuren</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Gleiche Kreise</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <p>Im letzten Kapitel wurden vier gleiche Kreise gezeichnet.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_06_01a.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Dafür wurden 4 Blöcke eingebaut.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_06_01b.jpg">
+      </li>
+      <li class="list-group-item">
+        <p>Solche Wiederholungen kann man mit einem Wiederholungs-Block zusammenfassen. Da sich die x-Koordinate der 4 Kreise ändert, brauchen wir eine neue Variable für die x-Koordinate. Der Wert der Variable "xkoord" wird bei jedem Durchlauf durch die Wiederholungsschleife geändert.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_06_01.jpg">
+      </li>      
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_06_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Einfache Wiederholung</button>
+      </li> 
+    </ul>
+</div>
+
+<script>
+document.getElementById('k1_06_bsp01').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_06_01.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.6b: Wiederholung einer Wiederholung</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Mehrere Reihen von Kreisen</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Wenn man einen Wiederholungs-Block in einen Wiederholungsblock einbaut, dann können mehrere Reihen von Kreisen gezeichnet werden. Dazu brauchen wir eine weitere Variable für die y-Koordinate.</p>
+      </li>
+      <li class="list-group-item">
+          <p>Der äußere Wiederholungsblock wird 4 mal wiederholt. Der innere Wiederholungsblock wird 4 x 4 = 16 Mal wiederholt. Damit die Kreise immer wieder vom Anfang der Zeile aus gezeichnet werden, muss vor jedem Neustart des inneren Wiederholungsblocks die x-Koordinate auf 50 zurückgesetzt werden.</p>
+      </li>      
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_06_02.jpg">
+      </li> 
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_06_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Geschachtelte Wiederholung</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_06_bsp02').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_06_02.p5xml');
+};
+</script>
+
+<hr>
+
+<h4><i class="bi bi-easel"></i>&nbsp;K1.6c: Vielfache Wiederholung</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">400 Kreise</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Beim ersten Anschauen sieht ein Programm mit einer Wiederholung in einer Wiederholung kompliziert aus. Ist es auch.</p>
+          <p>Der große Vorteil einer solchen Programmierung wird sichtbar, wenn man sehr viele Kreise zeichnen möchte. Im folgenden Beispiel werden nicht nur 16, sondern gleich 400 Kreise gezeichnet.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="tutorials/kurs1/k1_06_03.jpg">
+      </li> 
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm starten:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="k1_06_bsp03" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Vielfache Wiederholung</button>
+      </li> 
+    </ul>
+</div>
+
+<hr>
+
+<script>
+document.getElementById('k1_06_bsp03').onclick = function() {
+  loadBeispielProgramm('tutorials/kurs1/k1_06_03.p5xml');
+};
+</script>
