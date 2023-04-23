@@ -1,0 +1,15 @@
+var zeichenflaeche;
+
+
+setup = function() {
+  zeichenflaeche = createCanvas(400, 400);
+  angleMode(DEGREES);
+  
+};
+
+draw = function() {
+  background("#33ccff");
+  text("Hallo", 30, 30);
+};
+
+new p5();

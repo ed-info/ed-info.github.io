@@ -1,0 +1,36 @@
+function setup() {
+  noCanvas();
+
+  const zahl1 = tf.scalar(1);
+  zahl1.print();
+  const vektor1 = tf.tensor1d([1, 2, 3]);
+  vektor1.print();
+  const matrix1 = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+  matrix1.print();
+  const tensor1 = tf.tensor3d(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    [2, 2, 3]
+  );
+  tensor1.print();
+
+  //2-D-Tensor mit 15 Werten
+  const werte1 = [];
+  for (let i = 0; i < 15; i++) {
+    werte1[i] = random(0, 100);
+  }
+  const tensorgroesse1 = [5, 3];
+  const daten1 = tf.tensor2d(werte1, tensorgroesse1, "int32");
+  daten1.print();
+
+  //3-D-Tensor mit 45 Werten
+  const werte2 = [];
+  for (let i = 0; i < 45; i++) {
+    werte2[i] = random(0, 100);
+  }
+  const tensorgroesse2 = [3, 5, 3];
+  const daten2 = tf.tensor3d(werte2, tensorgroesse2, "int32");
+  daten2.print();
+}
+
+
+new p5();

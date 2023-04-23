@@ -1,0 +1,22 @@
+let img;
+
+function setup() {
+  createCanvas(200, 200);
+  background(240);
+  img = createImage(200, 200);
+}
+
+function draw() {
+  img.loadPixels();
+  for (let i = 0; i < img.width; i++) {
+    for (let j = 0; j < img.height; j++) {
+      if (i == mouseX && j == mouseY) {
+        img.set(i, j, color(255, 100, 0));
+      }
+    }
+  }
+  img.updatePixels();
+  image(img, 0, 0);
+}
+
+new p5();

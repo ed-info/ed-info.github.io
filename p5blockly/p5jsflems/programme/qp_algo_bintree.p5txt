@@ -1,0 +1,157 @@
+class BinTree {
+  constructor(inhalt) {
+    this.inhalt = inhalt;
+    this.links = null;
+    this.rechts = null;
+  }  
+  isLeaf() { return (this.links === null && this.rechts === null); };
+  getLeft() { return this.links; };
+  getRight() { return this.rechts; };
+  setLeft(knot) { this.links = knot; };
+  setRight(knot) { this.rechts = knot; };
+  getItem() { return this.inhalt };
+  setItem(val) { this.inhalt = val };
+}
+
+class gewichteterSortierterBinaerBaum {
+  constructor() {
+    this.wurzel = null;
+  }
+  knotenEinfuegen(knoten, neuerKnoten) {
+    if (neuerKnoten.getItem() < knoten.getItem()) {
+      if (knoten.getLeft() === null) { knoten.setLeft(neuerKnoten); }
+      else { this.knotenEinfuegen(knoten.getLeft(), neuerKnoten); }
+    }
+    if (neuerKnoten.getItem() > knoten.getItem()) {
+      if (knoten.getRight() === null) { knoten.setRight(neuerKnoten); }
+      else { this.knotenEinfuegen(knoten.getRight(), neuerKnoten); }
+    }
+  };
+  inhaltEinfuegen(inhalt) {
+    var neuerKnoten = new BinTree(inhalt);
+    if (this.wurzel === null) { this.wurzel = neuerKnoten; }
+    else { this.knotenEinfuegen(this.wurzel, neuerKnoten); }
+  };
+  findeMinKnoten(knoten) {
+    if (knoten.getLeft() === null) return knoten;
+    else return this.findeMinKnoten(knoten.getLeft());
+  };
+  knotenEntfernen(knoten, zahl) {
+    if (knoten === null) { return null;
+    } else if (zahl < knoten.getItem() && knoten.getLeft() != null) {
+        knoten.setLeft(this.knotenEntfernen(knoten.getLeft(), zahl));
+        return knoten;
+    } else if (zahl > knoten.getItem() && knoten.getRight() != null) {
+        knoten.setRight(this.knotenEntfernen(knoten.getRight(), zahl));
+        return knoten;
+    } else if (zahl === knoten.getItem()) {
+        if (knoten.getLeft() === null && knoten.getRight() === null) {
+          knoten = null; return knoten;
+        }
+        if (knoten.getLeft() === null && knoten.getRight() != null) {
+          knoten = knoten.getRight(); return knoten;
+        }
+        if (knoten.getRight() === null && knoten.getLeft() != null) {
+          knoten = knoten.getLeft(); return knoten;
+        }
+        if (knoten.getRight() != null && knoten.getLeft() != null) {
+          var bleibtDa = this.findeMinKnoten(knoten.getRight());
+          knoten.setItem(bleibtDa.getItem());
+          knoten.setRight(this.knotenEntfernen(knoten.getRight(), bleibtDa.getItem()));
+          return knoten;
+        }
+    } else return knoten;
+  }
+  inhaltEntfernen(inhalt) {
+    this.wurzel = this.knotenEntfernen(this.wurzel, inhalt);
+  };
+  maxTiefefunction() {
+    var tiefeBerechnen = function(knoten) {
+      if (knoten === null) return 0;
+      return Math.max(1 + tiefeBerechnen(knoten.getLeft()), 1 + tiefeBerechnen(knoten.getRight()));
+    }
+    return tiefeBerechnen(this.wurzel);
+  };
+  knotenArrSpeichern(knoten, knotenArr) {
+    if (knoten == null) return;
+    this.knotenArrSpeichern(knoten.getLeft(), knotenArr);
+    knotenArr.push(knoten);
+    this.knotenArrSpeichern(knoten.getRight(), knotenArr);
+  };
+  bGewichtHelfer(knotenArr, start, ende) {
+    if (start > ende) return null;
+    var mitte = parseInt((start + ende)/2, 10);
+    var knoten = knotenArr[mitte];
+    knoten.setLeft(this.bGewichtHelfer(knotenArr, start, mitte - 1));
+    knoten.setRight(this.bGewichtHelfer(knotenArr, mitte + 1, ende));
+    return knoten;
+  };
+  baumGewichten(wurzel) {
+    var knotenArr = [];
+    this.knotenArrSpeichern(wurzel, knotenArr);
+    var n = knotenArr.length;
+    return this.bGewichtHelfer(knotenArr, 0, n-1);
+  };
+};
+
+function mathRandomInt(a, b) {
+  if (a > b) {
+    // Swap a and b to ensure a is smaller.
+    var c = a;
+    a = b;
+    b = c;
+  }
+  return Math.floor(Math.random() * (b - a + 1) + a);
+}
+
+let binaerBaumVar;
+
+setup = function() {
+  createCanvas(windowWidth*0.9, windowHeight*0.9);
+  binaerBaumVar = new gewichteterSortierterBinaerBaum();
+  for (var count = 0; count < 60; count++) {
+    binaerBaumVar.inhaltEinfuegen((mathRandomInt(1, 100)));
+  }
+  binaerBaumVar.wurzel = binaerBaumVar.baumGewichten(binaerBaumVar.wurzel);  
+};
+
+draw = function() {
+  background(250, 250, 250);
+  if (binaerBaumVar.wurzel != null) {
+    push();
+     translate(0,10);
+     bDrucker(binaerBaumVar.wurzel, width/2, 30, 1, 120);
+    pop();  }
+};
+
+function bDrucker(asb, xT, yT, level, dX) {
+  let yDeltaD = 15;
+  let yDL = 0;
+  if (asb.rechts != null) {
+    yDL = yDeltaD*level;
+    push();
+      stroke(47, 79, 79, 150);
+      strokeWeight(4);
+      line(xT, yT, xT+dX, yT+yDL);
+    pop();
+    bDrucker(asb.rechts, xT+dX, yT+yDL, level+1, dX/2);
+  }
+  if (asb.links != null) {
+    yDL = yDeltaD*level;
+    push();
+      stroke(112, 128, 144, 150);
+      strokeWeight(4);
+      line(xT, yT, xT-dX, yT+yDL);
+    pop();
+    bDrucker(asb.links, xT-dX, yT+yDL, level+1, dX/2);
+  }
+  fill(255, 255, 255, 150);
+  ellipse(xT, yT, 32, 32);
+  fill(0);
+  textSize(14);
+  textAlign(CENTER);
+  text(asb.inhalt, xT, yT+6);
+}
+
+new p5();
+

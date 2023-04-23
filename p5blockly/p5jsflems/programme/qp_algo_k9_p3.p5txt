@@ -1,0 +1,117 @@
+class kreis {
+  constructor(indexX, indexY, posX, posY, size) {
+    this.indexX = indexX;
+    this.indexY = indexY;
+    this.posX = posX;
+    this.posY = posY;
+    this.size = size;
+    this.colorMe = 'cyan';
+  }
+  //Zur&uuml;cksetzen der Farbe sobald ein anderer Kreis angeklickt wurde ANWENDUNG IN MOUSEPRESSED
+  clearColor() {
+    this.colorMe = 'cyan';
+  }
+  //Farbwechsel nach anklicken des Kreise  ANWENDUNG IN MOUSEPRESSED
+  changeColor() {
+    if (this.colorMe == 'cyan') {
+      this.colorMe = 'black';
+    } else {
+      this.colorMe = 'cyan';
+    }
+  }
+  //Pr&uuml;ft ob ein Kreis angeklickt wurde  ANWENDUNG IN MOUSEPRESSED
+  clickedMe() {
+    if (dist(mouseX, mouseY, this.posX, this.posY) < this.size) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  //Zeichnen des Kreises  ANWENDUNG IN DRAW
+  drawMe() {
+    fill(this.colorMe);
+    circle(this.posX, this.posY, this.size);
+  }
+
+  // Ausgabe der Speicherposition im Array ANWENDUNG IN MOUSEPRESSED
+  printPos() {
+    print('IndexX -> ' + this.indexX + ' -- IndexY -> ' + this.indexY);
+  }
+}
+
+let canvWidth = 400;
+let canvHeight = 400;
+let offsetX = 10;
+let offsetY = 10;
+let inp;
+let but;
+let inp2;
+let but2;
+let but3;
+let reihen ;
+let spalten;
+let kreise = [];
+
+function setup() {
+  let cnv = createCanvas(canvWidth, canvHeight);
+  //Buttons und Textboxen
+  inp = createInput('');
+  inp.size(20);
+  but = createButton('Reihen festlegen');
+  but.position(30,400);
+  but.mousePressed(festlegen);
+  inp2 = createInput('');
+  inp2.size(20);
+  inp.position(0,440);
+  but2 = createButton('Spalten festlegen');
+  but.position(30,440);
+  but.mousePressed(festlegen);
+  but3 = createButton('Zeichnen');
+  but3.position(160,420);
+  but3.mousePressed(zeichnen);
+}
+
+function draw() {
+  background(220);
+  //Zeichnen der Kreise
+  for (let i = 0; i < kreise.length; i++) {
+    for (let j = 0; j < kreise[i].length; j++) {
+      kreise[i][j].drawMe();
+    }
+  }
+}
+
+function festlegen(){
+  //Festlegen der Input_Variablen
+  reihen = inp.value();
+  spalten = inp2.value();
+}
+
+function zeichnen(){
+  //Durchlauf der Reihenanzahl in y-Richtung
+  for (let i = 0; i < reihen; i++) {  
+    let kreiseZeile = [];
+    //Durchlauf der Spaltenanzahl in x_Richtung
+    for (let j = 0; j < spalten; j++) {
+      // Anlegen der Objekte im 'inneren' Array
+      kreiseZeile[j] = new kreis(i, j, (j * 20) + offsetX, (i * 20) + offsetY, 10);
+    }
+    //Das 'innere' Array wird zum '&auml;u&szlig;eren' Array hinzugef&uuml;gt
+    kreise[i] = kreiseZeile;
+  }
+}
+
+function mousePressed() {
+  // Pr&uuml;ft welcher Kreis angeklickt wurde
+  for (let i = 0; i < kreise.length; i++) {
+    for (let j = 0; j < kreise[i].length; j++) {
+      kreise[i][j].clearColor();
+      if (kreise[i][j].clickedMe()) {
+        kreise[i][j].changeColor();
+        kreise[i][j].printPos();
+      }      
+    }
+  }
+}
+
+new p5();

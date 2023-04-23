@@ -1,0 +1,15 @@
+var variable_1 = 0;
+var variable_2 = 20;
+
+setup = function() {
+  var zeichenflaeche = createCanvas(400, 400);
+  background(240);
+};
+
+draw = function() {
+  strokeWeight(0);
+  fill(SteelBlue);
+  Ellipse(100, 100, 50, 50);
+}
+
+new p5();

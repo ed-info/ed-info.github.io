@@ -1,0 +1,86 @@
+<h4><i class="bi bi-easel"></i>&nbsp;Programme debuggen</h4>
+
+<div class="card mt-3 mb-3">
+  <div class="card-header">Der Chrome-Debugger</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>In dieser Anleitung wird das Debuggen eines Programms mit dem <b>Chrome-Browser</b> auf einem Windows-PC beschrieben. Da der Chrome-Browser ständig weiterentwickelt wird, kann die Oberfläche von der hier beschriebenen abweichen.</p> 
+          <b>Debuggen</b> kommt vom englischen Wort "Bug" = Käfer. In der Anfangszeit der Computer war einmal ein Käfer, der sich in einen Computer verirrt hatte, dafür verantwortlich, dass ein Computerprogramm fehlerhaft lief. Nach langer Suche fand man in den Innereien des Computers den Käfer, entfernte diesen und damit auch den Fehler. Wegen dieser kleinen Geschichte hat sich der Begriff "<b>debuggen</b>" = entkäfern für das Finden und Beseitigen von Fehlern durchgesetzt.</p>
+          <p>Im Chrome-Browser öffnet man den Debugger, indem man auf der Tastatur die Taste <b>F12</b> drückt. Man sieht dann folgendes:</p>
+      </li>
+      <li class="list-group-item">
+        <img src="hilfe/h2_01.jpg">
+      </li>
+      <li class="list-group-item">
+          <p>In der oberen Leiste gibt es verschiedene Tabs:</p>
+          <p><b>Elements</b>: Hier kann die Struktur der Internetseite angesehen und untersucht werden.</p>
+          <p><b>Console</b>: Hier findet man Meldungen des Chrome-Browsers während dieser versucht die Internetseite darzustellen und Programme auszuführen. Es werden Mitteilungen (messages), Fehler (errors), Warnungen (warnings) und sonstige Informationen ausgegeben. In der Konsole können auch JavaScript-Befehle eingetippt werden, die dann vom Browser ausgeführt werden. Tippe mal "3+5" in der Konsole ein.</p>
+          <p><b>Sources</b>: Hier findet man die JavaScript-Programme, die vom Browser ausgeführt werden.</p>
+          <p>In den weiteren Tabs kann die Internet-Kommunikation, Speicherbelegung, Performance,... genauer untersucht werden.</p> 
+      </li>       
+    </ul>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Beispielprogramm laden:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+          <p>Lade durch einen Klick auf den folgenden Button ein <b>Beispielprogramm mit Fehlern</b>, das debuggt werden soll.</p> 
+      </li>         
+      <li class="list-group-item">
+        <button id="h2_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Programm mit Fehlern laden</button>
+      </li>
+      <li class="list-group-item">
+          <p>Nachdem das Programm geladen ist, drücke die Taste <b>F12</b>. Es werden Fehler gemeldet. Wechsle zu "<b>Console</b>".</p> 
+      </li>  
+      <li class="list-group-item">
+        <img src="hilfe/h2_02.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p>Wenn man bei der Fehlermeldung auf den <b>unterstrichenen Link</b> klickt, dann wird der Quellcode des Programms angezeigt und der gefundene Fehler ist rot gekringelt unterstrichen.</p> 
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h2_03.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>Gefundener Fehler</b>: der Farbname "SteelBlue" steht im Argument von "fill()" ohne Anführungszeichen.</p>
+          <p>Ändere im p5.js-Flems-Editor den Quellcode, indem du "SteelBlue" in Anführungszeichen setzt, führe das Programm neu aus und drücke wieder auf F12, falls du den Debugger geschlossen hast und wechsle wieder zu "Console".</p>
+      </li>
+      <li class="list-group-item">
+        <img src="hilfe/h2_04.jpg">
+      </li>
+      <li class="list-group-item">
+          <p>Der alte Fehler wird noch angezeigt und ein neuer Fehler taucht auf. Damit der erste Fehler, der ja beseitigt wurde, nicht mehr angezeigt wird, gehe mit der Maus über die "Console"-Ausgabe und <b>drücke</b> dort die rechte Maustaste. </p>
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h2_05.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p><b>Klicke</b> auf "Clear Console", so dass die Fehlermeldungen gelöscht werden. Klicke im p5.js-Flems-Editor oben rechts auf das Symbol "REFRESH", so dass das Programm neu ausgeführt wird.</p>
+          <p>Es wird jetzt nur der neu gefundene Fehler angezeigt. Klicke auf den Link und im Quellcode wird der Fehler markiert.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h2_06.jpg">
+      </li> 
+      <li class="list-group-item">
+          <p><b>Gefundener Fehler</b>: die Anweisung "ellipse" ist falsch geschrieben, da alle Buchstaben klein sein müssen.</p>
+          <p>Ändere im p5.js-Flems-Editor den Quellcode, indem du den Anfangsbuchstaben von "Ellipse" mit einem Kleinbuchstaben schreibst und führe das Programm aus. Jetzt sollten keine Fehler mehr angzeigt werden, sondern der Kreis sollte gezeichnet werden.</p>
+          <p>Glückwunsch! Du hast dein erstes Programm erfolgreich <b>debuggt</b>.</p>
+      </li>
+      <li class="list-group-item">
+        <img src="hilfe/h2_07.jpg">
+      </li>
+      <li class="list-group-item">
+        <button id="h2_bsp02" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Fehlerfreies Programm laden</button>
+      </li>      
+    </ul>
+</div>
+
+<script>
+document.getElementById('h2_bsp01').onclick = function() {
+  loadBeispielProgramm('hilfe/h2_01.p5txt', '00');
+};
+document.getElementById('h2_bsp02').onclick = function() {
+  loadBeispielProgramm('hilfe/h2_02.p5txt', '00');
+};
+</script>

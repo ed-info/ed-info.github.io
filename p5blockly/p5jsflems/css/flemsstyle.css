@@ -1,0 +1,27 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#flems {
+    height: calc(100vh - 70px);
+    width: 100%;
+}
+
+#flems {
+    position: absolute;
+}
+
+.offcanvas {
+  width: 680px;
+}
+
+.wrap {
+  background-color: #fafafa;
+  padding: 20px;
+  white-space: pre-wrap;      /* CSS3 */   
+  white-space: -moz-pre-wrap; /* Firefox */    
+  white-space: -pre-wrap;     /* Opera <7 */   
+  white-space: -o-pre-wrap;   /* Opera 7 */    
+  word-wrap: break-word;      /* IE */
+}

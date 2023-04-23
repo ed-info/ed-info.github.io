@@ -1,0 +1,28 @@
+<h4><i class="bi bi-easel"></i>&nbsp;Programm in setup() debuggen</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Lade folgendes Beispielprogramm:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="h4_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Programm laden</button>
+      </li>
+      <li class="list-group-item">
+          <p>Ein Programm bekommt im p5.js-Flems-Editor einen automatisch generierten Dateinamen, der im Debugger angezeigt wird.</p> 
+          <p><img src="hilfe/h4_01a.jpg"></p>
+          <p>In "draw()" kann man ein Programm leicht debuggen, da dieser Block fortlaufend ausgeführt wird. Setzt man in "draw()" einen Breakpoint, wird dieser verlässlich erreicht.</p>
+          <p>In "setup()" kann man zwar einen Breakpoint setzen, dieser wird aber nie erreicht. Der Grund dafür ist, dass "setup()" nur genau einmal beim Programmstart ausgeführt wird. Wenn man einen Breakpoint in "setup()" gesetzt hat, muss man das Programm neu starten, damit "setup()" wieder ausgeführt wird. Sobald das Programm neu gestartet wird, ändert sich der automatisch generierte Dateiname des Programms und der Breakpoint ist verschwunden.</p>
+          <p>Man kann mit einem Trick ein Programm auch in "setup()" debuggen. Direkt in den Quellcode des Programms wird an die Stelle, an welcher das Programm stoppen soll, die Anweisung "debugger" geschrieben.</p>
+          <p><img src="hilfe/h4_01b.jpg"></p>
+          <p>Die Anweisung "debugger" sorgt dafür, dass der Chrome-Debugger an dieser Stelle stoppt, sobald man diesen mit F12 aufgerufen hat und das Programm neu startet. Das Programm kann dann mit der Debugger-Navigation Schritt für Schritt gesteuert werden.</p>
+          <p><img src="hilfe/h4_01c.jpg"></p>
+          <p>Variablen, deren Wert man beobachten möchte, können zu "Watch" hinzugefügt und deren Veränderung Schritt für Schritt beobachtet werden.</p>
+          <p><img src="hilfe/h4_01d.jpg"></p>          
+      </li>
+    </ul>
+</div>
+
+<script>
+document.getElementById('h4_bsp01').onclick = function() {
+  loadBeispielProgramm('hilfe/h4_01.p5txt', '00');
+};
+</script>

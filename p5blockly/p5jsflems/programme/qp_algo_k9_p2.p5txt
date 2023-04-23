@@ -1,0 +1,30 @@
+let arr01= [50,150,250]
+let arr02= [100,200,300]
+let arr03=["LightPink","DarkSeaGreen","LightCyan"]
+let arry=[50,100,150]
+let arrx=[50,200,70]
+let arr2D= [] 
+
+
+function setup() {
+  createCanvas(400, 400);
+  arr2D[0]= arr01
+  arr2D[1]= arr02
+  arr2D[2]= arr03
+  arr2D[3]= arry
+  arr2D[4]=arrx
+}
+
+function draw() {
+  background(220);
+rect(arr2D[0][2],arr2D[1][1],arr2D[4][0],arr2D[3][1]);
+fill(arr2D[2][1]);
+  rect(arr2D[0][1],arr2D[1][0],arr2D[4][1],arr2D[3][0]);
+  fill(arr2D[2][2]);
+    rect(arr2D[0][0],arr2D[1][1],arr2D[4][2],arr2D[3][2]);
+  fill(arr2D[2][0]);
+}
+
+
+
+new p5();

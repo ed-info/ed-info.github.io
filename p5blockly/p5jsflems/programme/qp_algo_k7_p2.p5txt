@@ -1,0 +1,74 @@
+let xPunkteArray = [10, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 540];
+let yPunkteArray = [200, 100, 300,  100, 300, 100, 300, 100, 300, 100, 300, 200];
+let kurvenFunktion;
+let oszi_xArray = [10, 530];
+let oszi_yArray = [10, 380];
+let anzeigeX_xArray = [20];
+let anzeigeX_y = 200;
+let anzeigeY_x= 275;
+let anzeigeY_yArray = [20];
+
+let settings;
+let kuppenAn = true;
+let linienAn = false;
+let smoothieAn = false;
+
+function setup() {
+  createCanvas(550, 400);
+  
+  settings = QuickSettings.create(20, 20, "Oszilloskop");
+	settings.addBoolean("Kuppen anzeigen", true, function(value) { kuppenAn = value; }); 
+	settings.addBoolean("Linien anzeigen", false, function(value) { linienAn = value; }); 	
+	settings.addBoolean("Smoothie anzeigen", false, function(value) { smoothieAn = value; }); 
+  
+  kurvenFunktion = Smooth(yPunkteArray);
+}
+
+function draw() {
+  background("BLACK");
+  for (let i=0; i<oszi_xArray.length-1; i++) {
+    strokeWeight(0);
+    fill("DARKGREEN");
+    rect(oszi_xArray[i], oszi_yArray[i], oszi_xArray[i+1], oszi_yArray[i+1]);
+  }
+  strokeWeight(2);
+  stroke("GREEN");
+  line(oszi_xArray[0], height/2, oszi_xArray[1]+10, height/2);
+  line(width/2, oszi_yArray[0], width/2, oszi_yArray[1]+10);
+  for (let i=0; i<anzeigeX_xArray.length+1; i++) {
+    if(anzeigeX_xArray[i] <= 530) {
+      anzeigeX_xArray.push(anzeigeX_xArray[0]+i*30);
+      line(anzeigeX_xArray[i], anzeigeX_y-5, anzeigeX_xArray[i], anzeigeX_y+5);
+    }
+  }
+  for (let i=0; i<anzeigeY_yArray.length+1; i++) {
+    if(anzeigeY_yArray[i] <= 380) {
+      anzeigeY_yArray.push(anzeigeY_yArray[0]+i*20);
+      line(anzeigeY_x-5, anzeigeY_yArray[i], anzeigeY_x+5, anzeigeY_yArray[i]);
+    }
+  }
+  translate(1,0);
+  if (kuppenAn) {  
+    for (let i=0; i<xPunkteArray.length; i++) {
+      strokeWeight(0);
+      fill('CRIMSON');
+      ellipse(xPunkteArray[i], height-yPunkteArray[i], 10, 10);
+    }
+  }
+  if (linienAn) {  
+    for (let i=0; i<xPunkteArray.length-1; i++) {
+      strokeWeight(1);
+      stroke('TEAL');
+      line(xPunkteArray[i], height-yPunkteArray[i], xPunkteArray[i+1], height-yPunkteArray[i+1]);
+    }  
+  }
+  if (smoothieAn) {
+    for (let i=0; i<=500; i++) {
+      strokeWeight(0);
+      fill('GREEN');
+      ellipse(i, height-kurvenFunktion(i/50), 3, 3);
+    } 
+  }
+}
+
+new p5();

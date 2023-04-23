@@ -1,0 +1,30 @@
+<h5>p5.js-Flems-Editor-Hilfe</h5>
+<ul class="nav flex-column">
+  <li class="nav-item mb-2">
+    <button id="hilfe01" type="button" class="btn btn-light w-100 text-start"><i class="bi bi-easel"></i>&nbsp;&nbsp;Lernangebote zu p5.js</button>
+  </li>
+  <li class="nav-item mb-2">
+    <button id="hilfe02" type="button" class="btn btn-light w-100 text-start"><i class="bi bi-easel"></i>&nbsp;&nbsp;Programme debuggen</button>
+  </li>
+  <li class="nav-item mb-2">
+    <button id="hilfe03" type="button" class="btn btn-light w-100 text-start"><i class="bi bi-easel"></i>&nbsp;&nbsp;Variablen beobachten</button>
+  </li>  
+  <li class="nav-item mb-2">
+    <button id="hilfe04" type="button" class="btn btn-light w-100 text-start"><i class="bi bi-easel"></i>&nbsp;&nbsp;Programm in setup() debuggen</button>
+  </li>     
+</ul>
+
+<script>
+document.getElementById('hilfe01').onclick = function() {
+  loadTutorial('hilfe/h1_01.html');
+};
+document.getElementById('hilfe02').onclick = function() {
+  loadTutorial('hilfe/h2_01.html');
+};
+document.getElementById('hilfe03').onclick = function() {
+  loadTutorial('hilfe/h3_01.html');
+};
+document.getElementById('hilfe04').onclick = function() {
+  loadTutorial('hilfe/h4_01.html');
+};
+</script>

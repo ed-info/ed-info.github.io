@@ -1,0 +1,97 @@
+// Daniel Shiffman
+// Linear Regression with TensorFlow.js
+// https://thecodingtrain.com/CodingChallenges/104-linear-regression-tfjs.html
+// https://youtu.be/dLp10CFIvxI
+
+// Bearbeitet von Matthias Perenthaler, 2020
+
+let x_vals = [];
+let y_vals = [];
+
+let w1, w0;
+
+const learningRate = 0.5;
+//sgd-optimizer = stochastic-gradient-descent-optimizer
+//die parameter w1 und w0 werden schrittweise verändert, um die Verlustfunktion zu minimieren.
+const optimizer = tf.train.sgd(learningRate);
+
+function setup() {
+  frameRate(30);
+  createCanvas(500, 500);
+ 
+    //w1 und w0 sind keine Konstanten, sondern sollen vom Algorithmus geändert werden können
+  w1 = tf.variable(tf.scalar(random(1)));
+  w0 = tf.variable(tf.scalar(random(1)));
+}
+
+function verlustFunktion(y_modell_tensor, y_daten_tensor) {
+  //Mittelwert von (y_modell - y_daten)^2
+  return y_modell_tensor.sub(y_daten_tensor).square().mean();
+}
+
+function modellDaten(x) {
+  const x_tensor = tf.tensor1d(x);
+  // y = mx + w0;
+  // der Tensor wird mit w1 multipliziert und das Produkt zu w0 addiert
+  const y_tensor = x_tensor.mul(w1).add(w0);
+  return y_tensor;
+}
+
+function mousePressed() {
+  if (mouseX > 0 && mouseX < width) {
+    //es wird ein Koordinatensystem zwischen 0 und 1, mit Ursprung unten links gesetzt
+    let x = map(mouseX, 0, width, 0, 1);
+    let y = map(mouseY, 0, height, 1, 0);
+    x_vals.push(x);
+    y_vals.push(y);
+  }
+}
+
+function draw() {
+  background(240);
+  strokeWeight(0);
+  fill(0);
+  let w0_wert = w0.dataSync();  
+  text("w0 = " + w0_wert[0].toFixed(4), 10, 20);  
+  let w1_wert = w1.dataSync();
+  text("w1 = " + w1_wert[0].toFixed(4), 10, 35);
+
+  //tidy raeumt den Speicher auf
+  tf.tidy(() => {
+    if (x_vals.length > 0) {
+      const y_tensor = tf.tensor1d(y_vals);
+      //Dokumentation zur Anwendung des Optimizer in tensorflow.js. Der Verlustfunktion muessen Tensoren uebergeben werden
+      optimizer.minimize(() => verlustFunktion(modellDaten(x_vals), y_tensor));
+    }
+  });
+
+  stroke(100);
+  strokeWeight(8);
+  for (let i = 0; i < x_vals.length; i++) {
+    //die berechneten Punkte werden auf den Canvas projiziert
+    let px = map(x_vals[i], 0, 1, 0, width);
+    let py = map(y_vals[i], 0, 1, height, 0);
+    point(px, py);
+  }
+
+  //erster Punkt der Startlinie bei x = 0 (linke Canvs-Grenze), zweiter Punkt bei x = 1 (rechte Canvas-Grenze)
+  const lineX = [0, 1];
+
+  //tidy raeumt den Speicher auf
+  const y_tensor = tf.tidy(() => modellDaten(lineX));
+  let lineY = y_tensor.dataSync();
+
+  //Speicher auffraeumen, Tensor loeschen
+  y_tensor.dispose();
+
+  let x1 = map(lineX[0], 0, 1, 0, width);
+  let x2 = map(lineX[1], 0, 1, 0, width);
+  let y1 = map(lineY[0], 0, 1, height, 0);
+  let y2 = map(lineY[1], 0, 1, height, 0);
+
+  stroke("steelblue");
+  strokeWeight(2);
+  line(x1, y1, x2, y2);
+}
+
+new p5();

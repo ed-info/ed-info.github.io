@@ -1,0 +1,96 @@
+<h4><i class="bi bi-easel"></i>&nbsp;Variablen beobachten</h4>
+
+<div class="card mb-3">
+  <div class="card-header">Lade folgendes Beispielprogramm:</div>  
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <button id="h3_bsp01" type="button" class="btn btn-light"><i class="bi bi-play-fill"></i>&nbsp;&nbsp;Programm laden</button>
+      </li>
+      <li class="list-group-item">
+          <p>In diesem Programm gibt es die beiden Variablen "variable_1" und "variable_2" die ständig ihren Wert ändern. Es gibt aber keine Ausgabe der Werte über die Zeichenfläche. Deswegen verwenden wir in dieser Übung den Chrome-Debugger, der uns die aktuellen Werte dieser Variablen anzeigen kann.</p>
+          <p><b>Drücke</b> auf der Tastatur die Taste "F12" und klicke im Debugger auf den Tab "Sources".</p>
+          <p><b>Klicke</b> oben links auf das Symbol "Show navigator".</p> 
+      </li>
+      <li class="list-group-item">
+        <img src="hilfe/h3_01a.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>Öffne</b> die Ordner, bis das folgende Symbol mit einem Zufalls-Dateinamen angezeigt wird. Klicke auf den Zufallsdateinamen, so dass sich der Quellcode unseres Programms öffnet.</p> 
+      </li>
+      <li class="list-group-item">
+        <img src="hilfe/h3_01b.jpg">
+      </li>      
+      <li class="list-group-item">
+          <p><b>Klicke</b> auf den Zufallsdateinamen, so dass sich der Quellcode unseres Programms öffnet.</p> 
+      </li>      
+      <li class="list-group-item">
+        <img src="hilfe/h3_01.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>Schließe</b> den Datei-Navigator, indem du oben in der Mitte auf das Symbol "Hide Navigator" klickst und <b>öffne</b> den Debugger, indem du unten rechts auf das Symbol "Show debugger" klickst, falls der Debugger noch nicht angezeigt wird.</p> 
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h3_02.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>Markiere</b> im Quellcode mit der Maus die Variable "variable_1" und klicke auf der Markierung die rechte Maustaste. <b>Klicke</b> mit der linken Maustaste auf "Add selected text to watches".</p> 
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h3_03.jpg">
+      </li>
+      <li class="list-group-item">
+          <p>Unten rechts sieht man die beiden Variablennamen und jeweils die Meldung "not available".</p> 
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h3_04.jpg">
+      </li>  
+      <li class="list-group-item">
+          <p>Damit der Wert jeder Variablen zu einem bestimmten Zeitpunkt im Programmablauf angezeigt wird, fügt man einen <b>Breakpoint</b> in das Programm ein, an welchem das Programm pausieren soll.</p>
+          <p>Dazu klickt man mit der linken Maustaste auf die Zeilennummer der Zeile, in welcher ein Breakpoint gesetzt werden soll.</p> 
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h3_05.jpg">
+      </li>
+      <li class="list-group-item">
+          <p>Soabld das Programm an einem Breakpoint pausiert ist, kann man es Schritt für Schritt ausführen lassen. Dazu gibt es eine Steuerzeile mit Symbolen zur Programmsteuerung.</p> 
+          <p><b>Step</b>: Mit dem Symbol "Step" wird die Anweisung ausgeführt und das Programm springt zur nächsten Anweisung. Wenn die nächste Anweisung in einer Funktion an einer anderen Stelle im Code steht, springt der Debugger zu der anderen Stelle.</p>
+      </li> 
+      <li class="list-group-item">
+        <img src="hilfe/h3_06.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>"Step over next function call"</b>: Mit dem Symbol "Step over next function call" wird die Anweisung ausgeführt und wenn in der Anweisung ein Funktionsaufruf steht, dann wird dieser aufgerufen und ausgeführt, der Debugger geht aber in die nächste Zeile ohne in die aufgerufenen Funktion zu springen.</p>
+      </li>  
+      <li class="list-group-item">
+        <img src="hilfe/h3_07.jpg">
+      </li>
+      <li class="list-group-item">
+          <p><b>"Resume script execution"</b>: Mit dem Symbol "Resume script execution" werden alle Anweisungen ausgeführt, bis das Programm wieder beim markierten Breakpoint landet.</p>
+      </li>       
+      <li class="list-group-item">
+        <img src="hilfe/h3_08.jpg">
+      </li>
+           <li class="list-group-item">
+          <p>Wenn man versehentlich in eine andere Datei gesprungen ist, kann man jederzeit über einen Klick in der Tab-Leiste zum eigenen Programm zurückspringen.</p>
+      </li>  
+      <li class="list-group-item">
+        <img src="hilfe/h3_09.jpg">
+      </li>  
+      <li class="list-group-item">
+          <p>Man kann auch mehrere Breakpoints in das Programm setzen und über das Symbol "Resume script execution" von Breakpoint zu Breakpoint springen.</p>
+          <p>Im Fenster unten rechts kann man die aktuelle Werte der Variablen zu einem bestimmten Zeitpunkt beobachten.</p>          
+      </li>       
+      <li class="list-group-item">
+        <img src="hilfe/h3_10.jpg">
+      </li>
+      <li class="list-group-item">
+          <p>Mit Hilfe des Debuggers, den es auch in vielen anderen Browsern gibt, kann man sich als ProgrammierIn das Programmierleben deutlich vereinfachen, indem man die Veränderungen von Variablen beobachtet und so logischen Programmier-Fehlern auf die Spur kommt.</p>          
+      </li>       
+    </ul>
+</div>
+
+<script>
+document.getElementById('h3_bsp01').onclick = function() {
+  loadBeispielProgramm('hilfe/h3_01.p5txt', '00');
+};
+</script>
