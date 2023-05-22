@@ -1,0 +1,446 @@
+@font-face {
+  font-family: "SOURCESANSPRO-REGULAR";
+  src: url(../fonts/SOURCESANSPRO-REGULAR.TTF) format("truetype");
+}
+@font-face {
+  font-family: "FatFrank";
+  src: url(../fonts/FatFrank-Free.OTF) format("opentype");
+}
+@font-face {
+  font-family: "Nunito";
+  src: url(NunitoSans-Regular.ttf) format('truetype');
+}
+
+body {font-family: "Nunito";color:#000000;font-size: 22px;}
+
+.nav>li>a:focus, .nav>li>a:hover {
+		text-decoration: none;
+		background-color: #FF9000;
+	}
+	.carousel-control.right {
+		position: absolute;
+		right: 0px;
+	}
+	.carousel-control.left {
+		position: absolute;
+		left: 0px;
+	}
+	
+	
+	.subsbtnbottom {
+		background: white;
+		font-size: 28px;
+		border-radius: 15px;
+		padding: 10px 30px;
+		color: #000;
+		font-weight: 700;
+		margin: 15px 0px;
+	}
+	.downloadimg1 {
+		padding-top: 30px;
+	}
+	.quickJump{max-width:100%;}
+	.carousel{text-align:center; color:white}
+	
+.seq .thumbnail{
+background:#ffba00;	
+}
+
+.debug .thumbnail{
+background:#71dfff;	
+}
+
+.coord .thumbnail {
+	background:#7bc900;	
+}
+
+.basic .thumbnail {
+	background:#7bc900;	
+}
+
+p{
+	font-family: "Nunito";
+}
+
+h1, h2, h4, h5, h6 {font-family: "Nunito";}
+
+li{
+	font-family: "Nunito"; font-weight:700;
+}
+
+label{
+	font-family: "Nunito";
+}
+button{
+	font-family: "Nunito";
+}
+.section-name{
+	border-radius: 18px;margin-bottom: 35px;border: 2px solid transparent;font-weight:bolder;text-align:center;//box-shadow: 3px 4px #fff;	
+}
+section{padding: 50px 0;}
+#logo{width:200px;}
+//.mainpageimage{min-width: 100%;}
+#h1title {text-align:center; font-size:50px;}
+.box1{background: #ffc90d;padding: 20px;border-radius: 15px;text-align: center;}
+.box1 h1,h3 {text-align:center;}
+.box1 img {width:70px;}
+.paybox{background: #ffd817;border-radius: 22px;margin-top: 50px;padding-bottom: 40px;}
+.stepBox{border: groove 1px #00deff;border-radius: 20px;position:relative;}
+.steps{position: absolute;top: -35px;left: 0px;right: 0;}
+
+#about {  padding: 20px 0; }
+#awdImg{padding:5px;}
+#awards .awards_list .logos li {
+    width: 13.5%;
+    text-align: center;
+    margin: 0 auto;
+    display: inline;
+   padding:5px;
+}
+#alogos{padding-bottom: 15px;}
+.logos{padding-inline-start: 0px;}
+.subsbtn {background: #ffc90d;
+    font-size: 28px;
+    border-radius: 15px;
+    padding: 10px 30px;
+    color: #000;
+    font-weight: 700;
+	margin-top: 15px;
+}
+.subsbtntop {background: #fff;
+    font-size: 28px;
+    border-radius: 15px;
+    padding: 10px 30px;
+    color: #000;
+    font-weight: 700;
+	margin-top: 15px;
+}
+.subsbtnbottom {background: #fff;
+    font-size: 28px;
+    border-radius: 15px;
+    padding: 10px 30px;
+    color: #000;
+    font-weight: 700;
+	margin: 15px 0px;
+}
+#momdivrow{color:#000000;padding-bottom:50px;}
+#momdivrow img{border-radius: 30px;}	
+		
+@media screen and (max-width: 768px) {
+	section{padding: 45px 0;}
+	.phoneview {margin-top : 30px;}
+	.hidethis  {display:none !important;}
+	#momdivrow{margin: 0 auto;padding-left: 0;}
+}
+					
+@media (max-width: 768px) and (min-width: 300px){
+	#h1title{
+		font-size:32px;
+	}
+}
+.text-games{
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+	font-size: calc(14px + (26 - 14) * ((100vw - 300px) / (1600 - 300)));
+	
+}.text-section{
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+	font-size: calc(14px + (26 - 14) * ((100vw - 300px) / (1600 - 300)));
+	margin: -7px 0px 5px 0px;
+    padding-bottom: 5px;	
+}
+//.modal-content{background-image: linear-gradient(158deg,#4d9ae8,#53c1ea 68%);}
+   .floatleft {float:left;}
+   .floatright {float:right;}
+   
+   .text_center{text-align:center;}
+   
+   @media only screen and (min-width: 768px){
+	 .modal-dialog{ margin-top: 200px;}
+	 
+   }
+   
+   @media only screen and (max-width: 768px){
+     .modal-content{padding: 0 30px;}
+	 .hidden-phone{display:none;}
+   }
+    @media only screen and (max-width: 991px){
+     .modal-content{padding: 0 30px;}
+	 .md6{width:100%}
+   }
+   
+.schoolappbtn{border-radius: 10px; margin-top: 20px;}  
+.well{background-color: #fff;border: 1px solid #fff;}
+.form-control {font-size: 18px;background-color: #f1f1f1;}
+.section-heading{margin-bottom: 30px;}
+.formInput{margin-bottom: 15px;}
+.whatyouget{background: #f3f3f3;border-radius: 22px;padding: 30px;margin-top: 50px;text-align: left;}
+.whatyouget p{margin: 0 0 20px;}
+.awardsbox{background: #f3f3f3;border-radius: 22px;padding: 30px;margin-top: 25px;}
+.ticksign{color: #50d010;} 
+.awardsbox h3{font-weight: 700;margin: 0 0 20px;}
+.imgBorder{border: solid black;border-radius: 20px;}
+.steps-img{	width:220px;max-width:100%;margin:10px;}
+/*header*/
+.navbar-default .navbar-toggle:focus, .navbar-default .navbar-toggle:hover {
+    background-color: #0347af;
+}
+
+.navbar.navbar-default .navbar-toggle {
+       margin-top: 6px;
+}
+.navbar-header .navbar-brand a {
+    height: auto;
+    display: inline-block;
+	margin-top: 5px;
+	color: black;
+}
+.navbar-brand {height: auto;}
+//.navbar-toggle {margin-top: 18px;}
+.navbar-toggle .icon-bar {
+    display: block;
+    width: 30px;
+    height: 3px;
+    border-radius: 1px;
+    background-color: #000;
+}
+	
+@media screen and (max-width: 1199px) and (min-width: 768px){
+	.page-scroll {
+		padding-right: 0px;
+		padding-left: 10px;
+
+	}
+	
+	#ultxt{
+		font-size:12px;
+	}
+	
+	.replaced span {
+		display: none;
+	}
+
+	.replaced:after {
+		content: "Games";
+	}	
+	
+	.replaced1 span {
+		display: none;
+	}
+
+	.replaced1:after {
+		content: "School";
+	}	
+	.replaced2 span {
+		display: none;
+	}
+
+	.replaced2:after {
+		content: "Teachers";
+	}	
+}
+.navbar-nav>li>a {color: #000;}
+
+@media (min-width: 768px){
+	.navbar-nav>li>a {
+	padding-top: 10px;
+	padding-bottom: 10px;
+	color: #000000;
+	font-size: 22px;
+	font-weight: 700;
+	}
+}
+/*header end*/
+
+/*footer*/
+#divrow{
+		font-size: 22px;
+		text-align:center;
+	}
+	footer{background: aliceblue;padding: 30px;}
+	
+	@media only screen and (max-width: 786px){
+		#divrow{
+			font-size:15px;
+		}
+		#ptext{
+			font-size:15px;
+		}
+	}
+	.footer-logo{
+		max-width: 100%;
+		height: auto;
+		margin-bottom: 5px;
+	}
+	#footer ul > li {
+    display: inline-block;
+    margin-left: 15px; 
+}
+	#list{padding-inline-start:0px;list-style-type:none}
+/*footer end*/
+
+/*---Game page ---*/
+html,body { margin: 0; padding: 0; height: 100%;   }
+@media screen and (min-width: 320px) and (max-width: 767px) and (orientation: portrait) {
+html {
+	//transform: rotate(-90deg);
+	//transform-origin: left top;
+	//width: 100vh;
+	//overflow-x: hidden;
+	//position: absolute;
+	//top: 100%;
+	//left: 0;
+  }
+}
+
+h2 { font-family: "Nunito";font-size:40px;}
+
+.game_rotate{
+	background-image: url("../images/rotate.png");
+	background-position: center top;
+	background-size: 100% auto;
+	padding-bottom: 92%;
+	display:none;
+}
+
+.topbar_icon{max-width: 80px; padding: 5px;}
+
+
+
+html,body { margin: 0; padding: 0; height: 100%; }
+#openfl-content { background: #87cefa; width: 100%; height: 100%; }
+#openfl-content-mobile { background: #87cefa; width: 100%; height: 100%; }
+
+.game {
+	position: relative;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	overflow: auto;
+	width: 100vw;
+	min-width: 100vw;
+	max-width: 100vw;
+}
+
+.game-title {
+	font-family: Nunito;
+	font-size: 3rem;
+	color: #fff;
+	text-transform: uppercase;
+	text-shadow: 0 0.425rem 0 #03A9F4;
+	text-align: center;
+	padding: 1rem .625rem;
+	line-height: 3.5rem;
+}
+
+@media (min-width: 640px){
+  .game-title {
+	font-size: 4rem;
+	text-shadow: 0 0.25rem 0 #03A9F4;
+	padding: 1.25rem;
+  }
+}
+
+.game-ads-wrapper {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	max-width: 1434px;
+	margin: 0 auto;
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+	-webkit-box-pack: center;
+	-ms-flex-pack: center;
+	justify-content: center;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	align-items: center;
+	-webkit-box-orient: vertical;
+	-webkit-box-direction: normal;
+	-ms-flex-flow: column;
+	flex-flow: column;
+	padding: 1.75rem 0;
+}
+
+@media (min-width: 1210px){
+  .game-ads-wrapper:not(.game-fun) {
+	-webkit-box-orient: horizontal;
+	-webkit-box-direction: normal;
+	-ms-flex-flow: row;
+	flex-flow: row;
+	-webkit-box-align: start;
+	-ms-flex-align: start;
+	align-items: flex-start;
+	padding: 1.75rem 10px;
+  }
+}
+
+.game-game {
+	position: relative;
+	width: 100%;
+	max-width: 791px;
+	padding: 0 20px .5rem;
+	text-align: center;
+	overflow: hidden;
+}
+@media (min-width: 1920px)
+  .game-game {
+	max-width: 1074px;
+  }
+}
+
+.game-game .container {
+	display: inline-block;
+	position: relative;
+	top: 0;
+	width: 100%;
+	background-color: #848479;
+	border: 5px solid #848479;
+	border-radius: .4375rem;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	margin-bottom: 1.25rem;
+	overflow: hidden;
+	height: 0;
+	padding-top: 74.27466%;
+}
+.game-game .description {
+	display: inline-block;
+	width: 100%;
+	color: #000;
+}
+.game-mobile-home.bottom {
+	top: auto;
+	bottom: 0;
+}
+.game-mobile-home {
+	position: fixed;
+	display: -webkit-inline-box;
+	display: -ms-inline-flexbox;
+	display: inline-flex;
+	-webkit-box-orient: horizontal;
+	-webkit-box-direction: normal;
+	-ms-flex-flow: row;
+	flex-flow: row;
+	-ms-flex-wrap: nowrap;
+	flex-wrap: nowrap;
+	-webkit-box-flex: 0;
+	-ms-flex: 0 0 auto;
+	flex: 0 0 auto;
+	top: 0;
+	left: 0;
+	padding: 2px;
+	opacity: .5;
+}
+.game-desc p{
+	font-size: 22px;
+	line-height: 28px;
+	padding: 10px;
+}
+canvas{border-radius: 20px;border: #569cd4 5px solid;}
+.game-thumb img{border-radius: 20px;}
+@media (max-width: 600px){
+  .game-thumb img{border-radius: 10px;}
+}
