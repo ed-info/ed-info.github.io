@@ -911,7 +911,7 @@ class Canvas extends C3Context{
         case "po": this.c3.c3_callFunction("ordreCanvas",["on",params,"0","0"]); break;
         case "ep": this.c3.c3_callFunction("ordreCanvas",["epaisseur",params,"0","0"]); break;
         case "ar": this.c3.c3_callFunction("ordreCanvas",["arc",ar_params[0],ar_params[1],"0"]); break;
-        case "cl": this.c3.c3_callFunction("ordreCanvas",["color",ar_params[0],ar_params[1],ar_params[2]]); break;
+        case "cl": this.c3.c3_callFunction("ordreCanvas",["couleur",ar_params[0],ar_params[1],ar_params[2]]); break;
       }
     } else {
       if(str.slice(-4) == "<br>") str = str.substr(0,str.length-4)
