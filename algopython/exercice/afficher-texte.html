@@ -51,14 +51,14 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     <div class="accordion-item">
       <h2 class="accordion-header" id="exercice-consigne-afficher">
         <button class="border-secondary accordion-button text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#exercice-consigne-longue">
-          <i class="fas fa-lightbulb me-2 fs-5"></i> Пишемо програму, яка виводить текст &laquo; Привіт! &raquo;        </button>
+          <i class="fas fa-lightbulb me-2 fs-5"></i> Пишемо програму, яка виводить текст "Привіт!"        </button>
       </h2>
       <div id="exercice-consigne-longue" class="accordion-collapse collapse" data-bs-parent="#exercice-consigne">
         <div class="accordion-body">
 На цьому рівні ви повинні <strong>написати код Python у вікні редактора, що зліва на екрані</strong>,
 потім потрібно натиснути кнопку <img src="../css/img/play.png" style="width: 80px; height: 24px" alt="Виконати">, щоб <strong>запустити цей код</strong> у консолі, що праворуч.<br>
-У Python код <pre>print("Кіт Оґґі та кукарачі")</pre> відобразить текст <em>&laquo; Кіт Оґґі та кукарачі &raquo;</em> у вікні консолі, що праворуч. Зверніть увагу на <strong>дужки та лапки</strong>: вони необхідні.<br><br>
-Напишіть код, який <strong>відображатиме текст <em>&laquo; Привіт! &raquo;</em></strong> у вікні консолі, а потім натисніть <img src="../css/img/play.png" style="width: 80px; height: 24px" alt="Виконати"> !
+У Python код <pre>print("Кіт Оґґі та кукарачі")</pre> відобразить текст <em><b> Кіт Оґґі та кукарачі </b></em> у вікні консолі, що праворуч. Зверніть увагу на <strong>дужки та лапки</strong>: вони необхідні.<br><br>
+Напишіть код, який <strong>відображатиме текст <em>"Привіт!"</em></strong> у вікні консолі, а потім натисніть <img src="../css/img/play.png" style="width: 80px; height: 24px" alt="Виконати"> !
         </div>
       </div>
     </div>
@@ -90,7 +90,7 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     </div>
     <div class="col-lg-6 mt-4 mt-lg-0" id="col-context">
       <div id="result-wrapper">
-  <div id="result"></div>
+  <div id="result" style="opacity: 1;"><span style="color:grey">Середовище AlgoPython, розробник Charly Piva</span><br></div>
   <div id="result-flash">
   </div>
   <div id="result-input">
