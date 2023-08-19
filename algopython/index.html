@@ -22,7 +22,7 @@
 <div class="p-3 mb-2 bg-white">
 		
 		<div class="d-flex justify-content-between justify-content-md-center justify-content-end">
-            <a href="./accueil"><img src="Liste%20des%20niveaux%20-%20AlgoPython_files/navbar-logo.png" alt="AlgoPython"></a> 
+            <a href="./accueil"><img src="./css/img/navbar-logo.png" alt="AlgoPython"></a> 
        </div>
      </div>
   
@@ -59,7 +59,7 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
           <div id="liste-contenu-A" data-bs-parent="#accordion-niveaux" class="accordion-collapse collapse" style="">
             <div class="accordion-body">
               <div class="liste-exercices list-group list-group-flush">
-                                    <a href="./tuto/intro" class="exercice-classic exercice-termine tuto list-group-item list-group-item-action">
+                                    
                       <div class="exercice-text">
                         <i class="fas fa-lightbulb"></i><b> Вступ </b>                                             </div>
                     </a>
@@ -87,7 +87,7 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                         <small>Виправляємо програму з помилками</small>
                       </div>
                     </a>
-                                                      <a href="./tuto/robot" class="exercice-classic exercice-termine tuto list-group-item list-group-item-action">
+                                                      
                       <div class="exercice-text">
                         <i class="fas fa-lightbulb"></i> <b>Керуємо роботом</b>                                              </div>
                     </a>
@@ -107,7 +107,7 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                         <small>Дійти до фінішу на довшому маршруті </small>
                       </div>
                     </a>
-                                                      <a href="./tuto/canvas" class="exercice-classic exercice-termine tuto list-group-item list-group-item-action">
+                                                      
                       <div class="exercice-text">
                         <i class="fas fa-lightbulb"></i> <b>Відтворюємо малюнки</b>                                            </div>
                     </a>
@@ -849,7 +849,8 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
          </div>
       </div>
    </div>
-   <!-- Serie G -->    
+   <!-- Serie G -->  
+    
  
    <div class="accordion-item collapsed" id="serie-G">
       <div class="accordion-header">
@@ -979,84 +980,22 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
          </div>
       </div>
    </div>
+
+
+             
+ <div class="d-flex w-100 justify-content-between">
+				<h4 class="mb-0"><img src="./css/img/logo.png" alt="AlgoPython" width="150" height="30">
+					<small class="d-none d-lg-inline"><b><i>Вчимося програмувати <span class="white">мовою Python</span>, розробник: <span class="white">Charly Piva</span>. Використано Skulpt, Ace, Bootstrap, Pyodide</i></b></small>
+				</h4>             
+</div>
+
+
 </div>
 </div>
 
 <!--- ---->
-<div class="panel" id="panel-exercices" style=" ">
-  <div class="d-flex justify-content-between mb-3 mb-lg-2">
-        <div class="d-flex justify-content-start">
-      <nav class="switch" id="switch-niveaux-container">
-        <a href="#" id="switch-niveaux" class="btn btn-warning d-flex justify-content-center">
-          <div class="d-flex align-items-center">
-            <div>
-              <i class="f-switch fas fa-chevron-left"></i>
-            </div>
-            <div class="fs-5 ms-2">
-              <i class="fas fa-signal"></i><span class="d-none d-lg-inline">&nbsp;Niveaux</span>
-            </div>
-          </div>
-        </a>
-      </nav>
-      <h1 class="ms-2"> <i class="fas fa-calculator"></i> Exercices de mathématiques</h1>
-    </div>
-    <nav class="switch" id="switch-outils-container">
-      <a href="#" id="switch-outils" class="btn btn-warning d-flex justify-content-center">
-        <div class="d-flex align-items-center">
-          <div class="fs-5 ms-2">
-            <i class="fas fa-tools"></i><span class="d-none d-lg-inline">&nbsp;Outils</span>
-          </div>
-          <div>
-            <i class="f-switch fas fa-chevron-right"></i>
-          </div>
-        </div>
-      </a>
-    </nav>
-    </div>
-  <p>
-    La plupart de ces exercices utilise les fonctions, les conditions et les boucles <em>while</em>, correspondant aux séries D, E et F des niveaux.<br>
-    L'icône <i class="far fa-check-square"></i> indique les exercices demandant de compléter un programme à trous.
-  </p>
- 
- 
-<div class="panel" id="panel-outils" style="">
-  <div class="d-flex justify-content-start mb-3 mb-lg-2">
-        <nav class="switch">
-      <a href="#" id="switch-exercices-2" class="btn btn-warning d-flex justify-content-center">
-        <div class="d-flex align-items-center">
-          <div>
-            <i class="f-switch fas fa-chevron-left"></i>
-          </div>
-          <div class="fs-5 ms-2">
-            <i class="fas fa-calculator"></i><span class="d-none d-lg-inline">&nbsp;Maths</span>
-          </div>
-        </div>
-      </a>
-    </nav>
-      <h1 class="ms-2"> <i class="fas fa-tools"></i> Outils</h1>
-  </div>
-  <p>
-    D'autres outils pour programmer avec AlgoPython.
-  </p>
-  <div id="panel-outils-content" class="row row-cols-1 row-cols-lg-3 g-2">
-    <div class="col">
-      <a class="btn btn-outline-secondary" href="./outil/console">
-        <div class="d-flex w-100 justify-content-between">
-          <h2><i class="fas fa-terminal"></i> Console</h2>
-        </div>
-        Écrire un programme libre dans la console Python.
-      </a>
-    </div>
-    <div class="col">
-      <a class="btn btn-outline-secondary" href="./outil/canvas">
-        <div class="d-flex w-100 justify-content-between">
-          <h2><i class="fas fa-paint-brush"></i> Dessin</h2>
-        </div>
-        Utiliser les fonctions de dessin.
-      </a>
-    </div>
-  </div>
-</div>
+        
+  
 
 <script>
   $(".accordion-button").click(function(e){
@@ -1071,12 +1010,7 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       else $(this).removeClass("collapsed")
     })
   })
-  $("#select-debloquer").click(function(){
-    $("#select-debloquer-sauvegarder").attr("href","https://www.algopython.fr/liste/unlock/"+$("#select-debloquer").val())
-  })
-    $(document).ready(function(){
-    if($("#serie-C").length ) window.scrollTo(0, $("#serie-C").offset().top-100)
-  })
+ 
     var collapseAll = function(){
     $(".accordion-item").each(function(){
       var col = $(this).find(".collapsed")
@@ -1118,14 +1052,11 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     $("#panel-niveaux").css('right','0vw')
     setURL('niveaux')
   }
-  var setURL = function(param){
-    if(window.location.href.slice(-5) == "liste") param = "liste/"+param
-    history.replaceState({}, '', param)
-  }
+ 
 </script>
 </div>
-    </div>
- 
+</div>
+
   </body>
 </html>
 
