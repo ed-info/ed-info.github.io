@@ -65,8 +65,8 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
      <em class="text-secondary">інструкції</em></pre><br>
 Як і у випадку з циклами, вказівки, які потрібно виконати, мають бути <strong>з відступом</strong>. Також слідкуйте за тим, щоб <strong>не забути двокрапку</strong>, як і в циклах.
 <br><br> У цій вправі ви програмуєте термометр.<br>
-Завершіть функцію <pre>thermometre</pre>, яка отримує <strong>температуру</strong> в градусах як аргумент, а потім <strong>повертає «Вода кипить»</strong>, якщо температура <strong>більша за 100.</strong><br>
-Якщо температура <strong>менше 100</strong>, функція не повинна <strong>нічого не повертати</strong> (у цьому випадку Python відображає <pre>None</pre>).<br><br>
+Завершіть функцію <pre>thermometre</pre>, яка отримує <strong>температуру</strong> в градусах як аргумент, а потім <strong>повертає «Вода не кипить»</strong>, якщо температура <strong>менша за 100.</strong><br>
+Якщо температура <strong>більше або рівна 100</strong>, функція не повинна <strong>нічого не повертати</strong> (у цьому випадку Python відображає <pre>None</pre>).<br><br>
 Тут вам потрібно створити функцію, яка повертає значення: <strong>ви повинні використовувати </strong><pre>return</pre><strong>, а не </strong><pre>print</pre>.
          </div>
         
@@ -235,8 +235,8 @@ MathJax = {
     test: function(cs,arg){
       num = Number(arg[0])
       if(num == 100) return new testResult(true,arg,cs)
-      if(num > 100){
-        return new testResult(testHelpers.arraysEqual(cs,"Вода кипить",{contains:true}),arg,cs)
+      if(num < 100){
+        return new testResult(testHelpers.arraysEqual(cs,"Вода не кипить",{contains:true}),arg,cs)
       } else {
         return new testResult(testHelpers.arraysEqual(cs,"none",{contains:true}),arg,cs)
       }
