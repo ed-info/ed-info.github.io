@@ -1,1 +1,877 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>JavaScript - це просто!</title>
+    <script type="text/javascript">
 
+//   Copyright (C) 2009 J-P Branchard <Jean-Pierr.Branchard@ac-grenoble.fr>
+//   This program is free software; you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation; either version 2 of the License, or
+//   (at your option) any later version.
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//   You should have received a copy of the GNU General Public License
+//   along with this program; if not, write to the Free Software
+//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
+function illustreSuite(){
+  var r=new frame(0,0,5,6,200,220);
+  r.backgroundColor("red");
+  for (var i=0; i<5 ;i++)
+     r.rectFull(i,0,i+1,i+1);
+  r.backgroundColor("blue");
+  for (i=0 ; i<5 ; i++)
+     r.rectFull(i,i+1,i+1,6);
+}
+       
+function effacer(sortie){
+  var message;
+  if (sortie)
+    message="Очистити вікно результатів?";
+  else
+    message="Очистити вікно програми";
+  if (!confirm(message))
+    return;
+  if (sortie){
+    var b=document.getElementById("b");
+    while(b.firstChild)
+      b.removeChild(b.firstChild);
+    return;
+  } 
+  var h=document.getElementById("h");
+  h.value="";
+  h.focus();
+}
+
+function contientMotCle(s){
+  var motCles=[/\bif[\(\s]/i,/\belse[\r\{\s]/i,/\bfor[\(\s]/i,/\bwhile[\(\s]/i,/\bfunction\b/i];
+  var i;
+  for (i in motCles)
+      if (s.search(motCles[i])>-1)
+          return true;
+  return false;
+}
+
+
+var lignes=new Array();
+
+function indentation(debut,deca,bloc){
+  var espace="";
+  var blanc="";
+  var i;
+  deca--;
+  for(i=0; i<deca ; i++)
+    blanc+="  ";
+  deca++;
+  if (deca>0)
+    espace=blanc+"  ";
+  i=debut;
+  var accOuv;
+  var accFerm;
+  var motCle;
+  while (i<lignes.length) {
+    accOuv=(lignes[i].indexOf("{")>-1);
+    accFerm=(lignes[i].indexOf("}")>-1);
+    motCle= contientMotCle(lignes[i]);
+    if (accFerm){
+       document.getElementById("h").value+=blanc+lignes[i];
+       if (accOuv || motCle) {
+         i=indentation(i+1,deca,accOuv);
+         return i;
+       }
+       else
+         return i+1;
+    } else {
+      document.getElementById("h").value+=espace+lignes[i];
+      if (motCle || accOuv)
+         i=indentation(i+1,deca+1,accOuv);
+      else
+       i++;
+      if (!bloc)
+        return i;
+    }
+  }
+}
+
+function indente(){
+  var pro=document.getElementById("h");
+  var prog=pro.value;
+  pro.value="";
+  lignes=prog.split(new RegExp("\n","g"));
+  var i=0;
+  while (i<lignes.length){
+     lignes[i] = lignes[i].replace(/^\s*|\s*$/,"");
+     if (lignes[i]=="")
+       lignes.splice(i,1);
+      else {
+        lignes[i]+="\n";
+        i++;
+      }
+  }
+  while (lignes[lignes.length-1]=="")
+    lignes.pop();
+  i=0;
+  while (i<lignes.length)
+    i=indentation(i,0,false);
+}
+
+function lancer(){
+  stopAlgo=false;
+  var prog=document.getElementById("h").value;
+  try {
+    var t0=new Date();
+    eval(prog);
+    var t1=new Date();
+    print("Виконано за ",t1.getTime()-t0.getTime()," мілісекунд");
+  }
+  catch(err){
+    if (stopAlgo)
+      print("Programme arrêté à votre demande");
+    else {
+      print(err.name," : ",err.message);
+      print("Sous Firefox, vous pouvez activer Outils/console d'erreur : celle-ci affiche l'instruction erronée (ou quelquefois l'instruction juste après)");
+      //on le remet pour activer la console d'erreur de Firefox :
+      eval(prog);
+    }
+  }
+}
+
+function print() {
+  var idLieu="b";
+  var lieu =document.getElementById(idLieu);
+  var p=document.createElement("p");
+  var texte="";
+  for (var i=0; i<arguments.length ; i++)
+    texte+=arguments[i]+" ";
+  var text=document.createTextNode(texte);
+  p.appendChild(text);
+  lieu.appendChild(p);
+  p.scrollIntoView(false);
+}
+
+// convertit une chaine en nombre SI PERTINENT
+function nombre(s){
+  var n=parseInt(s);
+  var x=parseFloat(s);
+  if (isNaN(n) && isNaN(x))
+      return s;
+  if (x==n)
+      return n;
+  return x;
+}
+
+var stopAlgo=false;
+
+function input(){
+  var message="";
+  for (var i=0; i<arguments.length ; i++)
+    message+=arguments[i]+" ";
+  var x=prompt(message+"\n(або введіть 'stop' щоб скасувати)");
+  if (x=="stop"){
+     stopAlgo=true;
+     eval("x=avorte programme");
+  } 
+  var s=x+" ";
+  var t=s.split(new RegExp("[,;]+","g"));
+  if (t.length<2)
+    return nombre(x);
+  for (var i=0 ; i<t.length ; i++)
+    t[i]=nombre(t[i]);
+  return t;
+}
+
+// log decimal
+function log(x){
+  return Math.log(x)/Math.log(10);
+}
+
+// calcul du pas de la grille
+function pas(pas){
+  pas=pas/12.5;
+  var a,b,dixN;
+  a=log(pas);
+  b=a-Math.floor(a);
+  dixN=Math.pow(10,a-b);
+  if (b<log(2))
+    return dixN;
+  else if (b<log(4))
+    return 2*dixN;
+  else if (b<log(8))
+    return 5*dixN;
+  else
+    return 10*dixN;
+}
+
+function frame(xMin,yMin,xMax,yMax,larg,haut){
+  this.xMin=xMin;
+  this.yMin=yMin;
+  this.Dx=xMax-xMin;
+  this.Dy=yMax-yMin;
+  var c=document.createElement("canvas");
+  if (!c.getContext)
+    print("désolé, votre navigateur ne sait pas dessiner !");
+  if (larg)
+    this.larg=larg;
+  else
+    this.larg=100;
+ if (haut)
+    this.haut=haut;
+  else
+    this.haut=100;
+  c.setAttribute("width",this.larg);
+  c.setAttribute("height",this.haut);
+  document.getElementById("b").appendChild(c);
+  this.ctx = c.getContext("2d");
+  this.ctx.beginPath();
+  this.ctx.moveTo(this.x(0),this.y(yMin));
+  this.ctx.lineTo(this.x(0),this.y(yMax));
+  this.ctx.moveTo(this.x(xMin),this.y(0));
+  this.ctx.lineTo(this.x(xMax),this.y(0));
+  this.ctx.stroke();
+  this.xPas=pas(this.Dx);
+  this.yPas=pas(this.Dy);
+  this.ctx.beginPath();
+  this.ctx.strokeStyle="red";
+  this.ctx.lineWidth=2; 
+  this.ctx.moveTo(this.x(0),this.y(0));
+  this.ctx.lineTo(this.x(this.xPas),this.y(0));
+  this.ctx.moveTo(this.x(0),this.y(0));
+  this.ctx.lineTo(this.x(0),this.y(this.yPas));
+  this.ctx.stroke();
+  this.ctx.strokeStyle="black";
+  this.ctx.lineWidth=1;
+  print("Червоним кольором показано ",this.xPas," одиниць(я) абсциси і ",this.yPas," одиниць(я) ординати.");
+  //this.ctx.font = "1em";
+  //this.ctx.fillText("toto",100,100);
+  c.scrollIntoView(false);
+  return;
+}
+
+frame.prototype.strokeColor=function(color){
+  this.ctx.strokeStyle=color;
+}
+
+frame.prototype.backgroundColor=function(color){
+  this.ctx.fillStyle=color;
+}
+
+frame.prototype.x=function(abscisse){
+  return this.larg*(abscisse-this.xMin)/this.Dx;
+}
+
+frame.prototype.y=function(ord){
+  return this.haut-this.haut*(ord-this.yMin)/this.Dy;
+}
+
+frame.prototype.goTo=function(x,y){
+this.ctx.beginPath();
+ this.ctx.moveTo(this.x(x),this.y(y));
+}
+
+frame.prototype.lineTo=function(x,y){
+ this.ctx.lineTo(this.x(x),this.y(y));
+ this.ctx.stroke();
+}
+
+frame.prototype.circle=function(x,y,r) {
+  this.ctx.beginPath();
+  r=r*this.larg/this.Dx;
+  this.ctx.arc(this.x(x), this.y(y), r, 0, Math.PI*2, true);
+  this.ctx.stroke();
+}
+
+frame.prototype.rect=function(xm,ym,xM,yM,plein){
+  xm=this.x(xm);
+  ym=this.y(ym);
+  xM=this.x(xM);
+  yM=this.y(yM);
+  var Xm=Math.min(xm,xM);
+  var XM=Math.max(xm,xM);
+  var Ym=Math.min(ym,yM);
+  var YM=Math.max(ym,yM);
+  var larg=XM-Xm;
+  var haut=YM-Ym;
+  //alert(Xm+" "+Ym+" "+larg+" "+haut);
+  if (plein)
+     this.ctx.fillRect(Xm,Ym,larg,haut);
+  else 
+     this.ctx.strokeRect(Xm,Ym,larg,haut);
+}
+
+frame.prototype.rectFull=function(xm,ym,xM,yM){
+  this.rect(xm,ym,xM,yM,true)
+}
+
+frame.prototype.rectHollow=function(xm,ym,xM,yM){
+  this.rect(xm,ym,xM,yM,false)
+}
+
+frame.prototype.point=function(x,y){
+  this.ctx.fillRect(this.x(x),this.y(y),1,1);
+}
+
+
+var tableIndex=0;
+
+function table(){
+  var tab=document.createElement("table");
+  this.id="t"+tableIndex;
+  tableIndex++;
+  tab.setAttribute("id",this.id);
+  //var thead=document.createElement("thead");
+  var tr=tab.insertRow(-1);
+  tr.style.backgroundColor="#FFCF00";
+  tr.style.fontWeight="bold";
+ // tab.appendChild(thead);
+  this.nbCol=arguments.length;
+  var td,txt;
+  for (var i=0 ; i<arguments.length ; i++) {
+  //  th=document.createElement("th");
+    td=tr.insertCell(i);
+    txt=document.createTextNode(arguments[i]);
+    td.appendChild(txt);
+    //thead.appendChild(th);
+  }
+  document.getElementById("b").appendChild(tab);
+}
+
+table.prototype.add=function(){
+  var tab=document.getElementById(this.id);
+ // var tr=document.createElement("tr");
+  //tab.appendChild(tr);
+var tr=tab.insertRow(-1);
+var td;
+  for (var i=0; i<this.nbCol ; i++) {
+    //td=document.createElement("td");
+    td=tr.insertCell(i);
+    td.style.border="solid thin";
+    txt=document.createTextNode(arguments[i]);
+    td.appendChild(txt);
+    tr.appendChild(td);
+  }
+}
+    </script>
+    <style>
+      body { 
+      padding:0;
+      overflow:hidden;
+      font-family : Georgia,  sans-serif; 
+      font-size:14px;
+      background-color:#01528a;
+      }
+
+      #aide,#h, #b {
+      position:absolute;
+      margin:0;
+      }
+      
+      #aide *, #b * { 
+      margin-left:10px;
+      margin-right:10px;
+      }
+      
+      #aide { 
+      height:96%;
+      width:37%;
+      top:2%;
+      left:1%;
+      background-color:#EDD2A7;
+      overflow:auto;
+      -moz-border-radius-topleft:1em;
+      -webkit-border-top-left-radius:1em;
+      -moz-border-radius-bottomleft:1em;
+      -webkit-border-bottom-left-radius:1em;
+      }
+      
+      
+      #aide h1 { 
+      font-size:1.6em;
+      text-align:center;
+      background-color:#FFEEC3;
+      width:80%;
+      margin-left:10%;
+      -webkit-box-shadow: 10px 10px 5px #888;
+      -moz-box-shadow: 10px 10px 5px #888;
+      }
+
+      #aide h2, #aide h3, #aide h4  { 
+      text-shadow: gray 0.3em 0.3em 0.15em;
+      }
+      
+      #aide h2, #aide h3, #aide h4  { 
+      font-size:1.4em;
+      }
+      
+      #aide h3 { 
+      font-size:1.2em;
+      }
+      
+      #aide h4 { 
+      font-size:1em;
+      }
+      
+      #aide p.prog, #aide p.algo{ 
+      margin-left:3%;
+      width:88%;
+      padding-left:2%;
+      -webkit-box-shadow: 10px 10px 5px #888;
+      -moz-box-shadow: 10px 10px 5px #888;
+      }
+      
+      #aide p.prog { 
+      background-color:#eeebc2;
+      font-family: Arial, Helvetica, sans-serif
+      }
+      
+      #aide p.algo { 
+      background-color:#c7bfaa;
+      font-style:italic;
+      }
+      
+      #aide p.exo:first-letter { 
+      font-weight:bold; 
+      }
+      
+      #h, #b { 
+      right:1%;
+      width:60%;
+      }
+         
+      #h {
+      top:2%;
+      height:46%; 
+      font-size:1.1em; 
+      border:0;
+      background-color:#FFEEC3;
+      -moz-border-radius-topright:1em;
+      -webkit-border-top-right-radius:1em;
+      }
+      
+      #b { 
+      font-family:Arial; 
+      top:50%;
+      height:48%;
+      background-color:#010101;
+      color:#FFFFCC; 
+      position:fixed;
+      overflow:auto;
+      -moz-border-radius-bottomright:1em;
+      -webkit-border-bottom-right-radius:1em;
+      }
+      
+      #exe, #efface, #indente, #effaceS {
+      position:absolute;
+      font-weight:bold;
+      }
+
+      #exe, #efface, #indente {
+      top:45%;
+      }
+      
+      #exe:hover, #efface:hover, #indente:hover, #effaceS:hover {
+      color:gray;
+      }
+      
+      #exe {
+      color:red;
+      background-color:#00CF00;
+      right:20em;
+      border-radius: 4px;
+      border: none;
+      }
+      
+      #efface, #indente,#effaceS {
+      background-color:red;
+      color:#FFCF00;
+      }
+
+      #efface {
+      right:4em;
+      border-radius: 4px;
+      border: none;
+      }
+
+      #indente {
+      right:11em;
+      background-color:#FFCF00;
+      color:red;
+      border-radius: 4px;
+      border: none;
+      }
+
+      #effaceS {
+      right:4em;
+      bottom:3%;
+      border-radius: 4px;
+      border: none;
+      }
+            
+      table {
+      width:80%;
+      border-width:1px;
+      border-style:solid;
+      border-collapse:collapse;
+      border-color:black;
+      margin-bottom:1em;
+      }
+      
+      th { 
+      border:solid thin;
+      background-color:#FFCF00;      
+      }
+      
+      td {
+      border:solid thin;
+      text-align:center;
+      color:#a0a0a0;
+      }
+
+      canvas {
+        border:1px solid black;
+        background-color:white;
+        margin:10px;
+      }
+    </style>
+    <!--[if IE]>
+      <style>#b{position:absolute;}</style>    <![endif]-->
+  </head>
+  <body>
+    <div id="aide">
+      <h1>JavaScript - це просто!</h1>
+      <p>Цей засіб дозволяє вам створювати та виконувати невеликі програми,
+        написані на JavaScript.</p>
+      <p>Набирайте програму, щоб її виконати - натисніть кнопку <span style="color:red;background-color:#00CF00;font-weight:bold;font-family: Arial, Helvetica, sans-serif">
+          &nbsp;Виконати </span> у вікні редактора.</p>
+      <p>Щоб вилучити результати роботи або текст програми - натисніть кнопку <span style="color:yellow;background-color:#FF0000;font-weight:bold;font-family: Arial, Helvetica, sans-serif">
+          &nbsp;Очистити </span> у відповідному вікні.</p>
+      <h2>І. Основні поняття JavaScript</h2>
+      <p>Програма на JavaScript складається з послідовності вказівок. Як
+        правило, в одному рядку розміщується одна вказівка, але можна розмістити
+        і декілька, розділивши їх крапкою з комою.</p>
+      <h3>1) Вказівки введення-виведення</h3>
+      <p>Ці вказівки використовуються для обміну інформацією з користувачем
+        програми. Цей засіб має декілька власних функцій, середн них:</p>
+      <ul>
+        <li> <b>Вказівка <i>відображення</i></b> - вона дозволяє програмі
+          виводити повідомлення у вікні внизу праворуч. <br>
+          <b>Приклад</b> : <i>print(1+2); </i><br>
+          У дужках ви можете писати кілька аргументів, розділяючи їх комою. <br>
+          <b>Приклад</b> : <i>print("1+2=",1+2); </i>виведе <i>1+2=3</i> ,
+          оскільки перший аргумент "1+2" ​​розглядається як текст.</li>
+        <li> <b>Вказівка <i>запиту</i></b> - завдяки цій інструкції програма
+          може запитувати дані від користувача. <br>
+          Наприклад, <i>var n=input("Введіть число: ")</i> просить користувача
+          ввести число та зберігає результат у змінній n.</li>
+      </ul>
+      <p>Якщо користувач вводить кілька даних одночасно, розділених комою або
+        крапкою з комою, вони будуть збережені в послідовності введення.
+        Візьмемо, наприклад, інструкцію: <br>
+        <i>var v=input("Введіть xA та yA, розділених комою"); </i><br>
+        Якщо ми відповімо "-1, 3" або "-1; 3", змінна v дорівнюватиме отримає
+        значення першого члена v[0] і другого члена v[1]. Тому вказівка
+        print(v[0]) відображатиме -1.</p>
+      <p>Ви також можете подавати результати у вигляді таблиць. Наступна
+        невелика програма показує, як це зробити:</p>
+      <p class="prog">var myTable=new table("Товар","Ціна"); <br>
+        myTable.add("кава",4.50); <br>
+        myTable.add("булочка",7.00);</p>
+      <ul>
+        <li>Перший рядок створює нову таблицю під назвою "myTable". Ця таблиця
+          матиме два стовпці «Товар» та «Ціна»</li>
+        <li>Наступні рядки її заповнюють (один вказівка на рядок). Завважте, що
+          це не масив або список - це лише виведення даних</li>
+      </ul>
+      <h3>2) Змінні та присвоєння</h3>
+      <p>У програмі змінна є іменованою величиною, до якої можна звернутись за
+        іменем. Щодо числових величини, то це має майже таке ж значення, як і в
+        математиці. Ім'я змінної записується латинськими літерами без пропусків.
+        <br>
+        Ключове слово <i>var</i> використовується для створення змінної, а
+        вказівка = присвоює їй значення. Ось, як приклад, невелика програма:</p>
+      <p class="prog">var n; <br>
+        n=2; <br>
+        print(n);<br>
+      </p>
+      <p>Перший рядок створює змінну з іменем n. <br>
+        Другий присвоює цій змінній значення 2. <br>
+        Третій виводить значення у вікні результатів.</p>
+      <p> <b>Увага! </b>Як і в більшості мов програмування, символ = є
+        вказівкою присвоювання (для надання значення змінній). Оператор
+        математичної рівності представлено символом ==. <br>
+        При наданні значень можна використовувати поточне значення змінної, щоб
+        отримати інше. Наприклад, наступна невелика програма цілком працююча:</p>
+      <p class="prog">var n=2; <br>
+        print(n); <br>
+        n=n+1; <br>
+        print(n);<br>
+      </p>
+      <p>Третій рядок дивує, оскільки очевидно, що n відрізняється від
+        n+1.&nbsp; Фактично, вказівка <i>n=n+1</i> змінює значення n,
+        збільшуючи попереднє значення на одиницю - це маємо читати як «n стає
+        n+1».</p>
+      <h4>Вправа</h4>
+      <p>Напишіть програму, яка запитує суму грошей у гривнях, конвертує її в
+        долари та відображає результат.</p>
+      <h3>3) Умовні вказівки</h3>
+      <p>Ми збираємося створити невелику програму, яка імітує кидання монети з
+        однаковою ймовірністю випадання в «герба» або «числа».</p>
+      <h4>Алгоритм:</h4>
+      <p class="algo">1)&nbsp; Отримати дійсне число x в межах між 0 і 1. <br>
+        2) Якщо x&lt;0,5, то напишіть «Герб». <br>
+        3) В іншому випадку напишіть «Число».</p>
+      <h4>Програма:</h4>
+      <p class="prog">var x=Math.random(); <br>
+        if (x&lt;0.5) <br>
+        &nbsp;&nbsp;print("Герб"); <br>
+        else <br>
+        &nbsp;&nbsp;print("Число");<br>
+      </p>
+      <p>Для візуалізації структури програми деякі рядки зсуваються відносно
+        інших. Ви можете автоматично встановити відступи в програмі, натиснувши
+        кнопку&nbsp;&nbsp; <span style="color:red;background-color:#FFFF00;font-weight:bold;font-family: Arial, Helvetica, sans-serif"> Упорядкувати
+          </span>.</p>
+      <p>У вказівці if:</p>
+      <ul>
+        <li>Використовуємо == для «дорівнює» та != для «не дорівнює»</li>
+        <li>Пишемо &amp;&amp; замість "І" та&nbsp; ||&nbsp; для "АБО".</li>
+      </ul>
+      <h3>4) Роль дужок</h3>
+      <p>Попередній приклад створює нову проблему: як це зробити, якщо потрібно
+        виконати кілька вказівок для кожної альтернативи умовної інструкції?</p>
+      <p>Відповідь проста: ці інструкції повинні бути згруповані разом у блок,
+        який буде розділений дужками.</p>
+      <p>Ми збираємося створити невелику програму, здатну визначити рівняння
+        прямої, знаючи дві точки A і B.</p>
+      <h4>Алгоритм</h4>
+      <p class="algo">1) Запитати координати A <br>
+        2) Запитати координати B <br>
+        3) Відображати координати A та B <br>
+        4) Якщо A та B переплутані, відображати повідомлення про помилку <br>
+        5) В іншому випадку, якщо xA та xB рівні, відображати рівняння x=xA <br>
+        6) В іншому випадку обчисліть кутовий коефіцієнт m, потім ординату в
+        початку координат p, а потім виведіть рівняння y=mx+p.</p>
+      <h4>Програма</h4>
+      <p class="prog">var xA=input("Введіть xA"); <br>
+        var yA=input("Введіть yA"); <br>
+        var xB=input("Введіть xB"); <br>
+        var yB=input("Введіть yB"); <br>
+        print("A(", xA, ",", yA, ") B(", xB, ",", yB, ")"); <br>
+        if (xA==xB &amp;&amp; yA==yB) <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;print("введіть дві різні точки"); <br>
+        else if(xA==xB) <br>
+        &nbsp;&nbsp; &nbsp;&nbsp;print("(AB) : x=", xA); <br>
+        else { <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;var m=(yB-yA)/(xB-xA); <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;var p=yA-m*xA; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;print("(AB) : y=", m, "x+",p); <br>
+        }</p>
+      <h4>Вправа</h4>
+      <p>Повторіть програму для конвертації гривні в долар, спершу запитавши
+        користувача, чи бажає він конвертувати гривні в долари чи навпаки.</p>
+      <h3>5) Цикли</h3>
+      <p>Цикл складається з вказівок, які можна повторити кілька разів.</p>
+      <p>Наприклад, можна уявити програму, яка виводила таблицю множення на
+        дванадцять. Можна просто написати:</p>
+      <p class="prog">print("0*12=",0*12); <br>
+        print("1*12=",1*12); <br>
+        // І так далі...</p>
+      <p>Але це буде довго, тож замість цього ми напишемо цикл із вказівкою
+        while:</p>
+      <h4>Алгоритм</h4>
+      <p class="algo">1) Створіть змінну з назвою "i" і присвойте їй значення 0;
+        <br>
+        2) Запишіть результат множення i на дванадцять <br>
+        3) Збільште i на одиницю <br>
+        4) Якщо i&lt;11, поверніться до кроку 2<br>
+      </p>
+      <h4>Програма</h4>
+      <p class="prog">var i=0; <br>
+        while (i&lt;11) { <br>
+        &nbsp; &nbsp; &nbsp; &nbsp;print("12*",i,"=",12*i); <br>
+        &nbsp; &nbsp; &nbsp; &nbsp;i=i+1; <br>
+        }<br>
+      </p>
+      <p>Цей алгоритм також можна запрограмувати за допомогою вказівкаа for:</p>
+      <p class="prog">var i; <br>
+        for (i=0; i&lt;11; i++) { <br>
+        &nbsp; &nbsp; &nbsp; &nbsp;print("12*",i,"=",12*i); <br>
+        }<br>
+      </p>
+      <h3>6) Функції</h3>
+      <p>У програмуванні поняття функції <i>точно</i> таке ж, як і в
+        математиці: функція обчислює щось «відповідно» до змінної. Наприклад,
+        нехай функція f визначена як <i>f(x)=x<sup>2</sup></i>, тобто<i> f(x) =
+          x*x. </i><br>
+        Ця функція програмується в JavaScript таким чином:</p>
+      <p class="prog">function f(x){ <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;return x*x; <br>
+        }</p>
+      <p> <b>Використовувати функцію</b>просто - введіть після її визначенння
+        "print( f(3))", і ви отримаєте 9.</p>
+      <h4>Деякі попередньо визначені функції</h4>
+      <p>У JavaScript є математичні функції, які можна використовувати у своїх
+        програмах.</p>
+      <ul>
+        <li>Ціла частина (6,5): <i>x=Math.floor(6,5)</i> </li>
+        <li>Абсолютне значення(модуль): <i>x=Math.abs(-6,5)</i> </li>
+        <li>Степінь (тут розрахунок 5<sup>2</sup>: <i>x=Math.pow(5, 2)</i> </li>
+        <li>Квадратний корінь: <i>x=Math.sqrt(16)</i> </li>
+        <li>Мінімум: <i>x=Math.min(2, 5)</i> </li>
+        <li>Максимум: <i>x=Math.max(2, 5)</i> </li>
+        <li>Випадкове число від 0 до 1: <i>x=Math.random()</i> </li>
+      </ul>
+      <h2>ІІ. Вправи</h2>
+      <p>Для кожної вправи складіть алгоритм, потім програму.</p>
+      <p class="exo">1) Напишіть алгоритм, а потім програму додавання двох
+        дробів, чисельник і знаменник яких відомі.</p>
+      <p class="exo">2) Попросіть користувача ввести два числові проміжки та
+        відобразити їх перетин.</p>
+      <p class="exo">3) Скласти таблицю значень функції «квадратний корінь» від
+        х=0 до х=100 з кроком 5.</p>
+      <p class="exo">4) Розробіть гру, у якій&nbsp; випадково витягують ціле
+        число від 0 до 1000, а потім просять гравця вгадати, яке це число, доки
+        він не дасть правильну відповідь. У разі неправильної відповіді гра
+        просто відповідає «занадто мале» або «занадто велике».</p>
+      <p class="exo">5) Нехай дано натуральне число n. Якщо n відмінне від нуля,
+        факторіалом n є добутком усіх цілих чисел від 1 до n (включно). Якщо
+        n=0, факторіал n дорівнює 1. Обчисліть факторіал n.</p>
+      <p class="exo">6) Складіть програму "кидання" грального кубика 1000 разів
+        і обчисліть частоту появи 6</p>
+      <p class="exo">7)&nbsp; «Піфагоровою трійкою» ми називаємо будь-яку
+        впорядковану трійку (a; b; c) відмінних від нуля натуральних чисел, у
+        яких квадрат c дорівнює сумі квадратів a і b. Наприклад, (3; 4; 5) є
+        трійкою Піфагора, оскільки 9+16=25. <br>
+        а) Поясніть, чому в піфагоровій трійці не може бути а=1 або а=b. <br>
+        b) Перелічіть усі трійки Піфагора, у яких a і b менше або дорівнює 1000.</p>
+      <p class="exo">8) Виведення квадратного кореня за "вавілонським"
+        алгоритмом - прямокутник R1 площею A має розміри x1=1 і y1=A. Ми робимо
+        прямокутник R2 з розмірами x2=(x1+y1)/2 і y2=A/x2, тобто з тією ж
+        площею, що й прямокутник R1. Повторюючи процес, ми наблизимося до
+        квадрата з площею A. Цей алгоритм дає змогу викладати квадратний корінь
+        із A дедалі точніше. <br>
+        За допомогою цього алгоритму визначте корінь від 5 з точністю до 0,001.</p>
+      <p class="exo">9) Обчисліть мінімальне, максимальне, середнє значення та
+        стандартне відхилення статистичного ряду.</p>
+      <p class="exo">10) Реалізуйте метод «Сортування бульбашками» -
+        послідовність чисел потрібно розташувати в порядку зростання. Алгоритм
+        полягає в проходженні послідовності шляхом систематичної заміни
+        послідовних елементів, які розташовані не в правильному порядку. Процес
+        повторюється, доки не залишиться елементів для обміну.</p>
+      <p> </p>
+      <p class="exo">11) Метод пошуку «за дихотомією» дає змогу знаходити все
+        більш точніші значення кубічного кореня з 2, тобто дійсного числа x, куб
+        якого дорівнює двом - ми починаємо з оточення x двома числами a і b,
+        наприклад a=1 і b=2. Потім ми обчислюємо c=(a+b)/2 і перевіряємо, чи
+        знаходиться x між a і c чи між c і b: таким чином ми отримуємо межу, яка
+        вдвічі тонша і тонша за x. Просто повторюйте цей процес, доки не буде
+        досягнута бажана точність.</p>
+      <p class="exo">12) Алгоритм Евкліда обчислює НОД двох натуральних чисел a
+        і b (за умови що a&gt;b). Ми починаємо з обчислення остачі від ділення a
+        на b, яку позначаємо r; потім ми замінюємо a на b, потім b на r і знову
+        застосовуємо процес з самого початку. Шуканий gcd ​​є останньою
+        ненульовою остачею. <br>
+        Примітка: остача від ділення a на b отримується з a%b.</p>
+      <p class="exo">13) (складно) Кидайте гральний кубик, доки не випадуть всі
+        грані. Потім підрахувайте кількість кидків, які потрібно було зробити.
+        Повторіть операцію та усередніть кількість необхідних кидків.</p>
+      <p class="exo">14) (складно) Решето Ератосфена дозволяє записати
+        послідовність простих чисел від 2 до n. Почніть з ініціалізації
+        порожньої послідовності простих чисел (з <i>змінною p=[ ]</i> ). Потім
+        досліджуйте одне за одним натуральні числа від 2 до n. Для кожного з цих
+        натуральних чисел перевірте, чи є воно кратним одному з уже знайдених
+        простих чисел - список проходиться за допомогою <i>for (j=0;
+          j&lt;p.length; j++). </i>Якщо перевірене натуральне число не є
+        кратним жодному з простих чисел, додайте його до списку простих чисел -
+        ми додаємо ціле число i до списку за допомогою вказівки <i>p.push(i)</i>
+        .</p>
+      <p> </p>
+      <h2>ІІІ. Малювання за допомогою JavaScript</h2>
+      <p>Функції малювання досить прості - щоб почати малювати, потрібно
+        створити "полотно" за інструкцією: <br>
+        new frame(xMin,yMin,xMax,yMax,width,high) <br>
+        Наприклад:</p>
+      <p class="prog">var r= new frame(-10, -10, 10, 10, 300, 200); <br>
+        r.strokeColor("blue"); <br>
+        r.goTo(5,5); <br>
+        r.lineTo(10,10); <br>
+        r.backgroundColor("yellow"); <br>
+        r.rectFull(0,0,-2,-5);<br>
+      </p>
+      <p>Ця програма створює нову область малювання з координатами від (-10,
+        -10) до (10, 10) у фреймі&nbsp; 300 на 200 пікселів, переміщує
+        "віртуальний олівець" у положення з координатами (5,5), малює відрізок
+        до точки (10, 10), а потім малює суцільно заповнений жовтий прямокутник
+        (у нас також є функція "rectHollow" для малювання незаповнених
+        прямокутників).</p>
+      <p>Ми можемо малювати точки (розміром один піксель) за допомогою
+        r.point(x,y);</p>
+      <p>Коло можна намалювати за допомогою r.circle(x,y,r), де x, y -
+        координати центра кола, r - його радіус.</p>
+      <p>Ось невелика програма, яка ілюструє той факт, що сума всіх натуральних
+        степенів 1/2 дорівнює 2:</p>
+      <p class="prog">var r= new frame(-1, -1, 2, 2, 200, 200); <br>
+        var colors=["red","yellow","blue"]; <br>
+        var i, z, x1=0, y1=0, x2=1, y2=1; <br>
+        for (i=0; i&lt;100; i++) { <br>
+        &nbsp;&nbsp;r.backgroundColor(colors[i%3]); <br>
+        &nbsp;&nbsp;r.rectFull(x1, y1, x2, y2); <br>
+        &nbsp;&nbsp;if (i%2==0) { <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;z=x1; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;x1=x2; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;x2=2*x2-z; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;y2=(y1+y2)/2; <br>
+        &nbsp;&nbsp;} else { <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;x2=(x1+x2)/2; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;z=y1; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;y1=y2; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;y2=2*y2-z; <br>
+        &nbsp;&nbsp;} <br>
+        }</p>
+      <h3>Вправи</h3>
+      <p class="exo">15) Представте приблизне зображення графіка функцію
+        «квадратний корінь» за допомогою серії маленьких відрізків. Це дійсно
+        наближення, оскільки ця напівпарабола насправді є гладкою кривою і не
+        має відрізків.</p>
+      <p class="exo">16) Канцелярську нопку кидають 500 разів поспіль, і вона
+        має шанс один із трьох впасти на основу та два з трьох -&nbsp; впасти на
+        вістря. Представте графічно зміну частоти випадання на вістря відповідно
+        до кількості кидків.</p>
+      <p class="exo">17) Побудуйте фігуру, що складається з двох вкладених
+        багатокутників, утворених n прямокутниками шириною 1 і висотою 1,2 ...
+        n, як показано в наступному прикладі, де n=5:<button onclick="illustreSuite()">натисніть,
+          щоб побачити</button>. Обчисліть площу поверхні фігури двома різними
+        способами. Виведіть формулу для обчислення 1+2+...+n.</p>
+      <p class="exo">18) Метод «Монте-Карло» дозволяє (між іншим) оцінити площу
+        ділянки площини, обмеженої кривими. Візьмемо, наприклад, плоску область,
+        обмежену віссю абсцис, криву з рівнянням y=x<sup>2</sup> для значень
+        абсцис між 0 і 2. Щоб оцінити її площу, ми малюємо 100 000 точок так, що
+        0&lt;x &lt;2 і 0&lt;y&lt;4 і ми підраховуємо кількість n точок, які
+        знаходяться в бажаному регіоні. Його площа близька до 8*n/100 000.</p>
+      <p class="exo">19) Представте дискретний статистичний ряд за допомогою
+        стовпчастої діаграми.</p>
+      <p class="exo">20) (складно) Зобразити безперервний статистичний ряд
+        гістограмою.</p>
+    </div>
+    <textarea id="h" rows="5" cols="50">//Пишіть код програми тут
+//Ось приклад :
+var n=input("Обрахуємо суму числе від 0 до n. Введіть значення n");
+var i;
+var sum=0;
+for (i=1 ; i&lt;=n ; i++)
+     sum=sum+i;
+print("Сума чисел від 0 до ", n, " дорівнює : ", sum);
+    </textarea>
+    <div id="b">
+      <p>Результати роботи програми : </p>
+    </div>
+    <br>
+    <button id="exe" onclick="lancer()">Виконати</button> <button id="indente"
+      onclick="indente()">Упорядкувати</button> <button id="efface" onclick="effacer()">Очистити</button>
+    <button id="effaceS" onclick="effacer(true)">Очистити</button>
+  </body>
+</html>
