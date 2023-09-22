@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="cache-control" content="no-cache">
+    <title>Basthon Notebook</title>
+    <link rel="icon" type="image/x-icon" href="assets/3bc92ab25864c04ad5c8.ico">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script>
+      var sys_info = {
+        "kernel-version": "0.60.2",
+        "commit-hash": "495ba0df88a9246119c76afeb40a367dbd5d0da7",
+        "commit-date": "2023-03-17T12:12:59.000Z"
+      }
+    </script>
+    <script src="assets/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML-full,Safe&delayStartupUntil=configured" async></script>
+    <link href="assets/main.6f06055480b4e1a1d24a.css?6b3e36fff78e0741bedc" rel="stylesheet">
+    <script src="assets/main.1faa07a874a892c8b06e.js?6b3e36fff78e0741bedc"></script>
+  </head>
+  <body class="notebook_app" data-jupyter-api-token="" data-base-url="" data-ws-url="" data-notebook-name="Untitled.ipynb" data-notebook-path="Untitled.ipynb" dir="ltr"><noscript>
+      <div id="noscript">Для Jupyter Notebook потрібен JavaScript<br>Увімкніть його, щоб продовжити.</div>
+    </noscript>
+    <div id="header" role="navigation" aria-label="Top Menu">
+      <div id="header-container" class="container">
+        <div id="ipython_notebook" class="nav navbar-brand"><img src="assets/efede5218c9087496f16.png" alt="Jupyter Notebook" /></div><span id="save_widget" class="save_widget"><span id="notebook_name" class="filename"></span><span class="checkpoint_status"></span><span class="autosave_status"></span></span><span id="kernel_logo_widget"><img class="current_kernel_logo" alt="Current Kernel Logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" /></span><span id="login_widget"><button id="logout" class="btn btn-sm navbar-btn hidden">Вийти з обліковки</button></span>
+      </div>
+      <div class="header-bar"></div>
+      <div id="menubar-container" class="container">
+        <div id="menubar">
+          <div id="menus" class="navbar navbar-default" role="navigation">
+            <div class="container-fluid"><button type="button" class="btn btn-default navbar-btn navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse"><i class="fa fa-bars"></i><span class="navbar-text">Меню</span></button>
+              <p id="kernel_indicator" class="navbar-text indicator_area"><span class="kernel_indicator_name">Ядро</span><i id="kernel_indicator_icon"></i></p><i id="readonly-indicator" class="navbar-text" title="Ce notebook est en lecture seule"><span class="fa-stack"><i class="fa fa-save fa-stack-1x"></i><i class="fa fa-ban fa-stack-2x text-danger"></i></span></i><i id="modal_indicator" class="navbar-text"></i><span id="notification_area"></span>
+              <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                  <li class="dropdown"><a href="#" id="filelink" aria-haspopup="true" aria-controls="file_menu" class="dropdown-toggle" data-toggle="dropdown">Файл</a>
+                    <ul id="file_menu" class="dropdown-menu" role="menu" aria-labelledby="filelink">
+                      <li id="new_notebook" class="dropdown-submenu" role="none"><a href="#" role="menuitem">Новий Notebook<span class="sr-only">Toggle Dropdown</span></a>
+                        <ul class="dropdown-menu" id="menu-new-notebook-submenu"></ul>
+                      </li>
+					  <li id="open_notebook" role="none" title="Відкрити блокнот, завантажити модуль або файл"><a href="#" role="menuitem">Відкрити...</a></ li >
+                       <li class="divider hidden" role="none"></li>
+                       <li id="copy_notebook" role="none" title="Відкрийте копію вмісту цього блокнота та запустіть нове ядро" class="hidden"><a href="#" role="menuitem">Створити копію ...</a></li>
+                       <li id="save_notebook_as" role="none" title="Зберегти копію блокнота"><a href="#" role="menuitem">Зберегти як...</a></li>
+                       <li id="rename_notebook" role="none" class="hidden"><a href="#" role="menuitem">Перейменувати...</a></li>
+                       <li id="save_checkpoint" role="none" class="hidden"><a href="#" role="menuitem">Створити нову резервну копію</a></li>
+                       <li class="divider" role="none"></li>
+                       <li id="restore_checkpoint" role="none"><a href="#" role="menuitem">Відновити резервну копію</a></li>
+                       <li class="divider hidden" role="none"></li>
+                       <li id="print_preview" role="none" class="hidden"><a href="#" role="menuitem">Попередній перегляд для друку</a></li>
+                       <li class="dropdown-submenu hidden" role="none"><a href="#" role="menuitem">Завантажити як<span class="sr-only">Toggle Dropdown</span></ a >
+                        <ul id="download_menu" class="dropdown-menu">
+                          <li id="download_asciidoc"><a href="#">asciidoc (.asciidoc)</a></li>
+                          <li id="download_html"><a href="#">HTML (.html)</a></li>
+                          <li id="download_latex"><a href="#">latex (.tex)</a></li>
+                          <li id="download_markdown"><a href="#">markdown (.md)</a></li>
+                          <li id="download_notebook"><a href="#">notebook (.ipynb)</a></li>
+                          <li id="download_pdf"><a href="#">pdf (.tex)</a></li>
+                          <li id="download_rst"><a href="#">rst (.rst)</a></li>
+                          <li id="download_script"><a href="#">Script (.txt)</a></li>
+                          <li id="download_slides"><a href="#">slides (.slides.html)</a></li>
+                        </ul>
+                      </li>
+						<li class="dropdown-submenu hidden" role="none"><a href="#" role="menuitem">Розгорнути як</a>
+                         <ul id="deploy_menu" class="dropdown-menu"></ul>
+                       </li>
+                       <li class="divider hidden" role="none"></li>
+                       <li id="trust_notebook" role="none" title="Довіряти результатам цього блокнота" class="hidden"><a href="#" role="menuitem">Довіряти блокноту</a </li >
+                       <li class="divider hidden" role="none"></li>
+                       <li id="close_and_halt" role="none" title="Зупинити це ядро ​​блокнота та закрити це вікно" class="hidden"><a href="#" role="menuitem">Закрити та зупинити</a> </li>
+                     </ul>
+                   </li>               
+                  <li class="dropdown"><a href="#" class="dropdown-toggle" id="editlink" data-toggle="dropdown" aria-haspopup="true" aria-controls="edit_menu">Редагувати</a>
+                     <ul id="edit_menu" class="dropdown-menu" role="menu" aria-labelledby="editlink">
+                       <li id="cut_cell" role="none"><a href="#" role="menuitem">Вирізати секцію</a></li>
+                       <li id="copy_cell" role="none"><a href="#" role="menuitem">Копіювати секцію</a></li>
+                       <li id="paste_cell_above" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Вставити секцію перед</a></li>
+                       <li id="paste_cell_below" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Вставити секцію після</a></li>
+                       <li id="paste_cell_replace" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Вставити секцію &amp; замінити</a></li>
+                       <li id="delete_cell" role="none"><a href="#" role="menuitem">Видалити секцію</a></li>
+                       <li id="undelete_cell" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Відновлення секції</a></li >
+                       <li class="divider" role="none"></li>
+                       <li id="split_cell" role="none"><a href="#" role="menuitem">Розділити секцію</a></li>
+                       <li id="merge_cell_above" role="none"><a href="#" role="menuitem">Об'єднати з попередньою секцією</a></li>
+                       <li id="merge_cell_below" role="none"><a href="#" role="menuitem">Об’єднати з наступною секцією</a></li>
+                       <li class="divider" role="none"></li>
+                       <li id="move_cell_up" role="none"><a href="#" role="menuitem">Перемістити секцію вгору</a></li>
+                       <li id="move_cell_down" role="none"><a href="#" role="menuitem">Перемістити секцію вниз</a></li>
+                       <li class="divider" role="none"></li>
+                       <li id="edit_nb_metadata" role="none"><a href="#" role="menuitem">Редагувати метадані блокнота</a></li>
+                       <li class="divider" role="none"></li>
+                       <li id="find_and_replace" role="none"><a href="#" role="menuitem">Знайти та замінити</a></li>
+                       <li class="divider" role="none"></li>
+                       <li id="cut_cell_attachments" role="none"><a href="#" role="menuitem">Вирізати вкладення секції</a></li>
+                       <li id="copy_cell_attachments" role="none"><a href="#" role="menuitem">Копіювати вкладення секції</a></li>
+                       <li id="paste_cell_attachments" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Вставити вкладення до секції</a> </li>
+                       <li class="divider" role="none"></li>
+                       <li id="insert_image" class="disabled" role="none"><a href="#" role="menuitem" aria-disabled="true">Вставити зображення</a></li>
+                     </ul>
+                   </li>
+					<li class="dropdown"><a href="#" class="dropdown-toggle" id="viewlink" data-toggle="dropdown" aria-haspopup="true" aria-controls="view_menu">Переглянути </a>
+                     <ul id="view_menu" class="dropdown-menu" role="menu" aria-labelledby="viewlink">
+                       <li id="toggle_header" role="none" title="Показати/сховати логотип і назву блокнота (над панеллю меню)"><a href="#" role="menuitem"> Показати/сховати заголовок</a> </li>
+                       <li id="toggle_toolbar" role="none" title="Показати/сховати значки дій (під рядком меню)"><a href="#" role="menuitem">Показати/сховати панель інструментів</a></li>
+                       <li id="toggle_line_numbers" role="none" title="Показати/сховати номери рядків у комірках"><a href="#" role="menuitem">Показати/сховати номери рядків</a </li>
+                       <li id="menu-cell-toolbar" class="dropdown-submenu" role="none"><a href="#" role="menuitem">Панель інструментів секції</a>
+                         <ul class="dropdown-menu" id="menu-cell-toolbar-submenu"></ul>
+                       </li>
+                     </ul>
+                   </li>
+                   <li class="dropdown"><a href="#" class="dropdown-toggle" id="insertlink" data-toggle="dropdown" aria-haspopup="true" aria-controls="insert_menu">Вставити </a>
+                     <ul id="insert_menu" class="dropdown-menu" role="menu" aria-labelledby="insertlink">
+                       <li id="insert_cell_above" role="none" title="Вставити секцію з порожнім кодом перед активною секцією"><a href="#" role="menuitem">Вставити секцію перед</a></li>
+                       <li id="insert_cell_below" role="none" title="Вставити секцію з порожнім кодом після активної секції"><a href="#" role="menuitem">Вставити секцію після</a></li>
+                     </ul>
+                   </li>
+                   <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Секція</a>
+                     <ul id="cell_menu" class="dropdown-menu">
+                       <li id="run_cell" title="Запустити цю секцію та перемістити курсор до наступної"><a href="#">Запустити вміст секції</a></li>
+                       <li id="run_cell_select_below" title="Запустити цю секцію, вибрати наступну"><a href="#">Запустити вміст секції та вибрати наступну</a></li>
+                       <li id="run_cell_insert_below" title="Виконати секцію та вставити після"><a href="#">Запустити вміст секції та вставити після</a></li>
+                       <li id="run_all_cells" title="Запустити всі секції блокнота"><a href="#">Запустити всі</a></li>
+                       <li id="run_all_cells_above" title="Виконати всі секції перед цією (не включено)"><a href="#">Запустити всі попередні</a></li>
+                       <li id="run_all_cells_below" title="Запустити цю та всі наступні секції"><a href="#">Запустити всі наступні секції</a></li>
+                       <li class="divider"></li>
+                       <li id="change_cell_type" class="dropdown-submenu" title="Усі секції в блокноті мають тип секції. За замовчуванням нові секції мають тип "Код""><a href="#" >Тип секції</a>
+                         <ul class="dropdown-menu">
+                           <li id="to_code" title="Вміст буде надіслано до ядра для виконання, а результат буде відображено в нижньому колонтитулі секції"><a href="#">Код</a></li>
+                           <li id="to_markdown" title="Вміст буде відображено як HTML, щоб служити пояснювальним текстом"><a href="#">Markdown</a></li>
+                           <li id="to_raw" title="Вміст буде проходити через nbconvert, який не змінить його"><a href="#">Необроблений текст</a></li>
+                         </ul>
+                       </li>
+                       <li class="divider"></li>
+                       <li id="current_outputs" class="dropdown-submenu"><a href="#">Поточні результати</a>
+                         <ul class="dropdown-menu">
+                           <li id="toggle_current_output" title="Сховати/Показати поточний вихід секції"><a href="#">Показати/Сховати</a></li>
+                           <li id="toggle_current_output_scroll" title="Прокручувати поточний вивід секції"><a href="#">Увімкнути/вимкнути прокручування</a></li>
+                           <li id="clear_current_output" title="Очистити поточний вихід секції"><a href="#">Очистити</a></li>
+                         </ul>
+                       </li>
+						<li id="all_outputs" class="dropdown-submenu"><a href="#">Усі результати</a>
+                         <ul class="dropdown-menu">
+                           <li id="toggle_all_output" title="Показати/сховати вихід усіх комірок"><a href="#">Показати/сховати</a></li>
+                           <li id="toggle_all_output_scroll" title="Прокрутити весь вивід клітинки"><a href="#">Увімкнути/вимкнути прокручування</a></li>
+                           <li id="clear_all_output" title="Очистити всі дані клітинки"><a href="#">Очистити</a></li>
+                         </ul>
+                       </li>
+                     </ul>
+                   </li>
+                   <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown" id="kernellink">Ядро</a>
+                     <ul id="kernel_menu" class="dropdown-menu" aria-labelledby="kernellink">
+                       <li id="int_kernel" title="Надіслати переривання клавіатури (CTRL-C) до ядра"><a href="#">Переривання</a></li>
+                       <li id="restart_kernel" title="Перезапустити ядро"><a href="#">Перезапустити</a></li>
+                       <li id="restart_clear_output" title="Перезапустіть ядро ​​та очистіть усі виведення"><a href="#">Перезапустити та очистити результати</a></li>
+                       <li id="restart_run_all" title="Перезапустіть ядро ​​та повторно запустіть блокнот"><a href="#">Перезапустити та запустити все</a></li>
+                       <li id="reconnect_kernel" title="Повторне підключення до ядра"><a href="#">Повторне підключення</a></li>
+                       <li id="shutdown_kernel" title="Завершення роботи ядра"><a href="#">Завершення роботи</a></li>
+                       <li class="divider"></li>
+                       <li id="menu-change-kernel" class="dropdown-submenu"><a href="#">Змінити ядро</a>
+                         <ul class="dropdown-menu" id="menu-change-kernel-submenu"></ul>
+                       </li>
+                     </ul>
+                   </li>
+                   <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Довідка</a>
+                     <ul id="help_menu" class="dropdown-menu">
+                       <li id="notebook_tour" title="Швидкий огляд інтерфейсу користувача Notebook"><a href="#">Огляд інтерфейсу користувача</a></li>
+                       <li id="keyboard_shortcuts" title="Відкрити спливаючу підказку зі списком усіх комбінацій клавіш"><a href="#">Комбінації клавіш</a></li>
+                       <li id="edit_keyboard_shortcuts" title="Відкрити діалогове вікно для редагування комбінацій клавіш"><a href="#">Редагувати комбінації клавіш</a></li>
+                       <li class="divider"></li>
+                       <li><a rel="noreferrer" href="https://basthon.fr/doc.html" target="_blank" title="Відкрити в новому вікні"><i class="fa fa-external- посилання menu-icon pull-right"></i>Довідка Basthon</a></li>
+                       <li><a rel="noreferrer" href="http://nbviewer.jupyter.org/github/ipython/ipython/blob/3.x/examples/Notebook/Index.ipynb" target="_blank" title= «Відкривається в новому вікні»><i class="fa fa-external-link menu-icon pull-right"></i>Довідка Notebook</a></li>
+                       <li><a rel="noreferrer" href="https://help.github.com/articles/markdown-basics/" target="_blank" title="Відкрити в новому вікні"><i class="fa fa-external-link menu-icon pull-right"></i> Markdown</a></li>
+                       <li class="divider"></li>
+                       <li title="Про Jupyter Notebook"><a id="notebook_about" href="#">Про Notebook</a></li>
+                     </ul>
+                   </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="maintoolbar" class="navbar">
+          <div class="toolbar-inner navbar-inner navbar-nobg">
+            <div id="maintoolbar-container" class="container"></div>
+          </div>
+        </div>
+      </div>
+      <div class="lower-header-bar"></div>
+    </div>
+    <div id="site">
+      <div id="ipython-main-app">
+        <div id="notebook_panel">
+          <div id="notebook"></div>
+          <div id="tooltip" class="ipython_tooltip" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div id="pager">
+      <div id="pager-contents">
+        <div id="pager-container" class="container"></div>
+      </div>
+      <div id="pager-button-area"></div>
+    </div>
+  </body>
+</html>
