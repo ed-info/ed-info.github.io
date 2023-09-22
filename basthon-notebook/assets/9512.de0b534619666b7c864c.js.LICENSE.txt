@@ -1,0 +1,89 @@
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
+
+/*!
+    localForage -- Offline Storage, Improved
+    Version 1.10.0
+    https://localforage.github.io/localForage
+    (c) 2013-2017 Mozilla, Apache License 2.0
+*/
+
+/*!
+ * jQuery Typeahead
+ * Copyright (C) 2020 RunningCoder.org
+ * Licensed under the MIT license
+ *
+ * @author Tom Bertrand
+ * @version 2.11.1 (2020-5-18)
+ * @link http://www.runningcoder.org/jquerytypeahead/
+ */
+
+/*!
+ * jQuery UI Widget 1.13.2
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+* reveal.js 4.3.1
+* https://revealjs.com
+* MIT licensed
+*
+* Copyright (C) 2011-2022 Hakim El Hattab, https://hakim.se
+*/
+
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
+
+/**
+ * @license React
+ * react-dom.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
+ * @license React
+ * react.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
+ * @license React
+ * scheduler.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
+ * @license r.js 2.3.6 Copyright jQuery Foundation and other contributors.
+ * Released under MIT license, http://github.com/requirejs/r.js/LICENSE
+ */
+
+/**
+ * @preserve jed.js https://github.com/SlexAxton/Jed
+ */
+
+/** vim: et:ts=4:sw=4:sts=4
+ * @license RequireJS 2.3.6 Copyright jQuery Foundation and other contributors.
+ * Released under MIT license, https://github.com/requirejs/requirejs/blob/master/LICENSE
+ */
+
+//! moment.js
+
+//! moment.js locale configuration
