@@ -1,0 +1,1 @@
+{"version":3,"file":"assets/3724.a044b7e00923cea968ed.css","mappings":"AAAA,0BAA4B,aAAc,CAAE,iBAAoB,CAChE,8BAAgC,aAAgB","sources":["webpack://@basthon/basthon-notebook/./src/css/darcula-patch.css"],"sourcesContent":[".cm-s-darcula span.cm-def { color: #ffc66d; font-style: normal; }\n.cm-s-darcula span.cm-comment { color: #a9b7c6; }\n"],"names":[],"sourceRoot":""}
