@@ -1337,7 +1337,11 @@ var $builtinmodule = function (name) {
 		
 	}, 'Tk', [s.Widget]);
 
+<<<<<<< Updated upstream
 	PythonIDE.python.output('<small>tkinter/Skulpt by Pete Dring</small>');
+=======
+	PythonIDE.python.output('<small>tkinter on create.withcode.uk is in the early stages of development. <a href="https://blog.withcode.uk/about/contact/" target="_blank">Click here</a> if you want to contribute with suggestions or have any questions.</small>');
+>>>>>>> Stashed changes
 
 	s.ttk = new Sk.builtin.module();
 
@@ -1547,4 +1551,8 @@ var $builtinmodule = function (name) {
 
 	return s;
 	
+<<<<<<< Updated upstream
 };
+=======
+};
+>>>>>>> Stashed changes
