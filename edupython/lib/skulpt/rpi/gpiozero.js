@@ -252,7 +252,7 @@ var $builtinmodule = function(name) {
 					motorAxis: paper.circle(offset.x + 150, offset.y + 30, 5).attr({
 						fill:'#888'
 					}),
-					cog: paper.image("/lib/skulpt/rpi/components/cog.png", offset.x + 125, offset.y + 5, 50, 50)
+					cog: paper.image("lib/skulpt/rpi/components/cog.png", offset.x + 125, offset.y + 5, 50, 50)
 				};
 
 				addWire(self.controller.components.pin11, self.components, "motorP1", "Wire to Motor 2");
@@ -294,7 +294,7 @@ var $builtinmodule = function(name) {
 					motorAxis: paper.circle(offset.x + 150, offset.y + 30, 5).attr({
 						fill:'#888'
 					}),
-					cog: paper.image("/lib/skulpt/rpi/components/cog.png", offset.x + 125, offset.y + 5, 50, 50)
+					cog: paper.image("lib/skulpt/rpi/components/cog.png", offset.x + 125, offset.y + 5, 50, 50)
 				};
 				for(pin = 0; pin < 8; pin++) {
 					self.components["pin" + (pin+1)] = paper.rect(offset.x+25, offset.y + 5 + (pin * 10), 5, 5).attr({fill: '#ccc'});
@@ -609,82 +609,11 @@ var $builtinmodule = function(name) {
 		});
 	}, "gpiozero.Button", [mod.DigitalInputDevice]);
 
-	mod.Buzzer = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
-		var __init__ = function(self, pin, active_high, initial_value, pin_factory) {
-			Sk.misceval.callsimArray(mod.DigitalOutputDevice.__init__, [self, pin, active_high, initial_value, pin_factory]);
-			self.components = {
-				buzzer: paper.image("/lib/skulpt/rpi/components/buzzer.png", offset.x, offset.y, 150, 92).hover(function() {
-					PythonIDE.showHint("Buzzer");
-					this.g = this.glow({color: '#f00', width: 20});
-				}, function() {
-					this.g.remove();
-				}),
-				buzz: paper.path([
-					"M", offset.x+65, offset.y + 20, "L", offset.x+60, offset.y + 5, 
-					"M", offset.x + 75, offset.y + 18, "L", offset.x + 75, offset.y + 3,
-					"M", offset.x + 85, offset.y + 20, "L", offset.x + 90, offset.y + 5
-				]).attr({
-					stroke: "#ff0",
-					"stroke-width":5,
-					opacity: 0.0
-				})
-			};
-			var gnd = getPin("Ground");
-			var anode = getPin("BCM " + Sk.ffi.remapToJs(pin));
-			self.components.wireToGround = paper.path(["M", gnd.x, gnd.y, "C", offset.x, offset.y, offset.x+25, offset.y + 150, offset.x+75, offset.y + 80]).attr({
-				stroke: "#003",
-				"stroke-width": 3
-			}).hover(function() {
-				this.g = this.glow({color: '#f00', width: 20});
-				PythonIDE.showHint("Wire connected to Ground");
-			}, function() {
-				this.g.remove();
-			});
-			self.components.wireToAnode = paper.path(["M", anode.x, anode.y, "C", offset.x, offset.y, offset.x + 50, offset.y + 150, offset.x + 75, offset.y + 80]).attr({
-				stroke: "#F00",
-				"stroke-width": 3
-			}).hover(function() {
-				this.g = this.glow({color: '#f00', width: 20});
-				PythonIDE.showHint("Wire connected to " + anode.name);
-			}, function() {
-				this.g.remove();
-			});
-			offset.x += 130;
-			if(offset.x > 500) {
-				offset.x = 50;
-				offset.y += 160;
-			}
-		}
-		__init__.co_varnames = ["self", "pin", "active_high", "initial_value", "pin_factory"];
-		__init__.$defaults = [Sk.builtin.bool.true$, Sk.builtin.bool.false$, Sk.builtin.none.none$];
-		$loc.__init__ = new Sk.builtin.func(__init__);
-
-		$loc.off = new Sk.builtin.func(function(self) {
-			self.value = Sk.ffi.remapToJs(self.active_high)?0:1;
-			var s = self.components.buzz.attr({
-				opacity: 0.0,
-				fill: 'black'
-			});
-			if(s.g) s.g.remove();
-		});
-
-		$loc.on = new Sk.builtin.func(function(self) {
-			self.value = Sk.ffi.remapToJs(self.active_high)?1:0;
-			var s = self.components.buzz.attr({
-				opacity: 1,
-				fill: 'red'
-			});
-			s.g = s.glow({color: '#f00', width: 60});
-		});
-
-		// todo https://gpiozero.readthedocs.io/en/stable/api_output.html
-	}, "gpiozero.Buzzer", [mod.DigitalOutputDevice]);
-
 	mod.LED = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
 		var __init__ = function(self, pin, active_high, initial_value, pin_factory) {
 			Sk.misceval.callsimArray(mod.DigitalOutputDevice.__init__, [self, pin, active_high, initial_value, pin_factory]);
 			self.components = {
-				led: paper.image("/lib/skulpt/rpi/components/led.png", offset.x + 80, offset.y, 41, 157).hover(function() {
+				led: paper.image("lib/skulpt/rpi/components/led.png", offset.x + 80, offset.y, 41, 157).hover(function() {
 					PythonIDE.showHint("Light Emitting Diode");
 					this.g = this.glow({color: '#f00', width: 20});
 				}, function() {
@@ -695,7 +624,7 @@ var $builtinmodule = function(name) {
 					opacity: 1,
 					'stroke-width': 0
 				}),
-				resistor: paper.image("/lib/skulpt/rpi/components/resistor330.png", offset.x, offset.y + 127, 94, 14).hover(function() {
+				resistor: paper.image("lib/skulpt/rpi/components/resistor330.png", offset.x, offset.y + 127, 94, 14).hover(function() {
 					PythonIDE.showHint("330 Ohm resistor");
 					this.g = this.glow({color: '#f00', width: 20});
 				}, function() {

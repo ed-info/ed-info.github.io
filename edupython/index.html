@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
+
+  <!-- Loading notice -->
+  <style>
         #loading {
             position: absolute;
             top: 40%;
@@ -14,12 +16,10 @@
             animation: loading 2s alternate infinite;
             border: 1px solid #000;
         }
-
         @keyframes loading {
             from {
                 background-color: #CCC;
             }
-
             to {
                 background-color: #0C0;
             }
@@ -27,146 +27,85 @@
     </style>
 
     <meta charset="UTF-8">
-    <title>Create with code</title>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <script src="./lib/cm/codemirror.js"></script>
-    <script src="./lib/cm/active-line.js"></script>
-    <script src="./lib/cm/show-hint.js"></script>
-    <script src="./lib/cm/python.js"></script>
-    <script src="./lib/cm/xml.js"></script>
-    <script src="./lib/cm/javascript.js"></script>
-    <script src="./lib/cm/css.js"></script>
-    <script src="./lib/cm/htmlmixed.js"></script>
-    <link rel="stylesheet" href="./lib/cm/codemirror.css">
+    <meta name="description" content="Write, run, debug and share python code in your browser" />
+    <meta name="author" content="pddring">
 
-    <link rel="stylesheet" href="./lib/cm/cobalt.css">
-    <link rel="stylesheet" href="./lib/cm/blackboard.css">
+    <title>Вивчаємо Python</title>
 
+    <!-- See http://blog.withcode.uk/about/license-and-acknowledgements/ for libraries used-->
+    <script src="lib/cm/codemirror.js"></script>
+    <script src="lib/cm/active-line.js"></script>
+    <link rel="stylesheet" href="lib/cm/codemirror.css">
+    <link rel="stylesheet" href="lib/cm/cobalt.css">
+    <link rel="stylesheet" href="lib/cm/blackboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="lib/cm/python.js"></script>
+    <script src="lib/cm/p5.js"></script>
+    <script src="lib/lib.js"></script>
+    <script src="lib/skulpt/skulpt.min.js"></script>
+    <script src="lib/skulpt/skulpt-stdlib.js"></script>
     <link rel="stylesheet" href="./jquery/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="./jquery/jquery-1.12.4.js"></script>
     <script src="./jquery/ui/1.12.1/jquery-ui.js"></script>
-    <link rel="stylesheet" href="./styles.css">
+    <script src="lib/jq/jquery.ui.touch-punch.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-
-    <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
-    <script src="./lib/lib.js"></script>
-    <script src="./lib/skulpt/skulpt.min.js"></script>
-    <script src="./lib/skulpt/skulpt-stdlib.js"></script>
-    
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <link href='https://fonts.googleapis.com/css?family=Quicksand' rel='stylesheet' type='text/css'>
 </head>
 <body>
+	<!-- Animated link-->
     <div>
-        <a class="nounderline" href="http://withcode.uk/" target="_blank">
-            <h1 id="title" onmouseover="animateTitle('create.withcode.uk', 'title_text')"><span
-                    class="brackets">{</span><span id="title_text">withcode.uk</span><span class="brackets">}</span>
-            </h1>
+		
+            <a class="nounderline" href="https://create.withcode.uk" target="_blank">				
+        <h1 id="title" onmouseover="animateTitle('Програмувати - просто!', 'title_text')"><span class="brackets">{</span><span id="title_text">withcode.uk</span><span class="brackets">}</span></h1>
+        
         </a>
     </div>
-
     <div id="loading">
-        Завантаження...
+        Loading... please wait
     </div>
     <div id="holder" class="holder" style="display:none">
         <span id="file_tabs"><span class="file_tab file_tab_selected">mycode.py</span></span>
         <pre>
-            <div id="editor"></div>
-        </pre>
+			<div id="editor"></div>
+		</pre>
     </div>
     <script>
-        var files = "name = input(\"Яке твоє ім'я?\")\r\nprint(\"Привіт,\", name)";
-        try {
-            PythonIDE.files = JSON.parse(files);
-        } catch (e) {
-            PythonIDE.files['mycode.py'] = files;
-        }
+        PythonIDE.files['mycode.py'] = 'print("Hello world")';
         PythonIDE.currentFile = 'mycode.py';
-        PythonIDE.projectName = 'mycode.py'.replace(".py", "");
         PythonIDE.updateFileTabs();
     </script>
-
-    <div id="userDetails">Ви не авторизувалися</div>
     <div id="hintBar"></div>
-    <span id="footer">
-        <img onclick="runProgram()" title="Виконати" alt="Натисніть, щоб виконати код" id="btn_run" class="toolButton" 
-            src="./media/play.png"><img alt="Припинити виконання" title="Припинити" class="toolButton hiddenButton"
-            src="./media/stop.png" id="btn_stopRunning"><img alt="Натисніть, щоб показати/сховати кнопки"
-            title="Показати/сховати кнопки" class="toolButton" src="./media/tools.png" id="btn_tools"><img
-            title="Відкрити консоль" alt="Показати вікно консолі" id="btn_show_output" class="toolButton hiddenButton"
-            src="./media/console.png"><img title="Завантажити, зберегти та поділитися"
-            alt="Завантажте, збережіть і поділіться власним кодом" id="btn_show_share" class="toolButton hiddenButton"
-            src="./media/share.png"><img title="Налаштування" alt="Налаштувати екран" id="btn_show_settings"
-            class="toolButton hiddenButton" src="./media/settings.png"><img title="Відновлення коду"
-            alt="Відновіть свій код із попереднього сеансу" id="btn_show_recover" class="toolButton hiddenButton"
-            src="./media/recover.png"><img alt="Увійти" src="./media/login.png" title="Авторизація"
-            class="toolButton hiddenButton" id="btn_user"></span>
-    <div id="tracker" title="Редагувати трекер" style="display:none">
-        <fieldset>
-            <legend>Ім'я:</legend>
-            <input id="txt_tracker_name" class="txt_full">
-            <button id="btn_tracker_rename" class="btn_tracker_tool"><i class="fa fa-edit"></i> Перейменувати</button>
-            <button id="btn_tracker_delete" class="btn_tracker_tool"><i class="fa fa-trash"></i> Видалити</button>
-        </fieldset>
-        <fieldset>
-            <legend>Діяльності:</legend>
-            <ul id="tracker_activities"></ul>
-            <button id="btn_add_tracker_activity"><i class="fa fa-plus"></i> Додати діяльність</button>
-            <button id="btn_save_tracker_order"><i class="fa fa-reorder"></i> Зберегти</button>
-        </fieldset>
-        <fieldset>
-            <legend>Код:</legend>
-            <input id="txt_tracker_code" class="txt_full">
-            <button id="btn_copy_tracker" class="btn_tracker_tool"><i class="fa fa-copy"></i> Копіювати</button>
-        </fieldset>
-        <fieldset>
-            <legend>Попередній перегляд:</legend>
-            <div id="tracker_preview"></div>
-        </fieldset>
-        <p>&nbsp;</p>
-        <p>&nbsp;</p>
-    </div>
+    <span id="footer">		
+        <img title="Виконати" alt="Натисніть, щоб виконати код" id="btn_run" class="toolButton" src="./media/play.png">
+        <img alt="Припинити виконання" title="Припинити" class="toolButton" src="./media/stop.png" id="btn_stopRunning">
+        <img alt="Натисніть, щоб показати/сховати кнопки" title="Показати/сховати кнопки" class="toolButton" src="./media/tools.png" id="btn_tools">
+        <img title="Відкрити консоль" alt="Показати вікно консолі" id="btn_show_output" class="toolButton hiddenButton" src="./media/console.png">
+        <img title="Зберегти" alt="Збережіть скрипт на комп'ютер" id="btn_show_share" class="toolButton hiddenButton" src="./media/share.png">
+        <img title="Налаштування" alt="Налаштувати екран" id="btn_show_settings" class="toolButton hiddenButton" src="./media/settings.png">
+        <img title="Відновлення коду" alt="Відновіть свій код із попереднього сеансу" id="btn_show_recover" class="toolButton hiddenButton" src="./media/recover.png">        
+    </span>
+   
     <div id="recover" title="Відновлення коду" style="display:none"></div>
     <div id="dlg" title="mycode.py" style="display:none">
+        <div id="p5Sketch"></div>
         <div id="output"></div>
-        <div id="canvas"></div>
     </div>
-    <div id="save" title="Зберегти" style="display:none">
+    <div id="save" title="Зберегти або отримати для редагування" style="display:none">
         <fieldset>
-            <legend>Зберегти:</legend>
-            <p>Коли ви збережете свій код, він стане загальнодоступним для перегляду, запуску чи адаптації.</p>
-            <p>Якщо ви не впевнені, який варіант вибрати, вибирайте перший.</p>
-            <p>Збереження за поточною URL-адресою дає змогу оновити код без необхідності змінювати будь-які посилання на
-                код, якими ви вже поділилися в іншому місці.</p>
-            <div class="save_option" id="btnSaveNew">
-                <h2><i class="fa fa-save"></i> Зберегти (нова URL-адреса)</h2>
-                <p>Якщо ваш код ще не збережено, ви отримаєте нову унікальну вебадресу для доступу до коду, якою ви
-                    зможете поділитися.</p>
-                <p>Якщо ваш код збігається за попередньо збереженою версією, URL-адреса не зміниться.</p>
-                <p>Для цього вам не потрібно входити в систему.</p>
-                <h3><i class="fa fa-keyboard-o"></i> Ctrl + S</h3>
-                <div class="g-recaptcha" data-sitekey="6Le3LmkUAAAAADrVx-KcFscv0Dk_8ILVCW5uQf2v"></div>
-            </div>
-            <div class="save_option" id="btnShare">
-                <h2><i class="fa fa-save"></i> Поділитися</h2>
-                <p>Подивіться, як ви можете поділитися своїм кодом з іншими.</p>
-                <p>Щоб це зробити, вам потрібно переглянути вже збережений код.</p>
-                <h3><i class="fa fa-keyboard-o"></i> Alt + Shift + S</h3>
-            </div>
-            <div class="save_option" id="btnSaveUpdate">
-                <h2><i class="fa fa-save"></i> Зберегти (поточна URL-адреса)</h2>
-                <p>Ваш попередньо збережений код для цієї вебадреси буде перезаписано.</p>
-                <p>Щоб зробити це, вам потрібно увійти в систему та переглянути код, який ви зберегли раніше.</p>
-                <h3><i class="fa fa-keyboard-o"></i> Ctrl + Shift + S</h3>
-            </div>
+            <legend>Зберегти поточний файл:</legend>
+
             <div class="save_option" id="btnDownload">
                 <h2><i class="fa fa-save"></i> Зберегти (Завантажити)</h2>
                 <p>Поточний файл буде завантажено на цей комп’ютер.</p>
-                <p>Для цього вам не потрібно входити в систему.</p>
+               
                 <h3><i class="fa fa-keyboard-o"></i> Ctrl + Alt + S</h3>
             </div>
         </fieldset>
 
         <fieldset>
-            <legend>Load:</legend>
+            <legend>Отримати файл:</legend>
             <form class="box" method="post" action="#" enctype="multipart/form-data">
                 <div class="box__input">
                     <input class="box__file" type="file" name="files[]" id="file"
@@ -177,39 +116,16 @@
                 </div>
             </form>
         </fieldset>
-
-        <fieldset>
-            <legend>Увійти:</legend>Ви ще не увійшли в систему. <button id="btnLogin" class="btnLogin"
-                data-url="https://accounts.google.com/o/oauth2/auth?response_type=code&amp;access_type=online&amp;client_id=869134821415-0slns4v1b5lql9jnjlqi3h8tirnlotrq.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fcreate.withcode.uk%2Fu&amp;state&amp;scope=profile%20email&amp;approval_prompt=auto"><i
-                    class="fa fa-sign-in"></i> Авторизація</button>
-            <p>Вам не потрібно входити, щоб зберегти або використовувати create.withcode.uk.</p>
-            <p>Вхід за допомогою облікового запису Google полегшує керування кодом, який ви зберігаєте.</p>
-        </fieldset>
-        <p>&nbsp;</p>
-        <p>&nbsp;</p>
-    </div>
-
-    <div id="login" title="Деталі облікового запису користувача" style="display:none">
-        <fieldset>
-            <legend>Обліковий запис Google</legend>
-            <h3>Ви не увійшли в систему</h3>
-            Вам не потрібно входити, щоб зберегти свій код, але якщо ви це зробите, ви можете оновити свій код, не
-            змінюючи URL-адресу попередньо збереженого коду
-            <button class="btnLogin"
-                data-url="https://accounts.google.com/o/oauth2/auth?response_type=code&amp;access_type=online&amp;client_id=869134821415-0slns4v1b5lql9jnjlqi3h8tirnlotrq.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fcreate.withcode.uk%2Fu&amp;state&amp;scope=profile%20email&amp;approval_prompt=auto"><i
-                    class="fa fa-sign-in"></i> Авторизуватися</button>
-        </fieldset>
-
-    </div>
-
-    <div id="project_settings" title="Проєкт" style="display:none">
+    </div> 
+ 
+     <div id="project_settings" title="Проєкт" style="display:none">
         <p>Перейменування проєкту допоможе вам упорядкувати збережений код</p>
         <label for="txt_project_name">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
             value="mycode">
         <button id="btn_project_ok">OK</button>
         <button id="btn_project_cancel">Скасувати</button>
     </div>
-
+    
     <div id="file_settings" title="Файл" style="display:none">
         <p>Будьте обережні: якщо ви вирішите видалити файл, ви не зможете відновити його, якщо не збережете копію</p>
         <label for="txt_file_name">Перейменувати файл:</label><input id="txt_file_name" name="txt_file_name" value="">
@@ -277,380 +193,32 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
-
-    <div id="share" title="Поділитися" style="display:none">
-        <div class="sharethis-inline-share-buttons" id="sharethis"></div>
-        <fieldset>
-            <legend>Налаштуйте спосіб обміну:</legend>
-            <div id="radio_share_mode">
-                <input type="radio" id="radio_share_mode_code" name="radio_share_mode" checked="checked"><label
-                    for="radio_share_mode_code">Поділіться покликанням, щоб переглянути код</label>
-                <input type="radio" id="radio_share_mode_run" name="radio_share_mode"><label
-                    for="radio_share_mode_run">Поділитися покликанням для запуску коду</label>
-            </div>
-        </fieldset>
-        <div id="share_tabs">
-            <ul>
-                <li><a href="#share_link"><i class="fa fa-link"></i> Покликання</a></li>
-                <li><a href="#share_embed"><i class="fa fa-file-code-o"></i> Вбудувати</a></li>
-                <li><a href="#share_qr"><i class="fa fa-qrcode"></i> QR-код</a></li>
-                <li><a href="#share_wp"><i class="fa fa-wordpress"></i> Wordpress</a></li>
-                <li><a href="#share_type"><i class="fa fa-keyboard-o"></i> type.withcode.uk</a></li>
-                <li><a href="#share_kpride"><i class="fa fa-mortar-board"></i> KPRIDE</a></li>
-            </ul>
-            <div id="description">
-                <p>create.withcode.uk дозволяє писати, запускати, налагоджувати та ділитися кодом Python у вашому
-                    вебпереглядачі.</p>
-            </div>
-
-            <div id="share_link">
-                <p>
-                    Будь-хто може отримати доступ до вашого коду за цим покликанням: <input size="35"
-                        id="share_link_val">
-                </p>
-                <div>
-
-                </div>
-            </div>
-            <div id="share_embed">
-                <p>
-                    Скопіюйте та вставте цей html, щоб розмістити свій код у блозі або на вебсайті: <textarea rows="4"
-                        cols="35" id="share_embed_val"></textarea>
-                </p>
-            </div>
-
-            <div id="share_qr">
-                <div>
-                    Кожен, хто просканує цей QR-код, зможе переглянути та запустити ваш код: <div id="share_qr_val">
-                    </div>
-                </div>
-            </div>
-
-
-            <div id="share_wp">
-                <div>
-                    Якщо у вас є вебсайт або блог на основі WordPress, ви можете легко вставити свій код за допомогою
-                    цього короткого коду: <input size="35" id="share_wp_val">
-                    <p>Для цього спочатку необхідно встановити на вашому сайті <a
-                            href="https://wordpress.org/plugins/create-with-code/" target="_blank">цей плагін</a>.</p>
-                </div>
-            </div>
-
-            <div id="share_type">
-                <div>
-                    Ви можете попрактикуватися у швидкості друку, ввівши свій код за цим покликанням: <input size="35"
-                        id="share_type_val">
-                    <div><a id="share_type_link" href="type.html" target="_blank" class="btn"><i
-                                class="fa fa-keyboard-o"></i> Спробуйте ввести цей код</a></div>
-                </div>
-            </div>
-
-            <div id="share_kpride">
-                <div>
-                    Тут ви можете створювати інтерактивні викладацькі та навчальні дії на основі ключових слів,
-                    прогнозування, запуску, дослідження, налагодження та розширення: <input size="35"
-                        id="share_kpride_val">
-                    <div><a id="share_kpride_link" href="kpride/index.html" class="btn" target="_blank"><i
-                                class="fa fa-mortar-board"></i> Спробуйте цю діяльність KPRIDE</a></div>
-                </div>
-            </div>
-        </div>
-    </div>
     <script>
         var toolsVisible = false;
-        $(function () {
+
+		// load python IDE
+        $(function() {
             $('#loading').hide();
             $('#holder').show();
-            PythonIDE.init('normal');
+            PythonIDE.init();
         });
     </script>
-    
-    <!--<link rel="stylesheet" href="lib/cm/skulptide.css"> -->
-    <script src="lib/cm/processing.min.js"></script>
-    <script src="lib/cm/pythonide.js"></script>
-    
-    <div class="maindiv" style="visibility:hidden;display:none;">
-        <div class="IDE">
-            <div id="title">
-                <h3>Online Python development environment</h3>
-                <p> See <a href="http://esperanc.github.io/skulptIde/pages.html">Github site</a> for more info.</p> 
-            </div>
-            <div id="menu">
-                <label class="button" onclick="newProgram()">New</label> 
-                <label class="button" onclick="runProgram()">Run</label> 
-                <label class="button" onclick="stopit()">Stop</label> 
-                <label class="button" onclick="clearit()">Clear</label> 
-                <label class="button" for="loadfile">Upload</label>
-                    <input type="file" id="loadfile" name="files[]" style="visibility:hidden;display:none;" onchange="loadit(this)"></input>
-                
-                <label class="button" onclick="saveit()">Download as</label>
-                <input id="savefilename" type="text" value="program.py"/>
-                <br/><br/>
-            </div>
-        </div>
-        
-        <div id="centralarea">
-            <!--<div id="canvas">
-            </div>-->
-            <div class="editor IDE">
-                <textarea id="code" cols="0" rows="0">
-                </textarea><br /> 
-            </div>
-        </div>
-    </div>
-    
-    <!--
-    <div id="outputpanel">
-        <h4 class="IDE">Output</h4>
-        <pre id="output"></pre>
-    </div>
-    -->
-    <div id="showurl" style="display:none;">
-        <label class="button" onclick="showUrl()">Show URL for this sketch</label><br/>
-        <a id="myurl" href="" title=""></a>
-    </div>
-    
-
-    <script type="text/javascript"> 
-
-
-    // These control the behavior of the script
-    var parms = {
-        program :  // Initial skulpt program to show in the editor
-            typeof(Storage) !== "undefined" && localStorage.getItem("skulptIdeProgram") || 
-            ["from processing import *",
-            "",
-            "def draw():",
-            "    line(0,0,100,100)",
-            "",
-            "run()"].join("\n"),
-        programName: typeof(Storage) !== "undefined" && localStorage.getItem("skulptIdeProgramName") ||
-            "saveprogram.py", 
-        noTitle: true,  // Whether to hide the title
-        noOutput: true, // Whether to hide the output panel
-        autoRun: true, // Whether to run the initial program after load
-        hideIde: true,  // Whether to hide the IDE buttons if autoRun is true
-        showUrl: false,  // Whether to show an interactive button for showing an url for this sketch
-    };
-
-    // Number of changes to the program after save
-    var changeCount = 0;
-
-    // Obtain the url parameter with name theParameter. Returns false
-    // if not specified.
-    function getParameter(theParameter) { 
-        var params = window.location.search.substr(1).split('&');
-
-        for (var i = 0; i < params.length; i++) {
-            var p=params[i].split('=');
-            if (p[0] == theParameter) {
-                if (p.length>1)
-                    return p[1]; 
-                else
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    // Saves the current state to the browser's store
-    function storeProgram () {
-        localStorage.setItem("skulptIdeProgram", getProgram());
-        localStorage.setItem("skulptIdeProgramName", document.getElementById("savefilename").value);
-    }
-
-    // Callback for "run"
-    function runProgram() {
-        storeProgram();
-       
-        let cnvBefore = document.querySelector("div#canvas"); 
-        cnvBefore.style.backgroundColor = "#222"; 
-        
+    <script>
+    let btnRun = document.querySelector("#btn_run");
+    function runSketch(event) {
         runit();
-        
-        let cnvAfter = document.querySelector("canvas#__processing0"); 
-        if (cnvAfter !== null) {
-            cnvAfter.style.display = "none";
-            cnvAfter.width = 0;
-            cnvAfter.height = 0;         
-        } 
     }
+    btnRun.addEventListener('click', runSketch);
 
-    // Callback for "new"
-    function newProgram() {
-        if (changeCount!=0) {
-            var yes = confirm ("Are you sure you want to start a new sketch?");
-            if (!yes) return;
-        } 
-        clearit();
-        setProgram("");
-        changeCount = 0;
-        document.getElementById("savefilename").value = "saveprogram.py";
-    }
-
-    // Callback for "load"
-    function loadit(input) {
-        var components = input.value.split("/");
-        if (components.length < 2) components = input.value.split("\\");
-        var filename = components [components.length-1];
-        var fileobj = input.files[0];
-        var reader = new FileReader();
-
-        // Closure to capture the file information.
-        reader.onload = (function (theFile) {
-            return function (e) {
-                var text = e.target.result;
-                setProgram(text);
-                storeProgram();
-                // clear the input element so that a new load on the same file will work
-                input.value = "";
-                document.getElementById("savefilename").value = filename;
-            };
-        }) (fileobj);
-
-        // Read in the file as a data URL.
-        reader.readAsText(fileobj);
-    }
-
-    // Callback for "download as"
-    function saveit() {
-
-        var data = getProgram();
-        var filename = document.getElementById("savefilename").value;
-        var blob = new Blob([data], {type: "text/plain;charset=utf-8"});
-        saveAs(blob, filename);
-        changeCount = 0;
-    }
-
-    // Setup 
-    function setup () {
-
-        // Setup skulpt and editor
-        setupPythonIDE('code','output','canvas');
-
-        // Arrange for counting the total number of changes
-        editor.on('change', function(cm) {changeCount++;});
-
-        // Set the initial program
-        setProgram (parms.program);
-
-        // Reset the change Counter
-        changeCount = 0;
-
-        // Arrange to run it automatically if requested
-        if (parms.autoRun) {
-            setTimeout(function() { runit() }, 50)
-        }
-    }
-
-    // Loads program from a given url using XMLHttprequest (must be on the same domain)
-    function loadUrl (url) {
-        function reqListener () {
-            console.log(url+" loaded");
-            parms.program = this.responseText;
-            setup ();
-        }
-
-        var oReq = new XMLHttpRequest();
-        oReq.addEventListener("load", reqListener);
-        oReq.open("GET", url); 
-        oReq.send();
-    }
-
-    // Includes an encoded url for this sketch at the bottom of the screen
-    function showUrl() {
-        var link = document.URL;
-        var i = link.indexOf("?");
-        if (i>=0) link = link.substr(0,i);
-        var pgm = getProgram(); 
-        var s1 = LZString.compressToEncodedURIComponent(pgm);
-        var s2 = encodeURIComponent(pgm);
-        if (s1.length<s2.length)
-            link = link+"?lzsrc="+s1;
-        else 
-            link = link+"?source="+s2;
-        if (parms.autoRun) link = link+"&autorun";
-        if (parms.hideIde) link = link+"&hideide";
-        if (parms.noTitle) link = link+"&notitle";        
-        if (parms.noOutput) link = link+"&nooutput";
-        $("#myurl").attr("href",link).text(link);
-    }
-
-    // Load the program name into the box
-    document.getElementById("savefilename").value = parms.programName;
-
-    // Whether to start the program immediately
-    parms.autoRun = getParameter("autorun") || getParameter("autoRun");
-
-    // Whether to hide the IDE 
-    parms.hideIde = getParameter("hideide") || getParameter("hideIde") ||
-                    getParameter("noide") || getParameter("noIde");
-
-    // Whether to hide the title 
-    parms.noTitle = getParameter("notitle") || getParameter("noTitle");
-
-    // Whether to hide the output panel 
-    parms.noOutput = getParameter("nooutput") || getParameter("noOutput");
-
-    // Whether to show the "showurl" button
-    parms.showUrl = getParameter("showurl") || getParameter("showUrl");
-
-    // Unhide the showurl div if requested
-    if (parms.showUrl) {
-        document.getElementById("showurl").style.display = "inline";
-    }
-
-    // Hide the title div if requested
-    if (parms.noTitle) {
-        document.getElementById("title").style.display = "none";
-    }
-
-    // Hide the outputpanel div if requested
-    if (parms.noOutput) {
-        document.getElementById("outputpanel").style.display = "none";
-    }
-
-    // See if there is a source program encoded in the url
-    var source = getParameter ("source");
-    if (source) { 
-        parms.program = decodeURIComponent(source); 
-    }
-    var lzsource = getParameter("lzsrc");
-    if (lzsource) {
-        parms.program = LZString.decompressFromEncodedURIComponent(lzsource);
-    }
-
-    // Whether to hide interface
-    if (parms.hideIde) {
-        var elements = document.getElementsByClassName('IDE');
-        for(var i=0; i<elements.length; i++) {
-            elements[i].style.display = "none";
-        }
-    }
-
-    // Load an external program if its url is passed as parameter 'program'
-    var programUrl = getParameter("program");
-    if (programUrl) {
-        // Load from file
-        programUrl = decodeURIComponent(programUrl);
-        var components = programUrl.split("/")
-        document.getElementById("savefilename").value = components[components.length-1];
-        loadUrl (programUrl);
+    function runit() { 
+        Sk.p5Sketch = "p5Sketch"; 
+        const cnvs = [...document.querySelectorAll(`[id^="defaultCanvas"]`),];
+        cnvs.forEach((cnv) => {
+            //cnv.style = "display:none";
+            cnv.remove();
+        });
     } 
-    else { 
-        // Load the initial program
-        setup();
-    }
-
-    // Prevent silently navigating away from the IDE
-    window.onbeforeunload = function() {
-        if (changeCount==0) return null;
-        return "Have you saved your program?";
-    }
-
-    // Try to save the program to local storage before leaving
-    window.onunload = storeProgram;
-
     </script>
 </body>
+
 </html>

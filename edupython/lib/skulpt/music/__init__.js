@@ -8,16 +8,16 @@ var $builtinmodule = function(name) {
 	
 	var set_tempo = function(ticks, bpm) {
 		if(ticks === undefined) 
-			ticks = new Sk.builtin.int_(4);
+			ticks = new Sk.builtin.nmber(4);
 		if(bpm === undefined)
-			bpm = new Sk.builtin.int_(120);
+			bpm = new Sk.builtin.nmber(120);
 		
 		mod._data.ticks = ticks.v;
 		mod._data.bpm = bpm.v;
 	}
 	
 	set_tempo.co_varnames = ['ticks', 'bpm'];
-	set_tempo.$defaults = [Sk.builtin.int_(4), Sk.builtin.int_(120)];
+	set_tempo.$defaults = [Sk.builtin.nmber(4), Sk.builtin.nmber(120)];
 	set_tempo.co_numargs = 2;
 	mod.set_tempo = new Sk.builtin.func(set_tempo);
 	
@@ -35,20 +35,10 @@ var $builtinmodule = function(name) {
 			loop = new Sk.builtin.bool(false);
 		
 		var notes = Sk.ffi.remapToJs(music);
-		console.log(typeof(notes));
-		if(typeof(notes == "string")) {
-			notes = [notes];
-		}
-		if(typeof(notes == "object")) {
-			notes = notes[0];
-		}
 		
 		return PythonIDE.runAsync(function(resolve, reject) {
 			var i = 0;
 			var timeout = 60000 / mod._data.bpm / mod._data.ticks;
-			if(!(window.AudioContext || window.webkitAudioContext)) {
-				throw "Sorry, your web browser doesn't support web audio";
-			}
 			
 			function playNextNote() {
 				if(mod._data.stop) {
@@ -63,22 +53,16 @@ var $builtinmodule = function(name) {
 					delete mod._data.osc;
 				}
 				
-				
 				if(i >= notes.length){
 					if(loop.v) {
 						i = 0;
 					} else {
-						mod._data.audioCtx.close();
 						if(wait.v)
 							resolve();
 						return;
 					}
 				}
-				var n = notes;
-				if(typeof(notes) != "string") {
-					n = notes[i];
-				} 
-				var n = n.toLowerCase();
+				var n = notes[i].toLowerCase();
 				var d = n.match(/([rcdefgab][b#]?)([0-9]?)(:([0-9]*))?/);
 				n = {short: n,
 					note: d[1],
@@ -174,7 +158,7 @@ var $builtinmodule = function(name) {
 			delete mod._data.stop;
 		}
 		if(len === undefined) 
-			len = new Sk.builtin.int_(-1);
+			len = new Sk.builtin.nmber(-1);
 		if(wait === undefined)
 			wait = new Sk.builtin.bool(true);
 		
@@ -208,7 +192,7 @@ var $builtinmodule = function(name) {
 		
 	}
 	pitch.co_varnames = ['frequency', 'len', 'pin', 'wait'];
-	pitch.$defaults = [undefined, Sk.builtin.int_(-1), undefined, Sk.builtin.bool(false)];
+	pitch.$defaults = [undefined, Sk.builtin.nmber(-1), undefined, Sk.builtin.bool(false)];
 	pitch.co_numargs = 4;
 	mod.pitch = new Sk.builtin.func(pitch);
 	

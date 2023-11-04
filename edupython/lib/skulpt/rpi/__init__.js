@@ -16,8 +16,6 @@ var GPIO = function(name) {
 	mod.PUD_OFF = Sk.builtin.int_(0);
 	mod.PUD_DOWN = Sk.builtin.int_(1);
 	mod.PUD_UP = Sk.builtin.int_(2);
-	mod.FALLING = Sk.builtin.int_(32);
-	mod.RISING = Sk.builtin.int_(31);
 
 	var internals = {
 		mode: mod.BOARD,
@@ -355,29 +353,10 @@ var GPIO = function(name) {
 	}
 
 	setup.co_varnames = ["channel", "direction", "initial", "pull_up_down"];
-	setup.$defaults = [Sk.builtin.none, Sk.builtin.none, mod.LOW, Sk.builtin.none];
+	setup.$defauls = [Sk.builtin.none, Sk.builtin.none, mod.LOW, Sk.builtin.none];
 	setup.co_numargs = 4;
 
 	mod.setup = new Sk.builtin.func(setup);
-	mod._event_handlers = [];
-
-	var add_event_detect = function(gpio, edge, callback, bouncetime) {
-		mod._event_handlers.push({
-			gpio: gpio,
-			edge: edge,
-			callback:callback,
-			bouncetime:bouncetime
-		});
-		//throw new Sk.builtin.Exception("Event detection is not implemented yet");
-	};
-
-	add_event_detect.co_varnames = ["gpio", "edge", "callback", "bouncetime"];
-	setup.$defaults = [Sk.builtin.none, Sk.builtin.none, Sk.builtin.none, Sk.builtin.none];
-	setup.co_numargs = 4;
-	mod.add_event_detect = new Sk.builtin.func(add_event_detect);
-
-	
-
 
 	var cleanup = function(channel) {
 		internals.mode = mod.BOARD;
@@ -410,7 +389,7 @@ var GPIO = function(name) {
 	};
 
 	cleanup.co_varnames = ["channel"];
-	cleanup.$defaults = [Sk.builtin.none];
+	cleanup.$defauls = [Sk.builtin.none];
 	cleanup.co_numargs = 1;
 	mod.cleanup = new Sk.builtin.func(cleanup);
 
@@ -451,35 +430,7 @@ var GPIO = function(name) {
 			var state = document.getElementById(id).checked;
 			var pinNumber = id.split('_')[2];
 			var pin = internals.pins[pinNumber];
-			var prevVoltage = pin.voltage;
 			pin.voltage = state? 3.3 : 0.0;
-			var vDiff = pin.voltage - prevVoltage;
-			if(vDiff > 0) {
-				for(var i = 0; i < mod._event_handlers.length; i++) {
-					var h = mod._event_handlers[i];
-					if(h.gpio.v == pin.bcm) {
-						if(h.edge.v == mod.RISING.v) {
-							if(h.callback) {
-								Sk.misceval.callsimAsync({}, h.callback, h.gpio);
-							}
-						}
-					}
-				}
-				
-			}
-			if(vDiff < 0) {
-				for(var i = 0; i < mod._event_handlers.length; i++) {
-					var h = mod._event_handlers[i];
-					if(h.gpio.v == pin.bcm) {
-						if(h.edge.v == mod.FALLING.v) {
-							if(h.callback) {
-								Sk.misceval.callsimAsync({}, h.callback, h.gpio);
-							}
-						}
-					}
-				}
-			}
-
 		});
 	}
 	updateIOs();
