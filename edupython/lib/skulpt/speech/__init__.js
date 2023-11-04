@@ -87,13 +87,13 @@ var $builtinmodule = function (name) {
 		return PythonIDE.runAsync(function(resolve, reject) {
 			// DEFAULTS
 			if(pitch === undefined)
-				pitch = Sk.builtin.nmber(64);
+				pitch = Sk.builtin.int_(64);
 			if(speed === undefined)
-				speed = Sk.builtin.nmber(72);
+				speed = Sk.builtin.int_(72);
 			if(mouth === undefined)
-				mouth = Sk.builtin.nmber(128);
+				mouth = Sk.builtin.int_(128);
 			if(throat === undefined)
-				throat = Sk.builtin.nmber(128);
+				throat = Sk.builtin.int_(128);
 
 			_SetPitch(pitch.v);
 			_SetSpeed(speed.v);
@@ -126,7 +126,7 @@ var $builtinmodule = function (name) {
   };
 
   say.co_varnames = ['speech', 'pitch', 'speed', 'mouth', 'throat'];
-	say.$defaults = [Sk.builtin.none, Sk.builtin.nmber(64), Sk.builtin.nmber(72), Sk.builtin.nmber(128), Sk.builtin.nmber(128)];
+	say.$defaults = [Sk.builtin.none, Sk.builtin.int_(64), Sk.builtin.int_(72), Sk.builtin.int_(128), Sk.builtin.int_(128)];
 	say.co_numargs = 5;
 	mod.say = new Sk.builtin.func(say);
 
@@ -148,13 +148,13 @@ var $builtinmodule = function (name) {
 		return PythonIDE.runAsync(function(resolve, reject) {
 			// DEFAULTS
 			if(pitch === undefined)
-				pitch = Sk.builtin.nmber(64);
+				pitch = Sk.builtin.int_(64);
 			if(speed === undefined)
-				speed = Sk.builtin.nmber(72);
+				speed = Sk.builtin.int_(72);
 			if(mouth === undefined)
-				mouth = Sk.builtin.nmber(128);
+				mouth = Sk.builtin.int_(128);
 			if(throat === undefined)
-				throat = Sk.builtin.nmber(128);
+				throat = Sk.builtin.int_(128);
 
 			_SetPitch(pitch.v);
 			_SetSpeed(speed.v);
@@ -190,7 +190,7 @@ var $builtinmodule = function (name) {
   };
 
   pronounce.co_varnames = ['speech', 'pitch', 'speed', 'mouth', 'throat'];
-	pronounce.$defaults = [Sk.builtin.none, Sk.builtin.nmber(64), Sk.builtin.nmber(72), Sk.builtin.nmber(128), Sk.builtin.nmber(128)];
+	pronounce.$defaults = [Sk.builtin.none, Sk.builtin.int_(64), Sk.builtin.int_(72), Sk.builtin.int_(128), Sk.builtin.int_(128)];
 	pronounce.co_numargs = 5;
 	mod.pronounce = new Sk.builtin.func(pronounce);
 
@@ -207,11 +207,11 @@ var $builtinmodule = function (name) {
 				if(parts) {
 
 					if(speed === undefined)
-						speed = Sk.builtin.nmber(72);
+						speed = Sk.builtin.int_(72);
 					if(mouth === undefined)
-						mouth = Sk.builtin.nmber(128);
+						mouth = Sk.builtin.int_(128);
 					if(throat === undefined)
-						throat = Sk.builtin.nmber(128);
+						throat = Sk.builtin.int_(128);
 					_SetPitch(parts[1]);
 					_SetSpeed(speed.v);
 					_SetMouth(mouth.v);
@@ -257,7 +257,7 @@ var $builtinmodule = function (name) {
   };
 
   sing.co_varnames = ['speech', 'pitch', 'speed', 'mouth', 'throat'];
-	sing.$defaults = [Sk.builtin.none, Sk.builtin.nmber(64), Sk.builtin.nmber(72), Sk.builtin.nmber(128), Sk.builtin.nmber(128)];
+	sing.$defaults = [Sk.builtin.none, Sk.builtin.int_(64), Sk.builtin.int_(72), Sk.builtin.int_(128), Sk.builtin.int_(128)];
 	sing.co_numargs = 5;
 	mod.sing = new Sk.builtin.func(sing);
 

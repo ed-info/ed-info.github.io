@@ -5,11 +5,40 @@ var $builtinmodule = function (name) {
     var s = {
 	};
 
-	
+	var imagesToUpdate = {};
 	s.Image = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		$loc.data = Sk.ffi.remapToPy([]);
-		var imageData = undefined;
+		
 		var refreshTimeout = undefined;
+		function updateImages() {
+			if(refreshTimeout) {
+				clearTimeout(refreshTimeout);
+				refreshTimout = undefined;
+			}
+			
+			refreshTimeout = setTimeout(function() {
+				
+				for(var id in imagesToUpdate) {
+					if(imagesToUpdate[id].imageData) {
+						
+						var c = document.getElementById(id);
+						var ctx = c.getContext("2d");
+						ctx.putImageData(imagesToUpdate[id].imageData, 0, 0);
+					
+					}
+				}
+		
+			}, 100);
+				
+			
+		}
+		
+		PythonIDE.python.outputListeners.push(updateImages);
+	
+		
+		
+		$loc.data = Sk.ffi.remapToPy([]);
+		
+		
 		
 		$loc.__init__ = new Sk.builtin.func(function(self, width, height) {
 			// default param values
@@ -27,110 +56,108 @@ var $builtinmodule = function (name) {
 			$loc.width = width;
 			$loc.height = height;
 			
-			PythonIDE.python.outputListeners.push(function(e) {
-				if(refreshTimeout) {
-					clearTimeout(refreshTimeout);
-					refreshTimout = undefined;
-				}
-				if(imageData) {
-					setTimeout(function() {
-						var c = document.getElementById($loc.id);
-						var ctx = c.getContext("2d");
-						ctx.putImageData(imageData, 0, 0);
-					}, 100);
-					
-				}
-			});
 			
 		});
 		
-		$loc.draw = new Sk.builtin.func(function(self, pyData) {
-			var data = Sk.ffi.remapToJs(pyData);
-			var colorModel = "B&W";
-			
-			var c = document.getElementById($loc.id);
-			if(!c) {
-				var html = '<canvas id="' + $loc.id + '" width="' + $loc.width + 'px" height="' + $loc.height + 'px" style="background-color: #FFF; border:1px solid #000000;"></canvas>';
-			
-				PythonIDE.python.output(html);
-			}
-			
-			
-			
-			
-			
-			var c = document.getElementById($loc.id);
-			var ctx = c.getContext("2d");
-
-			var w = c.width;
-			var h = c.height;
-
-			if(data != undefined && data[0] != undefined && data[0][0] != undefined) {
+		$loc.draw = new Sk.builtin.func(function(self, pyData, drawGrid) {
+			if(PythonIDE.runningTests)
+				return;
+			if(drawGrid === undefined)
+				drawGrid = Sk.builtin.bool(true);
+			try {
+				var data = Sk.ffi.remapToJs(pyData);
+				var colorModel = "B&W";
 				
-				var cx = data[0].length;
-				var cy = data.length;
+				var c = document.getElementById($loc.id);
+				if(!c) {
+					var html = '<p><canvas id="' + $loc.id + '" width="' + $loc.width + 'px" height="' + $loc.height + 'px" style="background-color: #FFF; border:1px solid #000000;"></canvas></p>';
 				
-				var cw = w / cx;
-				var ch = h / cy;
-				var x,y;
-				
-				// scan through for colour model
-				if(data[0][0].length && data[0][0].length > 2) {
-					colorModel = "RGB"
-				} else {
-					for(x = 0; x < w; x++) {
-						if(data[0][x] > 1) {
-							colorModel = "GS"
-							break;
-						}
-					}
+					PythonIDE.python.output(html, true);
 				}
 				
 				
-				// fill in blocks
-				for(y = 0; y < data.length; y++) {
-					for(x = 0; x < data[y].length; x++) {
-						switch(colorModel) {
-							case 'GS':
-								if(data[y][x] != undefined) {
-									ctx.fillStyle="rgb(" + data[y][x] + "," + data[y][x] + "," + data[y][x] + ")";
-									ctx.fillRect(x * cw, y * ch, cw, ch);
-								}
-							break;
-							case 'B&W':
-								if(data[y][x])
-									ctx.fillRect(x * cw, y * ch, cw, ch);
-								
-								
-							break;
-							case 'RGB':
-								if(data[y][x] && data[y][x][0] != undefined && data[y][x][1] != undefined && data[y][x][2] != undefined) {
-									ctx.fillStyle="rgb(" + data[y][x][0] + "," + data[y][x][1] + "," + data[y][x][2] + ")";
-									ctx.fillRect(x * cw, y * ch, cw, ch);
-								}
+				
+				
+				
+				var c = document.getElementById($loc.id);
+				var ctx = c.getContext("2d");
+	
+				var w = c.width;
+				var h = c.height;
+	
+				if(data != undefined && data[0] != undefined && data[0][0] != undefined) {
+					
+					var cx = data[0].length;
+					var cy = data.length;
+					
+					var cw = w / cx;
+					var ch = h / cy;
+					var x,y;
+					
+					// scan through for colour model
+					if(data[0][0].length && data[0][0].length > 2) {
+						colorModel = "RGB"
+					} else {
+						for(x = 0; x < w; x++) {
+							if(data[0][x] > 1) {
+								colorModel = "GS"
+								break;
+							}
+						}
+					}
+					
+					ctx.fillStyle = "rgb(255,255,255)";
+					ctx.fillRect(0, 0, w, h	);
+					ctx.fillStyle = "rgb(0,0,0)";
+					
+					
+					// fill in blocks
+					for(y = 0; y < data.length; y++) {
+						for(x = 0; x < data[y].length; x++) {
+							switch(colorModel) {
+								case 'GS':
+									if(data[y][x] != undefined) {
+										ctx.fillStyle = "rgb(" + data[y][x] + "," + data[y][x] + "," + data[y][x] + ")";
+										ctx.fillRect(Math.floor(x * cw), Math.floor(y * ch), Math.ceil(cw), Math.ceil(ch)	);
+									}
+								break;
+								case 'B&W':
+									if(!data[y][x])
+										ctx.fillRect(Math.floor(x * cw), Math.floor(y * ch), Math.ceil(cw), Math.ceil(ch));
 									
-							break;
+									
+								break;
+								case 'RGB':
+									if(data[y][x] && data[y][x][0] != undefined && data[y][x][1] != undefined && data[y][x][2] != undefined) {
+										ctx.fillStyle="rgb(" + data[y][x][0] + "," + data[y][x][1] + "," + data[y][x][2] + ")";
+										ctx.fillRect(Math.floor(x * cw), Math.floor(y * ch), Math.ceil(cw), Math.ceil(ch));
+									}
+										
+								break;
+							}
+							
+							
 						}
-						
-						
 					}
+					if(drawGrid.v) {
+						// draw grid
+						for(x = 0; x < cx; x++) {
+							ctx.beginPath();
+							ctx.moveTo(x * cw, 0);
+							ctx.lineTo(x * cw, h);
+							ctx.stroke();
+						}
+						for(y = 0; y < cy; y++) {
+							ctx.beginPath();
+							ctx.moveTo(0, y * ch);
+							ctx.lineTo(w, y * ch);
+							ctx.stroke();
+						}}
+					imagesToUpdate[$loc.id] = {imageData:ctx.getImageData(0, 0, w, h)};
+					
 				}
-				
-				// draw grid
-				for(x = 0; x < cx; x++) {
-					ctx.beginPath();
-					ctx.moveTo(x * cw, 0);
-					ctx.lineTo(x * cw, h);
-					ctx.stroke();
-				}
-				for(y = 0; y < cy; y++) {
-					ctx.beginPath();
-					ctx.moveTo(0, y * ch);
-					ctx.lineTo(w, y * ch);
-					ctx.stroke();
-				}
-				imageData = ctx.getImageData(0, 0, w, h);
-
+			} catch (e) {
+				throw new Sk.builtin.Exception("Could not draw image. Invalid or missing data?");
 			}
 		});
 	}, 'Image', []);
@@ -360,7 +387,7 @@ var $builtinmodule = function (name) {
 				recognition.onend = function() {
 					$('#speech_holder').remove();
 					PythonIDE.python.output('<span class="console_input">' + final_transcript + '</span>\n');
-					resolve(final_transcript + '\n');
+					resolve(Sk.ffi.remapToPy(final_transcript));
 				};
 				recognition.start();
 			});
