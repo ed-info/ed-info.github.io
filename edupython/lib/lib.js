@@ -880,7 +880,11 @@ var PythonIDE = {
 			PythonIDE.editor.setCursor(0);
 			PythonIDE.editor.focus();
 		}
-
+		Sk.python3 = true;
+		Sk.python2.print_function = true;
+		Sk.python2.unicode_literals = true;
+		Sk.python2.ceil_floor_int = true;
+		Sk.inputfunTakesPrompt = true;
 		(Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'canvas';
 
 		Sk.inputfun = function(prompt) {
@@ -934,8 +938,29 @@ var PythonIDE = {
 				path: 'lib/skulpt/schooldirect/__init__.js'
 			},
 
+			itertools: {
+				path: 'lib/skulpt/itertools/__init__.js'
+			},
+			colorsys: {
+				path: 'lib/skulpt/colorsys/__init__.js'
+			},
+			pgzrun: {
+				path: 'lib/skulpt/pgzrun/__init__.js',
+				dependencies: ['lib/skulpt/tkinter/colors.js']
+			},
 			tkinter: {
-				path: 'lib/skultp/tkinter/__init__.js'
+				path: 'lib/skulpt/tkinter/__init__.js',
+				dependencies: ['lib/skulpt/tkinter/colors.js']
+			},
+			martypy: {
+				path: 'lib/skulpt/martypy/__init__.js',
+				dependencies: ['lib/skulpt/martypy/three.js', 'lib/skulpt/martypy/GLTFLoader.js', 'lib/skulpt/martypy/marty.js']
+			},
+			lcddriver: {
+				path: 'lib/skulpt/lcddriver/__init__.js'
+			},
+			neopixel: {
+				path: 'lib/skulpt/neopixel/__init__.js'
 			},
 
 			os: {
@@ -949,7 +974,11 @@ var PythonIDE = {
 				path: 'lib/skulpt/radio/__init__.js'
 			},
 
-
+			hashlib: {
+				path: 'skulpt/hashlib/__init__.js',
+				dependencies: ['lib/skulpt/hashlib/crypto-js.js']
+			},
+			
 			// easy data visualisation functions unique to withcode.uk
 			withcode: {
 				path: 'lib/skulpt/withcode/__init__.js'
