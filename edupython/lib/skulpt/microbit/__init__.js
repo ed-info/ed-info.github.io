@@ -1,14 +1,118 @@
+var microphone = function(name) {
+	
+	var mod = {};
+	mod.level = 0;
+	mod.events = [];
+	mod.thresholds = {
+		loud: 128,
+		quiet: 50
+	}
+	
+	mod.current_event = new Sk.builtin.func(function() {
+		return mod.SoundEvent.QUIET;
+	});
+
+	mod.was_event = new Sk.builtin.func(function(event) {
+		var result = false;
+		for(var i = 0; i < mod.events.length; i++) {
+			if(mod.events[i] == event) {
+				result = true;
+				break;
+			}
+		}
+		mod.events = [];
+		updateMicEventList();
+		return Sk.ffi.remapToPy(result);
+	});
+
+	mod.get_events = new Sk.builtin.func(function() {
+		var events = new Sk.builtin.tuple(mod.events);
+		mod.events = [];
+		updateMicEventList();
+		return events;
+	});
+
+	mod.sound_level = new Sk.builtin.func(function() {
+		return Sk.ffi.remapToPy(mod.level);
+	});
+
+	function updateMicEventList() {
+		var html = '';
+		for(var i = 0; i < mod.events.length; i++) {
+			html += mod.events[i]._name + " ";
+		}
+		$('#mb_mic_event_list').html(html);
+
+	}
+
+	mod._setValue = function(jsVal) {
+		mod.level = jsVal;
+		var lastEvent = undefined;
+		if(mod.events.length > 0) {
+			lastEvent = mod.events[mod.events.length - 1];
+		}
+		if(mod.level > mod.thresholds.loud) {
+			if(lastEvent != mod.SoundEvent.LOUD) {
+				mod.events.push(mod.SoundEvent.LOUD);
+				updateMicEventList();
+			}
+		} else {
+			if(mod.level > mod.thresholds.quiet && lastEvent != mod.SoundEvent.QUIET) {
+				mod.events.push(mod.SoundEvent.QUIET);
+				updateMicEventList();
+			}
+		}
+
+	}
+
+	mod.updateThresholds = function() {
+		$('#mb_mic_slider_volume').css({'background-image': 'linear-gradient(90deg, green, orange, orange ' 
+		+ Math.floor(mod.thresholds.quiet * 100 / 255) + '%, orange, red '
+		+ Math.floor(mod.thresholds.loud * 100 / 255) + '%)'});
+	}
+
+	mod.set_threshold = new Sk.builtin.func(function(event, value) {
+		value = Sk.ffi.remapToJs(value);
+		if(value > 255 || value < 0) {
+			throw new Sk.builtin.ValueError("Threshold must be between 0 and 255");
+		}
+		if(event == mod.SoundEvent.LOUD) {
+			mod.thresholds.loud = value;
+		}
+		if(event == mod.SoundEvent.QUIET) {
+			mod.thresholds.quiet = value;
+		}
+	});
+	return mod;
+}
+
+var speaker = function(name) {
+	var mod = {};
+	mod.volume = 127;
+	mod._on = true;
+	mod.off = new Sk.builtin.func(function() {
+		$('#mb_speaker_enabled').text('disabled');
+		mod._on = false;
+	});
+
+	mod.on = new Sk.builtin.func(function() {
+		$('#mb_speaker_enabled').text(mod.volume);
+		mod._on = true;
+	});
+	return mod;
+}
+
 var uart = function(name) {
 	var mod = {};
 	var init = function(baudrate, bits, parity, stop, tx, rx) {
 		if(baudrate === undefined)
-			baudrate = Sk.builtin.nmber(9600);
+			baudrate = Sk.ffi.remapToPy(9600);
 		if(bits === undefined)
-			bits = Sk.builtin.nmber(8);
+			bits = Sk.ffi.remapToPy(8);
 		if(parity === undefined)
 			parity = Sk.builtin.none;
 		if(stop === undefined)
-			stop = Sk.builtin.nmber(1);
+			stop = Sk.ffi.remapToPy(1);
 		if(tx === undefined)
 			tx = Sk.builtin.none;
 		if(rx === undefined)
@@ -16,7 +120,7 @@ var uart = function(name) {
 	}
 
 	init.co_varnames = ['baudrate', 'bits', 'parity', 'stop', 'tx', 'rx'];
-	init.$defaults = [Sk.builtin.nmber(9600), Sk.builtin.nmber(8), Sk.builtin.none, Sk.builtin.nmber(1), Sk.builtin.none, Sk.builtin.none];
+	init.$defaults = [Sk.ffi.remapToPy(9600), Sk.ffi.remapToPy(8), Sk.builtin.none, Sk.ffi.remapToPy(1), Sk.builtin.none, Sk.builtin.none];
 	init.co_numargs = 6;
 	mod.init = new Sk.builtin.func(init);
 
@@ -24,10 +128,65 @@ var uart = function(name) {
 		return Sk.builtin.bool(false);
 	});
 
+	var read = function(n) {
+	}
+
+	read.co_varnames = ['n'];
+	read.$defaults = [Sk.ffi.remapToPy(0)];
+	read.co_numargs = 1;
+	mod.read = new Sk.builtin.func(read);
+
+	mod.readall = new Sk.builtin.func(function() {
+
+	});
+
+	var readinto = function(buf, nbytes) {
+
+	}
+	readinto.co_varnames = ['buf', 'nbytes'];
+	readinto.$defaults = [Sk.builtin.none, Sk.ffi.remapToPy(0)];
+	readinto.co_num_args = 2;
+	mod.readinto = new Sk.builtin.func(readinto);
+
+	mod.readline = new Sk.builtin.func(function() {
+		return Sk.builtin.none;
+	});
+
+	mod.write = new Sk.builtin.func(function(buf) {
+
+	});
 
 
 	return mod;
 }
+
+var spi = function(name) {
+	var mod = {};
+
+	var read = function(nbytes){
+		data = [];
+		for(var i = 0; i < Sk.ffi.remapToJs(nbytes); i++) {
+			data.push(0);
+		}
+		return Sk.ffi.remapToPy(data);
+	};
+
+	mod.read = new Sk.builtin.func(read);
+
+	var write = function(buffer){
+	};
+	mod.write = new Sk.builtin.func(write);
+
+	var init = function(baudrate, bits, mode, sclk, mosi, miso) {
+	}
+
+	init.co_varnames = ["baudrate", "bits", "mode", "sclk", "mosi", "miso"]
+	init.$defaults = [Sk.ffi.remapToPy(1000000), Sk.ffi.remapToPy(8), Sk.ffi.remapToPy(0), Sk.builtin.none, Sk.builtin.none, Sk.builtin.none];
+	init.co_numargs = 6;
+	mod.init = new Sk.builtin.func(init);
+	
+	return mod;
+};
 
 var i2c = function(name) {
 	var mod = {};
@@ -36,6 +195,11 @@ var i2c = function(name) {
 		if(repeat === undefined) {
 			repeat = new Sk.builtin.bool(false);
 		}
+		data = [];
+		for(var i = 0; i < Sk.ffi.remapToJs(n); i++) {
+			data.push(0);
+		}
+		return Sk.ffi.remapToPy(data);
 	};
 
 	read.co_varnames = ['addr', 'n', 'repeat'];
@@ -53,7 +217,18 @@ var i2c = function(name) {
 	write.co_numargs = 3;
 	mod.write = new Sk.builtin.func(write);
 
+	var init = function(freq, sda, scl) {
+	}
 
+	init.co_varnames = ["freq", "sda", "scl"]
+	init.$defaults = [Sk.ffi.remapToPy(100000), Sk.builtin.none, Sk.builtin.none];
+	init.co_numargs = 3;
+	mod.init = new Sk.builtin.func(init);
+	
+	mod.scan = new Sk.builtin.func(function() {
+		return Sk.ffi.remapToPy([]);
+	});
+	
 	return mod;
 };
 
@@ -82,23 +257,23 @@ var compass = function(name) {
 	});
 
 	mod.get_x = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.x);
+		return Sk.ffi.remapToPy(mod.data.x);
 	});
 
 	mod.get_y = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.y);
+		return Sk.ffi.remapToPy(mod.data.y);
 	});
 
 	mod.get_z = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.z);
+		return Sk.ffi.remapToPy(mod.data.z);
 	});
 
 	mod.heading = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.heading);
+		return Sk.ffi.remapToPy(mod.data.heading);
 	});
 
 	mod.get_field_strength = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.strength);
+		return Sk.ffi.remapToPy(mod.data.strength);
 	});
 
 	return mod;
@@ -120,15 +295,15 @@ var accelerometer = function(name) {
 	}
 
 	mod.get_x = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(mod.data.x);
+		return Sk.ffi.remapToPy(mod.data.x);
 	});
 
 	mod.get_y = new Sk.builtin.func(function() {
-		return new Sk.builtin.number(mod.data.y);
+		return Sk.ffi.remapToPy(mod.data.y);
 	});
 
 	mod.get_z = new Sk.builtin.func(function() {
-		return new Sk.builtin.number(mod.data.z);
+		return Sk.ffi.remapToPy(mod.data.z);
 	});
 
 	mod.get_values = new Sk.builtin.func(function() {
@@ -738,8 +913,10 @@ var display = function(name) {
 
 	var mod = {};
 
+	var backgroundAnimation;
+
 	mod.get_pixel = new Sk.builtin.func(function(x, y) {
-		return Sk.builtin.nmber(leds[y.v][x.v]);
+		return Sk.ffi.remapToPy(parseInt(leds[y.v][x.v]));
 	});
 
 	mod.set_pixel = new Sk.builtin.func(function(x, y, brightness) {
@@ -760,6 +937,9 @@ var display = function(name) {
 	}
 
 	var show = function(image, delay, wait, loop, clear) {
+		if(backgroundAnimation) {
+			clearTimeout(backgroundAnimation);
+		}
 		if(wait === undefined)
 			wait = Sk.builtin.bool(true);
 
@@ -770,7 +950,7 @@ var display = function(name) {
 			clear = Sk.builtin.bool(false);
 
 		if(delay === undefined)
-			delay = Sk.builtin.nmber(400);
+			delay = Sk.ffi.remapToPy(400);
 
 		if(image.tp$name == "number") {
 			throw new Sk.builtin.TypeError("Convert the number to a string before showing it");
@@ -779,10 +959,13 @@ var display = function(name) {
 
 
 		return PythonIDE.runAsync(function(resolve, reject) {
-			if(image && (image.tp$name == "list" || (image.tp$name == "str" && image.v.length > 1))) {
+			if(image && (image.tp$name == "list" || (image.tp$name == "tuple") || (image.tp$name == "str" && image.v.length > 1))) {
 				var i = 0;
 
 				function showNextFrame() {
+					if(backgroundAnimation) {
+						clearTimeout(backgroundAnimation);
+					}
 					if(i >= image.v.length) {
 						if(loop.v) {
 							i = 0;
@@ -814,7 +997,7 @@ var display = function(name) {
 					}
 
 					i++;
-					setTimeout(showNextFrame, delay.v)
+					backgroundTimeout = setTimeout(showNextFrame, delay.v)
 				}
 
 				showNextFrame();
@@ -843,7 +1026,7 @@ var display = function(name) {
 
 	}
 	show.co_varnames = ['image', 'delay', 'wait', 'loop', 'clear'];
-	show.$defaults = [Sk.builtin.none, Sk.builtin.none, true, true, false];
+	show.$defaults = [Sk.builtin.none, Sk.ffi.remapToPy(400), Sk.ffi.remapToPy(true), Sk.ffi.remapToPy(false), Sk.ffi.remapToPy(false)];
 	show.co_numargs = 5;
 	mod.show = new Sk.builtin.func(show);
 
@@ -863,33 +1046,23 @@ var display = function(name) {
 
 	}
 
-	function scroll(message, delay) {
-		if(delay == undefined)
-			delay = Sk.builtin.nmber(400);
-
-		if(message.tp$name == "number") {
-			message = new Sk.builtin.str(message.v);
-		}
-
-		delay.v /= 5;
-		message.v = ' ' + message.v + ' ';
-		return PythonIDE.runAsync(function(resolve, reject) {
+	function scroll(message, delay, wait, loop, monospace) {
+		
+		function doScroll(resolve, reject) {
+			var msg = " " + Sk.ffi.remapToJs(message) + " ";
 			var i, x, y;
 			var rows = ['', '', '', '', ''];
-			for(i = 0; i < message.v.length; i++) {
-				var currentLetter = message.v[i];
+			for(i = 0; i < msg.length; i++) {
+				var currentLetter = msg[i];
 
 				var letter = letters[" "];
 				if(letters.hasOwnProperty(currentLetter)) {
 					letter = letters[currentLetter];
 				}
 
-
 				for(y = 0; y < 5; y++) {
 					rows[y] += letter[y] + " ";
 				}
-
-
 			}
 
 			var width = rows[0].length;
@@ -897,31 +1070,72 @@ var display = function(name) {
 
 
 			function showScroll() {
+				mod._scrolling = true;
 				for(y = 0; y < 5; y++) {
 					for(x = offset; x < offset + 5; x++) {
 						setLED(x - offset, y, rows[y][x]);
 					}
 				}
-
+				if(backgroundAnimation) {
+					clearTimeout(backgroundAnimation);
+				}
 				if(offset < width - 5) {
 					offset++;
-					setTimeout(showScroll, delay.v);
+					backgroundAnimation = setTimeout(showScroll, delay.v / 2);
 				} else {
-					resolve();
+
+					if(loop.v) {
+						offset = 0;
+						backgroundAnimation = setTimeout(showScroll, delay.v / 2);
+					} else {
+						mod._scrolling = false;
+
+						resolve();	
+					}
+					
 				}
 			}
 
-
-			//for(offset = 0; offset < width - 5; offset++) {
 			showScroll();
-			//}
-
-		});
+			if(!wait.v) {
+				resolve();
+			}
+		}
+		if(mod._scrolling) {
+			if(wait.v) {
+				return PythonIDE.runAsync(function(resolve, reject) {
+					var c;
+					function checkAgain() {
+						if(!mod._scrolling) {
+							clearInterval(c);
+							doScroll(resolve, reject);
+						}
+					}
+					c = setInterval(checkAgain, 200);
+				});
+			}
+			return;
+		}
+		
+		return PythonIDE.runAsync(doScroll);
 	}
-	scroll.co_varnames = ['text', 'delay'];
-	scroll.$defaults = [Sk.builtin.none, Sk.builtin.nmber(400)];
+	scroll.co_varnames = ['text', 'delay', 'wait', 'loop', 'monospace'];
+	scroll.$defaults = [Sk.builtin.none, Sk.ffi.remapToPy(150), Sk.ffi.remapToPy(true), Sk.ffi.remapToPy(false), Sk.ffi.remapToPy(false)];
 	scroll.co_numargs = 2;
 	mod.scroll = new Sk.builtin.func(scroll);
+	mod._on = true;
+	mod.off = new Sk.builtin.func(function() {
+		mod._on = false;
+	});
+	
+	mod.on = new Sk.builtin.func(function() {
+		mod._on = true;
+	});
+
+	
+	mod.is_on = new Sk.builtin.func(function() {
+		return new Sk.builtin.bool(mod._on);
+	});
 
 
 	return mod;
@@ -943,15 +1157,16 @@ var $builtinmodule = function (name) {
 
 	mod.reset = new Sk.builtin.func(function() {
 		start_time = Date.now();
+		throw new Sk.builtin.NotImplementedError("Reset not implemented in simulator");
 		// not implemented yet
 	});
 
 	mod.temerature = new Sk.builtin.func(function() {
-		return new Sk.builtin.nmber(23);
+		return Sk.ffi.remapToPy(23);
 	});
 
 	mod.running_time = new Sk.builtin.func(function() {
-		return Sk.builtin.nmber(Date.now() - start_time);
+		return Sk.ffi.remapToPy(Date.now() - start_time);
 	});
 
 	var start_time = Date.now();
@@ -965,8 +1180,17 @@ var $builtinmodule = function (name) {
 	});
 
 	mod.temperature = new Sk.builtin.func(function() {
-		return Sk.builtin.nmber(mod.data.temperature);
+		return Sk.ffi.remapToPy(mod.data.temperature);
 	});
+
+	var SoundEvent =  new Sk.misceval.buildClass(mod, function($gbl, $loc) {
+		$loc.__init__ = new Sk.builtin.func(function(self, name) {
+			self._name = name;
+		});
+	}, "SoundEvent", []);
+	SoundEvent.LOUD = Sk.misceval.callsim(SoundEvent, 'loud');
+	SoundEvent.QUIET = Sk.misceval.callsim(SoundEvent, 'quiet');
+	mod.SoundEvent = SoundEvent;
 
 	var ioPinDigital = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
@@ -974,7 +1198,7 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.read_digital = new Sk.builtin.func(function(self){
-			return Sk.builtin.nmber(self.value);
+			return Sk.ffi.remapToPy(self.value);
 		});
 
 		$loc.write_digital = new Sk.builtin.func(function(self, value){
@@ -983,28 +1207,37 @@ var $builtinmodule = function (name) {
 		});
 	}, "MicroBitDigitalPin", []);
 
-	mod.pin5 = new ioPinDigital();
-	mod.pin6 = new ioPinDigital();
-	mod.pin7 = new ioPinDigital();
-	mod.pin8 = new ioPinDigital();
-	mod.pin9 = new ioPinDigital();
-	mod.pin11 = new ioPinDigital();
-	mod.pin12 = new ioPinDigital();
-	mod.pin13 = new ioPinDigital();
-	mod.pin14 = new ioPinDigital();
-	mod.pin15 = new ioPinDigital();
-	mod.pin16 = new ioPinDigital();
-	mod.pin19 = new ioPinDigital();
-	mod.pin20 = new ioPinDigital();
+	mod.pin5 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin6 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin7 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin8 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin9 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin11 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin12 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin13 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin14 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin15 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin16 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin19 = Sk.misceval.callsim(ioPinDigital);
+	mod.pin20 = Sk.misceval.callsim(ioPinDigital);
 
 	var ioPinAnalog = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.value = 0;
 			self.period_us = 35;
 		});
+		
+		$loc.read_digital = new Sk.builtin.func(function(self){
+			return Sk.ffi.remapToPy(self.value);
+		});
+
+		$loc.write_digital = new Sk.builtin.func(function(self, value){
+			self.value = value.v == 1? 1: 0;
+			PythonIDE.python.updateMicrobitPins();
+		});
 
 		$loc.read_analog = new Sk.builtin.func(function(self) {
-			return Sk.builtin.nmber(self.value);
+			return Sk.ffi.remapToPy(self.value);
 		});
 
 		$loc.write_analog = new Sk.builtin.func(function(self, value) {
@@ -1026,20 +1259,62 @@ var $builtinmodule = function (name) {
 	mod.pin3 = new ioPinAnalog();
 	mod.pin4 = new ioPinAnalog();
 	mod.pin10 = new ioPinAnalog();
+	mod.pin_speaker = new ioPinAnalog();
 
 	var ioPinTouch = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
+		/// TODO: check actual values
+		$loc.CAPACITIVE = Sk.ffi.remapToPy(1);
+		$loc.RESISTIVE = Sk.ffi.remapToPy(2);
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.touched = false;
+			self.value = 0;
+			self.period_us = 35;
+		});
+
+		$loc.set_touch_mode = new Sk.builtin.func(function(self, mode) {
+			// TODO - store mode (if necessary for simulator?)
+		});
+		
+		$loc.read_digital = new Sk.builtin.func(function(self){
+			return Sk.ffi.remapToPy(self.value);
+		});
+
+		$loc.write_digital = new Sk.builtin.func(function(self, value){
+			self.value = value.v == 1? 1: 0;
+			PythonIDE.python.updateMicrobitPins();
 		});
 
 		$loc.is_touched = new Sk.builtin.func(function(self) {
+			if(self.pressed !== undefined) {
+				self.touched = self.pressed;
+			}
 			return Sk.builtin.bool(self.touched);
+		});
+
+		$loc.read_analog = new Sk.builtin.func(function(self) {
+			return Sk.ffi.remapToPy(self.value);
+		});
+
+		$loc.write_analog = new Sk.builtin.func(function(self, value) {
+			self.value = value.v;
+			PythonIDE.python.updateMicrobitPins();
+		});
+
+		$loc.set_analog_period = new Sk.builtin.func(function(self, period) {
+			self.period_us = period.v * 1000;
+			PythonIDE.python.updateMicrobitPins();
+		});
+
+		$loc.set_analog_period_microseconds = new Sk.builtin.func(function(self, period) {
+			self.period_us = period.v;
+			PythonIDE.python.updateMicrobitPins();
 		});
 	}, "MicroBitTouchPin", []);
 
-	mod.pin0 = new ioPinTouch();
-	mod.pin1 = new ioPinTouch();
-	mod.pin2 = new ioPinTouch();
+	mod.pin0 = Sk.misceval.callsim(ioPinTouch);
+	mod.pin1 = Sk.misceval.callsim(ioPinTouch);
+	mod.pin2 = Sk.misceval.callsim(ioPinTouch);
+	mod.pin_logo = Sk.misceval.callsim(ioPinTouch);
 
 	mod.Button = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
@@ -1061,12 +1336,12 @@ var $builtinmodule = function (name) {
 		$loc.get_presses = new Sk.builtin.func(function(self) {
 			var presses = self.presses;
 			self.presses = 0;
-			return Sk.builtin.nmber(presses);
+			return Sk.ffi.remapToPy(presses);
 		});
 	}, "Button", []);
 
-	mod.button_a = new mod.Button();
-	mod.button_b = new mod.Button();
+	mod.button_a = Sk.misceval.callsim(mod.Button);
+	mod.button_b = Sk.misceval.callsim(mod.Button);
 
 	mod.Image = new Sk.misceval.buildClass(mod, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self, str, y) {
@@ -1089,15 +1364,15 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get_pixel = new Sk.builtin.func(function(self, x, y){
-			return Sk.builtin.nmber(self.lines[y.v][x.v]);
+			return Sk.ffi.remapToPy(parseInt(self.lines[y.v][x.v]));
 		});
 
 		$loc.__repr__ = new Sk.builtin.func(function(self) {
-			return Sk.builtin.str('Image("' + self.lines.join(":") + '")');
+			return Sk.builtin.str("Image('" + self.lines.join(":") + ":')");
 		});
 
 		$loc.__str__ = new Sk.builtin.func(function(self) {
-			return Sk.builtin.str('Image("' + self.lines.join(":") + '")');
+			return Sk.builtin.str("Image(\n    '" + self.lines.join(":'\n    '") + ":'\n)");
 		});
 
 		$loc.shift_left = new Sk.builtin.func(function(self, n) {
@@ -1136,9 +1411,13 @@ var $builtinmodule = function (name) {
 				throw new Sk.builtin.TypeError("parameter n not defined");
 			}
 			var height = self.lines.length;
-			var copy = self.lines.slice(n.v, height);
-			var s = "";
-			for(var j = 0; j < n.v; j++){
+			var copy = [];
+			var s;
+			for(var i = n.v; i < height; i++) {
+				copy.push(self.lines[i]);
+			}
+			while(copy.length < height) {
+				s = "";
 				for(var i = 0; i < self.lines[0].length; i++) {
 					s += "0";
 				}
@@ -1154,16 +1433,17 @@ var $builtinmodule = function (name) {
 			}
 			var height = self.lines.length;
 			var copy = [];
-
-			var s = "";
+			var s;
 			for(var j = 0; j < n.v; j++) {
+				s = "";
 				for(var i = 0; i < self.lines[0].length; i++) {
 					s += "0";
 				}
 				copy.push(s);
-
 			}
-			copy.push.apply(copy, self.lines.slice(0, height - 1));
+			for(var i = 0; i < self.lines.length - n.v; i++) {
+				copy.push(self.lines[i]);
+			}
 			var newImage = Sk.misceval.callsim(mod.Image, Sk.builtin.str(copy.join(":")));
 			return newImage;
 		});
@@ -1301,6 +1581,9 @@ var $builtinmodule = function (name) {
 
 	mod.compass = new Sk.builtin.module();
 	mod.compass.$d = new compass("microbit.compass");
+	
+	mod.spi = new Sk.builtin.module();
+	mod.spi.$d = new spi("microbit.spi");
 
 	mod.i2c = new Sk.builtin.module();
 	mod.i2c.$d = new i2c("microbit.i2c");
@@ -1308,77 +1591,27 @@ var $builtinmodule = function (name) {
 	mod.uart = new Sk.builtin.module();
 	mod.uart.$d = new uart("microbit.uart");
 
+	mod.speaker = new Sk.builtin.module();
+	mod.speaker.$d = new speaker("microbit.speaker");
+
+	mod.set_volume = new Sk.builtin.func(function(v) {
+		v = Sk.ffi.remapToJs(v);
+		if(v >= 0 && v <= 255) {
+			mod.speaker.$d.volume = v;
+			if(mod.speaker.$d._on) {
+				$('#mb_speaker_enabled').text(v);
+			}
+		} else {
+			throw new Sk.builtin.ValueError("Volume must be between 0 and 255");
+		}
+	});
+
+	mod.microphone = new Sk.builtin.module();
+	mod.microphone.$d = new microphone("microbit.microphone");
+	mod.microphone.$d.SoundEvent = SoundEvent;
+
 	var mb = {
-
-		getHex: function() {
-			var script = PythonIDE.editor.getValue();
-			function hexlify(ar) {
-				var result = '';
-				for (var i = 0; i < ar.length; ++i) {
-					if (ar[i] < 16) {
-						result += '0';
-					}
-					result += ar[i].toString(16);
-				}
-				return result;
-			}
-			// add header, pad to multiple of 16 bytes
-			data = new Uint8Array(4 + script.length + (16 - (4 + script.length) % 16));
-			data[0] = 77; // 'M'
-			data[1] = 80; // 'P'
-			data[2] = script.length & 0xff;
-			data[3] = (script.length >> 8) & 0xff;
-			for (var i = 0; i < script.length; ++i) {
-				data[4 + i] = script.charCodeAt(i);
-			}
-			// TODO check data.length < 0x2000
-			// convert to .hex format
-			var addr = 0x3e000; // magic start address in flash
-			var chunk = new Uint8Array(5 + 16);
-			var output = [];
-			for (var i = 0; i < data.length; i += 16, addr += 16) {
-				chunk[0] = 16; // length of data section
-				chunk[1] = (addr >> 8) & 0xff; // high byte of 16-bit addr
-				chunk[2] = addr & 0xff; // low byte of 16-bit addr
-				chunk[3] = 0; // type (data)
-				for (var j = 0; j < 16; ++j) {
-					chunk[4 + j] = data[i + j];
-				}
-				var checksum = 0;
-				for (var j = 0; j < 4 + 16; ++j) {
-					checksum += chunk[j];
-				}
-				chunk[4 + 16] = (-checksum) & 0xff;
-				output.push(':' + hexlify(chunk).toUpperCase())
-			}
-			var mycode = output.join("\n");
-			try {
-				var output = PythonIDE.microbit_firmware.replace('mycodegoeshere', mycode);
-				var ua = navigator.userAgent.toLowerCase();
-				if((ua.indexOf('safari/') > -1) && (ua.indexOf('chrome') == -1)) {
-					alert("Safari has a bug that means your work will be downloaded as an un-named file. Please rename it to something ending in .hex. Alternatively, use a browser such as Firefox or Chrome. They do not suffer from this bug.");
-					window.open('data:application/octet;charset=utf-8,' + encodeURIComponent(output), '_newtab');
-				} else {
-					var filename = "my_code";
-					var blob = new Blob([output], {type: "application/octet-stream"});
-					saveAs(blob, filename + ".hex");
-				}
-			}
-			catch(err){
-				PythonIDE.showHint("Please wait for the firmware to download then try again");
-			}
-
-
-
-			return output.length;
-		},
-
 		init: function() {
-			if(PythonIDE.microbit_firmware == undefined) {
-				$.get('lib/skulpt/microbit/firmware.hex', undefined, function(firmware) {
-					PythonIDE.microbit_firmware = firmware;
-				});
-			}
 			var html = '';
 			html += '<div id="mb_tabs">';
 			html += '<ul>';
@@ -1389,25 +1622,36 @@ var $builtinmodule = function (name) {
 			html += '<li><a href="#mb_tabs_pins">I/O Pins</a></li>';
 			html += '<li><a href="#mb_tabs_thermometer">Thermometer</a></li>';
 			html += '<li><a href="#mb_tabs_radio">Radio</a></li>';
+			html += '<li><a href="#mb_tabs_v2">v2 Features</a></li>';
 			html += '</ul>';
+			html += '<div id="mb_tabs_v2">';
+			html += 'Speaker: <span id="mb_speaker_enabled">enabled</span>';
+			html += '<div>';
+			html += '<!--<label for="mb_microphone_enabled">Listen to microphone</label>';
+			html += '<input name="mb_microphone_enabled" id="mb_microphone_enabled" type="checkbox">-->';
+			html += '<label for="mb_mic_volume">Volume: <span id="mb_volume_val">0</span></label>';
+			html += '<div class="mb_slider" id="mb_mic_slider_volume"></div>';
+			html += '<div id="mb_mic_event_list"> </div>';
+			html += '</div>';
+			html += '</div>';
 			html += '<div id="mb_tabs_radio">';
-			html += '<div><h3>Settings:</h3>';
+			html += '<fieldset><legend>Settings:</legend>';
 			html += '<label for="mb_radio_channel">Channel (0-100): </label>';
-			html += '<input name="mb_radio_channel" id="mb_radio_channel" value="7">';
+			html += '<input name="mb_radio_channel"  id="mb_radio_channel" value="7"> ';
 			html += '<label for="mb_radio_address">Address (32 bit hex): </label>';
-			html += '<input name="mb_radio_address" id="mb_radio_address" value="0x75626974">';
+			html += '<input name="mb_radio_address" id="mb_radio_address" value="0x75626974"> ';
 			html += '<label for="mb_radio_group">Group (0-255): </label>';
-			html += '<input name="mb_radio_group" id="mb_radio_group" value="0">';
+			html += '<input name="mb_radio_group" id="mb_radio_group" value="0"> ';
 			html += '<label for="mb_radio_rate">Data rate: </label>';
 			html += '<select name="mb_radio_rate" id="mb_radio_rate"><option value="250">RATE_250KBIT</option><option value="1000" selected="selected">RATE_1MBIT</option><option value="2000">RATE_2MBIT</option></select>';
 			html += '<button id="mb_btn_radio_update">Update</button>';
 			html += '<div id="mb_radio_status"></div>';
-			html += '</div>';
-			html += '<div><h3>Data:</h3>';
+			html += '</fieldset>';
+			html += '<fieldset><legend>Data:</legend>';
 			html += '<label for="mb_radio_message">Message: </label>';
 			html += '<input name="mb_radio_message" id="mb_radio_message">';
 			html += '<button id="mb_btn_radio_send">Send</button>';
-			html += '</div>';
+			html += '</fieldset>';
 			html += '</div>';
 			html += '<div id="mb_tabs_thermometer">';
 			html += 'Temperature: <span id="mb_therm_value">23</span>&deg;C<div class="mb_slider" id="mb_therm_slider"></div>';
@@ -1442,7 +1686,7 @@ var $builtinmodule = function (name) {
 			html += '<div id="mb_gesture_list"></div>';
 			html += '</div>';
 			html += '<div id="mb_tabs_tools">';
-			html += '<a class="mb_help_link" id="mb_btn_download_hex" href="#"><i class="fa fa-download"></i> Download HEX</a>';
+			html += '<button id="mb_btn_save_hex"><i class="fa fa-download"></i> Download Hex</button>';
 			html += '<a class="mb_help_link" id="mb_btn_both">Press A + B</a>';
 			html += '</div>';
 			html += '<div id="mb_tabs_help">';
@@ -1452,9 +1696,11 @@ var $builtinmodule = function (name) {
 			html += '<a class="mb_help_link" href="http://cheat.microbit-playground.co.uk/" target="_blank"><i class="fa fa-smile-o"></i> Cheatsheet</a>';
 			html += '</div>';
 			html += '</div>';
-			html += '<link rel="stylesheet" href="lib/skulpt/microbit/mb.css"><div id="microbit">';
+			html += '<link rel="stylesheet" href="https://create.withcode.uk//lib/skulpt/microbit/mb.css?v2"><div id="microbit">';
+			html += '<div id="mb_btn_logo" class="mb_btn"></div>';
 			html += '<div id="mb_btn_A" class="mb_btn"></div>';
 			html += '<div id="mb_btn_B" class="mb_btn"></div>';
+			html += '<iframe id="mb_if" src="https://create.withcode.uk/lib/skulpt/microbit/ext/editor.html?controller=1" width="1" height="1" style="display:none;"></iframe>';
 			var x,y;
 			for(x = 0; x < 5; x++) {
 				for(y = 0; y < 5; y++) {
@@ -1464,6 +1710,22 @@ var $builtinmodule = function (name) {
 			html += '</div>';
 			html += '<div class="mb_info">This micro:bit simulator is an unofficial alpha test version. Create.withcode.uk is not affiliated with or endorsed by the BBC</div>';
 			PythonIDE.python.output(html, true);
+			
+			$('#mb_btn_save_hex').button().click(function() {
+				var i = document.getElementById('mb_if');
+				var FS = i.contentWindow.FS;
+				for(var name in PythonIDE.files) {
+					var contents = PythonIDE.files[name];
+					if(name == "mycode.py") {
+						name = "main.py";
+					}
+					FS.write(name, contents);
+				}
+				var hex = i.contentWindow.FS.getUniversalHex();
+				var filename = "my_code";
+				var blob = new Blob([hex], {type: "text/plain"});
+				saveAs(blob, filename + ".hex");	
+			});
 			$('#mb_btn_radio_send').button().click(function() {
 				if(typeof(radio) !== "undefined") {
 					if(radio.fn_receive) {
@@ -1583,13 +1845,20 @@ var $builtinmodule = function (name) {
 					case 2:
 						pinType = "Touch";
 						pin = mod['pin' + pinNumber];
-						html = '<button id="mb_btn_pin_touch">Touch</button>';
+						html = '<button id="mb_btn_pin_touch">Touch</button> Value: <span id="mb_pin_analog_value">' + pin.value + '</span><div class="mb_slider" id="mb_pin_analog"></div> PWM period: ' + pin.period_us / 1000 + 'ms';
 						$('#mb_pin_detail').html(html);
 						$('#mb_btn_pin_touch').button().mousedown(function() {
 							pin.touched = true;
 						}).mouseup(function() {
 							pin.touched = false;
 						});
+						$('#mb_pin_analog').slider({
+							value: pin.value,
+							min: 0,
+							max: 1023,
+							step: 1,
+							change: sliderChange
+						}).on("slide", sliderChange);
 						break;
 					case 3:
 					case 4:
@@ -1721,6 +1990,27 @@ var $builtinmodule = function (name) {
 				step: 1,
 				change: sliderChange
 			}).on("slide", sliderChange);
+			$('#mb_mic_slider_volume').slider({
+				value: 0,
+				min: 0,
+				max: 255,
+				step: 1
+			}).on("slide", function(event, ui) {
+				mod.microphone.$d.level = ui.value;
+				mod.microphone.$d._setValue(ui.value);
+				$('#mb_volume_val').text(ui.value);
+			});
+			mod.microphone.$d.updateThresholds();
+			$('#mb_microphone_enabled').on("change", function() {
+				var ticked = this.checked;
+				if(ticked) {
+					PythonIDE.showHint("Mic integration not implemented yet");
+					//mod.microphone.$d.startListening();
+				} else {
+					//mod.microphone.$d.stopListening();
+				}
+			});
+
 			$('#mb_therm_slider').slider({
 				value: 23,
 				min: 0,
@@ -1734,13 +2024,13 @@ var $builtinmodule = function (name) {
 				change: compassHeadingChange
 			}).on("slide", compassHeadingChange);
 			$('#mb_tabs').tabs();
-			$('#mb_btn_download_hex').click(function() {
-				mb.getHex();
-			});
 			$('.mb_btn').on("mousedown mouseup click", function(e) {
 				var btn = mod.button_a;
 				if(e.currentTarget.id == "mb_btn_B") {
 					btn = mod.button_b;
+				}
+				if(e.currentTarget.id == "mb_btn_logo") {
+					btn = mod.pin_logo;
 				}
 				switch(e.type) {
 					case 'mousedown':
