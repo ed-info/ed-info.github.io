@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <!-- Loading notice -->
+  <style>
+        #loading {
+            position: absolute;
+            top: 40%;
+            width: 33%;
+            left: 33%;
+            text-align: center;
+            background-color: #CCC;
+            border-radius: 10px;
+            padding: 20px;
+            animation: loading 2s alternate infinite;
+            border: 1px solid #000;
+        }
+        @keyframes loading {
+            from {
+                background-color: #CCC;
+            }
+            to {
+                background-color: #0C0;
+            }
+        }
+    </style>
+
+    <meta charset="UTF-8">
+    <meta name="description" content="Write, run, debug and share python code in your browser" />
+    <meta name="author" content="pddring">
+
+    <title>Вивчаємо Python</title>
+
+    <!-- See http://blog.withcode.uk/about/license-and-acknowledgements/ for libraries used-->
+    <script src="lib/cm/codemirror.js"></script>
+    <script src="lib/cm/active-line.js"></script>
+    <link rel="stylesheet" href="lib/cm/codemirror.css">
+    <link rel="stylesheet" href="lib/cm/cobalt.css">
+    <link rel="stylesheet" href="lib/cm/blackboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="lib/cm/python.js"></script>
+    <script src="lib/cm/p5.js"></script>
+    <script src="lib/lib.js"></script>
+    <script src="lib/skulpt/skulpt.min.js"></script>
+    <script src="lib/skulpt/skulpt-stdlib.js"></script>
+    <link rel="stylesheet" href="./jquery/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="./jquery/jquery-1.12.4.js"></script>
+    <script src="./jquery/ui/1.12.1/jquery-ui.js"></script>
+    <script src="lib/jq/jquery.ui.touch-punch.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <link href='https://fonts.googleapis.com/css?family=Quicksand' rel='stylesheet' type='text/css'>
+</head>
+<body>
+	<!-- Animated link-->
+    <div>
+		
+            <a class="nounderline" href="https://create.withcode.uk" target="_blank">				
+        <h1 id="title" onmouseover="animateTitle('Програмувати - просто!', 'title_text')"><span class="brackets">{</span><span id="title_text">withcode.uk</span><span class="brackets">}</span></h1>
+        
+        </a>
+    </div>
+    <div id="loading">
+        Loading... please wait
+    </div>
+    <div id="holder" class="holder" style="display:none">
+        <span id="file_tabs"><span class="file_tab file_tab_selected">mycode.py</span></span>
+        <pre>
+			<div id="editor"></div>
+		</pre>
+    </div>
+    <script>
+        PythonIDE.files['mycode.py'] = 'print("Hello world")';
+        PythonIDE.currentFile = 'mycode.py';
+        PythonIDE.updateFileTabs();
+    </script>
+    <div id="hintBar"></div>
+    <span id="footer">		
+        <img title="Виконати" alt="Натисніть, щоб виконати код" id="btn_run" class="toolButton" src="./media/play.png">
+        <img alt="Припинити виконання" title="Припинити" class="toolButton" src="./media/stop.png" id="btn_stopRunning">
+        <img alt="Натисніть, щоб показати/сховати кнопки" title="Показати/сховати кнопки" class="toolButton" src="./media/tools.png" id="btn_tools">
+        <img title="Відкрити консоль" alt="Показати вікно консолі" id="btn_show_output" class="toolButton hiddenButton" src="./media/console.png">
+        <img title="Зберегти" alt="Збережіть скрипт на комп'ютер" id="btn_show_share" class="toolButton hiddenButton" src="./media/share.png">
+        <img title="Налаштування" alt="Налаштувати екран" id="btn_show_settings" class="toolButton hiddenButton" src="./media/settings.png">
+        <img title="Відновлення коду" alt="Відновіть свій код із попереднього сеансу" id="btn_show_recover" class="toolButton hiddenButton" src="./media/recover.png">        
+    </span>
+   
+    <div id="recover" title="Відновлення коду" style="display:none"></div>
+    <div id="dlg" title="mycode.py" style="display:none">
+        <div id="p5Sketch"></div>
+        <div id="output"></div>
+    </div>
+    <div id="save" title="Зберегти або отримати для редагування" style="display:none">
+        <fieldset>
+            <legend>Зберегти поточний файл:</legend>
+
+            <div class="save_option" id="btnDownload">
+                <h2><i class="fa fa-save"></i> Зберегти (Завантажити)</h2>
+                <p>Поточний файл буде завантажено на цей комп’ютер.</p>
+               
+                <h3><i class="fa fa-keyboard-o"></i> Ctrl + Alt + S</h3>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Отримати файл:</legend>
+            <form class="box" method="post" action="#" enctype="multipart/form-data">
+                <div class="box__input">
+                    <input class="box__file" type="file" name="files[]" id="file"
+                        data-multiple-caption="{count} files selected" multiple />
+                    <label style="display:block;text-align:center;" for="file"><strong>Виберіть
+                            Python-файл</strong><span class="box__dragndrop"> або перетягніть його сюди, щоб
+                            відвантажити з комп’ютера</span>.</label>
+                </div>
+            </form>
+        </fieldset>
+    </div> 
+ 
+     <div id="project_settings" title="Проєкт" style="display:none">
+        <p>Перейменування проєкту допоможе вам упорядкувати збережений код</p>
+        <label for="txt_project_name">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
+            value="mycode">
+        <button id="btn_project_ok">OK</button>
+        <button id="btn_project_cancel">Скасувати</button>
+    </div>
+    
+    <div id="file_settings" title="Файл" style="display:none">
+        <p>Будьте обережні: якщо ви вирішите видалити файл, ви не зможете відновити його, якщо не збережете копію</p>
+        <label for="txt_file_name">Перейменувати файл:</label><input id="txt_file_name" name="txt_file_name" value="">
+        <button id="btn_file_rename">Перейменувати</button>
+        <button id="btn_file_delete">Видалити</button>
+        <button id="btn_file_cancel">Скасувати</button>
+    </div>
+
+    <div id="settings" title="Налаштування" style="display:none">
+        <fieldset>
+            <legend>Розміри тексту</legend>
+            <label for="txt_code_size">Розмір шрифту коду:</label><input type="text" id="txt_code_size" readonly>
+            <div id="slider_code_size" class="slider"></div>
+            <label for="txt_output_size">Розмір шрифту тексту:</label><input type="text" id="txt_output_size"
+                readonly>
+            <div id="slider_output_size" class="slider"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Кольори редактора</legend>
+            <div id="radio_code_style">
+                <p>Більш світлі кольори чудово підходять для кодування вдень. Деякі люди віддають перевагу кодуванню
+                    вночі:</p>
+                <input type="radio" id="radio_code_style_light" name="radio_code_style" checked="checked"><label
+                    for="radio_code_style_light">День</label>
+                <input type="radio" id="radio_code_style_dusk" name="radio_code_style"><label
+                    for="radio_code_style_dusk">Сутінки</label>
+                <input type="radio" id="radio_code_style_dark" name="radio_code_style"><label
+                    for="radio_code_style_dark">Ніч</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Кольори консолі</legend>
+            <p>Темніші кольори більше схожі на командний рядок. Світліші кольори більше схожі на вікно програми:</p>
+            <div id="radio_output_style">
+                <input type="radio" id="radio_output_style_light" name="radio_output_style"><label
+                    for="radio_output_style_light">День</label>
+                <input type="radio" id="radio_output_style_dusk" name="radio_output_style"><label
+                    for="radio_output_style_dusk">Сутінки</label>
+                <input type="radio" id="radio_output_style_dark" name="radio_output_style" checked="checked"><label
+                    for="radio_output_style_dark">Ніч</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Режим запуску</legend>
+            <p>Виконання коду рядок за рядком може бути корисним способом пошуку помилок</p>
+            <div id="radio_run_mode">
+                <input type="radio" id="radio_run_mode_all" name="radio_run_mode" checked="checked"><label
+                    for="radio_run_mode_all">Уся програма</label>
+                <input type="radio" id="radio_run_mode_single" name="radio_run_mode"><label
+                    for="radio_run_mode_single">Рядок за рядком</label>
+                <input type="radio" id="radio_run_mode_anim" name="radio_run_mode"><label
+                    for="radio_run_mode_anim">Анімація рядків</label>
+            </div>
+            <p>Вибір довшого часу між анімацією кожного рядка допоможе вам зрозуміти та пояснити код під час його
+                виконання</p>
+            <label for="txt_step_anim_time">Час затримки між виконанням кожного рядка:</label><input type="text"
+                id="txt_step_anim_time" readonly>
+            <div id="slider_step_anim_time" class="slider"></div>
+            <p>Зробивши вікно виведення прозорим, ви зможете бачити свій код під ним</p>
+            <label for="txt_output_transparency">Прозорість вікна</label><input type="text" id="txt_output_transparency"
+                readonly>
+            <div id="slider_output_transparency" class="slider"></div>
+        </fieldset>
+    </div>
+    <script>
+        var toolsVisible = false;
+
+		// load python IDE
+        $(function() {
+            $('#loading').hide();
+            $('#holder').show();
+            PythonIDE.init();
+        });
+    </script>
+    <script>
+    let btnRun = document.querySelector("#btn_run");
+    function runSketch(event) {
+        runit();
+    }
+    btnRun.addEventListener('click', runSketch);
+
+    function runit() { 
+        Sk.p5Sketch = "p5Sketch"; 
+        const cnvs = [...document.querySelectorAll(`[id^="defaultCanvas"]`),];
+        cnvs.forEach((cnv) => {
+            //cnv.style = "display:none";
+            cnv.remove();
+        });
+    } 
+    </script>
+</body>
+
+</html>
