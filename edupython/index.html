@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-  <!-- Loading notice -->
-  <style>
+    <style>
         #loading {
             position: absolute;
             top: 40%;
@@ -16,10 +14,12 @@
             animation: loading 2s alternate infinite;
             border: 1px solid #000;
         }
+
         @keyframes loading {
             from {
                 background-color: #CCC;
             }
+
             to {
                 background-color: #0C0;
             }
@@ -27,64 +27,77 @@
     </style>
 
     <meta charset="UTF-8">
-    <meta name="description" content="Write, run, debug and share python code in your browser" />
-    <meta name="author" content="pddring">
+    <title>Create with code</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <script src="./lib/cm/codemirror.js"></script>
+    <script src="./lib/cm/active-line.js"></script>
+    <script src="./lib/cm/show-hint.js"></script>
+    <script src="./lib/cm/python.js"></script>
+    <script src="./lib/cm/xml.js"></script>
+    <script src="./lib/cm/javascript.js"></script>
+    <script src="./lib/cm/css.js"></script>
+    <script src="./lib/cm/htmlmixed.js"></script>
+    <link rel="stylesheet" href="./lib/cm/codemirror.css">
 
-    <title>Вивчаємо Python</title>
+    <link rel="stylesheet" href="./lib/cm/cobalt.css">
+    <link rel="stylesheet" href="./lib/cm/blackboard.css">
 
-    <!-- See http://blog.withcode.uk/about/license-and-acknowledgements/ for libraries used-->
-    <script src="lib/cm/codemirror.js"></script>
-    <script src="lib/cm/active-line.js"></script>
-    <link rel="stylesheet" href="lib/cm/codemirror.css">
-    <link rel="stylesheet" href="lib/cm/cobalt.css">
-    <link rel="stylesheet" href="lib/cm/blackboard.css">
-    <link rel="stylesheet" href="styles.css">
-    <script src="lib/cm/python.js"></script>
-    <script src="lib/cm/p5.js"></script>
-    <script src="lib/lib.js"></script>
-    <script src="lib/skulpt/skulpt.min.js"></script>
-    <script src="lib/skulpt/skulpt-stdlib.js"></script>
     <link rel="stylesheet" href="./jquery/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="./jquery/jquery-1.12.4.js"></script>
     <script src="./jquery/ui/1.12.1/jquery-ui.js"></script>
-    <script src="lib/jq/jquery.ui.touch-punch.min.js"></script>
+    <link rel="stylesheet" href="./styles.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <link href='https://fonts.googleapis.com/css?family=Quicksand' rel='stylesheet' type='text/css'>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.3.0/p5.js"></script>
+    <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
+    <script src="./lib/lib.js"></script>
+    <script src="./lib/skulpt/skulpt.min.js"></script>
+    <script src="./lib/skulpt/skulpt-stdlib.js"></script>   
+    
 </head>
 <body>
-	<!-- Animated link-->
     <div>
-		
-            <a class="nounderline" href="https://create.withcode.uk" target="_blank">				
-        <h1 id="title" onmouseover="animateTitle('Програмувати - просто!', 'title_text')"><span class="brackets">{</span><span id="title_text">withcode.uk</span><span class="brackets">}</span></h1>
-        
+        <a class="nounderline" href="http://withcode.uk/" target="_blank">
+            <h1 id="title" onmouseover="animateTitle('Python - це просто!', 'title_text')"><span
+                    class="brackets">{</span><span id="title_text">withcode.uk</span><span class="brackets">}</span>
+            </h1>
         </a>
     </div>
+
     <div id="loading">
-        Loading... please wait
+        Завантаження...
     </div>
     <div id="holder" class="holder" style="display:none">
         <span id="file_tabs"><span class="file_tab file_tab_selected">mycode.py</span></span>
         <pre>
-			<div id="editor"></div>
-		</pre>
+            <div id="editor"></div>
+        </pre>
     </div>
     <script>
-        PythonIDE.files['mycode.py'] = 'print("Hello world")';
+        var files1 = "name = input(\"Яке твоє ім'я?\")\r\nprint(\"Привіт,\", name)";
+        let files2 = "from p5 import *\n\ndef setup():\n    createCanvas(300, 200)\n\ndef draw():\n    background(69, 78, 158)\n    fill(0, 86, 184)\n    rect(0, 0, 300, 100)\n    fill(255, 216, 0)\n    rect(0, 100, 300, 100)\n\nrun()";
+        let files3 = "from tkinter import *\n\nroot = Tk()\nroot.title(\"Привітання\")\nroot.geometry(\"200x200\")\n\nfont1 = (\"Verdana\", 54, \"bold\", \"italic\") # Arial, Times, Verdana\n\nlab = Label(root, text=\"Слава Україні!\", font=font1, bg=\"#2364aa\", fg=\"#fad758\")\nlab.pack()\n\nroot.mainloop()";
+        let files4 = "from turtle import *\n\nt = Turtle()\nt.color('#44af69')\n\nnum_sides = 6\nside_length = 70\nangle = 360.0 / num_sides\n\nfor i in range(num_sides):\n    t.forward(side_length)\n    t.right(angle)\n\nt.done()"
+        let arrayFiles = [files1, files2, files3, files4];
+        const filesIndex = Math.floor(Math.random() * arrayFiles.length);
+        const files = arrayFiles[filesIndex];
+        
+        try {
+            PythonIDE.files = JSON.parse(files);
+        } catch (e) {
+            PythonIDE.files['mycode.py'] = files;
+        }
         PythonIDE.currentFile = 'mycode.py';
+        PythonIDE.projectName = 'mycode.py'.replace(".py", "");
         PythonIDE.updateFileTabs();
     </script>
     <div id="hintBar"></div>
-    <span id="footer">		
+    <span id="footer">
         <img title="Виконати" alt="Натисніть, щоб виконати код" id="btn_run" class="toolButton" src="./media/play.png">
-        <img alt="Припинити виконання" title="Припинити" class="toolButton" src="./media/stop.png" id="btn_stopRunning">
+        <img alt="Припинити виконання" title="Припинити" class="toolButton hiddenButton" src="./media/stop.png" id="btn_stopRunning">
         <img alt="Натисніть, щоб показати/сховати кнопки" title="Показати/сховати кнопки" class="toolButton" src="./media/tools.png" id="btn_tools">
         <img title="Відкрити консоль" alt="Показати вікно консолі" id="btn_show_output" class="toolButton hiddenButton" src="./media/console.png">
-        <img title="Зберегти" alt="Збережіть скрипт на комп'ютер" id="btn_show_share" class="toolButton hiddenButton" src="./media/share.png">
+        <img title="Завантажити, зберегти та поділитися" alt="Завантажте, збережіть і поділіться власним кодом" id="btn_show_share" class="toolButton hiddenButton" src="./media/share.png">
         <img title="Налаштування" alt="Налаштувати екран" id="btn_show_settings" class="toolButton hiddenButton" src="./media/settings.png">
-        <img title="Відновлення коду" alt="Відновіть свій код із попереднього сеансу" id="btn_show_recover" class="toolButton hiddenButton" src="./media/recover.png">        
     </span>
    
     <div id="recover" title="Відновлення коду" style="display:none"></div>
@@ -116,16 +129,15 @@
                 </div>
             </form>
         </fieldset>
-    </div> 
- 
-     <div id="project_settings" title="Проєкт" style="display:none">
+
+    <div id="project_settings" title="Проєкт" style="display:none">
         <p>Перейменування проєкту допоможе вам упорядкувати збережений код</p>
         <label for="txt_project_name">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
             value="mycode">
         <button id="btn_project_ok">OK</button>
         <button id="btn_project_cancel">Скасувати</button>
     </div>
-    
+
     <div id="file_settings" title="Файл" style="display:none">
         <p>Будьте обережні: якщо ви вирішите видалити файл, ви не зможете відновити його, якщо не збережете копію</p>
         <label for="txt_file_name">Перейменувати файл:</label><input id="txt_file_name" name="txt_file_name" value="">
@@ -193,16 +205,16 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
+
     <script>
         var toolsVisible = false;
-
-		// load python IDE
-        $(function() {
+        $(function () {
             $('#loading').hide();
             $('#holder').show();
-            PythonIDE.init();
+            PythonIDE.init('normal');
         });
     </script>
+    
     <script>
     let btnRun = document.querySelector("#btn_run");
     function runSketch(event) {
@@ -219,6 +231,6 @@
         });
     } 
     </script>
+    
 </body>
-
 </html>
