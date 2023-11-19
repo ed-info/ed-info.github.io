@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>АлгоКод</title>
+    <link rel="stylesheet" href="codemirror.css">
+    <link rel="stylesheet" href="pastel-on-dark.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="FileSaver.js"></script>
+	<script src="addedfunc.js"></script>
+    <script src="https://kit.fontawesome.com/d1112e9b03.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.8.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.8.0/addons/p5.sound.min.js"></script> 
+<style>
+table, tr, td {
+	text-align: left;
+	vertical-align: top;
+	border:1px solid black;
+	border-collapse: collapse;
+}
+</style>
+<!-- modal window --> 
+<style>
+.modbtn {
+  border: none;
+  width: 100%;
+  height: 10px;
+  background-color: inherit;
+  padding: 1px 28px;
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-block;
+}
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 2; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(255,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+
+/* Modal Content */
+.modal-content {
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  
+
+.table, th, td {
+  border: 1px solid white;
+  border-collapse: collapse;
+}
+
+}
+
+/* The Close Button */
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+  
+
+}
+</style>
+</head>
+<body>
+    <script src="codemirror.js"></script>
+    <script src="mode/simple.js"></script>
+    <script src="mode/syntaxhighlight.js"></script>
+<script>
+
+</script>
+<div class="overlay hidden"></div>
+    <div class="header">
+        <button class="URLButton" title="Вилучити код" onclick="reset()"><i class="fas fa-trash"></i></button>
+        <button class="URLButton" title="Очистити консоль" onclick="clearConsole()"><i class="fas fa-eye-slash"></i></button>
+        <button class="URLButton" title="Вилучити зображення" onclick="clearCanvas()"><i class="fas fa-image"></i></button>
+        <button id="run" title="Виконати код" onclick="run()"><i class="fas fa-play"></i></button>
+        <button title="Зберегти код" onclick="saveFile()"><i class="fas fa-save"></i></button>           
+        <button title="Отримати код" onclick="document.getElementById('loadCode').click()"><i class="fas fa-upload"></i></button>
+		<input id="loadCode" type="file" onchange="readFile(this)" style="display:none">
+		       
+        <button id="guide" title="Посібник"><i class="fas fa-book"></i></button>
+    </div>
+<div class="body">
+ <table style="width:100%">
+
+  <tr style="overflow: auto; max-height: 500px;">
+    <td style="width:70%; text-align:left; height: 500px; overflow:hidden;">
+		<div class="editor"></div>
+    </td>
+    <td>
+		<div id="p5Sketch"></div>
+    </td>
+  </tr>
+   <td colspan="2" style="height:350px; background-color: black; text-align: left">
+		<div id="console" class="runner"></div>
+	</td>
+</table>
+      
+</div>
+
+    <script src="compiler2.js"></script>
+    <script src="main.js"></script>
+    <script>
+		function setup() {
+			var canvas = createCanvas(500, 500);
+			canvas.parent("p5Sketch");
+			background(200);
+		}
+	</script>
+<!-- Модальне вікно -->	
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">  
+	<span class="close">&times;</span>
+    <p>Добірка прикладів:</p>
+    <table style="width:100%;">		
+    <tr>
+    <td style="width:50%; text-align:left;">    
+        <button class="modbtn" onclick="ex1()">Різні нескладні обчислення</button>
+		<button class="modbtn" onclick="ex2()">Ще обчислення</button>
+		<button class="modbtn" onclick="ex3()">Квадратне рівняння</button>
+		<button class="modbtn" onclick="ex4()">Більше з трьох чисел</button>
+		<button class="modbtn" onclick="ex5()">Спільні дільники двох чисел</button>
+		<button class="modbtn" onclick="ex6()">Таблиця значень функції</button>
+		<button class="modbtn" onclick="ex7()">Перевірка правильності дати</button>
+		<button class="modbtn" onclick="ex8()">Сума послідовного ряду чисел</button>
+		<button class="modbtn" onclick="ex9()">Пошук простих чисел</button>
+		<button class="modbtn" onclick="ex10()">Бінарний пошук у списку</button>
+		<button class="modbtn" onclick="ex11()">Сортування списку вибором</button>
+		<button class="modbtn" onclick="ex12()">Алгоритм сортування бульбашкою</button>
+		<button class="modbtn" onclick="ex13()">Обернути список навпаки</button>
+		<button class="modbtn" onclick="ex14()">Розподіл частот появи елементів</button>
+		<button class="modbtn" onclick="ex15()">Пошук дублікатів елементів</button>
+	</td>	
+	<td style="width:50%; text-align:left;"> 
+		<button class="modbtn" onclick="ex16()">Перевірка гіпотези Коллатца</button>
+		<button class="modbtn" onclick="ex17()">Додатнє чи від'ємне число</button>
+		<button class="modbtn" onclick="ex18()">Найбільший спільний дільник</button>
+		<button class="modbtn" onclick="ex19()">Найменше спільне кратне</button>
+		<button class="modbtn" onclick="ex20()">Малюємо будиночок</button>
+		<button class="modbtn" onclick="ex21()">Малюємо сніговика</button>
+		<button class="modbtn" onclick="ex22()">Малюємо автомобільчик</button>
+		<button class="modbtn" onclick="ex23()">Малюємо парусний кораблик</button>
+		<button class="modbtn" onclick="ex24()">Малюємо зимову ялинку</button>
+		<button class="modbtn" onclick="ex25()">Малюємо різдвяну ніч</button>
+		<button class="modbtn">Далі буде...</button>
+		<button class="modbtn">Далі буде...</button>
+    </td>
+    </tr>
+  </div>
+</div>
+<script>
+// Get the modal
+var modal = document.getElementById("myModal");
+
+// Get the button that opens the modal
+var btn = document.getElementById("guide");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks the button, open the modal 
+btn.onclick = function() {
+  modal.style.display = "block";
+}
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+  modal.style.display = "none";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+</script>
+</body>
+</html>
