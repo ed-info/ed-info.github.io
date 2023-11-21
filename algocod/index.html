@@ -95,7 +95,7 @@ table, tr, td {
         <button class="URLButton" title="Вилучити код" onclick="reset()"><i class="fas fa-trash"></i></button>
         <button class="URLButton" title="Очистити консоль" onclick="clearConsole()"><i class="fas fa-eye-slash"></i></button>
         <button class="URLButton" title="Вилучити зображення" onclick="clearCanvas()"><i class="fas fa-image"></i></button>
-        <button id="run" title="Виконати код" onclick="run()"><i class="fas fa-play"></i></button>
+        <button id="run" title="Виконати код" onclick="run(this)">▶</button>
         <button title="Зберегти код" onclick="saveFile()"><i class="fas fa-save"></i></button>           
         <button title="Отримати код" onclick="document.getElementById('loadCode').click()"><i class="fas fa-upload"></i></button>
 		<input id="loadCode" type="file" onchange="readFile(this)" style="display:none">
