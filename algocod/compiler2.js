@@ -144,17 +144,43 @@ function checkVariables(expression, lineNum) {
 	
 	return true
 }
-
+var fID; //animation function ID
+var animateOn = false; //animation flag
 function translateLine(line, lineNum) {
-  let kwords =["точка","point","лінія","line","прямокутник","rect","трикутник","triangle","чотирикутник","quad","коло","circle","еліпс","ellipse","фон","background","колір","stroke","заповнення","fill","ввести","input","вивести","output"];
-
-	for (let i=0; i < kwords.length; i=i+2){
-       line = line.replace(kwords[i], kwords[i+1])
+		
+	if (line==="анімація") { // ідентифікатор для анімації
+		fID = Date.now()
 	}
+	let kwords =[
+	"кін фігура","endShape(CLOSE)",
+	"кін ламана","endShape()",
+	"кін анімація","},1000/60)}xf_anim"+fID+"();",
+	"товщина","strokeWeight",
+	"контур","noFill()",
+	"фігура","beginShape()",
+	"ламана","beginShape()",
+	"вершина","vertex",
+	"точка","point",
+	"лінія","line",
+	"прямокутник","rect",
+	"трикутник","triangle",
+	"чотирикутник","quad",
+	"коло","circle",
+	"еліпс","ellipse",
+	"фон","background",
+	"колір","stroke",
+	"заповнення","fill",
+	"ввести","input",
+	"вивести","output",
+	"істина","true",
+	"хиба","false",
+	"анімація","function xf_anim"+fID+"(){animateOn=true;setTimeout(function() {let _aID=window.requestAnimationFrame(xf_anim"+fID+");if ((keyIsPressed===true)||(onError===true)) {if ((keyCode === ESCAPE)||(onError===true)){window.cancelAnimationFrame(_aID);endOfRun()}} "
+	];
 	
-	console.log("*>"+line)	
 	
-	
+	for (let i=0; i < kwords.length; i=i+2){
+       line = line.replaceAll(kwords[i], kwords[i+1])
+	}
 	
 	
 	line = line.trim();
@@ -203,8 +229,8 @@ function translateLine(line, lineNum) {
 		line = "} else {"
 	}
 
-	else if (line.startsWith("цикл поки")) {
-		stack.push("цикл")
+	else if (line.startsWith("поки")) { // цикл поки
+		stack.push("поки")
 		line = line.replace(/цикл /, "")
         line = line.replace(/ = /g, " == ")
 		line = line.replace(/поки /, "while (")
@@ -212,8 +238,8 @@ function translateLine(line, lineNum) {
 		indentWillIncrease = true
 	}
 
-	else if (line.startsWith("цикл поки не")) {
-		stack.push("цикл")
+	else if (line.startsWith("поки не")) { // цикл поки не
+		stack.push("поки не")
         line = line.replace(/цикл /, "")
         line = line.replace(/ = /g, " == ")
 		line = line.replace(/поки не /, "while (!(")
@@ -221,12 +247,19 @@ function translateLine(line, lineNum) {
 		indentWillIncrease = true
 	}
 
-	else if (line.startsWith("цикл для")) {
-		stack.push("цикл")
+	else if (line.startsWith("для")) { //опрацьовуємо цикл  "для"
+		stack.push("для")
+		stp = line.search("крок") // перевірка на наявність "кроку"
+		let incs="1"
+		if (stp > 0){
+			stps=line.slice(stp)
+			line=line.slice(0,stp)
+			incs=stps.slice(5)	
+		}
         scope++
 		variables[scope] = []
 		variables[scope].push(line.split(" ")[1])
-		let elements = line.replace(/цикл для/, "").split(/ від /)
+		let elements = line.replace(/для/, "").split(/ від /)
 		let loopVar = elements[0]
 		elements = elements[1].split(/ до /)
 		let from = elements[0]
@@ -238,7 +271,7 @@ function translateLine(line, lineNum) {
 			return false
 		}
 		indentWillIncrease = true
-		line = `for (let ${loopVar} = ${from}; ${loopVar} <= ${to}; ${loopVar}++) {`
+		line = `for (let ${loopVar} = ${from}; ${loopVar} <= ${to}; ${loopVar}+=${incs}) {`
 		line = line.replace(/для /, "")
 	}
 
