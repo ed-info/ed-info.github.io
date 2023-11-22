@@ -156,7 +156,6 @@ function translateLine(line, lineNum) {
 	"кін ламана","endShape()",
 	"кін анімація","},1000/60)}xf_anim"+fID+"();",
 	"товщина","strokeWeight",
-	"контур","noFill()",
 	"фігура","beginShape()",
 	"ламана","beginShape()",
 	"вершина","vertex",
@@ -394,7 +393,22 @@ function compile(code) {
 
     code = lines.join("")
     
- let kcolors =["результат","return",'"червоний"',"'red'",'"помаранчевий"',"'orange'",'"жовтий"',"'yellow'",'"зелений"',"'green'",'"блакитний"',"'aqua'",'"синій"',"'blue'",'"фіолетовий"',"'violet'",'"чорний"',"'black'",'"сірий"',"'gray'",'"білий"',"'white'",'"коричневий"',"'brown'"];
+ let kcolors =[	
+ 'fill("прозорий")',"noFill()",
+	'stroke("прозорий")',"noStroke()",
+	"результат","return",
+	'"червоний"',"'red'",
+	'"помаранчевий"',"'orange'",
+	'"жовтий"',"'yellow'",
+	'"зелений"',"'green'",
+	'"блакитний"',"'aqua'",
+	'"синій"',"'blue'",
+	'"фіолетовий"',"'violet'",
+	'"чорний"',"'black'",
+	'"сірий"',"'gray'",
+	'"білий"',"'white'",
+	'"коричневий"',"'brown'"
+	];
 
 	for (let i=0; i < kcolors.length; i=i+2){
        code = code.replaceAll(kcolors[i], kcolors[i+1])
