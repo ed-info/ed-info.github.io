@@ -159,6 +159,8 @@ function translateLine(line, lineNum) {
 	"фігура","beginShape()",
 	"ламана","beginShape()",
 	"вершина","vertex",
+	"текст","text",
+	"розмір","textSize",
 	"точка","point",
 	"лінія","line",
 	"прямокутник","rect",
