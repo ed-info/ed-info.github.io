@@ -1620,7 +1620,7 @@ var PythonIDE = {
 	aT: {},
 	
 	api: function(cmd, data, onSuccess) {
-		data.cmd = cmd;
+/*		data.cmd = cmd;
 		$.ajax({
             url: 'https://tools.withcode.uk/keywords/api.php',
             xhrFields: {
@@ -1631,7 +1631,7 @@ var PythonIDE = {
 			method: "POST",
 			cache: false
 		}).done(function(r) {onSuccess(r);});
-	},
+*/	},
 
 	updateTrackerList: function() {
 		var html = '<span class="fa fa-spin fa-spinner"></span>';
