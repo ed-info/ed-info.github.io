@@ -66,19 +66,7 @@
         </pre>
     </div>
     <script>
-        var files1 = "name = input(\"Яке твоє ім'я?\")\r\nprint(\"Привіт,\", name)";
-        let files2 = "from p5 import *\n\ndef setup():\n    createCanvas(300, 200)\n\ndef draw():\n    background(69, 78, 158)\n    fill(0, 86, 184)\n    rect(0, 0, 300, 100)\n    fill(255, 216, 0)\n    rect(0, 100, 300, 100)\n\nrun()";
-        let files3 = "from tkinter import *\n\nroot = Tk()\nroot.title(\"Привітання\")\nroot.geometry(\"200x200\")\n\nfont1 = (\"Verdana\", 54, \"bold\", \"italic\") # Arial, Times, Verdana\n\nlab = Label(root, text=\"Слава Україні!\", font=font1, bg=\"#2364aa\", fg=\"#fad758\")\nlab.pack()\n\nroot.mainloop()";
-        let files4 = "from turtle import *\n\nt = Turtle()\nt.color('#44af69')\n\nnum_sides = 6\nside_length = 70\nangle = 360.0 / num_sides\n\nfor i in range(num_sides):\n    t.forward(side_length)\n    t.right(angle)\n\nt.done()"
-        let arrayFiles = [files1, files2, files3, files4];
-        const filesIndex = Math.floor(Math.random() * arrayFiles.length);
-        const files = arrayFiles[filesIndex];
-        
-        try {
-            PythonIDE.files = JSON.parse(files);
-        } catch (e) {
-            PythonIDE.files['mycode.py'] = files;
-        }
+        PythonIDE.files['mycode.py'] = "";
         PythonIDE.currentFile = 'mycode.py';
         PythonIDE.projectName = 'mycode.py'.replace(".py", "");
         PythonIDE.updateFileTabs();
@@ -198,7 +186,15 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
-
+    <script>
+		function setup() {
+			var canvas = createCanvas(500, 500);
+			canvas.parent("p5Sketch");
+			background(200);
+			stroke(0);
+			angleMode(DEGREES);
+		}
+	</script>
     <script>
         var toolsVisible = false;
         $(function () {
