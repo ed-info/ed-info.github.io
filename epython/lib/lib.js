@@ -1621,17 +1621,18 @@ var PythonIDE = {
 	
 	api: function(cmd, data, onSuccess) {
 /*		data.cmd = cmd;
-		$.ajax({
-            url: 'https://tools.withcode.uk/keywords/api.php',
-            xhrFields: {
-				withCredentials: true
-			},
+			$.ajax({
+				url: 'https://tools.withcode.uk/keywords/api.php',
+			xhrFields: {
+					withCredentials: true
+				},
 			data: data,
 			dataType: "jsonp",
 			method: "POST",
 			cache: false
 		}).done(function(r) {onSuccess(r);});
-*/	},
+*/
+	},
 
 	updateTrackerList: function() {
 		var html = '<span class="fa fa-spin fa-spinner"></span>';
@@ -2431,10 +2432,6 @@ var PythonIDE = {
 			switch(e.currentTarget.id) {
 				case 'btn_project_ok':
 					var newProjectName = $('#txt_project_name').val();
-					if(!newProjectName.match(/^[A-Za-z0-9_ ]+$/)){
-						PythonIDE.showHint("Некоректна назва проєкту");
-						break;
-					}
 					PythonIDE.projectName = newProjectName;
 					PythonIDE.updateFileTabs();
 					$("#project_settings").dialog("close");
