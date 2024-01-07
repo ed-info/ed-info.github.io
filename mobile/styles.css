@@ -587,7 +587,7 @@ li.CodeMirror-hint-active {
 @media screen and (max-width: 500px) {
   .toolButton:first-child,
   .toolButton:nth-child(3)  {
-    width: 150px;
+    width: 100px;
   }
   
   .toolButton {
@@ -597,7 +597,7 @@ li.CodeMirror-hint-active {
   }
   
   .visibleButton {
-    width: 150px;
+    width: 100px;
   }
    
  #hintBar {
@@ -609,7 +609,7 @@ li.CodeMirror-hint-active {
     display: none;
  }
  span.file_tab {
-    font-size: 3em;
+    font-size: 2em;
  }
 }
 
