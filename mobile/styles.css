@@ -177,8 +177,8 @@ html {
 }
 
 .toolButton {
-	max-width: 150px;
-	max-height: 150px;
+	max-width: 75px;
+	max-height: 75px;
 	transition: all 1s;
 	border-radius:10px;
 }
@@ -191,7 +191,7 @@ html {
 }
 
 .visibleButton {
-	width: 100px;
+	width: 75px;
 	padding: 5px;
 	opacity: 1;
 }
@@ -567,11 +567,11 @@ li.CodeMirror-hint-active {
 
 @media screen and (min-width: 500px) {
   .toolButton:first-child {
-	  width: 100px;
+	  width: 75px;
   }
   
   .visibleButton {
-    width: 100px;
+    width: 75px;
   }
   
   /*.toolButton:hover {
@@ -587,12 +587,12 @@ li.CodeMirror-hint-active {
 @media screen and (max-width: 500px) {
   .toolButton:first-child,
   .toolButton:nth-child(3)  {
-    width: 100px;
+    width: 75px;
   }
   
   .toolButton {
-    max-width: 100px;
-    max-height: 100px;
+    max-width: 75px;
+    max-height: 75px;
     border-radius: 15px;
   }
   
@@ -609,7 +609,7 @@ li.CodeMirror-hint-active {
     display: none;
  }
  span.file_tab {
-    font-size: 2em;
+    font-size: 1.7em;
  }
 }
 
