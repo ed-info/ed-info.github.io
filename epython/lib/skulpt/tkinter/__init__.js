@@ -1337,7 +1337,7 @@ var $builtinmodule = function (name) {
 		
 	}, 'Tk', [s.Widget]);
 
-	PythonIDE.python.output('<small>tkinter/Skulpt by Pete Dring</small>');
+	PythonIDE.python.output('<small>tkinter emulator for Skulpt, by Pete Dring</small><br><br>');
 
 	s.ttk = new Sk.builtin.module();
 

@@ -66,7 +66,24 @@
         </pre>
     </div>
     <script>
-        PythonIDE.files['mycode.py'] = "";
+		
+		function encode(str) {
+			return window.btoa(unescape(encodeURIComponent(str)));
+		}
+		function decode(str) {
+			return decodeURIComponent(escape(window.atob(str)));
+		}
+		var uhash=window.location.hash;
+		var uuhash=decode(uhash.substring(1));
+		console.log(uuhash);
+        var files = uuhash;
+        
+        try {
+            PythonIDE.files = JSON.parse(files);
+        } catch (e) {
+            PythonIDE.files['mycode.py'] = files;
+        }
+		
         PythonIDE.currentFile = 'mycode.py';
         PythonIDE.projectName = 'mycode.py'.replace(".py", "");
         PythonIDE.updateFileTabs();
