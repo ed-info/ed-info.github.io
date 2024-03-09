@@ -768,6 +768,23 @@ var $builtinmodule = function (name) {
 			}
 			self.onShow();
 		});
+		
+		function applyLineStyles(props, cx) {
+			
+			if(!props.fill) {
+				props.fill = new Sk.builtin.str("black");
+			}
+			cx.fillStyle = getColor(Sk.ffi.remapToJs(props.outline));
+
+			if(!props.outline) {
+				props.outline = new Sk.builtin.str("black");
+			}
+			cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+
+			if(props.width) {
+				cx.lineWidth = Sk.ffi.remapToJs(props.width);
+			}	
+		}
 
 		function applyStyles(props, cx) {
 			
@@ -851,7 +868,7 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyStyles(props, cx);
+				applyLineStyles(props, cx);
 				cx.moveTo(coords.x1, coords.y1);
 				cx.lineTo(coords.x2, coords.y2);
 				cx.stroke();
@@ -1344,6 +1361,41 @@ var $builtinmodule = function (name) {
 	var ttk = function(name) {
 		var t = {
 		};
+		
+		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
+			var getHtml = function(self) {
+				var html = '<select id="tkinter_' + self.id + '" ';
+				if(self.props.values) {
+					var vals = Sk.ffi.remapToJs(self.props.values);
+					html += 'size='+vals.length+'>'
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);
+						var selected = self.props.current && self.props.current == i;
+						html += '<option value="' + i + '"' + (selected?' selected':'') + '>' + val + '</option>';
+					}
+				}
+				html += '</select>'
+				return html;
+			}
+
+
+			var init = function(kwa, self, master) {
+				commonWidgetConstructor(kwa, self, master, getHtml);
+			}
+			init.co_kwargs = true;
+			$loc.__init__ = new Sk.builtin.func(init);
+
+			$loc.current = new Sk.builtin.func(function(self, item) {
+				var val = Sk.ffi.remapToJs(item);
+				$('#tkinter_' + self.id).val(val);
+				self.props.current = val;
+			});
+
+			$loc.get = new Sk.builtin.func(function(self) {
+				return new Sk.builtin.str($('#tkinter_' + self.id + ' option:selected').text());
+			});
+
+		}, 'Listbox', [s.Widget]);
 
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
