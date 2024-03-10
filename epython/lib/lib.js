@@ -1725,7 +1725,7 @@ var PythonIDE = {
 
 	stop: function() {
 		localStorage.loadAction = "restoreCode";
-		window.location = window.location.href.replace('run/', 'python/').replace("#", "");
+		window.location = window.location.href.replace('run/', 'python/').replace("", "");
 	},
 
 	keyHandlers: [],
