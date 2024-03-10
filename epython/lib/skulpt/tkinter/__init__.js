@@ -128,7 +128,10 @@ var $builtinmodule = function (name) {
 	s.SUNKEN = new Sk.builtin.str("sunken");
 	s.ALL = new Sk.builtin.str("all");
 	s.NW = new Sk.builtin.str("nw");
-
+	s.ARC = new Sk.builtin.str("arc");
+	s.CHORD = new Sk.builtin.str("chord");
+	s.PIESLICE = new Sk.builtin.str("pieslice");
+	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
@@ -935,7 +938,16 @@ var $builtinmodule = function (name) {
 
 			return commonCanvasElement(self, {type: "oval", props:props, coords:coords, draw:function(canvas) {
 				var cx = canvas.getContext('2d');
-				applyStyles(props, cx);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				//applyStyles				
 				cx.beginPath();
 				var w = coords.x2 - coords.x1;
 				var h = coords.y2 - coords.y1
@@ -949,6 +961,55 @@ var $builtinmodule = function (name) {
 		create_oval.co_kwargs = true;
 		$loc.create_oval = new Sk.builtin.func(create_oval);
 
+//
+		var create_arc = function(kwa, self, x1, y1, x2, y2) {
+			var coords = {
+				x1: Sk.ffi.remapToJs(x1),
+				y1: Sk.ffi.remapToJs(y1),
+				x2: Sk.ffi.remapToJs(x2),
+				y2: Sk.ffi.remapToJs(y2),
+			}
+
+			var props = unpackKWA(kwa);
+
+			return commonCanvasElement(self, {type: "arc", props:props, coords:coords, draw:function(canvas) {
+				var cx = canvas.getContext('2d');
+				var start = 2*Math.PI-Sk.ffi.remapToJs(props.start)*Math.PI/180;
+				var extent = 2*Math.PI-Sk.ffi.remapToJs(props.extent)*Math.PI/180;
+				var style = Sk.ffi.remapToJs(props.style);
+				console.log("style=",style);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				//applyStyles
+				cx.beginPath();
+				var w = coords.x2 - coords.x1;
+				var h = coords.y2 - coords.y1;
+				if (style=="pieslice") {
+					cx.moveTo(coords.x1 + (w/2), coords.y1 + (h/2));
+				}	
+				console.log("start=",start)
+				console.log("ext=",extent)				
+				cx.arc(coords.x1 + (w/2), coords.y1 + (h/2), h/2, start, extent,true);
+				if (style=="pieslice") {
+					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
+				}
+				if(props.fill) {
+					cx.fill();
+				}
+				cx.stroke();
+			}});
+		}
+		create_arc.co_kwargs = true;
+		$loc.create_arc = new Sk.builtin.func(create_arc);
+
+//
 		var item_config = function(kwa, self, id) {
 			var e = self.elements[Sk.ffi.remapToJs(id)];
 			var newProps = unpackKWA(kwa);
