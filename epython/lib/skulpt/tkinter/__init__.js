@@ -1361,38 +1361,82 @@ var $builtinmodule = function (name) {
 	var ttk = function(name) {
 		var t = {
 		};
-		
+	// Listbox widget	
 		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
+			listVals=[]
+
 			var getHtml = function(self) {
-				var html = '<select id="tkinter_' + self.id + '" ';
-				if(self.props.values) {
-					var vals = Sk.ffi.remapToJs(self.props.values);
-					html += 'size='+vals.length+'>'
-					for(var i = 0; i < vals.length; i++) {
-						var val = PythonIDE.sanitize("" + vals[i]);
-						var selected = self.props.current && self.props.current == i;
-						html += '<option value="' + i + '"' + (selected?' selected':'') + '>' + val + '</option>';
+
+				var html = '<select id="tkinter_' + self.id + '"  multiple> ';
+
+				// re-generate Listbox
+				for(var i = 0; i < listVals.length; i++) {
+						var val =listVals[i];
+						html += '<option value="' + val + '"' +  '>' + val + '</option>';
 					}
-				}
+				
 				html += '</select>'
+		        console.log("created: ",html);
 				return html;
 			}
 
-
-			var init = function(kwa, self, master) {
-				commonWidgetConstructor(kwa, self, master, getHtml);
+		var init = function(kwa, self, master) {
+			commonWidgetConstructor(kwa, self, master, getHtml);
+			// listvariable props
+			//if(self.props.listvariable) {
+			//			var vals = Sk.ffi.remapToJs(self.props.listvariable);
+			//			for(var i = 0; i < vals.length; i++) {						
+			//				listVals.push(vals[i]);
+			//				console.log(i," = ",vals[i]);
+			//			}
+			//			console.log(" LIST = ",listVals);
+			//}
+			// width, height props
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 20);
+			}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				}
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
 
-			$loc.current = new Sk.builtin.func(function(self, item) {
-				var val = Sk.ffi.remapToJs(item);
-				$('#tkinter_' + self.id).val(val);
-				self.props.current = val;
-			});
-
+			// .get() option selected
 			$loc.get = new Sk.builtin.func(function(self) {
 				return new Sk.builtin.str($('#tkinter_' + self.id + ' option:selected').text());
+			});
+			
+			//. delete() 
+			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
+			var pos = Sk.ffi.remapToJs(pos)-1;
+				console.log("delpos:",pos)
+				console.log("listVals.length:",listVals.length)
+			if (pos<=listVals.length) {
+				listVals.splice(pos,1);
+			}
+			console.log("del:",listVals)
+			});
+
+			// Listbox.insert
+			// .insert(END, item)
+			// .insert(pos, item)
+			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
+			var pos = Sk.ffi.remapToJs(pos);
+			item = Sk.ffi.remapToJs(newItem);
+			console.log("*** pos=",pos)
+			console.log("*** List: ",listVals)
+			listLen = listVals.length
+			console.log("*** ListLen=",listLen)	
+			if(pos == "end") {	
+					listVals.push(item);
+					console.log(listVals);
+			}
+			pos=pos-1
+			if (pos<=listVals.length) {
+					listVals.splice(pos,0,item);
+					console.log(listVals);				
+				}
 			});
 
 		}, 'Listbox', [s.Widget]);
