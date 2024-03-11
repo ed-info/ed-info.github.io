@@ -131,6 +131,8 @@ var $builtinmodule = function (name) {
 	s.ARC = new Sk.builtin.str("arc");
 	s.CHORD = new Sk.builtin.str("chord");
 	s.PIESLICE = new Sk.builtin.str("pieslice");
+	s.LAST = new Sk.builtin.str("last");
+	s.FIRST = new Sk.builtin.str("first");
 	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
@@ -772,30 +774,12 @@ var $builtinmodule = function (name) {
 			self.onShow();
 		});
 		
-		function applyLineStyles(props, cx) {
-			
-			if(!props.fill) {
-				props.fill = new Sk.builtin.str("black");
-			}
-			cx.fillStyle = getColor(Sk.ffi.remapToJs(props.outline));
-
-			if(!props.outline) {
-				props.outline = new Sk.builtin.str("black");
-			}
-			cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
-
-			if(props.width) {
-				cx.lineWidth = Sk.ffi.remapToJs(props.width);
-			}	
-		}
-
 		function applyStyles(props, cx) {
 			
-			if(!props.fill) {
-				props.fill = new Sk.builtin.str("black");
+			if(!props.dash) {
+				cx.setLineDash([]);
 			}
-			cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
-
+			
 			if(!props.outline) {
 				props.outline = new Sk.builtin.str("black");
 			}
@@ -803,6 +787,11 @@ var $builtinmodule = function (name) {
 
 			if(props.width) {
 				cx.lineWidth = Sk.ffi.remapToJs(props.width);
+			}
+			
+			if(props.dash) {
+				var dash = Sk.ffi.remapToJs(props.dash);
+				cx.setLineDash(dash);
 			}
 
 			if(props.font) {
@@ -871,12 +860,72 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyLineStyles(props, cx);
-				cx.moveTo(coords.x1, coords.y1);
-				cx.lineTo(coords.x2, coords.y2);
+				if(!props.dash) {
+					cx.setLineDash([]);
+				}
+				if(props.dash) {
+					var dash = Sk.ffi.remapToJs(props.dash);
+					cx.setLineDash(dash);
+				}
+				if(!props.fill) {
+					props.fill = new Sk.builtin.str("black");
+				}
+				if(props.fill) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+
+				x0 = coords.x1;
+				y0 = coords.y1;
+				x1 = coords.x2;
+				y1 = coords.y2
+			
+
+				// draw line
+				cx.beginPath();
+				// draw the line from p0 to p1
+				cx.moveTo(x0,y0);
+				cx.lineTo(x1,y1);
 				cx.stroke();
+				if (props.arrow) {
+					headLength = 15;
+					// constants (could be declared as globals outside this function)
+					var PI=Math.PI;
+					var deg_in_rad_200=200*PI/180;
+					var deg_in_rad_160=160*PI/180;
+	
+					// calc the angle of the line
+					var dx=x1-x0;
+					var dy=y1-y0;
+					var angle=Math.atan2(dy,dx);
+					// calc arrowhead points
+					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
+					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
+					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
+					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
+					
+					cx.beginPath();
+					cx.moveTo(x1,y1);
+					cx.setLineDash([]);
+					cx.lineWidth = 2;
+					// draw partial arrowhead at 200 degrees
+					cx.moveTo(x1,y1);
+					cx.lineTo(x200,y200);
+					// draw partial arrowhead at 160 degrees
+					cx.moveTo(x1,y1);
+					cx.lineTo(x160,y160);
+					// stroke the line and arrowhead
+					cx.stroke();
+				}
+								
 			}});
 		}
+		
 		create_line.co_kwargs = true;
 		$loc.create_line = new Sk.builtin.func(create_line);
 
@@ -917,8 +966,18 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {type:"rectangle", props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				applyStyles(props, cx);
-
-				cx.fillRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				if(props.fill) {
+								cx.fillRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
+							   }
 				cx.strokeRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);	
 			}});
 
@@ -938,6 +997,7 @@ var $builtinmodule = function (name) {
 
 			return commonCanvasElement(self, {type: "oval", props:props, coords:coords, draw:function(canvas) {
 				var cx = canvas.getContext('2d');
+				applyStyles(props, cx);
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
 				}
@@ -977,7 +1037,11 @@ var $builtinmodule = function (name) {
 				var start = 2*Math.PI-Sk.ffi.remapToJs(props.start)*Math.PI/180;
 				var extent = 2*Math.PI-Sk.ffi.remapToJs(props.extent)*Math.PI/180;
 				var style = Sk.ffi.remapToJs(props.style);
+				if(!props.style) {
+					style="pieslice"
+				} 
 				console.log("style=",style);
+				applyStyles(props, cx);
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
 				}
@@ -996,7 +1060,7 @@ var $builtinmodule = function (name) {
 				}	
 				console.log("start=",start)
 				console.log("ext=",extent)				
-				cx.arc(coords.x1 + (w/2), coords.y1 + (h/2), h/2, start, extent,true);
+				cx.arc(coords.x1 + (w/2), coords.y1 + (h/2), h/2, start, start+extent,true);
 				if (style=="pieslice") {
 					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
 				}
@@ -1425,8 +1489,12 @@ var $builtinmodule = function (name) {
 	// Listbox widget	
 		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			listVals=[]
+			
 
 			var getHtml = function(self) {
+				
+			
+				
 
 				var html = '<select id="tkinter_' + self.id + '"  multiple> ';
 
@@ -1444,14 +1512,14 @@ var $builtinmodule = function (name) {
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
 			// listvariable props
-			//if(self.props.listvariable) {
-			//			var vals = Sk.ffi.remapToJs(self.props.listvariable);
-			//			for(var i = 0; i < vals.length; i++) {						
-			//				listVals.push(vals[i]);
-			//				console.log(i," = ",vals[i]);
-			//			}
-			//			console.log(" LIST = ",listVals);
-			//}
+			if(self.props.listvariable) {
+						var vals = Sk.ffi.remapToJs(self.props.listvariable);
+						for(var i = 0; i < vals.length; i++) {						
+							listVals.push(vals[i]);
+							console.log(i," = ",vals[i]);
+						}
+					console.log(" LIST = ",vals);
+			}
 			// width, height props
 			if(self.props.width) {
 				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 20);
