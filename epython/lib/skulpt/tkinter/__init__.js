@@ -1105,7 +1105,11 @@ var $builtinmodule = function (name) {
 				if(props.fill) {
 					cx.fill();
 				}
+				if (style=="chord") {
+					cx.closePath();
+				}
 				cx.stroke();
+
 			}});
 		}
 		create_arc.co_kwargs = true;
