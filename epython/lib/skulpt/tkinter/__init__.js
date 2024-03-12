@@ -133,6 +133,7 @@ var $builtinmodule = function (name) {
 	s.PIESLICE = new Sk.builtin.str("pieslice");
 	s.LAST = new Sk.builtin.str("last");
 	s.FIRST = new Sk.builtin.str("first");
+	s.BOTH = new Sk.builtin.str("both");
 	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
@@ -894,16 +895,21 @@ var $builtinmodule = function (name) {
 				cx.lineTo(x1,y1);
 				cx.stroke();
 				if (props.arrow) {
+					arrw=Sk.ffi.remapToJs(props.arrow);
+					if(props.fill) {
+						cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill)); }
 					headLength = 15;
-					// constants (could be declared as globals outside this function)
-					var PI=Math.PI;
-					var deg_in_rad_200=200*PI/180;
-					var deg_in_rad_160=160*PI/180;
+					// constants
+					var deg_in_rad_200=200*Math.PI/180;
+					var deg_in_rad_160=160*Math.PI/180;
 	
+					if ((arrw=="last")||(arrw=="both")) {
+				
 					// calc the angle of the line
 					var dx=x1-x0;
 					var dy=y1-y0;
 					var angle=Math.atan2(dy,dx);
+										
 					// calc arrowhead points
 					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
 					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
@@ -914,14 +920,45 @@ var $builtinmodule = function (name) {
 					cx.moveTo(x1,y1);
 					cx.setLineDash([]);
 					cx.lineWidth = 2;
-					// draw partial arrowhead at 200 degrees
-					cx.moveTo(x1,y1);
+					// draw arrowhead
 					cx.lineTo(x200,y200);
-					// draw partial arrowhead at 160 degrees
-					cx.moveTo(x1,y1);
 					cx.lineTo(x160,y160);
-					// stroke the line and arrowhead
+					cx.lineTo(x1,y1);
+					cx.closePath();
 					cx.stroke();
+					cx.fill()
+					}
+					if ((arrw=="first")||(arrw=="both")) {
+					tmp=x1;
+					x1=x0;
+					x0=tmp;
+					tmp=y1;
+					y1=y0;
+					y0=tmp;
+					// calc the angle of the line
+					var dx=x1-x0;
+					var dy=y1-y0;
+					var angle=Math.atan2(dy,dx);
+										
+					// calc arrowhead points
+					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
+					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
+					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
+					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
+					
+					cx.beginPath();
+					cx.moveTo(x1,y1);
+					cx.setLineDash([]);
+					cx.lineWidth = 2;
+					// draw arrowhead
+					cx.lineTo(x200,y200);
+					cx.lineTo(x160,y160);
+					cx.lineTo(x1,y1);
+					cx.closePath();
+					cx.stroke();
+					cx.fill()
+					}
+					
 				}
 								
 			}});
