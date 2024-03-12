@@ -138,7 +138,7 @@ var $builtinmodule = function (name) {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
 
-
+// Variable, StringVar, IntVar, BooleanVar ------------------------------
 	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			variables[varCount] = self;
@@ -175,10 +175,11 @@ var $builtinmodule = function (name) {
 	s.BooleanVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 	}, "BooleanVar", [s.Variable])
-	
+// Event -------------------------------------------------------	
 	s.Event = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var init = function(kwa, self, master) {
 			self.props = unpackKWA(kwa);
+
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -638,7 +639,7 @@ var $builtinmodule = function (name) {
 
 		self.getHtml = getHtml;
 	}
-
+// Canvas -------------------------------------
 	s.Canvas = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		var getHtml = function(self) {
@@ -1060,7 +1061,7 @@ var $builtinmodule = function (name) {
 				}	
 				console.log("start=",start)
 				console.log("ext=",extent)				
-				cx.arc(coords.x1 + (w/2), coords.y1 + (h/2), h/2, start, start+extent,true);
+				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, start, start+extent,true);
 				if (style=="pieslice") {
 					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
 				}
@@ -1088,7 +1089,7 @@ var $builtinmodule = function (name) {
 		$loc.itemconfigure = new Sk.builtin.func(item_config);
 
 	}, 'Canvas', [s.Widget]);
-
+// Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<input type="text" id="tkinter_' + self.id + '">';
@@ -1137,7 +1138,7 @@ var $builtinmodule = function (name) {
 
 
 	}, 'Entry', [s.Widget]);
-
+// Scale ----------------------------------------------------------
 	s.Scale = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<div id="tkinter_' + self.id + '" style="margin:auto;"><div class="ui-slider-handle">0</div></div>';
@@ -1196,7 +1197,7 @@ var $builtinmodule = function (name) {
 		});
 
 	}, 'Scale', [s.Widget])
-
+// Label ---------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
@@ -1230,7 +1231,7 @@ var $builtinmodule = function (name) {
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Label', [s.Widget]);
-
+// Button ---------------------------------------------------------
 	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			var disabled = false;
@@ -1249,7 +1250,7 @@ var $builtinmodule = function (name) {
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Button', [s.Widget]);
-
+// Frame ---------------------------------------------------------
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self, master) {
 			if(!master) {
@@ -1274,7 +1275,7 @@ var $builtinmodule = function (name) {
 
 
 	}, 'Frame', [s.Widget]);
-
+// Text ----------------------------------------------------------
 	s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<textarea id="tkinter_' + self.id + '"> </textarea>';
@@ -1321,7 +1322,7 @@ var $builtinmodule = function (name) {
 			$('#tkinter_' + self.id).val(n).focus();
 		});
 	}, "Text", [s.Widget]);
-
+// TopLevel ---------------------------------------------------------
 	s.Toplevel = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.props = {};
@@ -1360,6 +1361,7 @@ var $builtinmodule = function (name) {
 		$loc.config = new Sk.builtin.func(configure);
 
 		$loc.title = new Sk.builtin.func(function(self, title) {
+			
 			$('#tkinter_' + self.id).dialog('option', 'title', PythonIDE.sanitize(Sk.ffi.remapToJs(title)));
 		});
 
@@ -1390,7 +1392,7 @@ var $builtinmodule = function (name) {
 			
 		});		
 	}, "Toplevel", [s.Widget]);
-
+// Tk main class -----------------------------------------------
 	s.Tk = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		$loc.update = new Sk.builtin.func(function(self) {
@@ -1403,6 +1405,8 @@ var $builtinmodule = function (name) {
 
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.props = {};
+			
+			
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
@@ -1447,6 +1451,7 @@ var $builtinmodule = function (name) {
 		$loc.config = new Sk.builtin.func(configure);
 
 		$loc.title = new Sk.builtin.func(function(self, title) {
+			console.log("**** Title");
 			$('#tkinter_' + self.id).dialog('option', 'title', PythonIDE.sanitize(Sk.ffi.remapToJs(title)));
 		});
 
@@ -1486,7 +1491,7 @@ var $builtinmodule = function (name) {
 	var ttk = function(name) {
 		var t = {
 		};
-	// Listbox widget	
+// Listbox widget -------------------------------------------------	
 		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			listVals=[]
 			
@@ -1516,9 +1521,9 @@ var $builtinmodule = function (name) {
 						var vals = Sk.ffi.remapToJs(self.props.listvariable);
 						for(var i = 0; i < vals.length; i++) {						
 							listVals.push(vals[i]);
-							console.log(i," = ",vals[i]);
+							
 						}
-					console.log(" LIST = ",vals);
+					
 			}
 			// width, height props
 			if(self.props.width) {
@@ -1553,10 +1558,9 @@ var $builtinmodule = function (name) {
 			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
 			var pos = Sk.ffi.remapToJs(pos);
 			item = Sk.ffi.remapToJs(newItem);
-			console.log("*** pos=",pos)
-			console.log("*** List: ",listVals)
+			
 			listLen = listVals.length
-			console.log("*** ListLen=",listLen)	
+			
 			if(pos == "end") {	
 					listVals.push(item);
 					console.log(listVals);
@@ -1569,7 +1573,7 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Listbox', [s.Widget]);
-
+// Combobox --------------------------------------------------------------
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '">';
@@ -1603,7 +1607,7 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Combobox', [s.Widget]);
-
+// Checkbutton -------------------------------------------------------------
 		t.Checkbutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
@@ -1657,7 +1661,7 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Checkbutton', [s.Widget]);
-
+// Radiobutton -------------------------------------------------------------
 		t.Radiobutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
@@ -1719,7 +1723,7 @@ var $builtinmodule = function (name) {
 	}
 	s.ttk.$d = new ttk("tkinter.ttk");
 	Sk.sysmodules.mp$ass_subscript("tkinter.ttk", s.ttk);
-
+// message box showinfo and askyesno --------------------------------------------------------
 	s.messagebox = new Sk.builtin.module();
 	var messagebox = function(name) {
 		var m = {
