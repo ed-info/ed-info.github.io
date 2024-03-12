@@ -1061,7 +1061,7 @@ var $builtinmodule = function (name) {
 				}	
 				console.log("start=",start)
 				console.log("ext=",extent)				
-				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, start, start+extent,true);
+				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, 0, start, start+extent, true);
 				if (style=="pieslice") {
 					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
 				}
