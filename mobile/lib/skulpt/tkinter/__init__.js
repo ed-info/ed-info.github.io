@@ -128,12 +128,18 @@ var $builtinmodule = function (name) {
 	s.SUNKEN = new Sk.builtin.str("sunken");
 	s.ALL = new Sk.builtin.str("all");
 	s.NW = new Sk.builtin.str("nw");
-
+	s.ARC = new Sk.builtin.str("arc");
+	s.CHORD = new Sk.builtin.str("chord");
+	s.PIESLICE = new Sk.builtin.str("pieslice");
+	s.LAST = new Sk.builtin.str("last");
+	s.FIRST = new Sk.builtin.str("first");
+	s.BOTH = new Sk.builtin.str("both");
+	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
 
-
+// Variable, StringVar, IntVar, BooleanVar ------------------------------
 	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			variables[varCount] = self;
@@ -170,10 +176,11 @@ var $builtinmodule = function (name) {
 	s.BooleanVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 	}, "BooleanVar", [s.Variable])
-	
+// Event -------------------------------------------------------	
 	s.Event = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var init = function(kwa, self, master) {
 			self.props = unpackKWA(kwa);
+
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -633,7 +640,7 @@ var $builtinmodule = function (name) {
 
 		self.getHtml = getHtml;
 	}
-
+// Canvas -------------------------------------
 	s.Canvas = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		var getHtml = function(self) {
@@ -768,14 +775,13 @@ var $builtinmodule = function (name) {
 			}
 			self.onShow();
 		});
-
+		
 		function applyStyles(props, cx) {
 			
-			if(!props.fill) {
-				props.fill = new Sk.builtin.str("black");
+			if(!props.dash) {
+				cx.setLineDash([]);
 			}
-			cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
-
+			
 			if(!props.outline) {
 				props.outline = new Sk.builtin.str("black");
 			}
@@ -783,6 +789,11 @@ var $builtinmodule = function (name) {
 
 			if(props.width) {
 				cx.lineWidth = Sk.ffi.remapToJs(props.width);
+			}
+			
+			if(props.dash) {
+				var dash = Sk.ffi.remapToJs(props.dash);
+				cx.setLineDash(dash);
 			}
 
 			if(props.font) {
@@ -851,12 +862,108 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyStyles(props, cx);
-				cx.moveTo(coords.x1, coords.y1);
-				cx.lineTo(coords.x2, coords.y2);
+				if(!props.dash) {
+					cx.setLineDash([]);
+				}
+				if(props.dash) {
+					var dash = Sk.ffi.remapToJs(props.dash);
+					cx.setLineDash(dash);
+				}
+				if(!props.fill) {
+					props.fill = new Sk.builtin.str("black");
+				}
+				if(props.fill) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+
+				x0 = coords.x1;
+				y0 = coords.y1;
+				x1 = coords.x2;
+				y1 = coords.y2
+			
+
+				// draw line
+				cx.beginPath();
+				// draw the line from p0 to p1
+				cx.moveTo(x0,y0);
+				cx.lineTo(x1,y1);
 				cx.stroke();
+				if (props.arrow) {
+					arrw=Sk.ffi.remapToJs(props.arrow);
+					if(props.fill) {
+						cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill)); }
+					headLength = 15;
+					// constants
+					var deg_in_rad_200=200*Math.PI/180;
+					var deg_in_rad_160=160*Math.PI/180;
+	
+					if ((arrw=="last")||(arrw=="both")) {
+				
+					// calc the angle of the line
+					var dx=x1-x0;
+					var dy=y1-y0;
+					var angle=Math.atan2(dy,dx);
+										
+					// calc arrowhead points
+					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
+					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
+					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
+					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
+					
+					cx.beginPath();
+					cx.moveTo(x1,y1);
+					cx.setLineDash([]);
+					cx.lineWidth = 2;
+					// draw arrowhead
+					cx.lineTo(x200,y200);
+					cx.lineTo(x160,y160);
+					cx.lineTo(x1,y1);
+					cx.closePath();
+					cx.stroke();
+					cx.fill()
+					}
+					if ((arrw=="first")||(arrw=="both")) {
+					tmp=x1;
+					x1=x0;
+					x0=tmp;
+					tmp=y1;
+					y1=y0;
+					y0=tmp;
+					// calc the angle of the line
+					var dx=x1-x0;
+					var dy=y1-y0;
+					var angle=Math.atan2(dy,dx);
+										
+					// calc arrowhead points
+					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
+					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
+					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
+					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
+					
+					cx.beginPath();
+					cx.moveTo(x1,y1);
+					cx.setLineDash([]);
+					cx.lineWidth = 2;
+					// draw arrowhead
+					cx.lineTo(x200,y200);
+					cx.lineTo(x160,y160);
+					cx.lineTo(x1,y1);
+					cx.closePath();
+					cx.stroke();
+					cx.fill()
+					}
+					
+				}
+								
 			}});
 		}
+		
 		create_line.co_kwargs = true;
 		$loc.create_line = new Sk.builtin.func(create_line);
 
@@ -897,8 +1004,18 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {type:"rectangle", props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				applyStyles(props, cx);
-
-				cx.fillRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				if(props.fill) {
+								cx.fillRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
+							   }
 				cx.strokeRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);	
 			}});
 
@@ -919,6 +1036,16 @@ var $builtinmodule = function (name) {
 			return commonCanvasElement(self, {type: "oval", props:props, coords:coords, draw:function(canvas) {
 				var cx = canvas.getContext('2d');
 				applyStyles(props, cx);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				//applyStyles				
 				cx.beginPath();
 				var w = coords.x2 - coords.x1;
 				var h = coords.y2 - coords.y1
@@ -932,6 +1059,63 @@ var $builtinmodule = function (name) {
 		create_oval.co_kwargs = true;
 		$loc.create_oval = new Sk.builtin.func(create_oval);
 
+//
+		var create_arc = function(kwa, self, x1, y1, x2, y2) {
+			var coords = {
+				x1: Sk.ffi.remapToJs(x1),
+				y1: Sk.ffi.remapToJs(y1),
+				x2: Sk.ffi.remapToJs(x2),
+				y2: Sk.ffi.remapToJs(y2),
+			}
+
+			var props = unpackKWA(kwa);
+
+			return commonCanvasElement(self, {type: "arc", props:props, coords:coords, draw:function(canvas) {
+				var cx = canvas.getContext('2d');
+				var start = 2*Math.PI-Sk.ffi.remapToJs(props.start)*Math.PI/180;
+				var extent = 2*Math.PI-Sk.ffi.remapToJs(props.extent)*Math.PI/180;
+				var style = Sk.ffi.remapToJs(props.style);
+				if(!props.style) {
+					style="pieslice"
+				} 
+				console.log("style=",style);
+				applyStyles(props, cx);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
+				if(props.width) {
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				//applyStyles
+				cx.beginPath();
+				var w = coords.x2 - coords.x1;
+				var h = coords.y2 - coords.y1;
+				if (style=="pieslice") {
+					cx.moveTo(coords.x1 + (w/2), coords.y1 + (h/2));
+				}	
+				console.log("start=",start)
+				console.log("ext=",extent)				
+				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, 0, start, start+extent, true);
+				if (style=="pieslice") {
+					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
+				}
+				if(props.fill) {
+					cx.fill();
+				}
+				if (style=="chord") {
+					cx.closePath();
+				}
+				cx.stroke();
+
+			}});
+		}
+		create_arc.co_kwargs = true;
+		$loc.create_arc = new Sk.builtin.func(create_arc);
+
+//
 		var item_config = function(kwa, self, id) {
 			var e = self.elements[Sk.ffi.remapToJs(id)];
 			var newProps = unpackKWA(kwa);
@@ -946,7 +1130,7 @@ var $builtinmodule = function (name) {
 		$loc.itemconfigure = new Sk.builtin.func(item_config);
 
 	}, 'Canvas', [s.Widget]);
-
+// Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<input type="text" id="tkinter_' + self.id + '">';
@@ -995,7 +1179,7 @@ var $builtinmodule = function (name) {
 
 
 	}, 'Entry', [s.Widget]);
-
+// Scale ----------------------------------------------------------
 	s.Scale = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<div id="tkinter_' + self.id + '" style="margin:auto;"><div class="ui-slider-handle">0</div></div>';
@@ -1054,7 +1238,7 @@ var $builtinmodule = function (name) {
 		});
 
 	}, 'Scale', [s.Widget])
-
+// Label ---------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
@@ -1088,7 +1272,7 @@ var $builtinmodule = function (name) {
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Label', [s.Widget]);
-
+// Button ---------------------------------------------------------
 	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			var disabled = false;
@@ -1107,7 +1291,7 @@ var $builtinmodule = function (name) {
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Button', [s.Widget]);
-
+// Frame ---------------------------------------------------------
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self, master) {
 			if(!master) {
@@ -1132,7 +1316,7 @@ var $builtinmodule = function (name) {
 
 
 	}, 'Frame', [s.Widget]);
-
+// Text ----------------------------------------------------------
 	s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			return '<textarea id="tkinter_' + self.id + '"> </textarea>';
@@ -1179,7 +1363,7 @@ var $builtinmodule = function (name) {
 			$('#tkinter_' + self.id).val(n).focus();
 		});
 	}, "Text", [s.Widget]);
-
+// TopLevel ---------------------------------------------------------
 	s.Toplevel = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.props = {};
@@ -1218,6 +1402,7 @@ var $builtinmodule = function (name) {
 		$loc.config = new Sk.builtin.func(configure);
 
 		$loc.title = new Sk.builtin.func(function(self, title) {
+			
 			$('#tkinter_' + self.id).dialog('option', 'title', PythonIDE.sanitize(Sk.ffi.remapToJs(title)));
 		});
 
@@ -1248,7 +1433,7 @@ var $builtinmodule = function (name) {
 			
 		});		
 	}, "Toplevel", [s.Widget]);
-
+// Tk main class -----------------------------------------------
 	s.Tk = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		$loc.update = new Sk.builtin.func(function(self) {
@@ -1261,6 +1446,8 @@ var $builtinmodule = function (name) {
 
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.props = {};
+			
+			
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
@@ -1305,6 +1492,7 @@ var $builtinmodule = function (name) {
 		$loc.config = new Sk.builtin.func(configure);
 
 		$loc.title = new Sk.builtin.func(function(self, title) {
+			
 			$('#tkinter_' + self.id).dialog('option', 'title', PythonIDE.sanitize(Sk.ffi.remapToJs(title)));
 		});
 
@@ -1337,14 +1525,100 @@ var $builtinmodule = function (name) {
 		
 	}, 'Tk', [s.Widget]);
 
-	PythonIDE.python.output('<small>tkinter/Skulpt by Pete Dring</small>');
+	PythonIDE.python.output('<small>tkinter emulator for Skulpt, by Pete Dring</small><br><br>');
 
 	s.ttk = new Sk.builtin.module();
 
 	var ttk = function(name) {
 		var t = {
 		};
+// Listbox widget -------------------------------------------------	
+		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {					        
+		        
+		        var getHtml = function(self) {
+				var html = '<select id="tkinter_' + self.id + '" multiple>';
+				if(self.props.listvariable) {
+					var vals = Sk.ffi.remapToJs(self.props.listvariable);
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);						
+						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
+					}
+				}
+				html += '</select>'
+				return html;
+				
+			}
 
+		var init = function(kwa, self, master) {
+			
+			commonWidgetConstructor(kwa, self, master, getHtml);
+
+			// width, height props
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+			}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				}
+			}
+			init.co_kwargs = true;
+			$loc.__init__ = new Sk.builtin.func(init);
+			
+			
+			// .curselection()
+			$loc.curselection = new Sk.builtin.func(function(self) {
+				let selection = $('#tkinter_' + self.id + ' option:selected').text();
+				let index=-1;
+				do {
+					index = index + 1;
+					v=$('#tkinter_' + self.id+ '  option:eq('+index+')').text();
+				} while (v != selection);	
+				
+				
+				return new Sk.builtin.int_(Sk.ffi.remapToJs(index));
+			});
+
+			// .get() option selected
+			$loc.get = new Sk.builtin.func(function(self, pos) {
+				var pos = Sk.ffi.remapToJs(pos);
+				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
+				return new Sk.builtin.str(Sk.ffi.remapToJs(result));
+			});
+			
+			//. delete() 
+			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
+			var pos = Sk.ffi.remapToJs(pos);
+			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
+			});
+
+
+			// Listbox.insert
+			// .insert(END, item)
+			// .insert(pos, item)
+			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
+						
+			var pos = Sk.ffi.remapToJs(pos);
+			item = Sk.ffi.remapToJs(newItem);
+			
+			if(pos != "end") {
+				console.log("pos=",pos);
+				$('#tkinter_' + self.id+ '  option:eq('+pos+')').before($("<option></option>").val(crypto.randomUUID()).html(item));
+			}	
+			
+			if(pos == "end") {
+				var data = {
+						id: crypto.randomUUID(),
+						text: item
+						};
+				var newOption = new Option(data.text, data.id, false, false);
+				$('#tkinter_' + self.id).append(newOption).trigger('change');
+				}
+						
+			});
+
+
+		}, 'Listbox', [s.Widget]);
+// Combobox --------------------------------------------------------------
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '">';
@@ -1362,7 +1636,15 @@ var $builtinmodule = function (name) {
 
 
 			var init = function(kwa, self, master) {
-				commonWidgetConstructor(kwa, self, master, getHtml);
+			commonWidgetConstructor(kwa, self, master, getHtml);
+				
+			// width, height props
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+			}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				}
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
@@ -1378,7 +1660,7 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Combobox', [s.Widget]);
-
+// Checkbutton -------------------------------------------------------------
 		t.Checkbutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
@@ -1432,7 +1714,7 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Checkbutton', [s.Widget]);
-
+// Radiobutton -------------------------------------------------------------
 		t.Radiobutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
@@ -1494,7 +1776,7 @@ var $builtinmodule = function (name) {
 	}
 	s.ttk.$d = new ttk("tkinter.ttk");
 	Sk.sysmodules.mp$ass_subscript("tkinter.ttk", s.ttk);
-
+// message box showinfo and askyesno --------------------------------------------------------
 	s.messagebox = new Sk.builtin.module();
 	var messagebox = function(name) {
 		var m = {
