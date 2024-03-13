@@ -1492,7 +1492,7 @@ var $builtinmodule = function (name) {
 		$loc.config = new Sk.builtin.func(configure);
 
 		$loc.title = new Sk.builtin.func(function(self, title) {
-			console.log("**** Title");
+			
 			$('#tkinter_' + self.id).dialog('option', 'title', PythonIDE.sanitize(Sk.ffi.remapToJs(title)));
 		});
 
@@ -1533,42 +1533,29 @@ var $builtinmodule = function (name) {
 		var t = {
 		};
 // Listbox widget -------------------------------------------------	
-		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
-			listVals=[]
-			
-
-			var getHtml = function(self) {
-				
-			
-				
-
-				var html = '<select id="tkinter_' + self.id + '"  multiple> ';
-
-				// re-generate Listbox
-				for(var i = 0; i < listVals.length; i++) {
-						var val =listVals[i];
-						html += '<option value="' + val + '"' +  '>' + val + '</option>';
+		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {					        
+		        
+		        var getHtml = function(self) {
+				var html = '<select id="tkinter_' + self.id + '" multiple>';
+				if(self.props.listvariable) {
+					var vals = Sk.ffi.remapToJs(self.props.listvariable);
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);						
+						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
 					}
-				
+				}
 				html += '</select>'
-		        console.log("created: ",html);
 				return html;
+				
 			}
 
 		var init = function(kwa, self, master) {
+			
 			commonWidgetConstructor(kwa, self, master, getHtml);
-			// listvariable props
-			if(self.props.listvariable) {
-						var vals = Sk.ffi.remapToJs(self.props.listvariable);
-						for(var i = 0; i < vals.length; i++) {						
-							listVals.push(vals[i]);
-							
-						}
-					
-			}
+
 			// width, height props
 			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 20);
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
 			}
 			if(self.props.height) {
 				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
@@ -1576,42 +1563,59 @@ var $builtinmodule = function (name) {
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
+			
+			
+			// .curselection()
+			$loc.curselection = new Sk.builtin.func(function(self) {
+				let selection = $('#tkinter_' + self.id + ' option:selected').text();
+				let index=-1;
+				do {
+					index = index + 1;
+					v=$('#tkinter_' + self.id+ '  option:eq('+index+')').text();
+				} while (v != selection);	
+				
+				
+				return new Sk.builtin.int_(Sk.ffi.remapToJs(index));
+			});
 
 			// .get() option selected
-			$loc.get = new Sk.builtin.func(function(self) {
-				return new Sk.builtin.str($('#tkinter_' + self.id + ' option:selected').text());
+			$loc.get = new Sk.builtin.func(function(self, pos) {
+				var pos = Sk.ffi.remapToJs(pos);
+				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
+				return new Sk.builtin.str(Sk.ffi.remapToJs(result));
 			});
 			
 			//. delete() 
 			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
-			var pos = Sk.ffi.remapToJs(pos)-1;
-				console.log("delpos:",pos)
-				console.log("listVals.length:",listVals.length)
-			if (pos<=listVals.length) {
-				listVals.splice(pos,1);
-			}
-			console.log("del:",listVals)
+			var pos = Sk.ffi.remapToJs(pos);
+			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
 			});
+
 
 			// Listbox.insert
 			// .insert(END, item)
 			// .insert(pos, item)
 			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
+						
 			var pos = Sk.ffi.remapToJs(pos);
 			item = Sk.ffi.remapToJs(newItem);
 			
-			listLen = listVals.length
+			if(pos != "end") {
+				console.log("pos=",pos);
+				$('#tkinter_' + self.id+ '  option:eq('+pos+')').before($("<option></option>").val(crypto.randomUUID()).html(item));
+			}	
 			
-			if(pos == "end") {	
-					listVals.push(item);
-					console.log(listVals);
-			}
-			pos=pos-1
-			if (pos<=listVals.length) {
-					listVals.splice(pos,0,item);
-					console.log(listVals);				
+			if(pos == "end") {
+				var data = {
+						id: crypto.randomUUID(),
+						text: item
+						};
+				var newOption = new Option(data.text, data.id, false, false);
+				$('#tkinter_' + self.id).append(newOption).trigger('change');
 				}
+						
 			});
+
 
 		}, 'Listbox', [s.Widget]);
 // Combobox --------------------------------------------------------------
@@ -1632,7 +1636,15 @@ var $builtinmodule = function (name) {
 
 
 			var init = function(kwa, self, master) {
-				commonWidgetConstructor(kwa, self, master, getHtml);
+			commonWidgetConstructor(kwa, self, master, getHtml);
+				
+			// width, height props
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+			}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				}
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);

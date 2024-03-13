@@ -1557,7 +1557,7 @@ var PythonIDE = {
 		// expand editor to fit height of the screen.
 		$('.holder').css({height: window.innerHeight - 80});
 		$('#dlg,#settings,#login,#share,#project_settings,#file_settings,#recover,#save,#tracker').dialog({
-			width: window.innerWidth * 1,
+			width: window.innerWidth * 0.5,
 			height: window.innerHeight
 		});
 		$('#editor').css({top:$('#file_tabs').height() - 20});
@@ -1725,7 +1725,7 @@ var PythonIDE = {
 
 	stop: function() {
 		localStorage.loadAction = "restoreCode";
-		window.location = window.location.href.replace('run/', 'python/').replace("#", "");
+		window.location = window.location.href.replace('run/', 'python/').replace("", "");
 	},
 
 	keyHandlers: [],
@@ -2805,7 +2805,6 @@ var PythonIDE = {
 						PythonIDE.currentFile = "mycode.py";
 						PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
 						PythonIDE.updateFileTabs();	
-		
 					}
 					
 				break;
