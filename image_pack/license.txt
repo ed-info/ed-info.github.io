@@ -1,0 +1,20 @@
+This pack contains a mix of assets from...
+
+Kenney Vleugels (www.kenney.nl)
+- Space Shooter (Redux, plus fonts and sounds)
+- Platformer Art Complete Pack
+- Topdown Tanks
+- Pirate Pack
+
+GameArt2D.com
+- Dino, Zombies, Knight, Ninja Girl
+
+
+
+			------------------------------
+
+			        License (CC0)
+	       http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these graphics in personal and commercial projects.
+

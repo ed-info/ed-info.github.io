@@ -133,7 +133,7 @@ var $builtinmodule = function (name) {
 	s.PIESLICE = new Sk.builtin.str("pieslice");
 	s.LAST = new Sk.builtin.str("last");
 	s.FIRST = new Sk.builtin.str("first");
-	s.BOTH = new Sk.builtin.str("both");
+
 	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
