@@ -882,10 +882,11 @@ var $builtinmodule = function (name) {
 				end: Sk.ffi.remapToJs(end),
 				color: Sk.ffi.remapToJs(color)
 			}
+			console.log("***** Start:",args.start[0],":",args.start[1])
 			cx.strokeStyle = getColor(args.color);
 			cx.beginPath();
-			cx.moveTo(start[0], start[1]);
-			cx.lineTo(end[0], end[1]);
+			cx.moveTo(args.start[0], args.start[1]);
+			cx.lineTo(args.end[0], args.end[1]);
 			cx.stroke();
 		});
 		
@@ -1097,8 +1098,8 @@ var $builtinmodule = function (name) {
 			$('#dlg').dialog({title:title});
 		}
 
-	    PythonIDE.python.output("<div><small>PyGameZero support is under development - watch this space!</small></div>", true);
-	    PythonIDE.python.output('<div><button id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Asset Manager</button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
+	    PythonIDE.python.output("<div><small>PyGameZero by Pete Dring</small></div>", true);
+	    PythonIDE.python.output('<div><button id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
 	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 
 	    function getImageData(url, callback) {
@@ -1123,7 +1124,7 @@ var $builtinmodule = function (name) {
 	    				for(var name in assets.images) {
 	    					var image = assets.images[name];
 	    					html += '<div class="asset" id="asset_image_' + name + '"><img class="asset_img" src="' + image.src + '">';
-	    					html += '<div><b>Name</b>: ' + name + ':</div>';
+	    					html += '<div><b>' + name + '</b></div>';
 	    					var src = image.src;
 	    					if(src.match(/data:image/)) {
 	    						src="base64";
@@ -1132,8 +1133,8 @@ var $builtinmodule = function (name) {
 	    							console.log(data);
 	    						})
 	    					};
-	    					html += '<div><b>Source</b>: ' + src + '</div>';
-	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
+//	    					html += '<div><b>Source</b>: ' + src + '</div>';
+//	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
 	    					html += '</div>';
 	    				}
 	    			}
@@ -1143,8 +1144,8 @@ var $builtinmodule = function (name) {
 	    				for(var name in assets.sounds) {
 	    					var sound = assets.sounds[name];
 	    					html += '<div class="asset" id="asset_sound_' + name + '"><audio class="asset_snd" controls src="' + sound.src + '"></audio>';
-	    					html += '<div><b>Name</b>: ' + name + ':</div>';
-	    					html += '<div><b>Source</b>: ' + sound.src + '</div>';
+	    					html += '<div><b>' + name + '</b></div>';
+//	    					html += '<div><b>Source</b>: ' + sound.src + '</div>';
 	    					html += '<button id="btn_asset_delete_sound_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
 	    					html += '</div>';
 	    				}
@@ -1159,21 +1160,21 @@ var $builtinmodule = function (name) {
 	    	if(PythonIDE.files['assets.json'] && reloadAssets) {
 				assets = JSON.parse(PythonIDE.files['assets.json']);
 			}
-	    	var html = '<div id="PGZAssetManager" title="Asset Manager">Images and sounds added here will be stored in a file called assets.json.';
-	    	html += '<fieldset id="pgz_assets_images"><legend>Images</legend>';
-	    	html += '<p>File types supported: .jpg, .png and .gif. Images must be hosted on servers that support <a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">Cross Origin Resources Sharing</a></p>';
-	    	html += '<div>New image name: <input type="text" id="asset_new_image_name"></div>';
-	    	html += '<div>New image URL:<input type="text" id="asset_new_image"><button class="btn_asset" id="btn_asset_add_image">Add image</button></div>';
+	    	var html = '<div id="PGZAssetManager" title="Галерея ресурсів">Інформація про зображення та звуки додається та зберігається у файлі assets.json.';
+	    	html += '<fieldset id="pgz_assets_images"><legend>Зображення</legend>';
+	    	html += '<p>Підтримувані типи: .jpg, .png та .gif. Зображення мають розміщуватись на сервері, який підтримує <a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">Cross Origin Resources Sharing</a></p>';
+	    	html += '<div>Назва зображення: <input type="text" id="asset_new_image_name"></div>';
+	    	html += '<div>Адреса зображення:<input type="text" id="asset_new_image"><button class="btn_asset" id="btn_asset_add_image">Додати зображення</button></div>';
 	    	html += getAssetManagerHtml(assets, 'images');
 	    	html += '</fieldset>'
 
-	    	html += '<fieldset id="pgz_assets_sounds"><legend>Sounds</legend>';
-	    	html += '<p>File types supported: .wav, .ogg and .mp3</p>';
-	    	html += '<div>New sound URL:<input type="text" id="asset_new_sound"><button class="btn_asset" id="btn_asset_add_sound">Add sound</button></div>';
+	    	html += '<fieldset id="pgz_assets_sounds"><legend>Звуки</legend>';
+	    	html += '<p>Підтримувані типи: .wav, .ogg and .mp3</p>';
+	    	html += '<div>Адреса звукового файлу:<input type="text" id="asset_new_sound"><button class="btn_asset" id="btn_asset_add_sound">Додати звук</button></div>';
 	    	html += getAssetManagerHtml(assets, 'sounds');
 	    	html += '</fieldset>';
-	    	html += '<button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> OK</button>';
-	    	html += '<button id="btn_AssetManager_cancel" class="btn_asset"><i class="fa fa-times"></i> Cancel</button>';
+	    	html += '<button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> Гаразд</button>';
+	    	html += '<button id="btn_AssetManager_cancel" class="btn_asset"><i class="fa fa-times"></i> Скасувати</button>';
 	    	html += '</div>';
 	    	
 	    	$('body').append(html);
