@@ -133,7 +133,7 @@ var $builtinmodule = function (name) {
 	s.PIESLICE = new Sk.builtin.str("pieslice");
 	s.LAST = new Sk.builtin.str("last");
 	s.FIRST = new Sk.builtin.str("first");
-
+	s.BOTH = new Sk.builtin.str("both");
 	
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
@@ -174,8 +174,15 @@ var $builtinmodule = function (name) {
 	}, "IntVar", [s.Variable]);
 
 	s.BooleanVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-
+		$loc.get = new Sk.builtin.func(function(self) {
+			if ((self.value.v===1)||(self.value.v==="True")) {
+				self.value.v="True";
+			} else { self.value.v="False" }
+			return self.value; });
 	}, "BooleanVar", [s.Variable])
+	
+
+	
 // Event -------------------------------------------------------	
 	s.Event = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var init = function(kwa, self, master) {
@@ -1662,7 +1669,21 @@ var $builtinmodule = function (name) {
 		}, 'Combobox', [s.Widget]);
 // Checkbutton -------------------------------------------------------------
 		t.Checkbutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
+
 			var getHtml = function(self) {
+				
+				onval =1;
+				
+				offval=0;
+				
+				if(self.props.onvalue) {
+					onval = Sk.ffi.remapToJs(self.props.onvalue);
+					console.log("On value=",onval);
+				}
+				if(self.props.offvalue) {
+					offval = Sk.ffi.remapToJs(self.props.offvalue);
+					console.log("Off value=",offval);
+				}
 				var label = "";
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
@@ -1687,8 +1708,10 @@ var $builtinmodule = function (name) {
 				self.onShow = function() {
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.var) {
-							var val = $('#tkinter_' + self.id + ' input').prop('checked');
-							self.props.var.value = Sk.ffi.remapToPy(val);
+							var fval = $('#tkinter_' + self.id + ' input').prop('checked');
+							if(fval) {
+							self.props.var.value = Sk.ffi.remapToPy(onval);
+							} else {self.props.var.value = Sk.ffi.remapToPy(offval)}
 						}
 					});
 				}
