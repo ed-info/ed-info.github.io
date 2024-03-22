@@ -1672,17 +1672,16 @@ var $builtinmodule = function (name) {
 
 			var getHtml = function(self) {
 				
-				onval =1;
-				
-				offval=0;
+				self.onval =1;				
+				self.offval=0;
 				
 				if(self.props.onvalue) {
-					onval = Sk.ffi.remapToJs(self.props.onvalue);
-					console.log("On value=",onval);
+					self.onval = Sk.ffi.remapToJs(self.props.onvalue);
+					console.log("On value=",self.onval);
 				}
 				if(self.props.offvalue) {
-					offval = Sk.ffi.remapToJs(self.props.offvalue);
-					console.log("Off value=",offval);
+					self.offval = Sk.ffi.remapToJs(self.props.offvalue);
+					console.log("Off value=",self.offval);
 				}
 				var label = "";
 				if(self.props.text) {
@@ -1695,8 +1694,11 @@ var $builtinmodule = function (name) {
 				}
 
 				if(self.props.var) {
-					checked = Sk.ffi.remapToJs(self.props.var.value);
-					self.props.var.updateID = self.id;
+					
+							if ((self.props.var.value.v != 0) && (self.props.var.value.v != '0') && (self.props.var.value.v != 'False')) {
+								console.log("val=",self.props.var.value.v);
+								checked = Sk.ffi.remapToJs(self.props.var.value);
+								self.props.var.updateID = self.id; }
 				}
 				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' 
 				+ PythonIDE.sanitize(label) + '</div>';
@@ -1708,10 +1710,10 @@ var $builtinmodule = function (name) {
 				self.onShow = function() {
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.var) {
-							var fval = $('#tkinter_' + self.id + ' input').prop('checked');
+							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
 							if(fval) {
-							self.props.var.value = Sk.ffi.remapToPy(onval);
-							} else {self.props.var.value = Sk.ffi.remapToPy(offval)}
+							self.props.var.value = Sk.ffi.remapToPy(self.onval);
+							} else {self.props.var.value = Sk.ffi.remapToPy(self.offval)}
 						}
 					});
 				}
@@ -1732,7 +1734,7 @@ var $builtinmodule = function (name) {
 			$loc.__init__ = new Sk.builtin.func(init);
 
 			$loc.set = new Sk.builtin.func(function(self, value) {
-				self.props.value = Sk.ffi.remaptoJs(value);
+				self.props.value = Sk.ffi.remaptoJs(value);				
 				$('#tkinter_' + self.id + ' input').prop('checked', value);
 			});
 
