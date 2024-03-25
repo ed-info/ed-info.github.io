@@ -23,7 +23,8 @@
             to {
                 background-color: #0C0;
             }
-        }
+        }        
+ 
     </style>
 
     <meta charset="UTF-8">
@@ -51,7 +52,8 @@
     <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
     <script src="./lib/lib.js"></script>
     <script src="./lib/skulpt/skulpt.min.js"></script>
-    <script src="./lib/skulpt/skulpt-stdlib.js"></script>   
+    <script src="./lib/skulpt/skulpt-stdlib.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
     
 </head>
 <body>
@@ -102,6 +104,7 @@
     <div id="dlg" title="mycode.py" style="display:none">
         <div id="p5Sketch"></div>
         <div id="output"></div>
+        <canvas id="myChart" style="width:100%;max-width:600px;max-height:500px;background-color: #CCC;display:none"></canvas>
     </div>
     <div id="save" title="Зберегти або отримати для редагування" style="display:none">
         <fieldset>
@@ -221,7 +224,8 @@
     btnRun.addEventListener('click', runSketch);
 
     function runit() { 
-        Sk.p5Sketch = "p5Sketch"; 
+		Sk.canvas = "myChart";
+		Sk.p5Sketch = "p5Sketch";
         const cnvs = [...document.querySelectorAll(`[id^="defaultCanvas"]`),];
         cnvs.forEach((cnv) => {
             //cnv.style = "display:none";

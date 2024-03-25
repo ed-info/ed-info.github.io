@@ -328,6 +328,11 @@ button {
 	height: 400px;
 }
 
+
+#canvasPlot {
+	background-color: #FFF;
+}
+
 .error {
 	color: #F00;
 	padding: 5px;
