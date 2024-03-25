@@ -23,7 +23,8 @@
             to {
                 background-color: #0C0;
             }
-        }
+        }        
+ 
     </style>
 
     <meta charset="UTF-8">
@@ -102,6 +103,7 @@
     <div id="dlg" title="mycode.py" style="display:none">
         <div id="p5Sketch"></div>
         <div id="output"></div>
+        <div id="canvasPlot" style="background-color: #CCC"></div>
     </div>
     <div id="save" title="Зберегти або отримати для редагування" style="display:none">
         <fieldset>
@@ -221,6 +223,7 @@
     btnRun.addEventListener('click', runSketch);
 
     function runit() { 
+		Sk.canvas = "canvasPlot";
         Sk.p5Sketch = "p5Sketch"; 
         const cnvs = [...document.querySelectorAll(`[id^="defaultCanvas"]`),];
         cnvs.forEach((cnv) => {

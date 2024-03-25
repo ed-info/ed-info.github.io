@@ -1725,7 +1725,7 @@ var PythonIDE = {
 
 	stop: function() {
 		localStorage.loadAction = "restoreCode";
-		window.location = window.location.href.replace('run/', 'python/').replace("", "");
+		window.location = window.location.href.replace('run/', 'python/').replace("#", "");
 	},
 
 	keyHandlers: [],
@@ -2805,6 +2805,7 @@ var PythonIDE = {
 						PythonIDE.currentFile = "mycode.py";
 						PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
 						PythonIDE.updateFileTabs();	
+		
 					}
 					
 				break;
@@ -2825,6 +2826,20 @@ var PythonIDE = {
 		PythonIDE.configSkulpt("run");
 		var dev = "?v=" + Date.now() + ".js";
 		Sk.externalLibraries = {
+			numpy: {
+				path: 'lib/skulpt/numpy/dist/numpy/__init__.js',
+				dependencies: ['lib/skulpt/numpy/deps/math.js'],
+			},
+			'numpy.random': {
+				path: 'lib/skulpt/numpy/dist/numpy/random/__init__.js',
+				dependencies: ['lib/skulpt/numpy/deps/math.js'],
+			},
+            matplotlib: {
+				path: 'lib/skulpt/matplotlib/__init__.js'
+			},
+			'matplotlib.pyplot': {
+				path: 'lib/skulpt/matplotlib/pyplot/__init__.js'				
+			},				
 			itertools: {
 				path: 'lib/skulpt/itertools/__init__.js'
 			},
@@ -2846,8 +2861,8 @@ var PythonIDE = {
 			lcddriver: {
 				path: 'lib/skulpt/lcddriver/__init__.js'
 			},
-			neopixel: {
-				path: 'lib/skulpt/neopixel/__init__.js'
+			peopixel: {
+				path: 'lib/skulpt/peopixel/__init__.js'
 			},
 			schooldirect: {
 				path: 'lib/skulpt/schooldirect/__init__.js'
