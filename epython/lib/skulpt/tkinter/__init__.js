@@ -324,6 +324,7 @@ var $builtinmodule = function (name) {
 			if ((self.value==='1')||(self.value===true)||(self.value===1)) {
 				getvalue=true;
 			} else { getvalue=false }
+			console.log('Get bool val',getvalue);
 			return Sk.ffi.remapToPy(getvalue); });
 	}, "BooleanVar", [])
 	
