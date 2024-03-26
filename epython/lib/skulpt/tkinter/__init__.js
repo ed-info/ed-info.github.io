@@ -1421,6 +1421,10 @@ var $builtinmodule = function (name) {
 // Button ---------------------------------------------------------
 	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
+			if(!self.props.text) { 
+					self.props.text='· · ·';
+					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
+				}
 			var disabled = false;
 			if(self.props.state) {
 				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';	
