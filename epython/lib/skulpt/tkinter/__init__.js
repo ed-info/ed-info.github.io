@@ -10,7 +10,7 @@ var $builtinmodule = function (name) {
 	var widgets = [];
 	var variables = [];
 	var timeouts = [];
-
+	var LW =[];
 	var cleanup = function() {
 		for(var i = 0; i < timeouts.length; i++) {
 			clearTimeout(timeouts[i]);
@@ -30,6 +30,7 @@ var $builtinmodule = function (name) {
 	
 	var applyWidgetStyles = function(self) {
 		var e = $('#tkinter_' + self.id);
+		
 		if(self.props.fg) {
 			var fg = Sk.ffi.remapToJs(self.props.fg);
 			e.css('color', getColor(fg));
@@ -47,7 +48,8 @@ var $builtinmodule = function (name) {
 		}
 		
 		if(self.props.bg) {
-			var bg = Sk.ffi.remapToJs(self.props.bg);	
+			var bg = Sk.ffi.remapToJs(self.props.bg);
+			console.log("TksId:",e);	
 			e.css('background-color', getColor(bg));
 		}
 
@@ -89,6 +91,7 @@ var $builtinmodule = function (name) {
 	}
 	
 	var configure = function(kwa, self) {
+		
 		for(var i = 0; i < kwa.length; i+=2) {
 			var key = Sk.ffi.remapToJs(kwa[i]);
 			var val = kwa[i+1];
@@ -100,7 +103,13 @@ var $builtinmodule = function (name) {
 			}
 
 			if(key == "text") {
-				$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
+				if(LW.includes(self.id)) {
+					let labelElement = document.getElementById("l_"+self.id);
+					labelElement.innerHTML = PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text));
+					} 
+				else {
+					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
+				}
 			}
 		}
 		applyWidgetStyles(self);
@@ -141,10 +150,24 @@ var $builtinmodule = function (name) {
 
 // Variable, StringVar, IntVar, BooleanVar ------------------------------
 	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		$loc.__init__ = new Sk.builtin.func(function(self) {
+	}, "Variable", []);
+
+	s.StringVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		/* Value holder for string variables. */
+		var init = function(kwa, self, master,s) {
+			self.props = unpackKWA(kwa);
+			
+			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
+			if (s){self.value = Sk.ffi.remapToJs(s);}
+			
+			console.log("self_value=",self.value);
+			
 			variables[varCount] = self;
 			self.id = varCount++;
-		});
+
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
 
 		$loc.__str__ = new Sk.builtin.func(function(self) {
 			return new Sk.builtin.str("PY_VAR" + self.id);
@@ -161,27 +184,143 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			return self.value;
+			if (!self.value) {
+				self.value="";
+			}
+			return  Sk.ffi.remapToPy(self.value);
 		});
-	}, "Variable", []);
 
-	s.StringVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-
-	}, "StringVar", [s.Variable]);
-
+	}, "StringVar", []);
+//--------------------------------------------------------------------------------
 	s.IntVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		/* Value holder for integer variables. */
+		var init = function(kwa, self, master,s) {
+			self.props = unpackKWA(kwa);
+			
+			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
+			if (s){self.value = Sk.ffi.remapToJs(s);}
+			
+			console.log("self_value=",self.value);
+			
+			variables[varCount] = self;
+			self.id = varCount++;
 
-	}, "IntVar", [s.Variable]);
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+			
+		
+		$loc.__str__ = new Sk.builtin.func(function(self) {
+			
+			return new Sk.builtin.int("PY_VAR" + self.id);
+		});
+
+		$loc.set = new Sk.builtin.func(function(self, value) {
+			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
+			self.value = value;
+			if(self.updateID !== undefined) {
+				if(widgets[self.updateID].update) {
+					widgets[self.updateID].update();
+				}
+			}
+		});
+
+
+		$loc.get = new Sk.builtin.func(function(self) {
+			if (!self.value) {
+				self.value=0;
+			}
+			return  Sk.ffi.remapToPy(self.value);
+		});
+	}, "IntVar", []);
+//------------------------------------------------------------------------
+	s.DoubleVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		/* Value holder for float variables. */
+		var init = function(kwa, self, master,s) {
+			self.props = unpackKWA(kwa);
+			
+			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
+			if (s){self.value = Sk.ffi.remapToJs(s);}
+			
+			console.log("self_value=",self.value);
+			
+			variables[varCount] = self;
+			self.id = varCount++;
+
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+		$loc.__str__ = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.float("PY_VAR" + self.id);
+		});
+
+		$loc.set = new Sk.builtin.func(function(self, value) {
+			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
+			self.value = value;
+			if(self.updateID !== undefined) {
+				if(widgets[self.updateID].update) {
+					widgets[self.updateID].update();
+				}
+			}
+		});
+
+		$loc.get = new Sk.builtin.func(function(self) {
+			if (!self.value) {
+				self.value=0.0;
+			}
+			return  Sk.ffi.remapToPy(self.value);
+		});
+	}, "DoubleVar", []);
 
 	s.BooleanVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		/* Value holder for boolean variables. */
+		var init = function(kwa, self, master,s) {
+			self.props = unpackKWA(kwa);
+			
+			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
+			if (s){self.value = Sk.ffi.remapToJs(s);}
+			
+			console.log("self_value=",self.value);
+			
+			variables[varCount] = self;
+			self.id = varCount++;
+
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+
+		$loc.__str__ = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.str("PY_VAR" + self.id);
+		});
+
+		$loc.set = new Sk.builtin.func(function(self, value) {
+			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
+			if (value==='True') {value='1'}
+			if (value==='False') {value='0'}
+			if (value==='0') {value='0'}
+			if (value==='1') {value='1'}
+			if (value===0) {value='0'}
+			if (value===1) {value='1'}
+			if ((value==='0')||(value==='1')){ self.value = value; }
+			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}
+			 
+			if(self.updateID !== undefined) {
+				if(widgets[self.updateID].update) {
+					widgets[self.updateID].update();
+				}
+			}
+		});
+
 		$loc.get = new Sk.builtin.func(function(self) {
-			if ((self.value.v===1)||(self.value.v==="True")) {
+			console.log("** get BooleanVar **",self.value);
+			if (!self.value) {
+				self.value='False';
+			}
+			if (self.value.v===1) {
 				self.value.v="True";
 			} else { self.value.v="False" }
-			return self.value; });
-	}, "BooleanVar", [s.Variable])
-	
-
+			return Sk.ffi.remapToPy(self.value); });
+	}, "BooleanVar", [])
 	
 // Event -------------------------------------------------------	
 	s.Event = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -1287,7 +1426,7 @@ var $builtinmodule = function (name) {
 				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';	
 			}
 			
-			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button>';
+			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button><br>';
 			return html;
 		}
 
@@ -1692,24 +1831,36 @@ var $builtinmodule = function (name) {
 				if(self.props.value) {
 					checked = true;
 				}
-
+				if(self.props.variable) {
+					self.props.var=self.props.variable
+					}
+				 
 				if(self.props.var) {
-					
+							if (!self.props.var.value) {
+								console.log("==========");
+								self.props.var.value = Sk.ffi.remapToPy(self.offval);
+								self.props.var.value = 0;
+								}
+										
 							if ((self.props.var.value.v != 0) && (self.props.var.value.v != '0') && (self.props.var.value.v != 'False')) {
 								console.log("val=",self.props.var.value.v);
 								checked = Sk.ffi.remapToJs(self.props.var.value);
-								self.props.var.updateID = self.id; }
+								self.props.var.updateID = self.id; } 
+				 				
 				}
-				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' 
-				+ PythonIDE.sanitize(label) + '</div>';
+				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' + '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label><br></div>';
 				return html;
 			}
 
 
 			var init = function(kwa, self, master) {
+				
 				self.onShow = function() {
 					$('#tkinter_' + self.id + ' input').click(function() {
-						if(self.props.var) {
+						if(self.props.var) {	
+							if (self.props.var.value === "undefined") {
+								self.props.var.value = Sk.ffi.remapToPy(self.offval)
+								}						
 							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
 							if(fval) {
 							self.props.var.value = Sk.ffi.remapToPy(self.onval);
@@ -1724,11 +1875,15 @@ var $builtinmodule = function (name) {
 						v = Sk.ffi.remapToJs(self.props.value);
 					}
 					if(self.props.var) {
+						if (self.props.var.value === "undefined") {
+								self.props.var.value = Sk.ffi.remapToPy(self.offval)
+								}						
 						v = Sk.ffi.remapToJs(self.props.var.value);
 					}
 					$('#tkinter_' + self.id + " input").prop('checked', v);
 				}
 				commonWidgetConstructor(kwa, self, master, getHtml);
+				LW.push(self.id);
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
@@ -1756,14 +1911,20 @@ var $builtinmodule = function (name) {
 				if(self.props.variable) {
 					name="PY_VAR" + self.props.variable.id;
 				}
+				
+				if(self.props.var) {
+					self.props.variable=self.props.var
+					}
 
 				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" value="' + PythonIDE.sanitize(value) + '">' 
-				+ PythonIDE.sanitize(label) + '</span>';
+				+ '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label><br></span>';
 				return html;
 			}
 
 
+
 			var init = function(kwa, self, master) {
+				
 				self.onShow = function() {
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.variable) {
@@ -1784,6 +1945,7 @@ var $builtinmodule = function (name) {
 					$('#tkinter_' + self.id + " input").prop('checked', v);
 				}
 				commonWidgetConstructor(kwa, self, master, getHtml);
+				LW.push(self.id);
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
