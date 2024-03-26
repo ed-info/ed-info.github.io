@@ -224,6 +224,7 @@
     btnRun.addEventListener('click', runSketch);
 
     function runit() { 
+		document.querySelector("#myChart").style.display = "none";
 		Sk.canvas = "myChart";
 		Sk.p5Sketch = "p5Sketch";
         const cnvs = [...document.querySelectorAll(`[id^="defaultCanvas"]`),];
