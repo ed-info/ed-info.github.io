@@ -280,7 +280,7 @@ var $builtinmodule = function (name) {
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 			
-			console.log("self_value=",self.value);
+			console.log("Bool self_value=",self.value);
 			
 			variables[varCount] = self;
 			self.id = varCount++;
@@ -295,13 +295,18 @@ var $builtinmodule = function (name) {
 
 		$loc.set = new Sk.builtin.func(function(self, value) {
 			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
-			if (value==='True') {value='1'}
-			if (value==='False') {value='0'}
-			if (value==='0') {value='0'}
-			if (value==='1') {value='1'}
-			if (value===0) {value='0'}
-			if (value===1) {value='1'}
-			if ((value==='0')||(value==='1')){ self.value = value; }
+			value=Sk.ffi.remapToJs(value);
+			console.log('Bool val',value);
+			var $value='0';
+			if (value===true) {$value='1'}
+			if (value===false) {$value='0'}
+			if (value==='True') {$value='1'}
+			if (value==='False') {$value='0'}
+			if (value==='0') {$value='0'}
+			if (value==='1') {$value='1'}
+			if (value===0) {$value='0'}
+			if (value===1) {$value='1'}
+			if (($value==='0')||($value==='1')){ self.value = $value; }
 			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}
 			 
 			if(self.updateID !== undefined) {
@@ -314,12 +319,12 @@ var $builtinmodule = function (name) {
 		$loc.get = new Sk.builtin.func(function(self) {
 			console.log("** get BooleanVar **",self.value);
 			if (!self.value) {
-				self.value='False';
+				self.value='0';
 			}
-			if (self.value.v===1) {
-				self.value.v="True";
-			} else { self.value.v="False" }
-			return Sk.ffi.remapToPy(self.value); });
+			if ((self.value==='1')||(self.value===true)||(self.value===1)) {
+				getvalue=true;
+			} else { getvalue=false }
+			return Sk.ffi.remapToPy(getvalue); });
 	}, "BooleanVar", [])
 	
 // Event -------------------------------------------------------	
