@@ -49,7 +49,6 @@ var $builtinmodule = function (name) {
 		
 		if(self.props.bg) {
 			var bg = Sk.ffi.remapToJs(self.props.bg);
-			console.log("TksId:",e);	
 			e.css('background-color', getColor(bg));
 		}
 
@@ -511,8 +510,42 @@ var $builtinmodule = function (name) {
 		$loc.winfo_height = new Sk.builtin.func(function(self) {
 			return new Sk.builtin.int_($('#tkinter_' + self.id).height());
 		});
+		
+// Widget .cget() method		
+		$loc.cget = new Sk.builtin.func(function(self, value) {
+			var p = Sk.ffi.remapToJs(value);
+			console.log("cget=", p);
+					switch(p) {
+							case 'text':
+								return new Sk.builtin.str($('#tkinter_' + self.id).text());
+							case 'bg':
+								if (self.props.bg) {
+									return new Sk.builtin.str(self.props.bg);
+									}
+								else {
+									return new Sk.builtin.str($('#tkinter_' + self.id).css("background-color"));
+								}	
+							case 'fg':
+								if (self.props.fg) {
+									return new Sk.builtin.str(self.props.fg);
+									}
+								else {
+									return new Sk.builtin.str($('#tkinter_' + self.id).css("color"));
+								}
+							case 'width':
+								return new Sk.builtin.int_($('#tkinter_' + self.id).width());
+							case 'height':
+								return new Sk.builtin.int_($('#tkinter_' + self.id).height());
+							default: 
+								return new new Sk.builtin.ValueError("Error: Сan't get object property");
+							break;
+						}
+		});
+		
+//--------------		
 
-		var commonDisplay = function(kwa, self, parent) {			
+		var commonDisplay = function(kwa, self, parent) {	
+			
 			if(self.getHtml) {
 				$('#tkinter_' + self.id).remove();
 				var html = self.getHtml(self);
@@ -780,6 +813,7 @@ var $builtinmodule = function (name) {
 	}
 
 	var commonWidgetConstructor = function(kwa, self, master, getHtml) {
+		
 		self.props = unpackKWA(kwa);
 		if(!master && firstRoot) {
 			master = firstRoot;
@@ -788,8 +822,8 @@ var $builtinmodule = function (name) {
 		self.master = master;
 
 		widgets[idCount] = self;
-		self.id = idCount++;
-
+		self.id = idCount++;		
+		
 		self.getHtml = getHtml;
 	}
 // Canvas -------------------------------------
@@ -1426,27 +1460,94 @@ var $builtinmodule = function (name) {
 	}, 'Label', [s.Widget]);
 // Button ---------------------------------------------------------
 	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		
 		var getHtml = function(self) {
+			
 			if(!self.props.text) { 
 					self.props.text='· · ·';
 					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 				}
 			var disabled = false;
 			if(self.props.state) {
-				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';	
-			}
+				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
+				}
+			
+			
 			
 			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button><br>';
+			
 			return html;
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
+			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
-	}, 'Button', [s.Widget]);
+	}, 'Button', [s.Widget]);	
+// SpinBox ---------------------------------------------------------
+	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		
+		var getHtml = function(self) {
+			
+			var minVal = -100;
+			var maxVal = 100;
+			var step = 1;
+			var val = 1;
+		
+			console.log('props mV= ',self.props.from_);
+			console.log('mV= ',self.props.from_);
+			if(self.props.to) {					
+				minVal = Sk.ffi.remapToJs(self.props.from_);
+			}
+			if(self.props.to) {
+				maxVal = Sk.ffi.remapToJs(self.props.to);
+			}
+			if(self.props.increment) {		
+				step = Sk.ffi.remapToJs(self.props.increment);
+			}
+			if (maxVal<minVal) {
+				 new Sk.builtin.ValueError('Error: "to" should be greater than "from_"')
+			}	
+		
+			id$=  "id='tkinter_" + self.id + "'";
+			from$ = ' min='+minVal;
+			to$ = ' max='+maxVal;
+			step$ = ' step='+step;
+			val$=	 " value='2'";
+			if (self.props.from_) {
+				val$ = ' value='+minVal
+			}
+			ss$=id$+from$+to$+step$+val$;
+			var html = "<input type='number' "+ss$+'><br>';
+			
+			return html;
+			
+		}
+
+		var init = function(kwa, self, master) {
+			commonWidgetConstructor(kwa, self, master, getHtml);
+			
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+		
+		$loc.get = new Sk.builtin.func(function(self) {
+			
+			var vi = parseInt($('#tkinter_' + self.id).val());
+			var vf = parseFloat($('#tkinter_' + self.id).val());
+			if (vi===vf) {
+				return new Sk.builtin.int_(vi); 
+				}
+			else {
+				return new Sk.builtin.float_(vf);
+				}
+			 
+		});
+
+	}, 'Spinbox', [s.Widget]);
 // Frame ---------------------------------------------------------
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self, master) {
