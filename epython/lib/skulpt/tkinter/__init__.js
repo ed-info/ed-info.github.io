@@ -19,6 +19,34 @@ var $builtinmodule = function (name) {
     var s = {
 	};
 
+	s.__name__ = new Sk.builtin.str("tkinter");
+	s.END = new Sk.builtin.str("end");
+	s.W = new Sk.builtin.str("w");
+	s.E = new Sk.builtin.str("e");
+	s.N = new Sk.builtin.str("n");
+	s.S = new Sk.builtin.str("s");
+	s.DISABLED = new Sk.builtin.str("disabled");
+	s.NORMAL = new Sk.builtin.str("normal");
+	s.YES = new Sk.builtin.int_(1);
+	s.NO = new Sk.builtin.int_(0);
+	s.BOTH = new Sk.builtin.str("both");
+	s.BOTTOM = new Sk.builtin.str("bottom");
+	s.TOP = new Sk.builtin.str("top");
+	s.RAISED = new Sk.builtin.str("raised");
+	s.HORIZONTAL = new Sk.builtin.str("horizontal");
+	s.VERTICAL = new Sk.builtin.str("vertical");
+	s.SUNKEN = new Sk.builtin.str("sunken");
+	s.ALL = new Sk.builtin.str("all");
+	s.NW = new Sk.builtin.str("nw");
+	s.ARC = new Sk.builtin.str("arc");
+	s.CHORD = new Sk.builtin.str("chord");
+	s.PIESLICE = new Sk.builtin.str("pieslice");
+	s.LAST = new Sk.builtin.str("last");
+	s.FIRST = new Sk.builtin.str("first");
+	s.BOTH = new Sk.builtin.str("both");
+	s.LEFT = new Sk.builtin.str("left");
+	s.CENTER = new Sk.builtin.str("center");
+	s.RIGHT = new Sk.builtin.str("right");
 
 	function getColor(c) {
 		var cName = c.replace(" ", "")
@@ -30,6 +58,20 @@ var $builtinmodule = function (name) {
 	
 	var applyWidgetStyles = function(self) {
 		var e = $('#tkinter_' + self.id);
+
+		
+		if(self.props.justify) {
+			var align = Sk.ffi.remapToJs(self.props.justify);
+			e.css('text-align', align);
+		}
+		
+		if(self.props.bd) {
+			var bdwidth = Sk.ffi.remapToJs(self.props.bd);
+			e.css('border-style','solid');
+			e.css('border-width',bdwidth+'px');
+		}
+
+
 		
 		if(self.props.fg) {
 			var fg = Sk.ffi.remapToJs(self.props.fg);
@@ -115,34 +157,7 @@ var $builtinmodule = function (name) {
 	}
 	configure.co_kwargs = true;
 
-	s.__name__ = new Sk.builtin.str("tkinter");
-
-	s.END = new Sk.builtin.str("end");
-
-	s.W = new Sk.builtin.str("w");
-	s.E = new Sk.builtin.str("e");
-	s.N = new Sk.builtin.str("n");
-	s.S = new Sk.builtin.str("s");
-	s.DISABLED = new Sk.builtin.str("disabled");
-	s.NORMAL = new Sk.builtin.str("normal");
-	s.YES = new Sk.builtin.int_(1);
-	s.NO = new Sk.builtin.int_(0);
-	s.BOTH = new Sk.builtin.str("both");
-	s.BOTTOM = new Sk.builtin.str("bottom");
-	s.TOP = new Sk.builtin.str("top");
-	s.RAISED = new Sk.builtin.str("raised");
-	s.HORIZONTAL = new Sk.builtin.str("horizontal");
-	s.VERTICAL = new Sk.builtin.str("vertical");
-	s.SUNKEN = new Sk.builtin.str("sunken");
-	s.ALL = new Sk.builtin.str("all");
-	s.NW = new Sk.builtin.str("nw");
-	s.ARC = new Sk.builtin.str("arc");
-	s.CHORD = new Sk.builtin.str("chord");
-	s.PIESLICE = new Sk.builtin.str("pieslice");
-	s.LAST = new Sk.builtin.str("last");
-	s.FIRST = new Sk.builtin.str("first");
-	s.BOTH = new Sk.builtin.str("both");
-	
+//----------------------------------------------------------------------
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
@@ -157,10 +172,8 @@ var $builtinmodule = function (name) {
 			self.props = unpackKWA(kwa);
 			
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
-			if (s){self.value = Sk.ffi.remapToJs(s);}
-			
-			console.log("self_value=",self.value);
-			
+			if (s){self.value = Sk.ffi.remapToJs(s);}			
+				
 			variables[varCount] = self;
 			self.id = varCount++;
 
@@ -199,8 +212,7 @@ var $builtinmodule = function (name) {
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 			
-			console.log("self_value=",self.value);
-			
+					
 			variables[varCount] = self;
 			self.id = varCount++;
 
@@ -241,8 +253,7 @@ var $builtinmodule = function (name) {
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 			
-			console.log("self_value=",self.value);
-			
+					
 			variables[varCount] = self;
 			self.id = varCount++;
 
@@ -279,8 +290,7 @@ var $builtinmodule = function (name) {
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 			
-			console.log("Bool self_value=",self.value);
-			
+						
 			variables[varCount] = self;
 			self.id = varCount++;
 
@@ -544,7 +554,8 @@ var $builtinmodule = function (name) {
 		
 //--------------		
 
-		var commonDisplay = function(kwa, self, parent) {	
+		var commonDisplay = function(kwa, self, parent) {
+			console.log('Parent=',parent);	
 			
 			if(self.getHtml) {
 				$('#tkinter_' + self.id).remove();
@@ -666,102 +677,47 @@ var $builtinmodule = function (name) {
 		}
 		pack.co_kwargs = true;
 		$loc.pack = new Sk.builtin.func(pack);
-
+// grid layout manager ----------------------------
 		var grid = function(kwa, self) {
 			var props = unpackKWA(kwa);
 
 			if(!props.column) {
-				props.column = new Sk.builtin.int_(0);
+				props.column = new Sk.builtin.int_(1);
 			}
 			if(!props.row) {
-				props.row = new Sk.builtin.int_(0);
+				props.row = new Sk.builtin.int_(1);
 			}
 			if(!self.master){
 				self.master = self;
 			}
 
-			var parent = $('#tkinter_' + self.master.id);
-			var r = Sk.ffi.remapToJs(props.row);
-			var c = Sk.ffi.remapToJs(props.column);
+			var parent = $('#tkinter_' + self.master.id); // parent class
+			var item_id = 'item_' + self.id; // item id
+			var row = Sk.ffi.remapToJs(props.row)+1;
+			var col = Sk.ffi.remapToJs(props.column)+1;
 
-			var rowspan = 1;
-			var colspan = 1;
+			var row_span = 1;
+			var col_span = 1;
 			if(props.rowspan) {
-				rowspan = Sk.ffi.remapToJs(props.rowspan);
+				row_span = Sk.ffi.remapToJs(props.rowspan);
 			}
 			if(props.columnspan) {
-				colspan = Sk.ffi.remapToJs(props.columnspan);
+				col_span = Sk.ffi.remapToJs(props.columnspan);
 			}
-
-			function plotCell(row, col) {
-				if(row > r) {
-					if(row < r + rowspan) {
-						if(col > c) {
-							if(col < c + colspan) {
-								return false;
-							}
-						}
-					}
-				}
-				return true;
-			}
-
-			function getColsHtml(row, from, to) {
-				var html = '';
-				for(var iC = from; iC <= to; iC++) {
-					if(plotCell(row, iC)) {
-						html += '<td class="tkinter_grid_td" data-col="' + iC + '" data-row="' + row + '"';
-						if(rowspan > 1) {
-							html += ' rowspan="' + rowspan + '"';
-						}
-						if(colspan > 1) {
-							html += ' colspan="' + colspan + '"';
-						}
-						html += '>';
-						//html += iC + "," + row;
-						html += '</td>';
-					}
-				}
-				return html;
-			}
-
-			function getRowsHtml(cols, from, to) {
-				var html = '';
-				for(var iR = from; iR <= to; iR++) {
-					html += '<tr class="tkinter_grid_row" data-row="' + iR + '">';
-					html += getColsHtml(iR, 0, cols);
-					html += '</tr>';
-				}
-				return html;
-			}
-			if(!self.master._grid) {
-				self.master._grid = {
-					rows: r,
-					cols: c,
-				}
-				var html = '<table class="tkinter_grid" width="100%"><tbody>';
-				html += getRowsHtml(c, 0, r);
-				html += '<tbody></table>';
-				parent.append(html);
-			} else {
-				if(self.master._grid.cols < c) {
-					parent.find('td[data-col="' + self.master._grid.cols + '"]').each(function(i, value) {
-						var html = getColsHtml(i, self.master._grid.cols + 1, c);
-						$(this).after(html);
-					});
-
-					self.master._grid.cols = c;
-				}
-				if(self.master._grid.rows < r) {
-					var html = getRowsHtml(self.master._grid.cols, self.master._grid.rows + 1, r);
-					parent.find('tr[data-row="' + self.master._grid.rows + '"]').after(html);
-					self.master._grid.rows = r;
-				}
-				
-			}
-
-			var place = parent.find('td[data-row="' + r + '"][data-col="' + c + '"]');
-			commonDisplay(kwa, self, place);
+	
+			var html = '<div class="grid-container" id = "grid"> </div>'; // append grid to parent
+			parent.append(html);
+			
+		    // place item to grid
+			grid_col = 'grid-column: '+col+' / span '+col_span+';';
+			grid_row = 'grid-row: '+row+' / span '+row_span+';';
+			grid_class = '<div class="grid-item" id="'+ item_id+'" style = "';
+			grid_class =  grid_class +  grid_col + grid_row +'">';
+			$("#grid").append(grid_class);
+		
+			var place = parent.find("#"+item_id);  // place for item add
+			commonDisplay(kwa, self, place);	   // add item to grid
+			$('#'+item_id).append('</div>');
 			if(!self.master.props.width) {
 				var e = parent[0];
 				
@@ -828,8 +784,9 @@ var $builtinmodule = function (name) {
 	}
 // Canvas -------------------------------------
 	s.Canvas = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-
+		
 		var getHtml = function(self) {
+			
 			var width = 200;
 			if(self.props.width) {
 				width = Sk.ffi.remapToJs(self.props.width);
@@ -853,6 +810,7 @@ var $builtinmodule = function (name) {
 		}
 
 		var init = function(kwa, self, master) {
+			console.log('Canvas ***');
 			commonWidgetConstructor(kwa, self, master, getHtml);
 			self.elements = [];
 			self.onShow = function() {
@@ -1429,13 +1387,21 @@ var $builtinmodule = function (name) {
 		var getHtml = function(self) {
 
 			var v = "";
+			
 			if(self.props.text) {
 				v = Sk.ffi.remapToJs(self.props.text);
 			}
+
+			if (!self.props.width) {
+					self.props.width = v.length+1;
+			}
+				
 			if(self.props.textvariable) {
 				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
+				
 			}
+
 			var html = '<div id="tkinter_' + self.id + '">' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
@@ -1448,11 +1414,20 @@ var $builtinmodule = function (name) {
 					v = Sk.ffi.remapToJs(self.props.text);
 				}
 				if(self.props.textvariable) {
-					v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+					v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);					
 				}
 				$('#tkinter_' + self.id).text(Sk.ffi.remapToJs(v));
+				self.props.text = v;
+				
+					if (self.props.width===1) {						
+						self.props.width = v.length+1;
+					}
+					$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
 			}
+			
 			commonWidgetConstructor(kwa, self, master, getHtml);
+			
+					
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1464,7 +1439,7 @@ var $builtinmodule = function (name) {
 		var getHtml = function(self) {
 			
 			if(!self.props.text) { 
-					self.props.text='· · ·';
+					self.props.text='·   ·';
 					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 				}
 			var disabled = false;
@@ -1497,8 +1472,7 @@ var $builtinmodule = function (name) {
 			var step = 1;
 			var val = 1;
 		
-			console.log('props mV= ',self.props.from_);
-			console.log('mV= ',self.props.from_);
+
 			if(self.props.to) {					
 				minVal = Sk.ffi.remapToJs(self.props.from_);
 			}
