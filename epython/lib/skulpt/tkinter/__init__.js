@@ -59,7 +59,6 @@ var $builtinmodule = function (name) {
 	var applyWidgetStyles = function(self) {
 		var e = $('#tkinter_' + self.id);
 
-		
 		if(self.props.justify) {
 			var align = Sk.ffi.remapToJs(self.props.justify);
 			e.css('text-align', align);
@@ -70,8 +69,6 @@ var $builtinmodule = function (name) {
 			e.css('border-style','solid');
 			e.css('border-width',bdwidth+'px');
 		}
-
-
 		
 		if(self.props.fg) {
 			var fg = Sk.ffi.remapToJs(self.props.fg);
@@ -96,13 +93,19 @@ var $builtinmodule = function (name) {
 
 		if(self.props.font) {
 			var font = Sk.ffi.remapToJs(self.props.font);
+			console.log('font=',font);
 			if(typeof(font) == "string") {
-				font = ("" + f).split(" "); 
+				font = ("" + font).split(" "); 
+				console.log('Font=',font);
 			} 
 				
 			var fontFamily = font[0];
 			var fontWeight = font.includes("bold")?"bold":"normal";
 			var fontStyle = font.includes("italic")?"italic":"normal";
+			
+			if (font[1]===0) {
+						font[1]=12;
+				}
 
 			e.css({
 				'font-family': fontFamily,
@@ -115,6 +118,9 @@ var $builtinmodule = function (name) {
 		var unit = "px";
 		if(self.props.text) {
 			unit = "em";
+			if(!(self.props.justify)) {
+				e.css('text-align', 'center');
+				}
 		}
 		
 		if(self.props.width) {
@@ -219,7 +225,6 @@ var $builtinmodule = function (name) {
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
-			
 		
 		$loc.__str__ = new Sk.builtin.func(function(self) {
 			
@@ -252,7 +257,6 @@ var $builtinmodule = function (name) {
 			
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
-			
 					
 			variables[varCount] = self;
 			self.id = varCount++;
@@ -289,7 +293,6 @@ var $builtinmodule = function (name) {
 			
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
-			
 						
 			variables[varCount] = self;
 			self.id = varCount++;
@@ -555,8 +558,7 @@ var $builtinmodule = function (name) {
 //--------------		
 
 		var commonDisplay = function(kwa, self, parent) {
-			console.log('Parent=',parent);	
-			
+						
 			if(self.getHtml) {
 				$('#tkinter_' + self.id).remove();
 				var html = self.getHtml(self);
@@ -654,6 +656,10 @@ var $builtinmodule = function (name) {
 				}
 			}
 			commonDisplay(kwa, self, parent);
+					
+			$('#tkinter_' + self.id).css("display", "table"); // center widget
+			$('#tkinter_' + self.id).css("margin", "auto"); 			
+
 			if(!self.master) {
 				self.master = firstRoot;
 			}
@@ -705,8 +711,10 @@ var $builtinmodule = function (name) {
 				col_span = Sk.ffi.remapToJs(props.columnspan);
 			}
 	
-			var html = '<div class="grid-container" id = "grid"> </div>'; // append grid to parent
-			parent.append(html);
+			if (!($("#grid").length)) {  
+				var html = '<div class="grid-container" id = "grid"> </div>'; // append grid to parent if not exist
+				parent.append(html);
+			}
 			
 		    // place item to grid
 			grid_col = 'grid-column: '+col+' / span '+col_span+';';
@@ -1277,7 +1285,7 @@ var $builtinmodule = function (name) {
 // Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
-			return '<input type="text" id="tkinter_' + self.id + '">';
+			return '<input type="text" id="tkinter_' + self.id + '"><br>';
 		}
 
 		var init = function(kwa, self, master) {
@@ -1427,7 +1435,7 @@ var $builtinmodule = function (name) {
 			
 			commonWidgetConstructor(kwa, self, master, getHtml);
 			
-					
+			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1614,7 +1622,7 @@ var $builtinmodule = function (name) {
 			}).parent().css({
 				position: "fixed",
 				'background-color': '#EEE',
-				'font-size':'9pt'
+				'font-size':'12pt'
 			});	
 		});
 
@@ -1685,7 +1693,8 @@ var $builtinmodule = function (name) {
 			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="tk"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
-				
+				width: 300,
+				height: 200,
 				close: function() {
 					if(self.closeMainLoop) {
 						self.closeMainLoop();
@@ -1696,7 +1705,8 @@ var $builtinmodule = function (name) {
 			}).parent().css({
 				position: "fixed",
 				'background-color': '#EEE',
-				'font-size': '9pt'
+				'font-size': '11pt',
+				'line-height': '2em'
 			});	
 		});
 
