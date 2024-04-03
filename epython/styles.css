@@ -511,10 +511,10 @@ a{
  }
  
  .btn_file_settings{
-	 width:20px;
+	 width:30px;
 	 height:20px;
 	 position:relative;
-	 margin: -25px 10px -5px 0px;
+	 margin: -5px 5px -5px 5px;
 	 transition: all 1s;
  }
  .btn_file_settings:hover {
