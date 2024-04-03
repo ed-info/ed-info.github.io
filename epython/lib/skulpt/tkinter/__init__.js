@@ -18,13 +18,14 @@ var $builtinmodule = function (name) {
 	}
     var s = {
 	};
-
+// Глобальні аліаси
 	s.__name__ = new Sk.builtin.str("tkinter");
 	s.END = new Sk.builtin.str("end");
 	s.W = new Sk.builtin.str("w");
 	s.E = new Sk.builtin.str("e");
 	s.N = new Sk.builtin.str("n");
 	s.S = new Sk.builtin.str("s");
+	s.Y = new Sk.builtin.str("y");
 	s.DISABLED = new Sk.builtin.str("disabled");
 	s.NORMAL = new Sk.builtin.str("normal");
 	s.YES = new Sk.builtin.int_(1);
@@ -47,7 +48,10 @@ var $builtinmodule = function (name) {
 	s.LEFT = new Sk.builtin.str("left");
 	s.CENTER = new Sk.builtin.str("center");
 	s.RIGHT = new Sk.builtin.str("right");
-
+	s.SINGLE = new Sk.builtin.str("single");
+	s.EXTENDED = new Sk.builtin.str("extended");
+	
+	
 	function getColor(c) {
 		var cName = c.replace(" ", "")
 		if(tk_colors && tk_colors[cName]) {
@@ -55,6 +59,16 @@ var $builtinmodule = function (name) {
 		}
 		return c;
 	}
+// Загальні властивості компонентів
+// justify
+// bd
+// fg
+// bg
+// relief
+// font
+// width
+// height
+
 	
 	var applyWidgetStyles = function(self) {
 		var e = $('#tkinter_' + self.id);
@@ -527,7 +541,6 @@ var $builtinmodule = function (name) {
 // Widget .cget() method		
 		$loc.cget = new Sk.builtin.func(function(self, value) {
 			var p = Sk.ffi.remapToJs(value);
-			console.log("cget=", p);
 					switch(p) {
 							case 'text':
 								return new Sk.builtin.str($('#tkinter_' + self.id).text());
@@ -656,10 +669,19 @@ var $builtinmodule = function (name) {
 				}
 			}
 			commonDisplay(kwa, self, parent);
+		
 					
-			$('#tkinter_' + self.id).css("display", "table"); // center widget
-			$('#tkinter_' + self.id).css("margin", "auto"); 			
-
+			// center widget
+			$('#tkinter_' + self.id).css({
+				'margin': '0',
+				'position': 'relative',
+				'top': '10px',
+				'left': '50%',
+				'-ms-transform': 'translate(-50%, -50%)',
+				'transform': 'translate(-50%, -50%)'
+			});
+		
+			
 			if(!self.master) {
 				self.master = firstRoot;
 			}
@@ -1531,14 +1553,36 @@ var $builtinmodule = function (name) {
 
 	}, 'Spinbox', [s.Widget]);
 // Frame ---------------------------------------------------------
+
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		$loc.__init__ = new Sk.builtin.func(function(self, master) {
+		var getHtml = function(self) {
+	
+			if(self.props.width) {
+				width = Sk.ffi.remapToJs(self.props.width);
+			}
+			
+			if(self.props.height) {
+				height = Sk.ffi.remapToJs(self.props.height);
+			}
+
+			return '<div id="tkinter_' + self.id + '" width="' + width + '" height="' + height + '"></div>';
+		}
+		
+			var init = function(kwa, self, master) {
+				
+			console.log('Frame ***');
 			if(!master) {
 				master = firstRoot;
 			}
 			self.master = master;
 			self.id = idCount++;
-		});
+			
+			commonWidgetConstructor(kwa, self, master, getHtml);						
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+		
+		//---------------------------------------
 
 		$loc.__getattr__ = new Sk.builtin.func(function(self, name) {
 			switch(Sk.ffi.remapToJs(name)) {
@@ -1774,6 +1818,11 @@ var $builtinmodule = function (name) {
 		var t = {
 		};
 // Listbox widget -------------------------------------------------	
+// listvariable
+// width!!!
+// height!!!
+// 
+
 		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {					        
 		        
 		        var getHtml = function(self) {
@@ -1806,7 +1855,7 @@ var $builtinmodule = function (name) {
 			$loc.__init__ = new Sk.builtin.func(init);
 			
 			
-			// .curselection()
+			// .curselection() !!! return new Sk.builtin.tuple(selected);
 			$loc.curselection = new Sk.builtin.func(function(self) {
 				let selection = $('#tkinter_' + self.id + ' option:selected').text();
 				let index=-1;
@@ -1815,8 +1864,10 @@ var $builtinmodule = function (name) {
 					v=$('#tkinter_' + self.id+ '  option:eq('+index+')').text();
 				} while (v != selection);	
 				
+				var selected=[]
+				selected.push(index);
 				
-				return new Sk.builtin.int_(Sk.ffi.remapToJs(index));
+				return new Sk.builtin.tuple(selected);   //Sk.builtin.int_(Sk.ffi.remapToJs(index));
 			});
 
 			// .get() option selected
@@ -1860,6 +1911,11 @@ var $builtinmodule = function (name) {
 
 		}, 'Listbox', [s.Widget]);
 // Combobox --------------------------------------------------------------
+// values
+// width !!!
+// height !!!
+// 
+
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '">';
@@ -1902,6 +1958,13 @@ var $builtinmodule = function (name) {
 
 		}, 'Combobox', [s.Widget]);
 // Checkbutton -------------------------------------------------------------
+// onvalue
+// offvalue
+// text
+// value
+// variable
+// var
+
 		t.Checkbutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 
 			var getHtml = function(self) {
@@ -1990,6 +2053,12 @@ var $builtinmodule = function (name) {
 
 		}, 'Checkbutton', [s.Widget]);
 // Radiobutton -------------------------------------------------------------
+// text
+// value
+// variable
+// var
+
+
 		t.Radiobutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
