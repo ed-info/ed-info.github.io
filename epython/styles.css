@@ -12,6 +12,37 @@
   border: 2px solid #e5e5e5; 
   border-style: solid;
 }
+
+progress[value] {
+  /* Reset the default appearance */
+  -webkit-appearance: none;
+   appearance: none;
+  width: 250px;
+  height: 10px;
+}
+
+
+.hr {
+  display: block;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+  height: auto;
+  top: auto;
+  left: 50%; 
+  width: -moz-available;
+}
+
+.vl {
+ 	width: 2px;
+    height: 200px;
+    margin: 0 auto;
+    transform: rotate(180deg);
+}
+
 .tracker_activity_placeholder {
 	background-color: #ccc;
 	list-style-type: none;
