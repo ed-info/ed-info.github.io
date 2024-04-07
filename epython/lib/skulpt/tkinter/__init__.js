@@ -791,7 +791,8 @@ var $builtinmodule = function (name) {
 			grid_row = 'grid-row: '+row+' / span '+row_span+';';
 			grid_class = '<div class="grid-item" id="'+ item_id+'" style = "';
 			grid_class =  grid_class +  grid_col + grid_row +'">';
-			$("#grid").append(grid_class);
+			console.log("GRID:",grid_class);
+			$("#grid_"+pid).append(grid_class);
 		
 			var place = parent.find("#"+item_id);  // place for item add
 			commonDisplay(kwa, self, place);	   // add item to grid
@@ -1353,11 +1354,15 @@ var $builtinmodule = function (name) {
 // Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
+			
 			return '<input type="text" id="tkinter_' + self.id + '">';
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+			}	
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1681,7 +1686,7 @@ var $builtinmodule = function (name) {
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tkinter"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 150,
@@ -1762,7 +1767,7 @@ var $builtinmodule = function (name) {
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="tk"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 300,
@@ -2153,8 +2158,7 @@ var $builtinmodule = function (name) {
 								console.log("val=",self.props.variable.value.v);
 								value = Sk.ffi.remapToJs(self.props.variable.value);
 								self.props.variable.updateID = self.id; } 
-				 				
-				}
+			}
 			
 			var html = '<br><progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
 			return html;
@@ -2188,7 +2192,6 @@ var $builtinmodule = function (name) {
 // value
 // variable
 // var
-
 
 		t.Radiobutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
@@ -2250,12 +2253,11 @@ var $builtinmodule = function (name) {
 
 		}, 'Radiobutton', [s.Widget]);
 
-
 		return t;
 	}
 	s.ttk.$d = new ttk("tkinter.ttk");
 	Sk.sysmodules.mp$ass_subscript("tkinter.ttk", s.ttk);
-// message box showinfo and askyesno --------------------------------------------------------
+// message box --------------------------------------------------------
 	s.messagebox = new Sk.builtin.module();
 	var messagebox = function(name) {
 		var m = {
