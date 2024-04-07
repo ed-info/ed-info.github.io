@@ -25,6 +25,10 @@ var $builtinmodule = function (name) {
 	s.E = new Sk.builtin.str("e");
 	s.N = new Sk.builtin.str("n");
 	s.S = new Sk.builtin.str("s");
+	s.NW = new Sk.builtin.str("nw");
+	s.NE = new Sk.builtin.str("ne");
+	s.SW = new Sk.builtin.str("sw");
+	s.SE = new Sk.builtin.str("se");
 	s.Y = new Sk.builtin.str("y");
 	s.DISABLED = new Sk.builtin.str("disabled");
 	s.NORMAL = new Sk.builtin.str("normal");
@@ -51,7 +55,6 @@ var $builtinmodule = function (name) {
 	s.SINGLE = new Sk.builtin.str("single");
 	s.EXTENDED = new Sk.builtin.str("extended");
 	
-	
 	function getColor(c) {
 		var cName = c.replace(" ", "")
 		if(tk_colors && tk_colors[cName]) {
@@ -59,18 +62,20 @@ var $builtinmodule = function (name) {
 		}
 		return c;
 	}
-// Загальні властивості компонентів
-// justify
-// bd
-// fg
-// bg
-// relief
-// font
-// width
-// height
-
-	
+// ----------------------------
 	var applyWidgetStyles = function(self) {
+/* Apply common widget properties:
+ * justify
+ * padx
+ * pady
+ * bd
+ * fg
+ * bg
+ * relief
+ * font
+ * width
+ * height
+ */ 		
 		var e = $('#tkinter_' + self.id);
 
 		if(self.props.justify) {
@@ -100,6 +105,22 @@ var $builtinmodule = function (name) {
 			}
 		}
 		
+		if(self.props.padx) {
+			var padx = Sk.ffi.remapToJs(self.props.padx)+'px';
+			e.css({
+					'margin-right':padx,
+					'margin-left': padx
+				});
+		}
+		if(self.props.pady) {
+			var pady = Sk.ffi.remapToJs(self.props.pady)+'px';
+			e.css({
+					'margin-top':pady,
+					'margin-bottom': pady
+				});
+		}
+		
+		
 		if(self.props.bg) {
 			var bg = Sk.ffi.remapToJs(self.props.bg);
 			e.css('background-color', getColor(bg));
@@ -107,7 +128,7 @@ var $builtinmodule = function (name) {
 
 		if(self.props.font) {
 			var font = Sk.ffi.remapToJs(self.props.font);
-			console.log('font=',font);
+
 			if(typeof(font) == "string") {
 				font = ("" + font).split(" "); 
 				console.log('Font=',font);
@@ -183,11 +204,35 @@ var $builtinmodule = function (name) {
 	});
 
 // Variable, StringVar, IntVar, BooleanVar ------------------------------
-	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-	}, "Variable", []);
 
+	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+// Common Variable class		
+		$loc.__init__ = new Sk.builtin.func(function(self) {
+			variables[varCount] = self;
+			self.id = varCount++;
+		});
+
+		$loc.__str__ = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.str("PY_VAR" + self.id);
+		});
+
+		$loc.set = new Sk.builtin.func(function(self, value) {
+			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
+			self.value = value;
+			if(self.updateID !== undefined) {
+				if(widgets[self.updateID].update) {
+					widgets[self.updateID].update();
+				}
+			}
+		});
+
+		$loc.get = new Sk.builtin.func(function(self) {
+			return self.value;
+		});
+	}, "Variable", []);
+// Value holder for string variables ---------------------------------
 	s.StringVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		/* Value holder for string variables. */
+
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
 			
@@ -223,9 +268,9 @@ var $builtinmodule = function (name) {
 		});
 
 	}, "StringVar", []);
-//--------------------------------------------------------------------------------
+// Value holder for integer variables -----------------------------
 	s.IntVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		/* Value holder for integer variables. */
+
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
 			
@@ -263,9 +308,9 @@ var $builtinmodule = function (name) {
 			return  Sk.ffi.remapToPy(self.value);
 		});
 	}, "IntVar", []);
-//------------------------------------------------------------------------
+// Value holder for float variables------------------------------------
 	s.DoubleVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		/* Value holder for float variables. */
+
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
 			
@@ -299,9 +344,9 @@ var $builtinmodule = function (name) {
 			return  Sk.ffi.remapToPy(self.value);
 		});
 	}, "DoubleVar", []);
-
+// Value holder for boolean variables ---------------------------------
 	s.BooleanVar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		/* Value holder for boolean variables. */
+	
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
 			
@@ -376,7 +421,7 @@ var $builtinmodule = function (name) {
 		});
 		
 	}, "Event", []);
-
+// Common widget class --------------------------------------------
 	s.Widget = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		function updateEventHandlers(self) {
@@ -538,7 +583,7 @@ var $builtinmodule = function (name) {
 			return new Sk.builtin.int_($('#tkinter_' + self.id).height());
 		});
 		
-// Widget .cget() method		
+// widget .cget() method		
 		$loc.cget = new Sk.builtin.func(function(self, value) {
 			var p = Sk.ffi.remapToJs(value);
 					switch(p) {
@@ -569,7 +614,6 @@ var $builtinmodule = function (name) {
 		});
 		
 //--------------		
-
 		var commonDisplay = function(kwa, self, parent) {
 						
 			if(self.getHtml) {
@@ -622,10 +666,11 @@ var $builtinmodule = function (name) {
 				}
 			}
 		}
-
+// place layout manager ---------------------------------------
 		var place = function(kwa, self) {
 			commonDisplay(kwa, self, $('#tkinter_' + self.master.id));
 			var props = unpackKWA(kwa);
+
 			var x = 0;
 			if(props.x) {
 				x = Sk.ffi.remapToJs(props.x);
@@ -637,15 +682,14 @@ var $builtinmodule = function (name) {
 			}
 
 			var width="auto";
-			if(props.width) {
+			//if(props.width) {
 				width = Sk.ffi.remapToJs(props.width) + "px";
-			}
+			//}
 
 			var height="auto";
-			if(props.height) {
+			//if(props.height) {
 				height = Sk.ffi.remapToJs(props.height) + "px";
-			}
-			
+			//}
 			$('#tkinter_' + self.id).css({
 				'position':'absolute',
 				left: x + "px",
@@ -656,32 +700,37 @@ var $builtinmodule = function (name) {
 		};
 		place.co_kwargs = true;
 		$loc.place = new Sk.builtin.func(place);
-
+		
+// pack layout manager ----------------------------------------
 		var pack = function(kwa, self) {
 			var props = unpackKWA(kwa);
-			var parent = $('#tkinter_' + self.master.id);
-			if(props.fill) {
-				switch(Sk.ffi.remapToJs(props.fill)) {
-					case 'both':
-						self.props.width = parent.width();
-						self.props.height = parent.height();
-					break;
-				}
+			var pid = 'tkinter_' + self.master.id;
+			var parent = $('#'+pid);
+			var direct = "#N";
+
+			if (!($("#pack_"+pid).length)) {  
+				var html = '<div class="pack-container" id = "pack_'+pid+'">\n'; // append pack grid to parent if not exist
+				html = html+'<div class="pack-container">\n<div class="pack-item NW" id="NW"></div>\n<div class="pack-item N" id="N"></div>\n<div class="pack-item NE" id="NE"></div>\n<div class="pack-item W" id="W"></div>\n<div class="pack-item C" id="C"></div>\n<div class="pack-item E" id="E"></div>\n<div class="pack-item SW" id="SW"></div>\n<div class="pack-item S" id="S"></div>\n<div class="pack-item SE" id="SE"></div>\n</div></div>'
+				parent.append(html); // create grid for pack
 			}
-			commonDisplay(kwa, self, parent);
-		
-					
-			// center widget
-			$('#tkinter_' + self.id).css({
-				'margin': '10px',
-				'position': 'relative',
-				'top': '10px',
-				'left': '50%',
-				'-ms-transform': 'translate(-50%, -50%)',
-				'transform': 'translate(-50%, -50%)'
-			});
-		
-			
+			if (props.side) {
+				side = Sk.ffi.remapToJs(props.side);
+				if (side=='left') {direct="#W";}
+				if (side=='top') {direct="#N";}
+				if (side=='right') {direct="#E";}
+				if (side=='bottom') {direct="#S";}			
+			}
+			if (props.anchor) {
+				anchor=Sk.ffi.remapToJs(props.anchor).toUpperCase();
+				if (anchor==='CENTER') { anchor='C';}
+				direct='#'+anchor;
+			}
+			var place = parent.find(direct);  // place for item add
+			commonDisplay(kwa, self, place);	   // add item to grid			
+			if ((direct=="#N")||(direct=="#S")||(direct=="#C")) {
+				place.append('<div style="line-height:10%;"><br></div>');
+			}
+				
 			if(!self.master) {
 				self.master = firstRoot;
 			}
@@ -696,11 +745,12 @@ var $builtinmodule = function (name) {
 					parent = $('#tkinter_' + firstRoot.id);
 					e = parent[0];
 				}
-								
+				/*				
 				parent.dialog('option', {
 					width: e.scrollWidth + 5,
 					height: e.scrollHeight + 35
-				});
+					
+				}); */
 			}
 		}
 		pack.co_kwargs = true;
@@ -718,8 +768,8 @@ var $builtinmodule = function (name) {
 			if(!self.master){
 				self.master = self;
 			}
-
-			var parent = $('#tkinter_' + self.master.id); // parent class
+			var pid = 'tkinter_' + self.master.id;
+			var parent = $('#' + pid); // parent class
 			var item_id = 'item_' + self.id; // item id
 			var row = Sk.ffi.remapToJs(props.row)+1;
 			var col = Sk.ffi.remapToJs(props.column)+1;
@@ -732,12 +782,10 @@ var $builtinmodule = function (name) {
 			if(props.columnspan) {
 				col_span = Sk.ffi.remapToJs(props.columnspan);
 			}
-	
-			if (!($("#grid").length)) {  
-				var html = '<div class="grid-container" id = "grid"> </div>'; // append grid to parent if not exist
+			if (!($("#grid_"+pid).length)) {  
+				var html = '<div class="grid-container" id = "grid_'+pid+'"> </div>'; // append grid to parent if not exist
 				parent.append(html);
 			}
-			
 		    // place item to grid
 			grid_col = 'grid-column: '+col+' / span '+col_span+';';
 			grid_row = 'grid-row: '+row+' / span '+row_span+';';
@@ -750,7 +798,6 @@ var $builtinmodule = function (name) {
 			$('#'+item_id).append('</div>');
 			if(!self.master.props.width) {
 				var e = parent[0];
-				
 				parent.dialog('option', {
 					width: e.scrollWidth + 20,
 					height: e.scrollHeight + 50
@@ -782,8 +829,6 @@ var $builtinmodule = function (name) {
 		$loc.__setitem__ = new Sk.builtin.func(function(self, key, value) {
 			self.props[Sk.ffi.remapToJs(key)] = value;
 		});
-
-
 	}, 'Widget', []);
 
 	function unpackKWA(kwa) {
@@ -794,7 +839,6 @@ var $builtinmodule = function (name) {
 			var val = kwa[i+1];
 			result[key] = val;
 		}
-
 		return result;
 	}
 
@@ -804,12 +848,9 @@ var $builtinmodule = function (name) {
 		if(!master && firstRoot) {
 			master = firstRoot;
 		}
-
 		self.master = master;
-
 		widgets[idCount] = self;
 		self.id = idCount++;		
-		
 		self.getHtml = getHtml;
 	}
 // Canvas -------------------------------------
@@ -840,7 +881,6 @@ var $builtinmodule = function (name) {
 		}
 
 		var init = function(kwa, self, master) {
-			console.log('Canvas ***');
 			commonWidgetConstructor(kwa, self, master, getHtml);
 			self.elements = [];
 			self.onShow = function() {
@@ -956,6 +996,13 @@ var $builtinmodule = function (name) {
 				cx.setLineDash([]);
 			}
 			
+			if(!props.fill) {
+					props.fill = new Sk.builtin.str("black");
+				}
+			if(props.fill) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
+			}		
+			
 			if(!props.outline) {
 				props.outline = new Sk.builtin.str("black");
 			}
@@ -1016,6 +1063,7 @@ var $builtinmodule = function (name) {
 				cx.closePath();
 				cx.stroke();
 				if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
+					cx.fillStyle =  Sk.ffi.remapToJs(self.props.fill);
 					cx.fill();	
 				}
 			}});
@@ -1035,6 +1083,7 @@ var $builtinmodule = function (name) {
 
 			return commonCanvasElement(self, {props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
+				
 				cx.beginPath();
 				if(!props.dash) {
 					cx.setLineDash([]);
@@ -1060,7 +1109,6 @@ var $builtinmodule = function (name) {
 				y0 = coords.y1;
 				x1 = coords.x2;
 				y1 = coords.y2
-			
 
 				// draw line
 				cx.beginPath();
@@ -1132,9 +1180,7 @@ var $builtinmodule = function (name) {
 					cx.stroke();
 					cx.fill()
 					}
-					
 				}
-								
 			}});
 		}
 		
@@ -1307,7 +1353,7 @@ var $builtinmodule = function (name) {
 // Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
-			return '<input type="text" id="tkinter_' + self.id + '"><br>';
+			return '<input type="text" id="tkinter_' + self.id + '">';
 		}
 
 		var init = function(kwa, self, master) {
@@ -1350,8 +1396,6 @@ var $builtinmodule = function (name) {
 			}
 			$('#tkinter_' + self.id).val(val.substr(0, start) + val.substr(end, val.length)).focus();
 		});
-
-
 	}, 'Entry', [s.Widget]);
 // Scale ----------------------------------------------------------
 	s.Scale = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -1410,7 +1454,6 @@ var $builtinmodule = function (name) {
 			$( '#tkinter_' + self.id + " .ui-slider-handle").text(v);
 			self.props.value = value;
 		});
-
 	}, 'Scale', [s.Widget])
 // Label ---------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -1436,7 +1479,6 @@ var $builtinmodule = function (name) {
 			return html;
 		}
 
-
 		var init = function(kwa, self, master) {
 			self.update = function() {
 				var v = "";
@@ -1454,10 +1496,7 @@ var $builtinmodule = function (name) {
 					}
 					$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
 			}
-			
 			commonWidgetConstructor(kwa, self, master, getHtml);
-			
-			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1476,10 +1515,8 @@ var $builtinmodule = function (name) {
 			if(self.props.state) {
 				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
 				}
-			
-			
-			
-			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button><br>';
+		
+			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button>';
 			
 			return html;
 		}
@@ -1548,36 +1585,30 @@ var $builtinmodule = function (name) {
 			else {
 				return new Sk.builtin.float_(vf);
 				}
-			 
 		});
 
 	}, 'Spinbox', [s.Widget]);
 // Frame ---------------------------------------------------------
-
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
-	
+			var width = 200;
+			var height= 100;
 			if(self.props.width) {
 				width = Sk.ffi.remapToJs(self.props.width);
 			}
+			else {self.props.width = width}
 			
 			if(self.props.height) {
 				height = Sk.ffi.remapToJs(self.props.height);
 			}
+			else {self.props.height = height}
 
-			return '<div id="tkinter_' + self.id + '" width="' + width + '" height="' + height + '"></div>';
+			return '<div id="tkinter_' + self.id + '" style="margin:auto;width:' + width + 'px; height:' + height + 'px;"></div>';
 		}
 		
 			var init = function(kwa, self, master) {
-				
-			console.log('Frame ***');
-			if(!master) {
-				master = firstRoot;
-			}
-			self.master = master;
-			self.id = idCount++;
-			
-			commonWidgetConstructor(kwa, self, master, getHtml);						
+			commonWidgetConstructor(kwa, self, master, getHtml);
+								
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1595,9 +1626,6 @@ var $builtinmodule = function (name) {
 		$loc.mainloop = new Sk.builtin.func(function(self) {
 
 		});
-
-
-
 	}, 'Frame', [s.Widget]);
 // Text ----------------------------------------------------------
 	s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -1653,7 +1681,7 @@ var $builtinmodule = function (name) {
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="tk"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tkinter"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 150,
@@ -1890,7 +1918,7 @@ var $builtinmodule = function (name) {
 
 			// .size() option in Listbox
 			$loc.size = new Sk.builtin.func(function(self) {	
-				console.log('#tkinter_' + self.id + ' option');						
+									
 				var result= $('#tkinter_' + self.id + ' option').length;
 				return new Sk.builtin.int_(Sk.ffi.remapToJs(result));
 			});
@@ -1921,7 +1949,6 @@ var $builtinmodule = function (name) {
 				pos = pos-2;		
 				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+crypto.randomUUID()+'>'+item+'</option>');
 				//$('#tkinter_' + self.id+ ' option:eq(1)').after($("<option></option>").val(crypto.randomUUID()).html(item));
-				console.log('* pos =',pos);
 				empty=false;
 			}	
 			
@@ -2016,7 +2043,6 @@ var $builtinmodule = function (name) {
 				 
 				if(self.props.var) {
 							if (!self.props.var.value) {
-								console.log("==========");
 								self.props.var.value = Sk.ffi.remapToPy(self.offval);
 								self.props.var.value = 0;
 								}
@@ -2079,7 +2105,6 @@ var $builtinmodule = function (name) {
 	s.Separator = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
-			console.log('sp=',self.props);
 			var or$ = '<hr>';
 		/*				
 			if(self.props.orient) {
@@ -2089,8 +2114,7 @@ var $builtinmodule = function (name) {
 				}
 			}
 			*/		
-			var html = '<div id="tkinter_' + self.id + '">'+or$+'</div>';
-			
+			var html = '<div id="tkinter_' + self.id + '" style="line-height:10%;">'+or$+'</div>';
 			return html;
 		}
 
@@ -2192,8 +2216,6 @@ var $builtinmodule = function (name) {
 				return html;
 			}
 
-
-
 			var init = function(kwa, self, master) {
 				
 				self.onShow = function() {
@@ -2229,7 +2251,6 @@ var $builtinmodule = function (name) {
 		}, 'Radiobutton', [s.Widget]);
 
 
-
 		return t;
 	}
 	s.ttk.$d = new ttk("tkinter.ttk");
@@ -2239,23 +2260,37 @@ var $builtinmodule = function (name) {
 	var messagebox = function(name) {
 		var m = {
 		};
-		m.showinfo = new Sk.builtin.func(function(title, message) {
+	function msgOutput(title,message,msg) {
 			if(!title)title = new Sk.builtin.str("");
 			if(!message)message= new Sk.builtin.str("");
 			title = PythonIDE.sanitize("" + Sk.ffi.remapToJs(title));
 			message = PythonIDE.sanitize("" + Sk.ffi.remapToJs(message));
 			return PythonIDE.runAsync(function(resolve, reject) {
-				var html = '<div id="tkinter_showinfo" title="' + title + '">' + message
-					+ '<button id="btn_tkinter_dlg_ok" class="btn_tkinter_dlg">OK</button></div>';
+				var html = '<div id="tkinter_show'+msg+'" title="' + title + '">' 
+				    + '<p><img style="vertical-align:middle" src="./media/'+msg+'.png" width="48" height="48">'
+				    +'     '+message
+					+ '</p><br><button id="btn_tkinter_dlg_ok" class="btn_tkinter_dlg">OK</button></div>';
 				PythonIDE.python.output(html);
-				$('#tkinter_showinfo').dialog();
+				$('#tkinter_show'+msg).dialog();
 				$('.btn_tkinter_dlg').button().click(function(e) {
 					var id = e.currentTarget.id.split("_")[3];
 					resolve();
-					$('#tkinter_showinfo').remove();
-				});
+					$('#tkinter_show'+msg).remove();
 			});
+		  });	
+		}
+		m.showinfo = new Sk.builtin.func(function(title, message) {
+			msgOutput(title, message,'info');			
 		});
+		
+		m.showwarning = new Sk.builtin.func(function(title, message) {
+						msgOutput(title, message,'warning');			
+		});
+				
+		m.showerror = new Sk.builtin.func(function(title, message) {
+						msgOutput(title, message,'error');			
+		});
+			
 
 		m.askyesno = new Sk.builtin.func(function(title, message) {
 			if(!title)title = new Sk.builtin.str("");
@@ -2265,8 +2300,10 @@ var $builtinmodule = function (name) {
 	
 			return PythonIDE.runAsync(function(resolve, reject) {
 				
-				var html = '<div id="tkinter_askyesno" title="' + title + '">' + message
-					+ '<button id="btn_tkinter_dlg_yes" class="btn_tkinter_dlg">Yes</button>'
+				var html = '<div id="tkinter_askyesno" title="' + title + '">' 
+				    + '<p><img style="vertical-align:middle" src="./media/yesno.png" width="48" height="48">'
+				    +'     '+ message
+					+ '<br><br><button id="btn_tkinter_dlg_yes" class="btn_tkinter_dlg">Yes</button>'
 					+ '<button id="btn_tkinter_dlg_no" class="btn_tkinter_dlg">No</button></div>';
 				PythonIDE.python.output(html);
 				$('#tkinter_askyesno').dialog();
