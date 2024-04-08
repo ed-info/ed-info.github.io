@@ -487,6 +487,7 @@ var $builtinmodule = function (name) {
 					var ev = self.eventHandlers['<KeyPress>'];
 					commonKeyHandler(ev);
 				}
+				
 				if(self.eventHandlers['<Button>']) {
 					$('#tkinter_' + self.id).click(function() {
 						Sk.misceval.callsimAsync(null, self.eventHandlers['<Button>'], Sk.builtin.str("test")).then(function success(r) {
@@ -497,21 +498,19 @@ var $builtinmodule = function (name) {
 					});
 				}
 
-				if(self.eventHandlers['<B1-Motion>']) {
+				if(self.eventHandlers['<B1Motion>']) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
+						
 						if(e.buttons) {	
 							var x = 0, y = 0;
-							var element = $(this)[0];
-							do {
-								x += element.offsetLeft;
-								y += element.offsetTop;
-							}
-							while (element = element.offsetParent);
-						
+							var parentOffset = $(this).parent().offset(); 
+							x = e.pageX - e.currentTarget.offsetLeft-parentOffset.left+6; 
+							y = e.pageY - e.currentTarget.offsetTop-parentOffset.top+6; 
+							console.log('X,Y=',x,y);
 							var pyE = Sk.misceval.callsim(s.Event);
-							pyE.props.x = new Sk.builtin.int_(e.pageX - x);
-							pyE.props.y = new Sk.builtin.int_(e.pageY - y);
-							Sk.misceval.callsimAsync(null, self.eventHandlers['<B1-Motion>'], pyE).then(function success(r) {
+							pyE.props.x = new Sk.builtin.int_(x);
+							pyE.props.y = new Sk.builtin.int_(y);
+							Sk.misceval.callsimAsync(null, self.eventHandlers['<B1Motion>'], pyE).then(function success(r) {
 
 							}, function fail(e) {
 								window.onerror(e);
@@ -519,7 +518,6 @@ var $builtinmodule = function (name) {
 						}
 					});	
 				}
-
 				if(self.eventHandlers['<Motion>']) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
 						var x = 0, y = 0;
@@ -810,6 +808,7 @@ var $builtinmodule = function (name) {
 
 		function bind(self, event, command) {
 			var e = Sk.ffi.remapToJs(event);
+			if (e==='<B1-Motion>') { e='<B1Motion>'; }
 			if(e.indexOf("-") > -1) {
 				var parts = e.substr(1, e.length - 2).split("-");
 				command.eventDetails = parts[1];
