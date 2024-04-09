@@ -207,10 +207,18 @@ var $builtinmodule = function (name) {
 
 	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 // Common Variable class		
-		$loc.__init__ = new Sk.builtin.func(function(self) {
+		var init = function(kwa, self, master,s) {
+			self.props = unpackKWA(kwa);
+			
+			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
+			if (s){self.value = Sk.ffi.remapToJs(s);}			
+				
 			variables[varCount] = self;
 			self.id = varCount++;
-		});
+
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
 
 		$loc.__str__ = new Sk.builtin.func(function(self) {
 			return new Sk.builtin.str("PY_VAR" + self.id);
@@ -227,7 +235,10 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			return self.value;
+			if (!self.value) {
+				self.value="";
+			}
+			return  Sk.ffi.remapToPy(self.value);
 		});
 	}, "Variable", []);
 // Value holder for string variables ---------------------------------
@@ -489,12 +500,22 @@ var $builtinmodule = function (name) {
 				}
 				
 				if(self.eventHandlers['<Button>']) {
-					$('#tkinter_' + self.id).click(function() {
-						Sk.misceval.callsimAsync(null, self.eventHandlers['<Button>'], Sk.builtin.str("test")).then(function success(r) {
-
+					$('#tkinter_' + self.id).mousedown(function(e) {
+						if(e.buttons) {	
+							var x = 0, y = 0;
+							var parentOffset = $(this).parent().offset(); 
+							x = e.pageX - e.currentTarget.offsetLeft-parentOffset.left+6; 
+							y = e.pageY - e.currentTarget.offsetTop-parentOffset.top+6; 
+							console.log('X,Y=',x,y);
+							var pyE = Sk.misceval.callsim(s.Event);
+							pyE.props.x = new Sk.builtin.int_(x);
+							pyE.props.y = new Sk.builtin.int_(y);
+							Sk.misceval.callsimAsync(null, self.eventHandlers['<Button>'], pyE).then(function success(r) {
+							
 							}, function fail(e) {
 								window.onerror(e);
 							});
+					    }
 					});
 				}
 
@@ -1353,14 +1374,15 @@ var $builtinmodule = function (name) {
 // Entry ----------------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
-			
 			return '<input type="text" id="tkinter_' + self.id + '">';
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
+			self.props.text="";
+			self.props.text=20;
 			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width));
 			}	
 		}
 		init.co_kwargs = true;
@@ -1512,7 +1534,7 @@ var $builtinmodule = function (name) {
 		var getHtml = function(self) {
 			
 			if(!self.props.text) { 
-					self.props.text='·   ·';
+					self.props.text="\u2000\u2000"; // blank button
 					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 				}
 			var disabled = false;
@@ -1862,7 +1884,8 @@ var $builtinmodule = function (name) {
 		        var getHtml = function(self) {
 				var html = '<br><select id="tkinter_' + self.id + '" multiple>';
 				if(self.props.listvariable) {
-					var vals = Sk.ffi.remapToJs(self.props.listvariable);
+					console.log('List=',self.props.listvariable.value);
+					var vals = self.props.listvariable.value;
 					empty = false;
 					for(var i = 0; i < vals.length; i++) {
 						var val = PythonIDE.sanitize("" + vals[i]);						
@@ -1877,13 +1900,15 @@ var $builtinmodule = function (name) {
 		var init = function(kwa, self, master) {
 			
 			commonWidgetConstructor(kwa, self, master, getHtml);
-
+			self.props.text='';
+			self.props.width = 20;
+			self.props.height = 10;
 			// width, height props
 			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
 			}
 			if(self.props.height) {
-				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
 				}
 			}
 			init.co_kwargs = true;
@@ -1986,13 +2011,15 @@ var $builtinmodule = function (name) {
 
 			var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
-				
+			self.props.text='';
+			self.props.width = 20;
+			self.props.height = 20;	
 			// width, height props
 			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width));
 			}
 			if(self.props.height) {
-				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 20);
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height));
 				}
 			}
 			init.co_kwargs = true;
