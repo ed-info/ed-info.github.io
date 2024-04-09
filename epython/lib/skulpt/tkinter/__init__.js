@@ -209,7 +209,7 @@ var $builtinmodule = function (name) {
 // Common Variable class		
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			
+			self.value = '';
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}			
 				
@@ -246,7 +246,7 @@ var $builtinmodule = function (name) {
 
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			
+			self.value = '';
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}			
 				
@@ -284,10 +284,10 @@ var $builtinmodule = function (name) {
 
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			
+		
+			self.value = 0;
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
-			
 					
 			variables[varCount] = self;
 			self.id = varCount++;
@@ -313,9 +313,6 @@ var $builtinmodule = function (name) {
 
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			if (!self.value) {
-				self.value=0;
-			}
 			return  Sk.ffi.remapToPy(self.value);
 		});
 	}, "IntVar", []);
@@ -324,7 +321,7 @@ var $builtinmodule = function (name) {
 
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			
+			self.value = 0.0;
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 					
@@ -349,9 +346,6 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			if (!self.value) {
-				self.value=0.0;
-			}
 			return  Sk.ffi.remapToPy(self.value);
 		});
 	}, "DoubleVar", []);
@@ -360,7 +354,7 @@ var $builtinmodule = function (name) {
 	
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			
+			self.value = '0';
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 						
@@ -1554,7 +1548,288 @@ var $builtinmodule = function (name) {
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
-	}, 'Button', [s.Widget]);	
+	}, 'Button', [s.Widget]);
+	
+// Checkbutton -------------------------------------------------------------
+// onvalue
+// offvalue
+// text
+// value
+// variable
+// var
+		s.Checkbutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+
+			var getHtml = function(self) {
+				
+				self.onval =1;				
+				self.offval=0;
+				
+				if(self.props.onvalue) {
+					self.onval = Sk.ffi.remapToJs(self.props.onvalue);					
+				}
+				if(self.props.offvalue) {
+					self.offval = Sk.ffi.remapToJs(self.props.offvalue);
+				}
+				var label = "";
+				if(self.props.text) {
+					label = Sk.ffi.remapToJs(self.props.text);
+				}
+
+				var checked = false;
+				if(self.props.value) {
+					checked = true;
+				}
+				if(self.props.variable) {
+					self.props.var=self.props.variable
+				}
+				console.log("ChkBtn.self.props.variable.value=",self.props.variable.value); 
+				if ((self.props.var.value != 0) && (self.props.var.value != '0') && (self.props.var.value != 'False')) {
+								if (self.props.var.value === self.onval) {
+									checked = Sk.ffi.remapToJs(self.props.var.value);
+									self.props.var.updateID = self.id; 
+								} 
+				}
+				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' + '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></div>';
+				return html;
+			}
+
+
+			var init = function(kwa, self, master) {
+				
+				self.onShow = function() {
+					$('#tkinter_' + self.id + ' input').click(function() {
+						
+						if(self.props.var) {	
+							if (self.props.var.value === "undefined") {
+								self.props.var.value = Sk.ffi.remapToPy(self.offval)
+								}						
+							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
+							if(fval) {
+							self.props.var.value = Sk.ffi.remapToPy(self.onval);
+							} else {self.props.var.value = Sk.ffi.remapToPy(self.offval)}
+						}
+					});
+				}
+
+				self.update = function() {
+					var v = false;
+					
+					if(self.props.value) {
+						v = Sk.ffi.remapToJs(self.props.value);
+					}
+					if(self.props.var) {
+						if (self.props.var.value === "undefined") {
+								self.props.var.value = Sk.ffi.remapToPy(self.offval)
+								}						
+						v = Sk.ffi.remapToJs(self.props.var.value);
+					}
+					
+						$('#tkinter_' + self.id + " input").prop('checked', v);
+					
+				}
+				commonWidgetConstructor(kwa, self, master, getHtml);
+				
+				LW.push(self.id);
+			}
+			init.co_kwargs = true;
+			$loc.__init__ = new Sk.builtin.func(init);
+
+			$loc.set = new Sk.builtin.func(function(self, value) {
+				self.props.value = Sk.ffi.remaptoJs(value);				
+				$('#tkinter_' + self.id + ' input').prop('checked', value);
+			});
+
+		}, 'Checkbutton', [s.Widget]);		
+		
+// Radiobutton -------------------------------------------------------------
+// text
+// value
+// variable
+// var
+
+		s.Radiobutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+			var getHtml = function(self) {
+				var label = "";
+				if(self.props.text) {
+					label = Sk.ffi.remapToJs(self.props.text);
+				}
+
+				var value = "";
+				if(self.props.value) {
+					value = "" + Sk.ffi.remapToJs(self.props.value);
+				}
+
+				var name="default";
+				if(self.props.variable) {
+					name="PY_VAR" + self.props.variable.id;
+				}
+				
+				if(self.props.variable.value.v===undefined) {
+									self.props.variable.value.v = 0;						 
+				}
+				if(self.props.var) {
+					self.props.variable=self.props.var					
+				}
+				var checked = false;
+				console.log('self.props.var=',self.props.variable.value , self.props.value.v)
+				if (self.props.variable.value === self.props.value.v) {
+									checked = true;
+									self.props.variable.updateID = self.id; 
+			 
+				}	
+
+				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" '+ (checked?' checked':'')  + ' value="' + PythonIDE.sanitize(value) + '">' 
+				+ '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></span>';
+				return html;
+			}
+
+			var init = function(kwa, self, master) {
+				
+				self.onShow = function() {
+					$('#tkinter_' + self.id + ' input').click(function() {
+						if(self.props.variable) {
+							var val = $('#tkinter_' + self.id + ' input').val();
+							self.props.variable.value = Sk.ffi.remapToPy(val);
+						}
+					});
+				}
+
+				self.update = function() {
+					var v = false;
+					if(self.props.value) {
+						v = Sk.ffi.remapToJs(self.props.value);
+					}
+					if(self.props.var) {
+						v = Sk.ffi.remapToJs(self.props.var.value);
+					}
+					$('#tkinter_' + self.id + " input").prop('checked', v);
+				}
+				commonWidgetConstructor(kwa, self, master, getHtml);
+				LW.push(self.id);
+			}
+			init.co_kwargs = true;
+			$loc.__init__ = new Sk.builtin.func(init);
+
+			$loc.set = new Sk.builtin.func(function(self, value) {
+				self.props.value = Sk.ffi.remaptoJs(value);
+				$('#tkinter_' + self.id + ' input').prop('checked', value);
+			});
+
+		}, 'Radiobutton', [s.Widget]);
+	
+// Listbox widget -------------------------------------------------	
+// listvariable
+// width!!!
+// height!!!
+		s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {	
+				
+				var empty = true;
+		        
+		        var getHtml = function(self) {
+				var html = '<br><select id="tkinter_' + self.id + '" multiple>';
+				if(self.props.listvariable) {
+					console.log('List=',self.props.listvariable.value);
+					var vals = self.props.listvariable.value;
+					empty = false;
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);						
+						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
+					}
+				}
+				html += '</select>'
+				return html;
+				
+			}
+
+		var init = function(kwa, self, master) {
+			
+			commonWidgetConstructor(kwa, self, master, getHtml);
+			self.props.text='';
+			self.props.width = 20;
+			self.props.height = 10;
+			// width, height props
+			if(self.props.width) {
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
+			}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
+				}
+			}
+			init.co_kwargs = true;
+			$loc.__init__ = new Sk.builtin.func(init);
+			
+			
+			// .curselection() !!! return new Sk.builtin.tuple(selected);
+			$loc.curselection = new Sk.builtin.func(function(self) {
+				let selection = $('#tkinter_' + self.id + ' option:selected').text();
+				let index=-1;
+				do {
+					index = index + 1;
+					v=$('#tkinter_' + self.id+ '  option:eq('+index+')').text();
+				} while (v != selection);	
+				
+				var selected=[]
+				selected.push(index);
+				
+				return new Sk.builtin.tuple(selected);   //Sk.builtin.int_(Sk.ffi.remapToJs(index));
+			});
+
+			// .get() option selected
+			$loc.get = new Sk.builtin.func(function(self, pos) {
+				var pos = Sk.ffi.remapToJs(pos);
+				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
+				var items=[]
+				items.push(result);
+				return new Sk.builtin.tuple(items);
+			});
+			
+			//. delete() 
+			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
+			var pos = Sk.ffi.remapToJs(pos);
+			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
+			});
+
+			// .size() option in Listbox
+			$loc.size = new Sk.builtin.func(function(self) {	
+									
+				var result= $('#tkinter_' + self.id + ' option').length;
+				return new Sk.builtin.int_(Sk.ffi.remapToJs(result));
+			});
+	
+
+			// Listbox.insert
+			// .insert(END, item)
+			// .insert(pos, item)
+			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
+						
+			var pos = Sk.ffi.remapToJs(pos);
+			item = Sk.ffi.remapToJs(newItem);
+
+			if ((pos===1)&&(empty)) {
+				pos='end';
+			}
+			if(pos == "end") {
+				var data = {
+						id: crypto.randomUUID(),
+						text: item
+						};
+				var newOption = new Option(data.text, data.id, false, false);
+				$('#tkinter_' + self.id).append(newOption).trigger('change');
+				empty=false;
+			}
+			else {	
+				console.log('***** pos =',pos);
+				pos = pos-2;		
+				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+crypto.randomUUID()+'>'+item+'</option>');
+				//$('#tkinter_' + self.id+ ' option:eq(1)').after($("<option></option>").val(crypto.randomUUID()).html(item));
+				empty=false;
+			}	
+	
+						
+			});
+
+
+		}, 'Listbox', [s.Widget]);		
 // SpinBox ---------------------------------------------------------
 	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		
@@ -1700,6 +1975,7 @@ var $builtinmodule = function (name) {
 			$('#tkinter_' + self.id).val(n).focus();
 		});
 	}, "Text", [s.Widget]);
+	
 // TopLevel ---------------------------------------------------------
 	s.Toplevel = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
@@ -1871,128 +2147,12 @@ var $builtinmodule = function (name) {
 	var ttk = function(name) {
 		var t = {
 		};
-// Listbox widget -------------------------------------------------	
-// listvariable
-// width!!!
-// height!!!
-// 
 
-		t.Listbox = new Sk.misceval.buildClass(t, function($gbl, $loc) {	
-				
-				var empty = true;
-		        
-		        var getHtml = function(self) {
-				var html = '<br><select id="tkinter_' + self.id + '" multiple>';
-				if(self.props.listvariable) {
-					console.log('List=',self.props.listvariable.value);
-					var vals = self.props.listvariable.value;
-					empty = false;
-					for(var i = 0; i < vals.length; i++) {
-						var val = PythonIDE.sanitize("" + vals[i]);						
-						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
-					}
-				}
-				html += '</select>'
-				return html;
-				
-			}
-
-		var init = function(kwa, self, master) {
-			
-			commonWidgetConstructor(kwa, self, master, getHtml);
-			self.props.text='';
-			self.props.width = 20;
-			self.props.height = 10;
-			// width, height props
-			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
-			}
-			if(self.props.height) {
-				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
-				}
-			}
-			init.co_kwargs = true;
-			$loc.__init__ = new Sk.builtin.func(init);
-			
-			
-			// .curselection() !!! return new Sk.builtin.tuple(selected);
-			$loc.curselection = new Sk.builtin.func(function(self) {
-				let selection = $('#tkinter_' + self.id + ' option:selected').text();
-				let index=-1;
-				do {
-					index = index + 1;
-					v=$('#tkinter_' + self.id+ '  option:eq('+index+')').text();
-				} while (v != selection);	
-				
-				var selected=[]
-				selected.push(index);
-				
-				return new Sk.builtin.tuple(selected);   //Sk.builtin.int_(Sk.ffi.remapToJs(index));
-			});
-
-			// .get() option selected
-			$loc.get = new Sk.builtin.func(function(self, pos) {
-				var pos = Sk.ffi.remapToJs(pos);
-				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
-				var items=[]
-				items.push(result);
-				return new Sk.builtin.tuple(items);
-			});
-			
-			//. delete() 
-			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
-			var pos = Sk.ffi.remapToJs(pos);
-			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
-			});
-
-			// .size() option in Listbox
-			$loc.size = new Sk.builtin.func(function(self) {	
-									
-				var result= $('#tkinter_' + self.id + ' option').length;
-				return new Sk.builtin.int_(Sk.ffi.remapToJs(result));
-			});
-	
-
-			// Listbox.insert
-			// .insert(END, item)
-			// .insert(pos, item)
-			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
-						
-			var pos = Sk.ffi.remapToJs(pos);
-			item = Sk.ffi.remapToJs(newItem);
-
-			if ((pos===1)&&(empty)) {
-				pos='end';
-			}
-			if(pos == "end") {
-				var data = {
-						id: crypto.randomUUID(),
-						text: item
-						};
-				var newOption = new Option(data.text, data.id, false, false);
-				$('#tkinter_' + self.id).append(newOption).trigger('change');
-				empty=false;
-			}
-			else {	
-				console.log('***** pos =',pos);
-				pos = pos-2;		
-				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+crypto.randomUUID()+'>'+item+'</option>');
-				//$('#tkinter_' + self.id+ ' option:eq(1)').after($("<option></option>").val(crypto.randomUUID()).html(item));
-				empty=false;
-			}	
-			
-//
-						
-			});
-
-
-		}, 'Listbox', [s.Widget]);
 // Combobox --------------------------------------------------------------
 // values
 // width !!!
 // height !!!
 // 
-
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '">';
@@ -2036,104 +2196,9 @@ var $builtinmodule = function (name) {
 			});
 
 		}, 'Combobox', [s.Widget]);
-// Checkbutton -------------------------------------------------------------
-// onvalue
-// offvalue
-// text
-// value
-// variable
-// var
-
-		t.Checkbutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
-
-			var getHtml = function(self) {
 				
-				self.onval =1;				
-				self.offval=0;
-				
-				if(self.props.onvalue) {
-					self.onval = Sk.ffi.remapToJs(self.props.onvalue);
-					console.log("On value=",self.onval);
-				}
-				if(self.props.offvalue) {
-					self.offval = Sk.ffi.remapToJs(self.props.offvalue);
-					console.log("Off value=",self.offval);
-				}
-				var label = "";
-				if(self.props.text) {
-					label = Sk.ffi.remapToJs(self.props.text);
-				}
-
-				var checked = false;
-				if(self.props.value) {
-					checked = true;
-				}
-				if(self.props.variable) {
-					self.props.var=self.props.variable
-					}
-				 
-				if(self.props.var) {
-							if (!self.props.var.value) {
-								self.props.var.value = Sk.ffi.remapToPy(self.offval);
-								self.props.var.value = 0;
-								}
-										
-							if ((self.props.var.value.v != 0) && (self.props.var.value.v != '0') && (self.props.var.value.v != 'False')) {
-								console.log("val=",self.props.var.value.v);
-								checked = Sk.ffi.remapToJs(self.props.var.value);
-								self.props.var.updateID = self.id; } 
-				 				
-				}
-				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' + '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label><br></div>';
-				return html;
-			}
-
-
-			var init = function(kwa, self, master) {
-				
-				self.onShow = function() {
-					$('#tkinter_' + self.id + ' input').click(function() {
-						if(self.props.var) {	
-							if (self.props.var.value === "undefined") {
-								self.props.var.value = Sk.ffi.remapToPy(self.offval)
-								}						
-							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
-							if(fval) {
-							self.props.var.value = Sk.ffi.remapToPy(self.onval);
-							} else {self.props.var.value = Sk.ffi.remapToPy(self.offval)}
-						}
-					});
-				}
-
-				self.update = function() {
-					var v = false;
-					if(self.props.value) {
-						v = Sk.ffi.remapToJs(self.props.value);
-					}
-					if(self.props.var) {
-						if (self.props.var.value === "undefined") {
-								self.props.var.value = Sk.ffi.remapToPy(self.offval)
-								}						
-						v = Sk.ffi.remapToJs(self.props.var.value);
-					}
-					$('#tkinter_' + self.id + " input").prop('checked', v);
-				}
-				commonWidgetConstructor(kwa, self, master, getHtml);
-				LW.push(self.id);
-			}
-			init.co_kwargs = true;
-			$loc.__init__ = new Sk.builtin.func(init);
-
-			$loc.set = new Sk.builtin.func(function(self, value) {
-				self.props.value = Sk.ffi.remaptoJs(value);				
-				$('#tkinter_' + self.id + ' input').prop('checked', value);
-			});
-
-		}, 'Checkbutton', [s.Widget]);
-		
-		
 // Separator ---------------------------------------------------------
-	s.Separator = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+	t.Separator = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
 			var or$ = '<hr>';
@@ -2159,7 +2224,7 @@ var $builtinmodule = function (name) {
 	}, 'Separator', [s.Widget]);
 	
 // Progressbar ---------------------------------------------------------
-	s.Progressbar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+	t.Progressbar = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
 			console.log('progress',self);
@@ -2212,72 +2277,6 @@ var $builtinmodule = function (name) {
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Progressbar', [s.Widget]);
-		
-// Radiobutton -------------------------------------------------------------
-// text
-// value
-// variable
-// var
-
-		t.Radiobutton = new Sk.misceval.buildClass(t, function($gbl, $loc) {
-			var getHtml = function(self) {
-				var label = "";
-				if(self.props.text) {
-					label = Sk.ffi.remapToJs(self.props.text);
-				}
-
-				var value = "";
-				if(self.props.value) {
-					value = "" + Sk.ffi.remapToJs(self.props.value);
-				}
-
-				var name="default";
-				if(self.props.variable) {
-					name="PY_VAR" + self.props.variable.id;
-				}
-				
-				if(self.props.var) {
-					self.props.variable=self.props.var
-					}
-
-				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" value="' + PythonIDE.sanitize(value) + '">' 
-				+ '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label><br></span>';
-				return html;
-			}
-
-			var init = function(kwa, self, master) {
-				
-				self.onShow = function() {
-					$('#tkinter_' + self.id + ' input').click(function() {
-						if(self.props.variable) {
-							var val = $('#tkinter_' + self.id + ' input').val();
-							self.props.variable.value = Sk.ffi.remapToPy(val);
-						}
-					});
-				}
-
-				self.update = function() {
-					var v = false;
-					if(self.props.value) {
-						v = Sk.ffi.remapToJs(self.props.value);
-					}
-					if(self.props.var) {
-						v = Sk.ffi.remapToJs(self.props.var.value);
-					}
-					$('#tkinter_' + self.id + " input").prop('checked', v);
-				}
-				commonWidgetConstructor(kwa, self, master, getHtml);
-				LW.push(self.id);
-			}
-			init.co_kwargs = true;
-			$loc.__init__ = new Sk.builtin.func(init);
-
-			$loc.set = new Sk.builtin.func(function(self, value) {
-				self.props.value = Sk.ffi.remaptoJs(value);
-				$('#tkinter_' + self.id + ' input').prop('checked', value);
-			});
-
-		}, 'Radiobutton', [s.Widget]);
 
 		return t;
 	}
