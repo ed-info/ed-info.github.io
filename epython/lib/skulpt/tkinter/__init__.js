@@ -426,6 +426,42 @@ var $builtinmodule = function (name) {
 		});
 		
 	}, "Event", []);
+// fix getBoundingClientRect
+function getOffset(elem) {
+    if (elem.getBoundingClientRect) {       
+        return getOffsetRect(elem)
+    } else {       
+        return getOffsetSum(elem)
+    }
+}
+
+function getOffsetSum(elem) {
+    var top=0, left=0
+    while(elem) {
+        top = top + parseInt(elem.offsetTop)
+        left = left + parseInt(elem.offsetLeft)
+        elem = elem.offsetParent
+    }
+    return {top: top, left: left}
+}
+
+function getOffsetRect(elem) {
+    // (1)
+    var box = elem.getBoundingClientRect()
+    // (2)
+    var body = document.body
+    var docElem = document.documentElement
+    // (3)
+    var scrollTop = window.pageYOffset || docElem.scrollTop || body.scrollTop
+    var scrollLeft = window.pageXOffset || docElem.scrollLeft || body.scrollLeft
+    // (4)
+    var clientTop = docElem.clientTop || body.clientTop || 0
+    var clientLeft = docElem.clientLeft || body.clientLeft || 0
+    // (5)
+    var top  = box.top +  scrollTop - clientTop
+    var left = box.left + scrollLeft - clientLeft
+    return { top: Math.round(top), left: Math.round(left) }
+}	
 // Common widget class --------------------------------------------
 	s.Widget = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
@@ -496,8 +532,8 @@ var $builtinmodule = function (name) {
 				if(self.eventHandlers['<Button>']) {
 					$('#tkinter_' + self.id).mousedown(function(e) {
 						if(e.buttons) {
-							var x = e.pageX - this.getBoundingClientRect().left;
-							var y = e.pageY - this.getBoundingClientRect().top;							
+							var x = e.pageX - getOffsetRect(this).left;
+							var y = e.pageY - getOffsetRect(this).top;							
 							console.log('X,Y=',x,y);
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
@@ -515,8 +551,8 @@ var $builtinmodule = function (name) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
 						
 						if(e.buttons) {	
-							var x = e.pageX - this.getBoundingClientRect().left;
-							var y = e.pageY - this.getBoundingClientRect().top;							
+							var x = e.pageX - getOffsetRect(this).left;
+							var y = e.pageY - getOffsetRect(this).top;							
 							console.log('X,Y=',x,y);
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
@@ -2128,8 +2164,9 @@ var $builtinmodule = function (name) {
 
 		$loc.geometry = new Sk.builtin.func(function(self, geometry) {
 			if(geometry) {
+				console.log('Geometry');
 				var size = Sk.ffi.remapToJs(geometry).split("x");
-				$('#tkinter_' + self.id).dialog('option', {width: size[0], height: size[1]});
+				$('#tkinter_' + self.id).dialog('option', {width: size[0], height: size[1]});				
 			}
 		});
 		
