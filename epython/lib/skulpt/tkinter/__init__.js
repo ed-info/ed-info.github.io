@@ -495,11 +495,9 @@ var $builtinmodule = function (name) {
 				
 				if(self.eventHandlers['<Button>']) {
 					$('#tkinter_' + self.id).mousedown(function(e) {
-						if(e.buttons) {	
-							var x = 0, y = 0;
-							var parentOffset = $(this).parent().offset(); 
-							x = e.pageX - e.currentTarget.offsetLeft-parentOffset.left+6; 
-							y = e.pageY - e.currentTarget.offsetTop-parentOffset.top+6; 
+						if(e.buttons) {
+							var x = e.pageX - this.getBoundingClientRect().left;
+							var y = e.pageY - this.getBoundingClientRect().top;							
 							console.log('X,Y=',x,y);
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
@@ -517,10 +515,8 @@ var $builtinmodule = function (name) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
 						
 						if(e.buttons) {	
-							var x = 0, y = 0;
-							var parentOffset = $(this).parent().offset(); 
-							x = e.pageX - e.currentTarget.offsetLeft-parentOffset.left+6; 
-							y = e.pageY - e.currentTarget.offsetTop-parentOffset.top+6; 
+							var x = e.pageX - this.getBoundingClientRect().left;
+							var y = e.pageY - this.getBoundingClientRect().top;							
 							console.log('X,Y=',x,y);
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
