@@ -2197,11 +2197,7 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);			
-<<<<<<< HEAD
 			
-=======
-
->>>>>>> 26dde4962e68cedb94835b070a5478e44ff458dc
 			// width, height props
 			if(self.props.width) {
 				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
@@ -2213,11 +2209,7 @@ function getOffsetRect(elem) {
 				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
 				}
 			else {
-<<<<<<< HEAD
 				self.props.height = 15;	
-=======
-				self.props.height = 20;	
->>>>>>> 26dde4962e68cedb94835b070a5478e44ff458dc
 				}	
 			}
 			init.co_kwargs = true;
