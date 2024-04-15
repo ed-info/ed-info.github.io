@@ -2197,7 +2197,7 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);			
-			
+
 			// width, height props
 			if(self.props.width) {
 				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
