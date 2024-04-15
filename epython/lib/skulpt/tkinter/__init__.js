@@ -191,16 +191,6 @@ var $builtinmodule = function (name) {
 				var disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
 				$('#tkinter_' + self.id).prop('disabled', disabled);	
 			}
-
-			if(key == "text") {
-				if(LW.includes(self.id)) {
-					let labelElement = document.getElementById("l_"+self.id);
-					labelElement.innerHTML = PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text));
-					} 
-				else {
-					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
-				}
-			}
 		}
 		applyWidgetStyles(self);
 	}
@@ -2148,9 +2138,31 @@ function getOffsetRect(elem) {
 
 		$loc.geometry = new Sk.builtin.func(function(self, geometry) {
 			if(geometry) {
-				console.log('Geometry');
-				var size = Sk.ffi.remapToJs(geometry).split("x");
-				$('#tkinter_' + self.id).dialog('option', {width: size[0], height: size[1]});				
+							
+				let txt2 = Sk.ffi.remapToJs(geometry);
+				let w = window.innerWidth;
+				let h = window.innerHeight; 
+
+				txt2=txt2.replaceAll('x',':');
+				txt2=txt2.replaceAll('+',':+');
+				txt2=txt2.replaceAll('-',':-');
+				const v = txt2.split(':');
+				
+				if (v.length===4) {  
+					x_pos = Number(v[2]);
+					y_pos = Number(v[3]);
+					if (x_pos<0) {
+						x_pos=w+x_pos-v[0];
+					}
+					if (y_pos<0) {
+						y_pos=h+y_pos-v[1];
+					}
+                      
+                  $('#tkinter_' + self.id).dialog({ position: { my: 'left top', at: 'left+'+x_pos+' top+'+y_pos, of:window}, });             
+					
+                }
+						
+				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});				
 			}
 		});
 		
@@ -2184,17 +2196,21 @@ function getOffsetRect(elem) {
 			}
 
 			var init = function(kwa, self, master) {
-			commonWidgetConstructor(kwa, self, master, getHtml);
-			self.props.text='';
-			self.props.width = 20;
-			self.props.height = 20;	
+			commonWidgetConstructor(kwa, self, master, getHtml);			
+			
 			// width, height props
 			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width));
+				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
 			}
-			if(self.props.height) {
-				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height));
+			else { 
+				self.props.width = 100;
 				}
+			if(self.props.height) {
+				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
+				}
+			else {
+				self.props.height = 20;	
+				}	
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
