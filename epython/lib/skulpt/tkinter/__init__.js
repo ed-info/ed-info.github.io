@@ -2197,15 +2197,20 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);			
-			self.props.width = 20;
-			self.props.height = 20;	
+			
 			// width, height props
 			if(self.props.width) {
 				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
 			}
+			else { 
+				self.props.width = 100;
+				}
 			if(self.props.height) {
 				self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height)*20);
 				}
+			else {
+				self.props.height = 15;	
+				}	
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
