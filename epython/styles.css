@@ -1,12 +1,12 @@
 .pack-container {
   display: grid;
-  gap: 3px;
-  padding: 3px;
+  gap: 1px;
+  padding: 1px;  
 }
 
 .pack-item {
   text-align: center;
-  padding: 3px;
+  padding: 1px;
 }
 
 .NW {
@@ -54,17 +54,15 @@
 
 .grid-container {
   display: grid;
-  gap: 3px;  
-  padding: 3px;
+  gap: 1px;  
+  padding: 1px; 
 }
 
 .grid-item {  
   display: flex;
   justify-content: center;
   align-items: center;
-  align-self: center; 
-  border: 2px solid #e5e5e5; 
-  border-style: solid;
+  align-self: center;  
 }
 
 progress[value] {
