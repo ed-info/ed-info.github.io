@@ -187,18 +187,17 @@ var $builtinmodule = function (name) {
 					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 			}
 		}
+		if(self.props.state) {
+				var disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
+				$('#tkinter_' + self.id).prop('disabled', disabled);	
+		}
 	}
 	
 	var configure = function(kwa, self) {
 		for(var i = 0; i < kwa.length; i+=2) {
 			var key = Sk.ffi.remapToJs(kwa[i]);
 			var val = kwa[i+1];
-			self.props[key] = val;
-
-			if(key == "state") {
-				var disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
-				$('#tkinter_' + self.id).prop('disabled', disabled);	
-			}
+			self.props[key] = val;			
 		}
 		applyWidgetStyles(self);
 	}
@@ -1805,7 +1804,7 @@ function getOffsetRect(elem) {
 				var empty = true;
 		        
 		        var getHtml = function(self) {
-				var html = '<br><select id="tkinter_' + self.id + '" multiple>';
+				var html = '<select id="tkinter_' + self.id + '" multiple>';
 				if(self.props.listvariable) {
 					console.log('List=',self.props.listvariable.value);
 					var vals = self.props.listvariable.value;
@@ -2345,7 +2344,7 @@ function getOffsetRect(elem) {
 								self.props.variable.updateID = self.id; } 
 			}
 			
-			var html = '<br><progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
+			var html = '<progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
 			return html;
 		}
 		
