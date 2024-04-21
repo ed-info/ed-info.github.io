@@ -650,7 +650,7 @@ function getOffsetRect(elem) {
 			var props = unpackKWA(kwa);
 			var side = Sk.ffi.remapToJs(props.side);
 			console.log(side);
-			var br = '<div style="line-height:1%;"><br></br></div>';	
+			var br = '<div style="line-height:1%;"></br></div>';	
 			if 	((side === 'left')||(side === 'right')) {
 				br='';
 			}	
@@ -1574,7 +1574,7 @@ function getOffsetRect(elem) {
 				self.props.textvariable.updateID = self.id;
 			}
 
-			var html = '<div id="tkinter_' + self.id + '">' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" style="margin-left:0em;">' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
@@ -2161,7 +2161,7 @@ function getOffsetRect(elem) {
 				position: "fixed",
 				'background-color': '#EEE',
 				'font-size': '11pt',
-				'line-height': '1em'
+				'line-height': '2em'
 			});
 			self.props.width = 300;
 			self.props.height = 200;
