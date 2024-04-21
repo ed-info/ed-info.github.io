@@ -647,12 +647,23 @@ function getOffsetRect(elem) {
 		});
 //--------------		
 		var commonDisplay = function(kwa, self, parent) {
-						
+			var props = unpackKWA(kwa);
+			var side = Sk.ffi.remapToJs(props.side);
+			console.log(side);
+			var br = '<div style="line-height:1%;"><br></br></div>';	
+			if 	((side === 'left')||(side === 'right')) {
+				br='';
+			}	
 			if(self.getHtml) {
 				$('#tkinter_' + self.id).remove();
 				var html = self.getHtml(self);
-				parent.append(html);
-
+				if ((side === 'right')||(side === 'bottom')) {
+						parent.prepend(br+html);
+				}		
+				else {
+						parent.append(br+html);
+				}	
+				console.log(html+br);
 				if(self.onShow) {
 					self.onShow();
 				}
@@ -745,6 +756,7 @@ function getOffsetRect(elem) {
 				html = html+'<div class="pack-container">\n<div class="pack-item NW" id="NW"></div>\n<div class="pack-item N" id="N"></div>\n<div class="pack-item NE" id="NE"></div>\n<div class="pack-item W" id="W"></div>\n<div class="pack-item C" id="C"></div>\n<div class="pack-item E" id="E"></div>\n<div class="pack-item SW" id="SW"></div>\n<div class="pack-item S" id="S"></div>\n<div class="pack-item SE" id="SE"></div>\n</div></div>'
 				parent.append(html); // create grid for pack
 			}
+
 			if (props.side) {
 				side = Sk.ffi.remapToJs(props.side);
 				if (side=='left') {direct="#W";}
@@ -752,17 +764,16 @@ function getOffsetRect(elem) {
 				if (side=='right') {direct="#E";}
 				if (side=='bottom') {direct="#S";}			
 			}
+
 			if (props.anchor) {
 				anchor=Sk.ffi.remapToJs(props.anchor).toUpperCase();
 				if (anchor==='CENTER') { anchor='C';}
 				direct='#'+anchor;
 			}
 			var place = parent.find(direct);  // place for item add
-			commonDisplay(kwa, self, place);	   // add item to grid			
-			if ((direct=="#N")||(direct=="#S")||(direct=="#C")) {
-				place.append('<div style="line-height:10%;"><br></div>');
-			}
-				
+			
+			commonDisplay(kwa, self, place);  // add item to grid			
+	
 			if(!self.master) {
 				self.master = firstRoot;
 			}
@@ -801,7 +812,7 @@ function getOffsetRect(elem) {
 				self.master = self;
 			}
 			var pid = 'tkinter_' + self.master.id;
-			var parent = $('#' + pid); // parent class
+			var parent = $('#' + pid);       // parent class
 			var item_id = 'item_' + self.id; // item id
 			var row = Sk.ffi.remapToJs(props.row)+1;
 			var col = Sk.ffi.remapToJs(props.column)+1;
@@ -829,11 +840,10 @@ function getOffsetRect(elem) {
 			var place = parent.find("#"+item_id);  // place for item add
 			commonDisplay(kwa, self, place);	   // add item to grid
 			$('#'+item_id).append('</div>');
-			if(!self.master.props.width) {
-				var e = parent[0];
+			if(self.master.props.width) {		   // restore parent window size	
 				parent.dialog('option', {
-					width: e.scrollWidth + 20,
-					height: e.scrollHeight + 50
+					width: self.master.props.width,
+					height:self.master.props.height
 				});
 			}
 		}
@@ -2129,12 +2139,13 @@ function getOffsetRect(elem) {
 		});
 
 		$loc.__init__ = new Sk.builtin.func(function(self) {
+
 			self.props = {};
 			
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk" style="text-align:center;"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 300,
@@ -2150,8 +2161,10 @@ function getOffsetRect(elem) {
 				position: "fixed",
 				'background-color': '#EEE',
 				'font-size': '11pt',
-				'line-height': '2em'
-			});	
+				'line-height': '1em'
+			});
+			self.props.width = 300;
+			self.props.height = 200;
 		});
 
 		$loc.winfo_screenwidth = new Sk.builtin.func(function(self) {
@@ -2226,7 +2239,11 @@ function getOffsetRect(elem) {
 					
                 }
 						
-				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});				
+				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});
+				self.props.width = v[0];
+				self.props.height = v[1];
+
+				$( '#tkinter_' + self.id).dialog( "option", "resizable", false );			
 			}
 		});
 		

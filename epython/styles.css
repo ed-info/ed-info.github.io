@@ -1,12 +1,9 @@
 .pack-container {
   display: grid;
-  gap: 1px;
-  padding: 1px;  
 }
 
 .pack-item {
   text-align: center;
-  padding: 1px;
 }
 
 .NW {
@@ -59,7 +56,7 @@
 }
 
 .grid-item {  
-  display: flex;
+ /* display: flex; */
   justify-content: center;
   align-items: center;
   align-self: center;  
@@ -377,6 +374,7 @@ width: 80%;
 }
 
 .tkinter button {
+	margin-top: 1px;
 	vertical-align:middle;
 	background-color: #a9a9a9;	
 }
