@@ -1574,7 +1574,7 @@ function getOffsetRect(elem) {
 				self.props.textvariable.updateID = self.id;
 			}
 
-			var html = '<div id="tkinter_' + self.id + '" style="margin-left:0em;">' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" style="margin-left:0em;display: inline;">' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
