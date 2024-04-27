@@ -3,7 +3,7 @@
 }
 
 .pack-item {
-  text-align: center;
+  
 }
 
 .NW {
@@ -52,14 +52,12 @@
 .grid-container {
   display: grid;
   gap: 1px;  
-  padding: 1px; 
 }
 
-.grid-item {  
- /* display: flex; */
-  justify-content: center;
-  align-items: center;
-  align-self: center;  
+.grid-item {    
+    display: flex;
+    margin-left: auto;
+    margin-right: auto
 }
 
 progress[value] {
@@ -69,6 +67,14 @@ progress[value] {
   width: 250px;
   height: 10px;
 }
+
+input[type=range][orient=vertical] {
+    appearance: slider-vertical;
+    width: 8px;
+    height: 175px;
+    padding: 0 5px;
+}
+
 
 .hr {
   display: block;

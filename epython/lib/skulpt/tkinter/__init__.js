@@ -54,6 +54,7 @@ var $builtinmodule = function (name) {
 	s.RIGHT = new Sk.builtin.str("right");
 	s.SINGLE = new Sk.builtin.str("single");
 	s.EXTENDED = new Sk.builtin.str("extended");
+	s.INDETERMINATE = new Sk.builtin.str("indeterminate");
 	
 	function getColor(c) {
 		var cName = c.replace(" ", "")
@@ -390,7 +391,6 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			console.log('***Boolean = ',self.value.v);
 			if (!self.value) {
 				self.value.v='0';
 			}
@@ -1349,7 +1349,7 @@ function getOffsetRect(elem) {
 				if(!props.style) {
 					style="pieslice"
 				} 
-				console.log("style=",style);
+				
 				applyStyles(props, cx);
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
@@ -1481,7 +1481,7 @@ function getOffsetRect(elem) {
 								}						
 						var value = Sk.ffi.remapToJs(self.props.variable.value);
 						self.props.variable.updateID = self.id; 
-					}
+			}
 			
 			html='<input id="slider_'+self.id + '" type = "range" min="'+min+'" max="'+max+'" value="'+value+'" step="1" orient="'+orientation+'" />'
 			return '<div id="tkinter_' + self.id + '" style="margin:auto;"><span id="slider_'+self.id +'_Value"></span><br>'+html;
@@ -1828,18 +1828,31 @@ function getOffsetRect(elem) {
 // width!!!
 // height!!!
 		s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {	
-				
+			function generateUUID() { // generate uuid for list items
+				var d = new Date().getTime();
+				var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;
+				return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+					var r = Math.random() * 16;
+					if(d > 0){
+						r = (d + r)%16 | 0;
+						d = Math.floor(d/16);
+					} else {
+						r = (d2 + r)%16 | 0;
+						d2 = Math.floor(d2/16);
+					}
+						return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+				});
+			}	
 				var empty = true;
 		        
 		        var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '" multiple>';
 				if(self.props.listvariable) {
-					console.log('List=',self.props.listvariable.value);
 					var vals = self.props.listvariable.value;
 					empty = false;
 					for(var i = 0; i < vals.length; i++) {
 						var val = PythonIDE.sanitize("" + vals[i]);						
-						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
+						html += '<option value="' + generateUUID() + '"' +  '>' + val + '</option>';
 					}
 				}
 				html += '</select>'
@@ -1863,7 +1876,6 @@ function getOffsetRect(elem) {
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
 			
-			// .curselection() !!! return new Sk.builtin.tuple(selected);
 			$loc.curselection = new Sk.builtin.func(function(self) {
 				let selection = $('#tkinter_' + self.id + ' option:selected').text();
 				let index=-1;
@@ -1875,7 +1887,7 @@ function getOffsetRect(elem) {
 				var selected=[]
 				selected.push(index);
 				
-				return new Sk.builtin.tuple(selected);   //Sk.builtin.int_(Sk.ffi.remapToJs(index));
+				return new Sk.builtin.tuple(selected); 
 			});
 
 			// .get() option selected
@@ -1913,7 +1925,7 @@ function getOffsetRect(elem) {
 			}
 			if(pos == "end") {
 				var data = {
-						id: crypto.randomUUID(),
+						id: generateUUID(),
 						text: item
 						};
 				var newOption = new Option(data.text, data.id, false, false);
@@ -1921,10 +1933,8 @@ function getOffsetRect(elem) {
 				empty=false;
 			}
 			else {	
-				console.log('***** pos =',pos);
 				pos = pos-2;		
-				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+crypto.randomUUID()+'>'+item+'</option>');
-				//$('#tkinter_' + self.id+ ' option:eq(1)').after($("<option></option>").val(crypto.randomUUID()).html(item));
+				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+generateUUID()+'>'+item+'</option>');				
 				empty=false;
 			}	
 		
@@ -1932,7 +1942,7 @@ function getOffsetRect(elem) {
 		}, 'Listbox', [s.Widget]);		
 // SpinBox ---------------------------------------------------------
 	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		
+		var values =[];
 		var getHtml = function(self) {
 			
 			var minVal = -100;
@@ -1950,43 +1960,81 @@ function getOffsetRect(elem) {
 				step = Sk.ffi.remapToJs(self.props.increment);
 			}
 			if (maxVal<minVal) {
-				 new Sk.builtin.ValueError('Error: "to" should be greater than "from_"')
+				 new Sk.builtin.ValueError('Error: "to" should be greater than "from_"');				 
+			}
+			start$ = 1;
+			if(self.props.values) {
+					var vals = Sk.ffi.remapToJs(self.props.values);
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);
+						values.push(val);
+					}
+					minVal = 1;
+					maxVal = i+1;
+					step =1;
+					start$ = values[0];
 			}	
 		
 			id$=  "id='tkinter_" + self.id + "'";
 			from$ = ' min='+minVal;
 			to$ = ' max='+maxVal;
 			step$ = ' step='+step;
-			val$=	 " value='2'";
-			if (self.props.from_) {
-				val$ = ' value='+minVal
-			}
-			ss$=id$+from$+to$+step$+val$;
-			var html = "<input type='number' "+ss$+'><br>';
+			val$=	 " value=1";
 			
+			if (self.props.from_) {
+				val$ = ' value='+minVal;
+				start$ = minVal;				
+			}
+			ss$=from$+to$+step$+val$;			
+
+			sp$ = "<div "+id$+" style='margin:auto;width:160px;text-align:left;'><span id='spin-label_"+ self.id +"' style='z-index: 2;text-align:right;' >"+start$+"</span>"
+			
+			var html = sp$+"<input type='number' id='spinner_"+ self.id +"' style='width: 140px;position: absolute;color: white;' "+ss$+'></div><br>';
 			return html;
 			
 		}
-
+	
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
+		
+			self.onShow = function() {
+				var y = parseInt($('#tkinter_' + self.id).css("top"));
+				var x = parseInt($('#tkinter_' + self.id).css("left"));  
+				$('#spin-label_' + self.id).css({top: y, left: x, position:'absolute',width: 123});
+	
+				$("input").change(function(){
+						
+						var v = $('#spinner_' + self.id).val();
+						console.log('spinner:',v);
+						if(self.props.values) {
+							$('#spin-label_' + self.id).html(values[v-1]);
+						}
+						else {
+							$('#spin-label_' + self.id).html(v);
+						}
+					});
+			}
 			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 		
 		$loc.get = new Sk.builtin.func(function(self) {
-			
-			var vi = parseInt($('#tkinter_' + self.id).val());
-			var vf = parseFloat($('#tkinter_' + self.id).val());
-			if (vi===vf) {
-				return new Sk.builtin.int_(vi); 
+			if(self.props.values) {
+				var v = $('#spinner_' + self.id).val();
+				return new Sk.builtin.str(values[v-1])
+			}
+			else {	
+				var vi = parseInt($('#spinner_' + self.id).val());
+				var vf = parseFloat($('#spinner_' + self.id).val());
+				if (vi===vf) {
+					return new Sk.builtin.int_(vi); 
 				}
-			else {
-				return new Sk.builtin.float_(vf);
+				else {
+					return new Sk.builtin.float_(vf);
 				}
+			}	
 		});
-
 	}, 'Spinbox', [s.Widget]);
 // Frame ---------------------------------------------------------
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -2355,18 +2403,14 @@ function getOffsetRect(elem) {
 	t.Progressbar = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
-			console.log('progress',self);
 			var value=0;
-			var	maximum=100;
 			if(self.props.value) {
 					value = Sk.ffi.remapToJs(self.props.value);
-					console.log("value=",self.onval);
-				}
-				
+			}
+			var	maximum=100;	
 			if(self.props.maximum) {
-					maximum = Sk.ffi.remapToJs(self.props.maximum);
-					console.log("maximum=",maximum);
-				}	
+					maximum = Sk.ffi.remapToJs(self.props.maximum);					
+			}	
 			
 			if(self.props.variable) {
 							if (!self.props.variable.value) {								
@@ -2378,8 +2422,14 @@ function getOffsetRect(elem) {
 								value = Sk.ffi.remapToJs(self.props.variable.value);
 								self.props.variable.updateID = self.id; } 
 			}
-			
+
 			var html = '<progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
+			if(self.props.mode) {
+				mode = Sk.ffi.remapToJs(self.props.mode);
+				if (mode==="indeterminate"){
+					html = '<progress id="tkinter_' + self.id + '" ></progress>';
+				}
+			}	
 			return html;
 		}
 		
