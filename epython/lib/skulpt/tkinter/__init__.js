@@ -1943,13 +1943,32 @@ function getOffsetRect(elem) {
 // SpinBox ---------------------------------------------------------
 	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var values =[];
+		var getSpinData = function(self) {			
+			var v = Sk.ffi.remapToJs($('#spinner_' + self.id).val());			
+			var sv;
+			if(self.props.values) {
+					sv = Sk.builtin.str(values[v-1])
+			}
+			else {	
+					if (Number.isInteger(v)) {
+								sv = Sk.builtin.int_(v); 
+					}
+					else {
+								sv = Sk.builtin.float_(v);
+					}
+			}	
+			if(self.props.textvariable) {						
+								self.props.textvariable.value = sv																
+			}
+			return sv;
+		}
 		var getHtml = function(self) {
 			
-			var minVal = -100;
-			var maxVal = 100;
+			var minVal = 0;
+			var maxVal = 0;
 			var step = 1;
-			var val = 1;
-
+			var val = 0;
+						
 			if(self.props.to) {					
 				minVal = Sk.ffi.remapToJs(self.props.from_);
 			}
@@ -1972,7 +1991,7 @@ function getOffsetRect(elem) {
 					minVal = 1;
 					maxVal = i+1;
 					step =1;
-					start$ = values[0];
+					start$ = values[0];								
 			}	
 		
 			id$=  "id='tkinter_" + self.id + "'";
@@ -1985,53 +2004,55 @@ function getOffsetRect(elem) {
 				val$ = ' value='+minVal;
 				start$ = minVal;				
 			}
+			
+			if(self.props.textvariable) {
+				self.props.textvariable.updateID = self.id;
+				self.props.textvariable.value = start$;
+			}
+			
 			ss$=from$+to$+step$+val$;			
 
 			sp$ = "<div "+id$+" style='margin:auto;width:160px;text-align:left;'><span id='spin-label_"+ self.id +"' style='z-index: 2;text-align:right;' >"+start$+"</span>"
 			
 			var html = sp$+"<input type='number' id='spinner_"+ self.id +"' style='width: 140px;position: absolute;color: white;' "+ss$+'></div><br>';
 			return html;
-			
 		}
 	
 		var init = function(kwa, self, master) {
-			commonWidgetConstructor(kwa, self, master, getHtml);
-		
+			commonWidgetConstructor(kwa, self, master, getHtml);		
 			self.onShow = function() {
 				var y = parseInt($('#tkinter_' + self.id).css("top"));
 				var x = parseInt($('#tkinter_' + self.id).css("left"));  
 				$('#spin-label_' + self.id).css({top: y, left: x, position:'absolute',width: 123});
 	
 				$("input").change(function(){
-						
-						var v = $('#spinner_' + self.id).val();
-						console.log('spinner:',v);
+						var v = $('#spinner_' + self.id).val();						
 						if(self.props.values) {
 							$('#spin-label_' + self.id).html(values[v-1]);
 						}
 						else {
 							$('#spin-label_' + self.id).html(v);
+						}							
+						if(self.props.textvariable) {						
+								self.props.textvariable.value = getSpinData(self);															
 						}
 					});
 			}
-			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 		
 		$loc.get = new Sk.builtin.func(function(self) {
+			var v = Sk.ffi.remapToJs(getSpinData(self));																		
 			if(self.props.values) {
-				var v = $('#spinner_' + self.id).val();
-				return new Sk.builtin.str(values[v-1])
+				return new Sk.builtin.str(v)
 			}
 			else {	
-				var vi = parseInt($('#spinner_' + self.id).val());
-				var vf = parseFloat($('#spinner_' + self.id).val());
-				if (vi===vf) {
-					return new Sk.builtin.int_(vi); 
+				if (Number.isInteger(v)) {
+					return new Sk.builtin.int_(v); 
 				}
 				else {
-					return new Sk.builtin.float_(vf);
+					return new Sk.builtin.float_(v);
 				}
 			}	
 		});
