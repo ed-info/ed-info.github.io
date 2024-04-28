@@ -353,7 +353,7 @@ var $builtinmodule = function (name) {
 	
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			self.value = '0';
+			self.value = false;
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 						
@@ -371,18 +371,18 @@ var $builtinmodule = function (name) {
 		$loc.set = new Sk.builtin.func(function(self, value) {
 			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
 			value=Sk.ffi.remapToJs(value);
-			var $value='0';
-			if (value===true) {$value='1'}
-			if (value===false) {$value='0'}
-			if (value==='True') {$value='1'}
-			if (value==='False') {$value='0'}
-			if (value==='0') {$value='0'}
-			if (value==='1') {$value='1'}
-			if (value===0) {$value='0'}
-			if (value===1) {$value='1'}
-			if (($value==='0')||($value==='1')){ self.value = $value; }
-			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}
-			 
+			var $value='';
+			if ((value===true)||(value==='True')||(value==='1')||(value===1)) {
+				$value='1'
+			}
+			if ((value===false)||(value==='False')||(value==='0')||(value===0)) {
+				$value='0'
+			}
+			if (($value==='0')||($value==='1')){
+				self.value = ($value==='1'); 
+			}
+			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}			
+			
 			if(self.updateID !== undefined) {
 				if(widgets[self.updateID].update) {
 					widgets[self.updateID].update();
@@ -391,9 +391,6 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			if (!self.value) {
-				self.value.v='0';
-			}
 			if ((self.value.v==='1')||(self.value.v===true)||(self.value.v===1)) {
 				getvalue=true;
 			} else { getvalue=false }
@@ -1673,14 +1670,13 @@ function getOffsetRect(elem) {
 		$loc.__init__ = new Sk.builtin.func(init);
 	}, 'Button', [s.Widget]);
 	
-// Checkbutton -------------------------------------------------------------
+// Checkbutton +++---------------------------------------------------------
 		s.Checkbutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 			var getHtml = function(self) {
 				
-				self.onval =1;				
-				self.offval=0;
-								
+				self.onval  = 1;				
+				self.offval = 0;								
 				if(self.props.onvalue) {
 					self.onval = Sk.ffi.remapToJs(self.props.onvalue);					
 				}
@@ -1691,22 +1687,16 @@ function getOffsetRect(elem) {
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
 				}
-
-				var checked = false;
-				if(self.props.value) {
-					checked = true;
-				}
-				var name="default";		
-				if(self.props.variable) {
-					name="PY_VAR" + self.props.variable.id;
-				}
-								
+				var checked = false;				
 				if (self.props.variable) {
-					if ((self.props.variable.value != 0) && (self.props.variable.value != '0') && (self.props.variable.value != 'False')) {
-								if (self.props.variable.value === self.onval) {
-									checked = Sk.ffi.remapToJs(self.props.variable.value);
-									self.props.variable.updateID = self.id; 
-								} 
+					self.props.variable.updateID = self.id; 					
+					v = Sk.ffi.remapToJs(self.props.variable.value);					
+					if (v ==='') {						
+						self.props.variable.value = Sk.ffi.remapToPy(self.offval);
+						v = self.offval;						
+					}					
+					if (v === self.onval) {
+						checked = true;									
 					}
 				}
 				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' + '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></div>';
@@ -1715,43 +1705,29 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 				
-				self.onShow = function() {
-					$('#tkinter_' + self.id + ' input').click(function() {						
-						if(self.props.variable) {	
-							if (self.props.variable.value === "undefined") {
-								self.props.variable.value = Sk.ffi.remapToPy(self.offval)
-								}						
-							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
-							if(fval) {
+				self.onShow = function() {					
+					$('#tkinter_' + self.id + ' :checkbox').change(function()  {
+						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));						
+						if(v) {
 							self.props.variable.value = Sk.ffi.remapToPy(self.onval);
-							} else {self.props.variable.value = Sk.ffi.remapToPy(self.offval)}
-						}
+						} else {self.props.variable.value = Sk.ffi.remapToPy(self.offval)}							
 					});
 				}
 
-				self.update = function() {
+				self.update = function() {					 
 					var v = false;
-					if(self.props.value) {
-						v = Sk.ffi.remapToJs(self.props.value);
-					}
-					if(self.props.variable) {
-						if (self.props.variable.value === "undefined") {
-								self.props.variable.value = Sk.ffi.remapToPy(self.offval)
-								}						
+					if(self.props.variable) {											
 						v = Sk.ffi.remapToJs(self.props.variable.value);
 					}
-					$('#tkinter_' + self.id + " input").prop('checked', v);
+					$('#tkinter_' + self.id + " input").prop('checked', v);					
 				}
+				
 				commonWidgetConstructor(kwa, self, master, getHtml);			
 				LW.push(self.id);
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
-
-			$loc.set = new Sk.builtin.func(function(self, value) {
-				self.props.value = Sk.ffi.remaptoJs(value);				
-				$('#tkinter_' + self.id + ' input').prop('checked', value);
-			});
+			
 		}, 'Checkbutton', [s.Widget]);		
 		
 // Radiobutton -------------------------------------------------------------
