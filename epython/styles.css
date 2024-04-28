@@ -2,8 +2,7 @@
   display: grid;
 }
 
-.pack-item {
-  
+.pack-item { 
 }
 
 .NW {
@@ -55,7 +54,7 @@
 }
 
 .grid-item {    
-    display: flex;
+    display: block;
     margin-left: auto;
     margin-right: auto
 }
