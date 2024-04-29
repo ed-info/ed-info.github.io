@@ -1,7 +1,7 @@
 var $builtinmodule = function (name) {
-	// clear all previous frames
+// clear all previous frames
 	$('.tkinter').remove();
-	// tkinter module
+// tkinter module
 	
 	var idCount = 0;
 	var varCount = 0;
@@ -54,6 +54,7 @@ var $builtinmodule = function (name) {
 	s.RIGHT = new Sk.builtin.str("right");
 	s.SINGLE = new Sk.builtin.str("single");
 	s.EXTENDED = new Sk.builtin.str("extended");
+	s.INDETERMINATE = new Sk.builtin.str("indeterminate");
 	
 	function getColor(c) {
 		var cName = c.replace(" ", "")
@@ -138,8 +139,7 @@ var $builtinmodule = function (name) {
 			var font = Sk.ffi.remapToJs(self.props.font);
 
 			if(typeof(font) == "string") {
-				font = ("" + font).split(" "); 
-				console.log('Font=',font);
+				font = ("" + font).split(" "); 				
 			} 
 				
 			var fontFamily = font[0];
@@ -187,29 +187,28 @@ var $builtinmodule = function (name) {
 					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 			}
 		}
+		if(self.props.state) {
+				var disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
+				$('#tkinter_' + self.id).prop('disabled', disabled);	
+		}
 	}
 	
 	var configure = function(kwa, self) {
 		for(var i = 0; i < kwa.length; i+=2) {
 			var key = Sk.ffi.remapToJs(kwa[i]);
 			var val = kwa[i+1];
-			self.props[key] = val;
-
-			if(key == "state") {
-				var disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
-				$('#tkinter_' + self.id).prop('disabled', disabled);	
-			}
+			self.props[key] = val;			
 		}
 		applyWidgetStyles(self);
 	}
 	configure.co_kwargs = true;
 
-//----------------------------------------------------------------------
+//------------------------------------------------
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
 
-// Variable, StringVar, IntVar, BooleanVar ------------------------------
+// Variable, StringVar, IntVar, BooleanVar
 
 	s.Variable = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 // Common Variable class		
@@ -353,7 +352,7 @@ var $builtinmodule = function (name) {
 	
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			self.value = '0';
+			self.value = false;
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 						
@@ -371,18 +370,18 @@ var $builtinmodule = function (name) {
 		$loc.set = new Sk.builtin.func(function(self, value) {
 			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
 			value=Sk.ffi.remapToJs(value);
-			var $value='0';
-			if (value===true) {$value='1'}
-			if (value===false) {$value='0'}
-			if (value==='True') {$value='1'}
-			if (value==='False') {$value='0'}
-			if (value==='0') {$value='0'}
-			if (value==='1') {$value='1'}
-			if (value===0) {$value='0'}
-			if (value===1) {$value='1'}
-			if (($value==='0')||($value==='1')){ self.value = $value; }
-			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}
-			 
+			var $value='';
+			if ((value===true)||(value==='True')||(value==='1')||(value===1)) {
+				$value='1'
+			}
+			if ((value===false)||(value==='False')||(value==='0')||(value===0)) {
+				$value='0'
+			}
+			if (($value==='0')||($value==='1')){
+				self.value = ($value==='1'); 
+			}
+			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}			
+			
 			if(self.updateID !== undefined) {
 				if(widgets[self.updateID].update) {
 					widgets[self.updateID].update();
@@ -391,10 +390,7 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			if (!self.value) {
-				self.value='0';
-			}
-			if ((self.value==='1')||(self.value===true)||(self.value===1)) {
+			if ((self.value.v==='1')||(self.value.v===true)||(self.value.v===1)) {
 				getvalue=true;
 			} else { getvalue=false }
 			return Sk.ffi.remapToPy(getvalue); });
@@ -472,7 +468,7 @@ function getOffsetRect(elem) {
 					});
 				}
 				function commonKeyHandler(ev) {
-					console.log(ev);
+
 					PythonIDE.keyHandlers.push(function(e) {
 						if(e.type != "keydown") {
 							return;
@@ -525,7 +521,7 @@ function getOffsetRect(elem) {
 						if(e.buttons) {
 							var x = e.pageX - getOffsetRect(this).left;
 							var y = e.pageY - getOffsetRect(this).top;							
-							console.log('X,Y=',x,y);
+							
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
 							pyE.props.y = new Sk.builtin.int_(y);
@@ -544,7 +540,7 @@ function getOffsetRect(elem) {
 						if(e.buttons) {	
 							var x = e.pageX - getOffsetRect(this).left;
 							var y = e.pageY - getOffsetRect(this).top;							
-							console.log('X,Y=',x,y);
+
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
 							pyE.props.y = new Sk.builtin.int_(y);
@@ -648,12 +644,22 @@ function getOffsetRect(elem) {
 		});
 //--------------		
 		var commonDisplay = function(kwa, self, parent) {
-						
+			var props = unpackKWA(kwa);
+			var side = Sk.ffi.remapToJs(props.side);
+			var br = '<div style="line-height:1%;"></br></div>';	
+			if 	((side === 'left')||(side === 'right')) {
+				br='';
+			}	
 			if(self.getHtml) {
 				$('#tkinter_' + self.id).remove();
 				var html = self.getHtml(self);
-				parent.append(html);
-
+				if ((side === 'right')||(side === 'bottom')) {
+						parent.prepend(br+html);
+				}		
+				else {
+						parent.append(br+html);
+				}	
+				
 				if(self.onShow) {
 					self.onShow();
 				}
@@ -742,10 +748,11 @@ function getOffsetRect(elem) {
 			var direct = "#N";
 
 			if (!($("#pack_"+pid).length)) {  
-				var html = '<div class="pack-container" id = "pack_'+pid+'">\n'; // append pack grid to parent if not exist
-				html = html+'<div class="pack-container">\n<div class="pack-item NW" id="NW"></div>\n<div class="pack-item N" id="N"></div>\n<div class="pack-item NE" id="NE"></div>\n<div class="pack-item W" id="W"></div>\n<div class="pack-item C" id="C"></div>\n<div class="pack-item E" id="E"></div>\n<div class="pack-item SW" id="SW"></div>\n<div class="pack-item S" id="S"></div>\n<div class="pack-item SE" id="SE"></div>\n</div></div>'
+				var html = '<div class="pack_container" id = "pack_'+pid+'">\n'; // append pack grid to parent if not exist
+				html = html+'<div class="pack_container">\n<div class="pack_item NW" id="NW"></div>\n<div class="pack_item N" id="N"></div>\n<div class="pack_item NE" id="NE"></div>\n<div class="pack_item W" id="W"></div>\n<div class="pack_item C" id="C"></div>\n<div class="pack_item E" id="E"></div>\n<div class="pack_item SW" id="SW"></div>\n<div class="pack_item S" id="S"></div>\n<div class="pack_item SE" id="SE"></div>\n</div></div>'
 				parent.append(html); // create grid for pack
 			}
+
 			if (props.side) {
 				side = Sk.ffi.remapToJs(props.side);
 				if (side=='left') {direct="#W";}
@@ -753,17 +760,16 @@ function getOffsetRect(elem) {
 				if (side=='right') {direct="#E";}
 				if (side=='bottom') {direct="#S";}			
 			}
+
 			if (props.anchor) {
 				anchor=Sk.ffi.remapToJs(props.anchor).toUpperCase();
 				if (anchor==='CENTER') { anchor='C';}
 				direct='#'+anchor;
 			}
 			var place = parent.find(direct);  // place for item add
-			commonDisplay(kwa, self, place);	   // add item to grid			
-			if ((direct=="#N")||(direct=="#S")||(direct=="#C")) {
-				place.append('<div style="line-height:10%;"><br></div>');
-			}
-				
+			
+			commonDisplay(kwa, self, place);  // add item to grid			
+	
 			if(!self.master) {
 				self.master = firstRoot;
 			}
@@ -802,7 +808,7 @@ function getOffsetRect(elem) {
 				self.master = self;
 			}
 			var pid = 'tkinter_' + self.master.id;
-			var parent = $('#' + pid); // parent class
+			var parent = $('#' + pid);       // parent class
 			var item_id = 'item_' + self.id; // item id
 			var row = Sk.ffi.remapToJs(props.row)+1;
 			var col = Sk.ffi.remapToJs(props.column)+1;
@@ -816,25 +822,23 @@ function getOffsetRect(elem) {
 				col_span = Sk.ffi.remapToJs(props.columnspan);
 			}
 			if (!($("#grid_"+pid).length)) {  
-				var html = '<div class="grid-container" id = "grid_'+pid+'"> </div>'; // append grid to parent if not exist
+				var html = '<div class="grid_container" id = "grid_'+pid+'"> </div>'; // append grid to parent if not exist
 				parent.append(html);
 			}
 		    // place item to grid
 			grid_col = 'grid-column: '+col+' / span '+col_span+';';
 			grid_row = 'grid-row: '+row+' / span '+row_span+';';
-			grid_class = '<div class="grid-item" id="'+ item_id+'" style = "';
+			grid_class = '<div class="grid_item" id="'+ item_id+'" style = "';
 			grid_class =  grid_class +  grid_col + grid_row +'">';
-			console.log("GRID:",grid_class);
 			$("#grid_"+pid).append(grid_class);
 		
 			var place = parent.find("#"+item_id);  // place for item add
 			commonDisplay(kwa, self, place);	   // add item to grid
 			$('#'+item_id).append('</div>');
-			if(!self.master.props.width) {
-				var e = parent[0];
+			if(self.master.props.width) {		   // restore parent window size	
 				parent.dialog('option', {
-					width: e.scrollWidth + 20,
-					height: e.scrollHeight + 50
+					width: self.master.props.width,
+					height:self.master.props.height
 				});
 			}
 		}
@@ -1339,7 +1343,7 @@ function getOffsetRect(elem) {
 				if(!props.style) {
 					style="pieslice"
 				} 
-				console.log("style=",style);
+				
 				applyStyles(props, cx);
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
@@ -1357,8 +1361,7 @@ function getOffsetRect(elem) {
 				if (style=="pieslice") {
 					cx.moveTo(coords.x1 + (w/2), coords.y1 + (h/2));
 				}	
-				console.log("start=",start)
-				console.log("ext=",extent)				
+			
 				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, 0, start, start+extent, true);
 				if (style=="pieslice") {
 					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
@@ -1391,19 +1394,33 @@ function getOffsetRect(elem) {
 		$loc.itemconfigure = new Sk.builtin.func(item_config);
 
 	}, 'Canvas', [s.Widget]);
-// Entry ----------------------------------------------------------
+// Entry +++ -----------------------------------------------------
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
-			return '<input type="text" id="tkinter_' + self.id + '">';
+			var v = "";
+			if(self.props.textvariable) {
+					var v = v + Sk.ffi.remapToJs(self.props.textvariable.value);
+					self.props.textvariable.updateID = self.id;
+			}
+			return '<input type="text" id="tkinter_' + self.id + '" style="text-align:right"; value="'+v+'">';
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
-			self.props.text="";
-			self.props.text=20;
-			if(self.props.width) {
-				self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width));
-			}	
+ 	
+			self.update = function() {				
+				if(self.props.textvariable) {
+					var v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);					
+				}
+				$('#tkinter_' + self.id).val(Sk.ffi.remapToJs(v));				 
+			}
+			self.onShow = function() {								
+				$("input").change(function(){					
+						if(self.props.textvariable) {
+								self.props.textvariable.value = Sk.ffi.remapToPy($('#tkinter_' + self.id).val())
+						}
+				})
+		    }		
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -1443,83 +1460,97 @@ function getOffsetRect(elem) {
 			$('#tkinter_' + self.id).val(val.substr(0, start) + val.substr(end, val.length)).focus();
 		});
 	}, 'Entry', [s.Widget]);
-// Scale ----------------------------------------------------------
+// Scale +++ -----------------------------------------------------
 	s.Scale = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		var sliderValue;
+		var slider;
+
 		var getHtml = function(self) {
-			return '<div id="tkinter_' + self.id + '" style="margin:auto;"><div class="ui-slider-handle">0</div></div>';
-		}
-		var init = function(kwa, self, master) {
-			commonWidgetConstructor(kwa, self, master, getHtml);
-			
+	
 			var min = 0;
 			if(self.props.from_) {
 				min = Sk.ffi.remapToJs(self.props.from_);
 			}
-
-			var max = 50;
+			var max = 100;
 			if(self.props.to) {
 				max = Sk.ffi.remapToJs(self.props.to);
 			}
-
 			var orientation = "vertical";
 			if(self.props.orient) {
 				orientation = Sk.ffi.remapToJs(self.props.orient);
 			}
-
+			var value = 50;			
+			if(self.props.variable) {
+						if (self.props.variable.value === "undefined") {
+								self.props.variable.value = Sk.ffi.remapToPy(0)
+								}						
+						var value = Sk.ffi.remapToJs(self.props.variable.value);
+						self.props.variable.updateID = self.id; 
+			}
+			
+			html='<input id="slider_'+self.id + '" type = "range" min="'+min+'" max="'+max+'" value="'+value+'" step="1" orient="'+orientation+'" />'
+			return '<div id="tkinter_' + self.id + '" style="margin:auto;"><span id="slider_'+self.id +'_Value"></span><div style="line-height:1%;"></br></div>'+html;
+		}
+				
+		var init = function(kwa, self, master) {
+			commonWidgetConstructor(kwa, self, master, getHtml);
+			
 			self.onShow = function() {
 				var value = 0;
 				if(self.props.cursor) {
 					value = Sk.ffi.remapToJs(self.props.cursor);
+				}   
+					
+				sliderValue = document.getElementById('slider_'+self.id +'_Value');
+				slider = document.getElementById('slider_'+ self.id);
+				sliderValue.innerHTML = slider.value;
+			
+				slider.oninput =function(){
+						sliderValue.innerHTML = slider.value;
+						if(self.props.variable) {
+								self.props.variable.value = Sk.ffi.remapToPy(slider.value)
+						}
 				}
-				var handle = $( '#tkinter_' + self.id + " .ui-slider-handle");
-				$('#tkinter_' + self.id).slider({
-			      create: function() {
-			        handle.text( $( this ).slider( "value" ) );
-			      },
-			      slide: function( event, ui ) {
-			        handle.text( ui.value);
-			      },
-			      min: min,
-			      max: max,
-			      value: value,
-			      orientation: orientation
-			    });
+		    }		
+						  
+			self.update = function() {		
+					if(self.props.variable) {
+						var v = Sk.ffi.remapToJs(self.props.variable.value);								
+						$('#slider_'+self.id).val(v);
+						sliderValue.innerHTML = v;
+					}	
 			}
-		}
+		}		
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
-		$loc.get = new Sk.builtin.func(function(self) {
-			return new Sk.builtin.int_($('#tkinter_' + self.id).slider("value"));
+		$loc.get = new Sk.builtin.func(function(self) {			
+					sliderValue =$('#slider_'+self.id).val();
+			return sliderValue
 		});
 
 		$loc.set = new Sk.builtin.func(function(self, value) {
-			var v = Sk.ffi.remapToJs(value);
-			$('#tkinter_' + self.id).slider("value", v);
-			$( '#tkinter_' + self.id + " .ui-slider-handle").text(v);
-			self.props.value = value;
+			var v = ""+Sk.ffi.remapToJs(value);
+			$('#slider_'+self.id).val(v);			
+			sliderValue.innerHTML = v;
 		});
 	}, 'Scale', [s.Widget])
-// Message ---------------------------------------------------------
+// Message +++------------------------------------------------------
 	s.Message = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
-			var v = "";
-			
+			var v = "";			
 			if(self.props.text) {
 				v = Sk.ffi.remapToJs(self.props.text);
 			}
-
 			if (!self.props.width) {
 					self.props.width = 20;
-			}
-				
+			}				
 			if(self.props.textvariable) {
 				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-
-			var html = '<div id="tkinter_' + self.id + '">' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" style="word-wrap:break-word;text-align:center;" >' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
@@ -1544,32 +1575,28 @@ function getOffsetRect(elem) {
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
-
 	}, 'Message', [s.Widget]);	
-// Label ---------------------------------------------------------
+// Label +++------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
-			var v = "";
-			
+			var v = "";			
 			if(self.props.text) {
 				v = Sk.ffi.remapToJs(self.props.text);
 			}
-
 			if (!self.props.width) {
 					self.props.width = v.length+1;
-			}
-				
+			}				
 			if(self.props.textvariable) {
 				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-
-			var html = '<div id="tkinter_' + self.id + '">' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" style="margin-left:0em;display: inline;">' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
 		var init = function(kwa, self, master) {
+			commonWidgetConstructor(kwa, self, master, getHtml);
 			self.update = function() {
 				var v = "";
 				if(self.props.text) {
@@ -1585,56 +1612,67 @@ function getOffsetRect(elem) {
 						self.props.width = v.length+1;
 					}
 					$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
-			}
-			commonWidgetConstructor(kwa, self, master, getHtml);
+			}			
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Label', [s.Widget]);
-// Button ---------------------------------------------------------
+// Button +++------------------------------------------------------
 	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
 			
-			if(!self.props.text) { 
-					self.props.text="\u2000\u2000"; // blank button
-					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
-				}
 			var disabled = false;
 			if(self.props.state) {
 				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
-				}
-		
-			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>' + PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)) + '</button>';
-			
+			}
+			var v = "";
+			if(self.props.text) {
+					v = Sk.ffi.remapToJs(self.props.text);
+			}			
+			if(self.props.textvariable) {
+				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+				self.props.textvariable.updateID = self.id;
+			}
+			if(v==="") { 
+					v="\u2000\u2000"; // blank button
+			}
+			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>'+v+'</button>';
 			return html;
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
-			
+			self.update = function() {
+				var v = "";
+				if(self.props.text) {
+					v = Sk.ffi.remapToJs(self.props.text);
+				}			
+				if(self.props.textvariable) {
+					v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+				}
+				if(v==="") { 
+					v="\u2000\u2000"; // blank button
+				}
+				$('#tkinter_' + self.id).text(Sk.ffi.remapToJs(v));					
+					if (self.props.width===1) {						
+						self.props.width = v.length+1;
+					}
+					$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
+			}	
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
-
 	}, 'Button', [s.Widget]);
 	
-// Checkbutton -------------------------------------------------------------
-// onvalue
-// offvalue
-// text
-// value
-// variable
-// var
+// Checkbutton +++---------------------------------------------------------
 		s.Checkbutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 			var getHtml = function(self) {
 				
-				self.onval =1;				
-				self.offval=0;
-				self.props.variable=0;
-				
+				self.onval  = 1;				
+				self.offval = 0;								
 				if(self.props.onvalue) {
 					self.onval = Sk.ffi.remapToJs(self.props.onvalue);					
 				}
@@ -1645,117 +1683,91 @@ function getOffsetRect(elem) {
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
 				}
-
-				var checked = false;
-				if(self.props.value) {
-					checked = true;
+				if(self.props.textvariable) {
+					label = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+					self.props.textvariable.updateID = self.id;
 				}
-				if(self.props.variable) {
-					self.props.var=self.props.variable
-				}
-				
-				if(self.props.variable) {
-					self.props.var=self.props.variable
-				}
-				
-				if (self.props.var) {
-					if ((self.props.var.value != 0) && (self.props.var.value != '0') && (self.props.var.value != 'False')) {
-								if (self.props.var.value === self.onval) {
-									checked = Sk.ffi.remapToJs(self.props.var.value);
-									self.props.var.updateID = self.id; 
-								} 
+				var checked = false;				
+				if (self.props.variable) {
+					self.props.variable.updateID = self.id; 					
+					v = Sk.ffi.remapToJs(self.props.variable.value);					
+					if (v ==='') {						
+						self.props.variable.value = Sk.ffi.remapToPy(self.offval);
+						v = self.offval;						
+					}					
+					if (v === self.onval) {
+						checked = true;									
 					}
 				}
 				var html = '<div id="tkinter_' + self.id + '"><input type="checkbox"' + (checked?' checked':'') + '>' + '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></div>';
 				return html;
 			}
 
-
 			var init = function(kwa, self, master) {
 				
-				self.onShow = function() {
-					$('#tkinter_' + self.id + ' input').click(function() {
-						
-						if(self.props.var) {	
-							if (self.props.var.value === "undefined") {
-								self.props.var.value = Sk.ffi.remapToPy(self.offval)
-								}						
-							var fval = $('#tkinter_' + self.id + ' input').prop('checked'); 
-							if(fval) {
-							self.props.var.value = Sk.ffi.remapToPy(self.onval);
-							} else {self.props.var.value = Sk.ffi.remapToPy(self.offval)}
-						}
+				self.onShow = function() {	
+					
+					$('#item_' + self.id).css({'margin-left':'0'});
+									
+					$('#tkinter_' + self.id + ' :checkbox').change(function()  {
+						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));						
+						if(v) {
+							self.props.variable.value = Sk.ffi.remapToPy(self.onval);
+						} else {self.props.variable.value = Sk.ffi.remapToPy(self.offval)}							
 					});
 				}
 
-				self.update = function() {
-					var v = false;
-					
-					if(self.props.value) {
-						v = Sk.ffi.remapToJs(self.props.value);
+				self.update = function() {	
+									 
+					var checked = false;
+					if(self.props.variable) {											
+						checked = (Sk.ffi.remapToJs(self.props.variable.value)===self.onval);																		
 					}
-					if(self.props.var) {
-						if (self.props.var.value === "undefined") {
-								self.props.var.value = Sk.ffi.remapToPy(self.offval)
-								}						
-						v = Sk.ffi.remapToJs(self.props.var.value);
-					}
-					
-						$('#tkinter_' + self.id + " input").prop('checked', v);
-					
+					$('#tkinter_' + self.id + " input").prop('checked', checked);
+					if(self.props.textvariable) {
+						v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+						$('#l_' + self.id).text(Sk.ffi.remapToJs(v));							
+					}								
 				}
-				commonWidgetConstructor(kwa, self, master, getHtml);
 				
+				commonWidgetConstructor(kwa, self, master, getHtml);			
 				LW.push(self.id);
 			}
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
-
-			$loc.set = new Sk.builtin.func(function(self, value) {
-				self.props.value = Sk.ffi.remaptoJs(value);				
-				$('#tkinter_' + self.id + ' input').prop('checked', value);
-			});
+			
 		}, 'Checkbutton', [s.Widget]);		
 		
 // Radiobutton -------------------------------------------------------------
-// text
-// value
-// variable
-// var
-
 		s.Radiobutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var label = "";
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
 				}
-
+				if(self.props.textvariable) {
+					label = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+					self.props.textvariable.updateID = self.id;
+				}	
 				var value = "";
 				if(self.props.value) {
 					value = "" + Sk.ffi.remapToJs(self.props.value);
 				}
 
-				var name="default";
-				
+				var name="default";	
 				if(self.props.variable) {
 					name="PY_VAR" + self.props.variable.id;
 				}
-				/*
-				if(self.props.variable.value.v===undefined) {
-									self.props.variable.value.v = 0;						 
-				}
-				*/
+
 				if(self.props.var) {
 					self.props.variable=self.props.var					
 				}
 				
-				var checked = false;
-				
+				var checked = false;				
 				if(self.props.variable) {
+					self.props.variable.updateID = self.id; 
 					if (self.props.variable.value === self.props.value.v) {
-									checked = true;
-									self.props.variable.updateID = self.id; 
-			 
+									checked = true;												 
 					}	
 				}
 				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" '+ (checked?' checked':'')  + ' value="' + PythonIDE.sanitize(value) + '">' 
@@ -1766,6 +1778,7 @@ function getOffsetRect(elem) {
 			var init = function(kwa, self, master) {
 				
 				self.onShow = function() {
+					$('#item_' + self.id).css({'margin-left':'0'});
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.variable) {
 							var val = $('#tkinter_' + self.id + ' input').val();
@@ -1779,10 +1792,14 @@ function getOffsetRect(elem) {
 					if(self.props.value) {
 						v = Sk.ffi.remapToJs(self.props.value);
 					}
-					if(self.props.var) {
-						v = Sk.ffi.remapToJs(self.props.var.value);
+					if(self.props.variable) {
+						v = Sk.ffi.remapToJs(self.props.variable.value);
 					}
 					$('#tkinter_' + self.id + " input").prop('checked', v);
+					if(self.props.textvariable) {
+						v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+						$('#l_' + self.id).text(Sk.ffi.remapToJs(v));							
+					}
 				}
 				commonWidgetConstructor(kwa, self, master, getHtml);
 				LW.push(self.id);
@@ -1797,22 +1814,32 @@ function getOffsetRect(elem) {
 		}, 'Radiobutton', [s.Widget]);
 	
 // Listbox widget -------------------------------------------------	
-// listvariable
-// width!!!
-// height!!!
 		s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {	
-				
+			function generateUUID() { // generate uuid for list items
+				var d = new Date().getTime();
+				var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;
+				return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+					var r = Math.random() * 16;
+					if(d > 0){
+						r = (d + r)%16 | 0;
+						d = Math.floor(d/16);
+					} else {
+						r = (d2 + r)%16 | 0;
+						d2 = Math.floor(d2/16);
+					}
+						return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+				});
+			}	
 				var empty = true;
 		        
 		        var getHtml = function(self) {
-				var html = '<br><select id="tkinter_' + self.id + '" multiple>';
+				var html = '<select id="tkinter_' + self.id + '" multiple>';
 				if(self.props.listvariable) {
-					console.log('List=',self.props.listvariable.value);
 					var vals = self.props.listvariable.value;
 					empty = false;
 					for(var i = 0; i < vals.length; i++) {
 						var val = PythonIDE.sanitize("" + vals[i]);						
-						html += '<option value="' + crypto.randomUUID() + '"' +  '>' + val + '</option>';
+						html += '<option value="' + generateUUID() + '"' +  '>' + val + '</option>';
 					}
 				}
 				html += '</select>'
@@ -1836,7 +1863,6 @@ function getOffsetRect(elem) {
 			init.co_kwargs = true;
 			$loc.__init__ = new Sk.builtin.func(init);
 			
-			// .curselection() !!! return new Sk.builtin.tuple(selected);
 			$loc.curselection = new Sk.builtin.func(function(self) {
 				let selection = $('#tkinter_' + self.id + ' option:selected').text();
 				let index=-1;
@@ -1848,10 +1874,9 @@ function getOffsetRect(elem) {
 				var selected=[]
 				selected.push(index);
 				
-				return new Sk.builtin.tuple(selected);   //Sk.builtin.int_(Sk.ffi.remapToJs(index));
+				return new Sk.builtin.tuple(selected); 
 			});
 
-			// .get() option selected
 			$loc.get = new Sk.builtin.func(function(self, pos) {
 				var pos = Sk.ffi.remapToJs(pos);
 				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
@@ -1859,14 +1884,12 @@ function getOffsetRect(elem) {
 				items.push(result);
 				return new Sk.builtin.tuple(items);
 			});
-			
-			//. delete() 
+
 			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
 			var pos = Sk.ffi.remapToJs(pos);
 			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
 			});
 
-			// .size() option in Listbox
 			$loc.size = new Sk.builtin.func(function(self) {	
 									
 				var result= $('#tkinter_' + self.id + ' option').length;
@@ -1886,7 +1909,7 @@ function getOffsetRect(elem) {
 			}
 			if(pos == "end") {
 				var data = {
-						id: crypto.randomUUID(),
+						id: generateUUID(),
 						text: item
 						};
 				var newOption = new Option(data.text, data.id, false, false);
@@ -1894,10 +1917,8 @@ function getOffsetRect(elem) {
 				empty=false;
 			}
 			else {	
-				console.log('***** pos =',pos);
 				pos = pos-2;		
-				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+crypto.randomUUID()+'>'+item+'</option>');
-				//$('#tkinter_' + self.id+ ' option:eq(1)').after($("<option></option>").val(crypto.randomUUID()).html(item));
+				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+generateUUID()+'>'+item+'</option>');				
 				empty=false;
 			}	
 		
@@ -1905,14 +1926,33 @@ function getOffsetRect(elem) {
 		}, 'Listbox', [s.Widget]);		
 // SpinBox ---------------------------------------------------------
 	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		
+		var values =[];
+		var getSpinData = function(self) {			
+			var v = Sk.ffi.remapToJs($('#spinner_' + self.id).val());			
+			var sv;
+			if(self.props.values) {
+					sv = Sk.builtin.str(values[v-1])
+			}
+			else {	
+					if (Number.isInteger(v)) {
+								sv = Sk.builtin.int_(v); 
+					}
+					else {
+								sv = Sk.builtin.float_(v);
+					}
+			}	
+			if(self.props.textvariable) {						
+								self.props.textvariable.value = sv																
+			}
+			return sv;
+		}
 		var getHtml = function(self) {
 			
-			var minVal = -100;
-			var maxVal = 100;
+			var minVal = 0;
+			var maxVal = 0;
 			var step = 1;
-			var val = 1;
-
+			var val = 0;
+						
 			if(self.props.to) {					
 				minVal = Sk.ffi.remapToJs(self.props.from_);
 			}
@@ -1923,43 +1963,83 @@ function getOffsetRect(elem) {
 				step = Sk.ffi.remapToJs(self.props.increment);
 			}
 			if (maxVal<minVal) {
-				 new Sk.builtin.ValueError('Error: "to" should be greater than "from_"')
+				 new Sk.builtin.ValueError('Error: "to" should be greater than "from_"');				 
+			}
+			start$ = 1;
+			if(self.props.values) {
+					var vals = Sk.ffi.remapToJs(self.props.values);
+					for(var i = 0; i < vals.length; i++) {
+						var val = PythonIDE.sanitize("" + vals[i]);
+						values.push(val);
+					}
+					minVal = 1;
+					maxVal = i+1;
+					step =1;
+					start$ = values[0];								
 			}	
 		
 			id$=  "id='tkinter_" + self.id + "'";
 			from$ = ' min='+minVal;
 			to$ = ' max='+maxVal;
 			step$ = ' step='+step;
-			val$=	 " value='2'";
+			val$=	 " value=1";
+			
 			if (self.props.from_) {
-				val$ = ' value='+minVal
+				val$ = ' value='+minVal;
+				start$ = minVal;				
 			}
-			ss$=id$+from$+to$+step$+val$;
-			var html = "<input type='number' "+ss$+'><br>';
 			
-			return html;
+			if(self.props.textvariable) {
+				self.props.textvariable.updateID = self.id;
+				self.props.textvariable.value = start$;
+			}
 			
-		}
+			ss$=from$+to$+step$+val$;			
 
-		var init = function(kwa, self, master) {
-			commonWidgetConstructor(kwa, self, master, getHtml);
+			sp$ = "<div "+id$+" style='margin:auto;width:160px;text-align:left;'><span id='spin-label_"+ self.id +"' style='z-index: 2;text-align:right;' >"+start$+"</span>"
 			
+			var html = sp$+"<input type='number' id='spinner_"+ self.id +"' style='width: 140px;position: absolute;color: white;' "+ss$+'></div><br>';
+			return html;
+		}
+	
+		var init = function(kwa, self, master) {
+			commonWidgetConstructor(kwa, self, master, getHtml);		
+			self.onShow = function() {
+				var y = parseInt($('#tkinter_' + self.id).css("top"));
+				var x = parseInt($('#tkinter_' + self.id).css("left"));  
+				$('#spin-label_' + self.id).css({top: y, left: x, position:'absolute',width: 123});
+	
+				$("input").change(function(){
+						var v = $('#spinner_' + self.id).val();						
+						if(self.props.values) {
+							$('#spin-label_' + self.id).html(values[v-1]);
+						}
+						else {
+							$('#spin-label_' + self.id).html(v);
+						}							
+						if(self.props.textvariable) {						
+								self.props.textvariable.value = getSpinData(self);															
+						}
+					});
+			}
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 		
 		$loc.get = new Sk.builtin.func(function(self) {
-			
-			var vi = parseInt($('#tkinter_' + self.id).val());
-			var vf = parseFloat($('#tkinter_' + self.id).val());
-			if (vi===vf) {
-				return new Sk.builtin.int_(vi); 
+			var v = Sk.ffi.remapToJs(getSpinData(self));																		
+			if(self.props.values) {
+				return new Sk.builtin.str(v)
+			}
+			else {	
+				if (Number.isInteger(v)) {
+					return new Sk.builtin.int_(v); 
 				}
-			else {
-				return new Sk.builtin.float_(vf);
+				else {
+					return new Sk.builtin.float_(v);
 				}
+			}	
 		});
-
 	}, 'Spinbox', [s.Widget]);
 // Frame ---------------------------------------------------------
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
@@ -1997,7 +2077,6 @@ function getOffsetRect(elem) {
 		});
 
 		$loc.mainloop = new Sk.builtin.func(function(self) {
-
 		});
 	}, 'Frame', [s.Widget]);
 // Text ----------------------------------------------------------
@@ -2122,20 +2201,19 @@ function getOffsetRect(elem) {
 	s.Tk = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		$loc.update = new Sk.builtin.func(function(self) {
-
 		});
 
 		$loc.update_idletasks = new Sk.builtin.func(function(self) {
-
 		});
 
 		$loc.__init__ = new Sk.builtin.func(function(self) {
+
 			self.props = {};
-			
+		
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk" style="text-align:center;"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 300,
@@ -2152,7 +2230,9 @@ function getOffsetRect(elem) {
 				'background-color': '#EEE',
 				'font-size': '11pt',
 				'line-height': '2em'
-			});	
+			});
+			self.props.width = 300;
+			self.props.height = 200;
 		});
 
 		$loc.winfo_screenwidth = new Sk.builtin.func(function(self) {
@@ -2172,7 +2252,6 @@ function getOffsetRect(elem) {
 		
 		$loc.attributes = new Sk.builtin.func(function(self, key, val) {
 		});
-		
 		
 		$loc.configure = new Sk.builtin.func(configure);
 		$loc.config = new Sk.builtin.func(configure);
@@ -2227,7 +2306,11 @@ function getOffsetRect(elem) {
 					
                 }
 						
-				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});				
+				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});
+				self.props.width = v[0];
+				self.props.height = v[1];
+
+				$( '#tkinter_' + self.id).dialog( "option", "resizable", false );			
 			}
 		});
 		
@@ -2241,14 +2324,9 @@ function getOffsetRect(elem) {
 		};
 
 // Combobox --------------------------------------------------------------
-// values
-// width !!!
-// height !!!
-// 
 		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			var getHtml = function(self) {
 				var html = '<select id="tkinter_' + self.id + '">';
-				// width, height props
 				if(self.props.width) {
 					self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width)*10);
 				}
@@ -2321,36 +2399,36 @@ function getOffsetRect(elem) {
 	t.Progressbar = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 		
 		var getHtml = function(self) {
-			console.log('progress',self);
 			var value=0;
-			var	maximum=100;
 			if(self.props.value) {
 					value = Sk.ffi.remapToJs(self.props.value);
-					console.log("value=",self.onval);
-				}
-				
+			}
+			var	maximum=100;	
 			if(self.props.maximum) {
-					maximum = Sk.ffi.remapToJs(self.props.maximum);
-					console.log("maximum=",maximum);
-				}	
+					maximum = Sk.ffi.remapToJs(self.props.maximum);					
+			}	
 			
 			if(self.props.variable) {
 							if (!self.props.variable.value) {								
 								self.props.variable.value = value;
-								}
-										
+							}		
 							if (self.props.variable.value.v != 0) {
-								console.log("val=",self.props.variable.value.v);
 								value = Sk.ffi.remapToJs(self.props.variable.value);
 								self.props.variable.updateID = self.id; } 
 			}
-			
-			var html = '<br><progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
+
+			var html = '<progress id="tkinter_' + self.id + '" height="10px" max="'+maximum+'" value="'+value+'">%</progress>';
+			if(self.props.mode) {
+				mode = Sk.ffi.remapToJs(self.props.mode);
+				if (mode==="indeterminate"){
+					html = '<progress id="tkinter_' + self.id + '" ></progress>';
+				}
+			}	
 			return html;
 		}
 		
 		var init = function(kwa, self, master) {
-			
+			commonWidgetConstructor(kwa, self, master, getHtml);
 			self.update = function() {
 					var v = 0;					
 					if(self.props.variable) {
@@ -2361,15 +2439,13 @@ function getOffsetRect(elem) {
 					}
 					$('#tkinter_' + self.id).val(v);
 				}
-
-			commonWidgetConstructor(kwa, self, master, getHtml);
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Progressbar', [s.Widget]);
 
-		return t;
+	return t;
 	}
 	s.ttk.$d = new ttk("tkinter.ttk");
 	Sk.sysmodules.mp$ass_subscript("tkinter.ttk", s.ttk);
@@ -2429,9 +2505,7 @@ function getOffsetRect(elem) {
 					resolve(new Sk.builtin.bool(id == "yes"));
 					$('#tkinter_askyesno').remove();
 				});
-				
 			});
-			
 		});
 		return m;
 	};
@@ -2440,5 +2514,4 @@ function getOffsetRect(elem) {
 	Sk.sysmodules.mp$ass_subscript("tkinter.messagebox", s.messagebox);
 
 	return s;
-	
 };

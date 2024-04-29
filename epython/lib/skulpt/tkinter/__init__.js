@@ -1,7 +1,7 @@
 var $builtinmodule = function (name) {
-	// clear all previous frames
+// clear all previous frames
 	$('.tkinter').remove();
-	// tkinter module
+// tkinter module
 	
 	var idCount = 0;
 	var varCount = 0;
@@ -139,8 +139,7 @@ var $builtinmodule = function (name) {
 			var font = Sk.ffi.remapToJs(self.props.font);
 
 			if(typeof(font) == "string") {
-				font = ("" + font).split(" "); 
-				console.log('Font=',font);
+				font = ("" + font).split(" "); 				
 			} 
 				
 			var fontFamily = font[0];
@@ -469,7 +468,7 @@ function getOffsetRect(elem) {
 					});
 				}
 				function commonKeyHandler(ev) {
-					console.log(ev);
+
 					PythonIDE.keyHandlers.push(function(e) {
 						if(e.type != "keydown") {
 							return;
@@ -522,7 +521,7 @@ function getOffsetRect(elem) {
 						if(e.buttons) {
 							var x = e.pageX - getOffsetRect(this).left;
 							var y = e.pageY - getOffsetRect(this).top;							
-							console.log('X,Y=',x,y);
+							
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
 							pyE.props.y = new Sk.builtin.int_(y);
@@ -541,7 +540,7 @@ function getOffsetRect(elem) {
 						if(e.buttons) {	
 							var x = e.pageX - getOffsetRect(this).left;
 							var y = e.pageY - getOffsetRect(this).top;							
-							console.log('X,Y=',x,y);
+
 							var pyE = Sk.misceval.callsim(s.Event);
 							pyE.props.x = new Sk.builtin.int_(x);
 							pyE.props.y = new Sk.builtin.int_(y);
@@ -647,7 +646,6 @@ function getOffsetRect(elem) {
 		var commonDisplay = function(kwa, self, parent) {
 			var props = unpackKWA(kwa);
 			var side = Sk.ffi.remapToJs(props.side);
-			console.log(side);
 			var br = '<div style="line-height:1%;"></br></div>';	
 			if 	((side === 'left')||(side === 'right')) {
 				br='';
@@ -750,8 +748,8 @@ function getOffsetRect(elem) {
 			var direct = "#N";
 
 			if (!($("#pack_"+pid).length)) {  
-				var html = '<div class="pack-container" id = "pack_'+pid+'">\n'; // append pack grid to parent if not exist
-				html = html+'<div class="pack-container">\n<div class="pack-item NW" id="NW"></div>\n<div class="pack-item N" id="N"></div>\n<div class="pack-item NE" id="NE"></div>\n<div class="pack-item W" id="W"></div>\n<div class="pack-item C" id="C"></div>\n<div class="pack-item E" id="E"></div>\n<div class="pack-item SW" id="SW"></div>\n<div class="pack-item S" id="S"></div>\n<div class="pack-item SE" id="SE"></div>\n</div></div>'
+				var html = '<div class="pack_container" id = "pack_'+pid+'">\n'; // append pack grid to parent if not exist
+				html = html+'<div class="pack_container">\n<div class="pack_item NW" id="NW"></div>\n<div class="pack_item N" id="N"></div>\n<div class="pack_item NE" id="NE"></div>\n<div class="pack_item W" id="W"></div>\n<div class="pack_item C" id="C"></div>\n<div class="pack_item E" id="E"></div>\n<div class="pack_item SW" id="SW"></div>\n<div class="pack_item S" id="S"></div>\n<div class="pack_item SE" id="SE"></div>\n</div></div>'
 				parent.append(html); // create grid for pack
 			}
 
@@ -824,15 +822,14 @@ function getOffsetRect(elem) {
 				col_span = Sk.ffi.remapToJs(props.columnspan);
 			}
 			if (!($("#grid_"+pid).length)) {  
-				var html = '<div class="grid-container" id = "grid_'+pid+'"> </div>'; // append grid to parent if not exist
+				var html = '<div class="grid_container" id = "grid_'+pid+'"> </div>'; // append grid to parent if not exist
 				parent.append(html);
 			}
 		    // place item to grid
 			grid_col = 'grid-column: '+col+' / span '+col_span+';';
 			grid_row = 'grid-row: '+row+' / span '+row_span+';';
-			grid_class = '<div class="grid-item" id="'+ item_id+'" style = "';
+			grid_class = '<div class="grid_item" id="'+ item_id+'" style = "';
 			grid_class =  grid_class +  grid_col + grid_row +'">';
-			console.log("GRID:",grid_class);
 			$("#grid_"+pid).append(grid_class);
 		
 			var place = parent.find("#"+item_id);  // place for item add
@@ -1364,8 +1361,7 @@ function getOffsetRect(elem) {
 				if (style=="pieslice") {
 					cx.moveTo(coords.x1 + (w/2), coords.y1 + (h/2));
 				}	
-				console.log("start=",start)
-				console.log("ext=",extent)				
+			
 				cx.ellipse(coords.x1 + (w/2), coords.y1 + (h/2),  w / 2, h/2, 0, start, start+extent, true);
 				if (style=="pieslice") {
 					cx.lineTo(coords.x1 + (w/2), coords.y1 + (h/2));
@@ -1687,6 +1683,10 @@ function getOffsetRect(elem) {
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
 				}
+				if(self.props.textvariable) {
+					label = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+					self.props.textvariable.updateID = self.id;
+				}
 				var checked = false;				
 				if (self.props.variable) {
 					self.props.variable.updateID = self.id; 					
@@ -1705,7 +1705,10 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 				
-				self.onShow = function() {					
+				self.onShow = function() {	
+					
+					$('#item_' + self.id).css({'margin-left':'0'});
+									
 					$('#tkinter_' + self.id + ' :checkbox').change(function()  {
 						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));						
 						if(v) {
@@ -1714,12 +1717,17 @@ function getOffsetRect(elem) {
 					});
 				}
 
-				self.update = function() {					 
-					var v = false;
+				self.update = function() {	
+									 
+					var checked = false;
 					if(self.props.variable) {											
-						v = Sk.ffi.remapToJs(self.props.variable.value);
+						checked = (Sk.ffi.remapToJs(self.props.variable.value)===self.onval);																		
 					}
-					$('#tkinter_' + self.id + " input").prop('checked', v);					
+					$('#tkinter_' + self.id + " input").prop('checked', checked);
+					if(self.props.textvariable) {
+						v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+						$('#l_' + self.id).text(Sk.ffi.remapToJs(v));							
+					}								
 				}
 				
 				commonWidgetConstructor(kwa, self, master, getHtml);			
@@ -1737,6 +1745,10 @@ function getOffsetRect(elem) {
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
 				}
+				if(self.props.textvariable) {
+					label = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+					self.props.textvariable.updateID = self.id;
+				}	
 				var value = "";
 				if(self.props.value) {
 					value = "" + Sk.ffi.remapToJs(self.props.value);
@@ -1746,20 +1758,16 @@ function getOffsetRect(elem) {
 				if(self.props.variable) {
 					name="PY_VAR" + self.props.variable.id;
 				}
-				/*
-				if(self.props.variable.value.v===undefined) {
-									self.props.variable.value.v = 0;						 
-				}
-				*/
+
 				if(self.props.var) {
 					self.props.variable=self.props.var					
 				}
 				
 				var checked = false;				
 				if(self.props.variable) {
+					self.props.variable.updateID = self.id; 
 					if (self.props.variable.value === self.props.value.v) {
-									checked = true;
-									self.props.variable.updateID = self.id; 			 
+									checked = true;												 
 					}	
 				}
 				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" '+ (checked?' checked':'')  + ' value="' + PythonIDE.sanitize(value) + '">' 
@@ -1770,6 +1778,7 @@ function getOffsetRect(elem) {
 			var init = function(kwa, self, master) {
 				
 				self.onShow = function() {
+					$('#item_' + self.id).css({'margin-left':'0'});
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.variable) {
 							var val = $('#tkinter_' + self.id + ' input').val();
@@ -1783,10 +1792,14 @@ function getOffsetRect(elem) {
 					if(self.props.value) {
 						v = Sk.ffi.remapToJs(self.props.value);
 					}
-					if(self.props.var) {
-						v = Sk.ffi.remapToJs(self.props.var.value);
+					if(self.props.variable) {
+						v = Sk.ffi.remapToJs(self.props.variable.value);
 					}
 					$('#tkinter_' + self.id + " input").prop('checked', v);
+					if(self.props.textvariable) {
+						v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+						$('#l_' + self.id).text(Sk.ffi.remapToJs(v));							
+					}
 				}
 				commonWidgetConstructor(kwa, self, master, getHtml);
 				LW.push(self.id);
@@ -1864,7 +1877,6 @@ function getOffsetRect(elem) {
 				return new Sk.builtin.tuple(selected); 
 			});
 
-			// .get() option selected
 			$loc.get = new Sk.builtin.func(function(self, pos) {
 				var pos = Sk.ffi.remapToJs(pos);
 				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
@@ -1872,14 +1884,12 @@ function getOffsetRect(elem) {
 				items.push(result);
 				return new Sk.builtin.tuple(items);
 			});
-			
-			//. delete() 
+
 			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
 			var pos = Sk.ffi.remapToJs(pos);
 			$('#tkinter_' + self.id+ '  option:eq('+pos+')').remove();			
 			});
 
-			// .size() option in Listbox
 			$loc.size = new Sk.builtin.func(function(self) {	
 									
 				var result= $('#tkinter_' + self.id + ' option').length;
