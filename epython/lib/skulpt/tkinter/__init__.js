@@ -352,7 +352,8 @@ var $builtinmodule = function (name) {
 	
 		var init = function(kwa, self, master,s) {
 			self.props = unpackKWA(kwa);
-			self.value = false;
+			self.value = '0';
+			
 			if (self.props.value){self.value = Sk.ffi.remapToJs(self.props.value);}
 			if (s){self.value = Sk.ffi.remapToJs(s);}
 						
@@ -367,21 +368,22 @@ var $builtinmodule = function (name) {
 			return new Sk.builtin.str("PY_VAR" + self.id);
 		});
 
-		$loc.set = new Sk.builtin.func(function(self, value) {
+		$loc.set = new Sk.builtin.func(function(self, vvalue) {
 			Sk.builtin.pyCheckArgs("set", arguments, 1, 2);
-			value=Sk.ffi.remapToJs(value);
-			var $value='';
-			if ((value===true)||(value==='True')||(value==='1')||(value===1)) {
-				$value='1'
-			}
-			if ((value===false)||(value==='False')||(value==='0')||(value===0)) {
-				$value='0'
-			}
-			if (($value==='0')||($value==='1')){
-				self.value = ($value==='1'); 
-			}
-			else { new Sk.builtin.ValueError('Error: expected boolean value but got "'+value.v+'"')}			
 			
+			value=Sk.ffi.remapToJs(vvalue);
+			if (Number.isInteger(value)) {
+				if (value!=0) {
+					value=1;
+				}
+			}
+			value = ""+value;	
+			value=value.toLowerCase();
+			console.log('VAL:',value);
+			if ((value==='true')||(value==='1')) {
+				self.value='1'
+			}
+		
 			if(self.updateID !== undefined) {
 				if(widgets[self.updateID].update) {
 					widgets[self.updateID].update();
@@ -390,9 +392,7 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			if ((self.value.v==='1')||(self.value.v===true)||(self.value.v===1)) {
-				getvalue=true;
-			} else { getvalue=false }
+			getvalue = (self.value==='1');
 			return Sk.ffi.remapToPy(getvalue); });
 	}, "BooleanVar", [])
 	
@@ -2318,7 +2318,7 @@ function getOffsetRect(elem) {
 		
 	}, 'Tk', [s.Widget]);
 
-	PythonIDE.python.output('<small>tkinter emulator for Skulpt, by Pete Dring</small><br><br>');
+	PythonIDE.python.output('<small>tkinter/Skulpt, by Pete Dring, 30042024</small><br><br>');
 
 	s.ttk = new Sk.builtin.module();
 	var ttk = function(name) {
