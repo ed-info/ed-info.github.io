@@ -1,100 +1,50 @@
-.pack-container {
-  display: grid;
-}
+.pack_container { display: grid;}
+.pack_item { text-align:center;}
 
-.pack-item { 
-}
+.NW { grid-column: 1; grid-row: 1;}
+.N { grid-column: 2; grid-row: 1;}
+.NE { grid-column: 3; grid-row: 1;}
+.W { grid-column: 1; grid-row: 2;}
+.C { grid-column: 2; grid-row: 2;}
+.E { grid-column: 3; grid-row: 2;}
+.SW { grid-column: 1; grid-row: 3;}
+.S { grid-column: 2; grid-row: 3;}
+.SE { grid-column: 3; grid-row: 3;}
 
-.NW {
-  grid-column: 1;
-  grid-row: 1;
-}
+.grid_container { display: grid; gap: 1px;  }
+.grid_item {display: block;
+			margin-left: auto;
+			margin-right: auto; }
 
-.N {
-  grid-column: 2;
-  grid-row: 1;
-}
+progress[value] { 
+			-webkit-appearance: none;
+			appearance: none;
+			width: 250px;
+			height: 10px;}
 
-.NE {
-  grid-column: 3;
-  grid-row: 1;
-}
-.W {
-  grid-column: 1;
-  grid-row: 2;
-}
+input[type=range][orient=vertical] {   
+			appearance: slider-vertical;
+			width: 8px;
+			height: 175px;
+			padding: 0 5px;}
 
-.C {
-  grid-column: 2;
-  grid-row: 2;
-}
+.hr { display: block;
+			margin-top: auto;
+			margin-bottom: auto;
+			margin-left: auto;
+			margin-right: auto;
+			border-style: inset;
+			border-width: 1px;
+			height: auto;
+			top: auto;
+			left: 50%; 
+			width: -moz-available;}
 
-.E {
-  grid-column: 3;
-  grid-row: 2;
-}
-.SW {
-  grid-column: 1;
-  grid-row: 3;
-}
+.vl {		width: 2px;
+			height: 200px;
+			margin: 0 auto;
+			transform: rotate(180deg);}
 
-.S {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.SE {
-  grid-column: 3;
-  grid-row: 3;
-}
-
-.grid-container {
-  display: grid;
-  gap: 1px;  
-}
-
-.grid-item {    
-    display: block;
-    margin-left: auto;
-    margin-right: auto
-}
-
-progress[value] {
-  /* Reset the default appearance */
-  -webkit-appearance: none;
-   appearance: none;
-  width: 250px;
-  height: 10px;
-}
-
-input[type=range][orient=vertical] {
-    appearance: slider-vertical;
-    width: 8px;
-    height: 175px;
-    padding: 0 5px;
-}
-
-
-.hr {
-  display: block;
-  margin-top: auto;
-  margin-bottom: auto;
-  margin-left: auto;
-  margin-right: auto;
-  border-style: inset;
-  border-width: 1px;
-  height: auto;
-  top: auto;
-  left: 50%; 
-  width: -moz-available;
-}
-
-.vl {
- 	width: 2px;
-    height: 200px;
-    margin: 0 auto;
-    transform: rotate(180deg);
-}
 
 .tracker_activity_placeholder {
 	background-color: #ccc;

@@ -1670,7 +1670,7 @@ function getOffsetRect(elem) {
 		s.Checkbutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 			var getHtml = function(self) {
-				
+				self.props.justify = 'left';
 				self.onval  = 1;				
 				self.offval = 0;								
 				if(self.props.onvalue) {
@@ -1705,9 +1705,9 @@ function getOffsetRect(elem) {
 
 			var init = function(kwa, self, master) {
 				
-				self.onShow = function() {	
+				self.onShow = function() {						
 					
-					$('#item_' + self.id).css({'margin-left':'0'});
+					$('#item_' + self.id).css({'margin-left':'0'});					
 									
 					$('#tkinter_' + self.id + ' :checkbox').change(function()  {
 						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));						
@@ -1741,6 +1741,7 @@ function getOffsetRect(elem) {
 // Radiobutton -------------------------------------------------------------
 		s.Radiobutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 			var getHtml = function(self) {
+				self.props.justify='left';
 				var label = "";
 				if(self.props.text) {
 					label = Sk.ffi.remapToJs(self.props.text);
@@ -1770,15 +1771,16 @@ function getOffsetRect(elem) {
 									checked = true;												 
 					}	
 				}
-				var html = '<span id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" '+ (checked?' checked':'')  + ' value="' + PythonIDE.sanitize(value) + '">' 
-				+ '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></span>';
+				var html = '<div id="tkinter_' + self.id + '"><input name="' + name + '" type="radio" '+ (checked?' checked':'')  + ' value="' + PythonIDE.sanitize(value) + '">' 
+				+ '<label id="l_'+ self.id +'" for="tkinter_' + self.id +'">' + PythonIDE.sanitize(label) + '</label></div>';
 				return html;
 			}
 
 			var init = function(kwa, self, master) {
 				
 				self.onShow = function() {
-					$('#item_' + self.id).css({'margin-left':'0'});
+					$('#item_' + self.id).css({'margin-left':'0'});					
+						
 					$('#tkinter_' + self.id + ' input').click(function() {
 						if(self.props.variable) {
 							var val = $('#tkinter_' + self.id + ' input').val();
@@ -2213,7 +2215,7 @@ function getOffsetRect(elem) {
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;			
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk" style="text-align:center;"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk" ></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 300,
