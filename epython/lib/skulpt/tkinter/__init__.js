@@ -1,7 +1,10 @@
+// Tkinter module for Skulpt. Pete Dring, 2018
 var $builtinmodule = function (name) {
 // clear all previous frames
 	$('.tkinter').remove();
-// tkinter module
+// add tkinter style
+	var styleTkinter = $('<style>\n.pack_container{display:grid;}\n.pack_item{text-align:center;}\n.NW{grid-column:1;grid-row:1;}\n.N{grid-column:2;grid-row:1;}\n.NE{grid-column:3;grid-row:1;}\n.W{grid-column:1;grid-row:2;}\n.C{grid-column:2;grid-row:2;}\n.E{grid-column:3;grid-row:2;}\n.SW{grid-column:1;grid-row:3;}\n.S{grid-column:2;grid-row:3;}\n.SE{grid-column:3;grid-row:3;}\n.grid_container{display:grid;gap:1px;}\n.grid_item{display:block;\nmargin-left:auto;\nmargin-right:auto;}\nprogress[value]{\n-webkit-appearance:none;\nappearance:none;\nwidth:250px;\nheight:10px;}\ninput[type=range][orient=vertical]{\nappearance:slider-vertical;\nwidth:8px;\nheight:175px;\npadding:05px;}\n.hr{display:block;\nmargin-top:auto;\nmargin-bottom:auto;\nmargin-left:auto;\nmargin-right:auto;\nborder-style:inset;\nborder-width:1px;\nheight:auto;\ntop:auto;\nleft:50%;\nwidth:-moz-available;}\n.vl{width:2px;\nheight:200px;\nmargin:0auto;\ntransform:rotate(180deg);}\n</style>')
+	$('html > head').append(styleTkinter);
 	
 	var idCount = 0;
 	var varCount = 0;
@@ -18,7 +21,7 @@ var $builtinmodule = function (name) {
 	}
     var s = {
 	};
-// Глобальні аліаси
+// Tkinter aliases
 	s.__name__ = new Sk.builtin.str("tkinter");
 	s.END = new Sk.builtin.str("end");
 	s.W = new Sk.builtin.str("w");
@@ -784,12 +787,7 @@ function getOffsetRect(elem) {
 					parent = $('#tkinter_' + firstRoot.id);
 					e = parent[0];
 				}
-				/*				
-				parent.dialog('option', {
-					width: e.scrollWidth + 5,
-					height: e.scrollHeight + 35
-					
-				}); */
+
 			}
 		}
 		pack.co_kwargs = true;
