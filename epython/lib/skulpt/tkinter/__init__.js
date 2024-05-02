@@ -663,6 +663,10 @@ function getOffsetRect(elem) {
 						parent.append(br+html);
 				}	
 				
+				if ((side === 'left')||(side === 'right')) {
+						$('#tkinter_' + self.id).css('display','inline');
+				}
+				
 				if(self.onShow) {
 					self.onShow();
 				}
@@ -1708,10 +1712,12 @@ function getOffsetRect(elem) {
 					$('#item_' + self.id).css({'margin-left':'0'});					
 									
 					$('#tkinter_' + self.id + ' :checkbox').change(function()  {
-						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));						
-						if(v) {
-							self.props.variable.value = Sk.ffi.remapToPy(self.onval);
-						} else {self.props.variable.value = Sk.ffi.remapToPy(self.offval)}							
+						var v = Sk.ffi.remapToJs($('#tkinter_' + self.id + " input").prop('checked'));	
+						if (self.props.variable) {				
+							if(v) {
+								self.props.variable.value = Sk.ffi.remapToPy(self.onval);
+							} else {self.props.variable.value = Sk.ffi.remapToPy(self.offval)}
+						}								
 					});
 				}
 
