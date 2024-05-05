@@ -1083,11 +1083,13 @@ function getOffsetRect(elem) {
 				sFont += font[0];
 				cx.font = sFont;
 			}
-
-		}
-		
+		}		
+// -----------------		
 		var create_polygon = function(kwa, self, coords) {
 			var jsCoords = Sk.ffi.remapToJs(coords);
+			if(self.props.fill){				
+				self.props.fill=undefined;				
+				}
 			var props = unpackKWA(kwa);
 			for(var key in props) {
 				self.props[key] = props[key];
@@ -1103,18 +1105,17 @@ function getOffsetRect(elem) {
 						jsCoords.push(Sk.ffi.remapToJs(arguments[i]));
 					}
 				}
-			}
-			
+			}			
 			return commonCanvasElement(self, {props:props, coords:jsCoords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyStyles(props, cx);
+				applyStyles(props, cx);				
 				cx.moveTo(jsCoords[0], jsCoords[1]);
 				for(var i = 2; i < jsCoords.length; i+=2) {
 					cx.lineTo(jsCoords[i], jsCoords[i+1]);	
 				}
 				cx.closePath();
-				cx.stroke();
+				cx.stroke();				
 				if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
 					cx.fillStyle =  Sk.ffi.remapToJs(self.props.fill);
 					cx.fill();	
@@ -1123,77 +1124,45 @@ function getOffsetRect(elem) {
 		}
 		create_polygon.co_kwargs = true;
 		$loc.create_polygon = new Sk.builtin.func(create_polygon);
-
-		var create_line = function(kwa, self, x1, y1, x2, y2) {
-			var coords = {
-				x1: Sk.ffi.remapToJs(x1),
-				y1: Sk.ffi.remapToJs(y1),
-				x2: Sk.ffi.remapToJs(x2),
-				y2: Sk.ffi.remapToJs(y2),
+		
+// -----------------
+	
+		var create_line = function(kwa, self, coords) {
+			var jsCoords = Sk.ffi.remapToJs(coords);
+			if(self.props.fill){				
+				self.props.fill=undefined;				
 			}
-
 			var props = unpackKWA(kwa);
-
-			return commonCanvasElement(self, {props:props, coords:coords, draw: function(canvas) {
-				var cx = canvas.getContext('2d');
-				
-				cx.beginPath();
-				if(!props.dash) {
-					cx.setLineDash([]);
+			for(var key in props) {
+				self.props[key] = props[key];
+			}
+			if(typeof(jsCoords) == "number"){
+				jsCoords = [];
+				var found = false;
+				for(var i = 0; i < arguments.length; i++) {
+					if(arguments[i] == coords) {
+						found = true;
+					}
+					if(found) {
+						jsCoords.push(Sk.ffi.remapToJs(arguments[i]));
+					}
 				}
-				if(props.dash) {
-					var dash = Sk.ffi.remapToJs(props.dash);
-					cx.setLineDash(dash);
-				}
-				if(!props.fill) {
-					props.fill = new Sk.builtin.str("black");
-				}
-				if(props.fill) {
-					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
-				}
-				if(props.outline) {
-					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
-				}
-				if(props.width) {
-					cx.lineWidth = Sk.ffi.remapToJs(props.width);
-				}
-				else {
-					cx.lineWidth = 1
-				}
-
-				x0 = coords.x1;
-				y0 = coords.y1;
-				x1 = coords.x2;
-				y1 = coords.y2
-
-				// draw line
-				cx.beginPath();
-				// draw the line from p0 to p1
-				cx.moveTo(x0,y0);
-				cx.lineTo(x1,y1);
-				cx.stroke();
-				if (props.arrow) {
-					arrw=Sk.ffi.remapToJs(props.arrow);
-					if(props.fill) {
-						cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill)); }
-					headLength = 15;
+			}		
+			return commonCanvasElement(self, {props:props, coords:jsCoords, draw: function(canvas) {
+				function drawArrow(x0,y0,x1,y1) {
+					var	headLength = 15;
 					// constants
 					var deg_in_rad_200=200*Math.PI/180;
 					var deg_in_rad_160=160*Math.PI/180;
-	
-					if ((arrw=="last")||(arrw=="both")) {
-				
 					// calc the angle of the line
 					var dx=x1-x0;
 					var dy=y1-y0;
-					var angle=Math.atan2(dy,dx);
-										
+					var angle=Math.atan2(dy,dx);								
 					// calc arrowhead points
 					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
 					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
 					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
-					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
-					
+					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);					
 					cx.beginPath();
 					cx.moveTo(x1,y1);
 					cx.setLineDash([]);
@@ -1204,44 +1173,39 @@ function getOffsetRect(elem) {
 					cx.lineTo(x1,y1);
 					cx.closePath();
 					cx.stroke();
-					cx.fill()
-					}
-					if ((arrw=="first")||(arrw=="both")) {
-					tmp=x1;
-					x1=x0;
-					x0=tmp;
-					tmp=y1;
-					y1=y0;
-					y0=tmp;
-					// calc the angle of the line
-					var dx=x1-x0;
-					var dy=y1-y0;
-					var angle=Math.atan2(dy,dx);
-										
-					// calc arrowhead points
-					var x200=x1+headLength*Math.cos(angle+deg_in_rad_200);
-					var y200=y1+headLength*Math.sin(angle+deg_in_rad_200);
-					var x160=x1+headLength*Math.cos(angle+deg_in_rad_160);
-					var y160=y1+headLength*Math.sin(angle+deg_in_rad_160);
-					
-					cx.beginPath();
-					cx.moveTo(x1,y1);
-					cx.setLineDash([]);
-					cx.lineWidth = 2;
-					// draw arrowhead
-					cx.lineTo(x200,y200);
-					cx.lineTo(x160,y160);
-					cx.lineTo(x1,y1);
-					cx.closePath();
-					cx.stroke();
-					cx.fill()
-					}
+					cx.fill()					
 				}
-			}});
+				var cx = canvas.getContext('2d');
+				cx.beginPath();
+				applyStyles(props, cx);
+				if(props.fill) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
+					cx.fillStyle   = getColor(Sk.ffi.remapToJs(props.fill)); }
+				else {
+					cx.strokeStyle = 'black';
+					cx.fillStyle   = 'black';
+				}	
+				cx.moveTo(jsCoords[0], jsCoords[1]);
+				for(var i = 2; i < jsCoords.length; i+=2) {
+					cx.lineTo(jsCoords[i], jsCoords[i+1]);					
+				}
+				cx.stroke();			
+				// arrow head
+				if (props.arrow) {
+					arrw=Sk.ffi.remapToJs(props.arrow);
+					var l = jsCoords.length;												
+					if ((arrw=="last")||(arrw=="both")) {
+							drawArrow(jsCoords[l-4],jsCoords[l-3],jsCoords[l-2],jsCoords[l-1])
+					}		
+					if ((arrw=="first")||(arrw=="both")) {
+							drawArrow(jsCoords[2],jsCoords[3],jsCoords[0],jsCoords[1])
+					}
+				}				 
+			}});			
 		}
-		
 		create_line.co_kwargs = true;
-		$loc.create_line = new Sk.builtin.func(create_line);
+		$loc.create_line = new Sk.builtin.func(create_line);		
+//------------------
 
 		var create_text = function(kwa, self, x, y) {
 			var coords = {
@@ -1250,9 +1214,7 @@ function getOffsetRect(elem) {
 				x2: Sk.ffi.remapToJs(x + 10),
 				y2: Sk.ffi.remapToJs(y + 10)
 			}
-
 			var props = unpackKWA(kwa);
-
 			return commonCanvasElement(self, {type:"text", props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				var text = "";
