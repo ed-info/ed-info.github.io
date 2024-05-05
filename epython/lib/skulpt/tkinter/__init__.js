@@ -904,9 +904,15 @@ function getOffsetRect(elem) {
 	}
 // Canvas -------------------------------------
 	s.Canvas = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-		
+		var canvasBg = '#eeeeee';
 		var getHtml = function(self) {
 			
+			if(self.props.bg) {
+				canvasBg = Sk.ffi.remapToJs(self.props.bg);				
+			}
+			if(self.props.background) {
+				canvasBg = Sk.ffi.remapToJs(self.props.background);				
+			}					
 			var width = 200;
 			if(self.props.width) {
 				width = Sk.ffi.remapToJs(self.props.width);
@@ -935,12 +941,14 @@ function getOffsetRect(elem) {
 				var canvas = document.getElementById('tkinter_' + self.id);
 				if(canvas) {
 					const cx = canvas.getContext('2d');
+					if (self.props.bg) {
+						cx.fillStyle = getColor(Sk.ffi.remapToJs(self.props.bg));
+					}	
 					if(self.props.background) {
-						cx.fillStyle = getColor(Sk.ffi.remapToJs(self.props.background));
-						cx.fillRect(0, 0, canvas.width, canvas.height);
-					} else {
-						cx.clearRect(0, 0, canvas.width, canvas.height);	
+						cx.fillStyle = getColor(Sk.ffi.remapToJs(self.props.background));						
 					}
+					cx.clearRect(0, 0, canvas.width, canvas.height);	
+					
 					for(var i = 0; i < self.elements.length; i++) {
 						if(self.elements[i].deleted)
 							continue;
@@ -1042,21 +1050,19 @@ function getOffsetRect(elem) {
 			if(!props.dash) {
 				cx.setLineDash([]);
 			}
-			
-			if(!props.fill) {
-					props.fill = new Sk.builtin.str("black");
-				}
 			if(props.fill) {
 					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.fill));
-			}		
-			
+			}	
 			if(!props.outline) {
 				props.outline = new Sk.builtin.str("black");
 			}
 			cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
 
 			if(props.width) {
-				cx.lineWidth = Sk.ffi.remapToJs(props.width);
+					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+			}
+			else {
+					cx.lineWidth = 1
 			}
 			
 			if(props.dash) {
@@ -1079,7 +1085,7 @@ function getOffsetRect(elem) {
 			}
 
 		}
-
+		
 		var create_polygon = function(kwa, self, coords) {
 			var jsCoords = Sk.ffi.remapToJs(coords);
 			var props = unpackKWA(kwa);
@@ -1150,6 +1156,9 @@ function getOffsetRect(elem) {
 				}
 				if(props.width) {
 					cx.lineWidth = Sk.ffi.remapToJs(props.width);
+				}
+				else {
+					cx.lineWidth = 1
 				}
 
 				x0 = coords.x1;
@@ -1252,6 +1261,12 @@ function getOffsetRect(elem) {
 				}
 				cx.textAlign = "center";
 				applyStyles(props, cx);
+				if(props.fill) {
+					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
+				}
+				if(props.outline) {
+					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				}
 				cx.fillText(text, coords.x1, coords.y1);
 			}});
 		}
