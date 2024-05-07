@@ -536,6 +536,24 @@ function getOffsetRect(elem) {
 					    }
 					});
 				}
+				
+				if(self.eventHandlers['<Double-Button>']) {
+					$('#tkinter_' + self.id).dblclick(function(e) {
+						if(e.buttons) {
+							var x = e.pageX - getOffsetRect(this).left;
+							var y = e.pageY - getOffsetRect(this).top;							
+							
+							var pyE = Sk.misceval.callsim(s.Event);
+							pyE.props.x = new Sk.builtin.int_(x);
+							pyE.props.y = new Sk.builtin.int_(y);
+							Sk.misceval.callsimAsync(null, self.eventHandlers['<Double-Button>'], pyE).then(function success(r) {
+							
+							}, function fail(e) {
+								window.onerror(e);
+							});
+					    }
+					});
+				}
 
 				if(self.eventHandlers['<B1Motion>']) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
@@ -1218,6 +1236,7 @@ function getOffsetRect(elem) {
 			return commonCanvasElement(self, {type:"text", props:props, coords:coords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				var text = "";
+				var angle = 0;
 				if(props.text) {
 					text = ""+Sk.ffi.remapToJs(props.text);
 				}
@@ -1226,10 +1245,14 @@ function getOffsetRect(elem) {
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
 				}
-				if(props.outline) {
-					cx.strokeStyle = getColor(Sk.ffi.remapToJs(props.outline));	
+				if(props.angle) {
+					angle= Sk.ffi.remapToJs(props.angle);
 				}
-				cx.fillText(text, coords.x1, coords.y1);
+				cx.save();
+				cx.translate(coords.x1+6,coords.y1+6);
+				cx.rotate(-angle*(Math.PI/180));
+				cx.fillText(text, 0, 0);
+				cx.restore();
 			}});
 		}
 		create_text.co_kwargs = true;
