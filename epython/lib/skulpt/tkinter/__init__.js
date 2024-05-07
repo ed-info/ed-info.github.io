@@ -1245,6 +1245,9 @@ function getOffsetRect(elem) {
 				if(props.fill) {
 					cx.fillStyle = getColor(Sk.ffi.remapToJs(props.fill));
 				}
+				else {
+					cx.fillStyle = 'black';
+				}
 				if(props.angle) {
 					angle= Sk.ffi.remapToJs(props.angle);
 				}
