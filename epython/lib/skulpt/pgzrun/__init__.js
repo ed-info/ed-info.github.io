@@ -1098,7 +1098,7 @@ var $builtinmodule = function (name) {
 			$('#dlg').dialog({title:title});
 		}
 
-	    PythonIDE.python.output("<div><small>PyGameZero by Pete Dring</small></div>", true);
+// ----------------------- 	   
 	    PythonIDE.python.output('<div><button id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
 	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 

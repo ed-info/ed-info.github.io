@@ -2328,7 +2328,8 @@ var PythonIDE = {
 			PythonIDE.downloadFile();
 		});
 
-		$('.linkbutton').button();
+		$('.linkbutton').button();		
+
 
 		PythonIDE.showHint(PythonIDE.welcomeMessage);
 		window.onresize = PythonIDE.autoSize;
@@ -2708,7 +2709,8 @@ var PythonIDE = {
 			} else {
 				PythonIDE.showHint("Будь ласка, поставте галочку біля назви «Я не робот».");
 			}			
-		});
+		});	
+
 
 		$('#btnSaveUpdate').button().click(function() {
 			PythonIDE.saveReplace();
