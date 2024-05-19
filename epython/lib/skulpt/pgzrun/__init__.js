@@ -19,6 +19,7 @@ var $builtinmodule = function (name) {
 	var width = undefined;
 	var height = undefined;
 	var startTime = new Date().getTime();
+	var btnAssetColor = '#00ff00';
 
 	Sk.globals.dbg = new Sk.builtin.func(function(x) {
 		console.log(x, Sk.ffi.remapToJs(x));
@@ -235,6 +236,9 @@ var $builtinmodule = function (name) {
 				var pos = Sk.ffi.remapToJs(value);
 				a.x = pos[0] - self.anchorVal.x;
 				a.y = pos[1] - self.anchorVal.y;
+			break;
+			case 'scale':
+				a.scale = Sk.ffi.remapToJs(value);
 			break;
 			default:
 			self.others[name] = value;
@@ -644,7 +648,8 @@ var $builtinmodule = function (name) {
 
 		$loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
 
-		var init = function(kwa, self, name, pos) {
+		var init = function(kwa, self, name, pos) {	
+					
 			Sk.builtin.pyCheckArgs("__init__", 2, 2);
 			self.id = idCount++;
 
@@ -652,6 +657,7 @@ var $builtinmodule = function (name) {
 				x: 0,
 				y: 0,
 				angle: 0,
+				scale: 1,
 				image: Sk.ffi.remapToJs(name)
 			};
 			self.others = {};
@@ -674,9 +680,16 @@ var $builtinmodule = function (name) {
 			
 			
 			self.anchorVal = {x:0, y:0};
-
-			return PythonIDE.runAsync(function(resolve, reject) {
+			var jsName = Sk.ffi.remapToJs(name);
+			if (assets.images) {
+				if(!assets.images[jsName]) {
+						PythonIDE.showHint("Помилка: зображення '"+ jsName + "' не завантажено!"); btnAssetColor ='#ff0000';					
+					}
+			else { return PythonIDE.runAsync(function(resolve, reject) {
+				
+				
 				Promise.all(promises).then(function() {
+					
 					var jsName = Sk.ffi.remapToJs(name);
 					if(!loadedAssets[jsName]) {
 						var e = new Sk.builtin.KeyError("No image found like '" + jsName + "'. Are you sure the image exists?");
@@ -696,10 +709,9 @@ var $builtinmodule = function (name) {
 		    		updateRectFromXY(self);	
 		    		resolve();	
 		    	});
-				
-
-			});
-
+			 
+			}); } } else { PythonIDE.showHint("Помилка: ресурси Pygame Zero не завантажено!");  btnAssetColor ='#ff0000'; } 
+		
 			
 		}
 		init.co_kwargs = true;
@@ -716,7 +728,7 @@ var $builtinmodule = function (name) {
 				cx.translate(a.x + self.anchorVal.x, a.y + self.anchorVal.y);
 				cx.rotate(-radians);
 				cx.translate(-a.x - self.anchorVal.x, -a.y - self.anchorVal.y);
-				cx.drawImage(i.image, a.x, a.y, a.width, a.height);
+				cx.drawImage(i.image, a.x, a.y, a.width*a.scale, a.height*a.scale);
 				cx.restore();
 			} else {
 				//console.log(self.name + " not loaded yet...");
@@ -1099,7 +1111,7 @@ var $builtinmodule = function (name) {
 		}
 
 // ----------------------- 	   
-	    PythonIDE.python.output('<div><button id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
+	    PythonIDE.python.output('<div><button style="position:absolute;top:10px;right:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
 	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 
 	    function getImageData(url, callback) {
@@ -1121,7 +1133,7 @@ var $builtinmodule = function (name) {
 	    	switch(assetType) {
 	    		case 'images':
 	    			if(assets.images) {
-	    				for(var name in assets.images) {
+	    				for(var name in assets.images) {							
 	    					var image = assets.images[name];
 	    					html += '<div class="asset" id="asset_image_' + name + '"><img class="asset_img" src="' + image.src + '">';
 	    					html += '<div><b>' + name + '</b></div>';
@@ -1130,11 +1142,10 @@ var $builtinmodule = function (name) {
 	    						src="base64";
 	    					} else {
 	    						getImageData(src, function(data) {
-	    							console.log(data);
+	    							
 	    						})
 	    					};
-//	    					html += '<div><b>Source</b>: ' + src + '</div>';
-//	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
+	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
 	    					html += '</div>';
 	    				}
 	    			}
@@ -1145,7 +1156,6 @@ var $builtinmodule = function (name) {
 	    					var sound = assets.sounds[name];
 	    					html += '<div class="asset" id="asset_sound_' + name + '"><audio class="asset_snd" controls src="' + sound.src + '"></audio>';
 	    					html += '<div><b>' + name + '</b></div>';
-//	    					html += '<div><b>Source</b>: ' + sound.src + '</div>';
 	    					html += '<button id="btn_asset_delete_sound_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
 	    					html += '</div>';
 	    				}
@@ -1154,17 +1164,20 @@ var $builtinmodule = function (name) {
 	    	}
 	    	return html;
 	    }
+	    
+	    
 
 	    function showAssetManager(reloadAssets) {
 	    	$('#PGZAssetManager').remove();
 	    	if(PythonIDE.files['assets.json'] && reloadAssets) {
 				assets = JSON.parse(PythonIDE.files['assets.json']);
 			}
-	    	var html = '<div id="PGZAssetManager" title="Галерея ресурсів">Інформація про зображення та звуки додається та зберігається у файлі assets.json.';
+	    	var html = '<div id="PGZAssetManager" title="Галерея ресурсів">У вебверсії Pygame Zero зображення та звуки перед використання необхідно попередньо завантажити до середовища програмування!<br>';
+	    		    	
 	    	html += '<fieldset id="pgz_assets_images"><legend>Зображення</legend>';
-	    	html += '<p>Підтримувані типи: .jpg, .png та .gif. Зображення мають розміщуватись на сервері, який підтримує <a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing">Cross Origin Resources Sharing</a></p>';
-	    	html += '<div>Назва зображення: <input type="text" id="asset_new_image_name"></div>';
-	    	html += '<div>Адреса зображення:<input type="text" id="asset_new_image"><button class="btn_asset" id="btn_asset_add_image">Додати зображення</button></div>';
+	    	html += '<p>Перед використанням оберіть та завантажте потрібні файли зображень. </p>';
+	    	html += '<p>Підтримувані типи: .jpg, .png та .gif. </p><br>';	    	
+	    	html +=  '<div>Зображення: <input type="file" id="choose-file" name="choose-file" onchange="getFile()"/><button class="btn_asset" id="btn_asset_add_image">Додати зображення</button></div>';
 	    	html += getAssetManagerHtml(assets, 'images');
 	    	html += '</fieldset>'
 
@@ -1175,6 +1188,9 @@ var $builtinmodule = function (name) {
 	    	html += '</fieldset>';
 	    	html += '<button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> Гаразд</button>';
 	    	html += '<button id="btn_AssetManager_cancel" class="btn_asset"><i class="fa fa-times"></i> Скасувати</button>';
+	    	
+	    	html += '<div  style="position:absolute;bottom:0;left:0;display:inline-block;">Інформація про використані ресурси (зображення та звуки) зберігається у файлі assets.json.<br><button id="btnAssetSave"> Зберегти ресурси</button>';
+	    	html += '<p> Використати ресурси </p><input type="file" id="asset-file" name="asset-file" onchange="loadAsset()"/><button id="btnAssetLoad"> Використати</button></div>';
 	    	html += '</div>';
 	    	
 	    	$('body').append(html);
@@ -1182,12 +1198,25 @@ var $builtinmodule = function (name) {
 	    		width: window.innerWidth * .8,
 	    		height: window.innerHeight * .8
 	    	});
+	    	$('#btnAssetSave').button().click(function(e) {			 
+			 if(PythonIDE.files['assets.json']) {				
+					var blob = new Blob([PythonIDE.files['assets.json']], {type : "text/plain", endings: "transparent"});
+					saveAs(blob, 'assets.json');
+				}	
+			});
+			$('#btnAssetLoad').button().click(function(e) {
+			 if(PythonIDE.files['assets.json'] && reloadAssets) {
+				assets = JSON.parse(PythonIDE.files['assets.json']);
+				showAssetManager(false);
+				$('#btn_PGZAssetManager').css('background-color','#00ff00');
+			 }
+			});
 	    	$('.btn_asset').button().click(function(e) {
 	    		var parts = e.currentTarget.id.split("_");
 	    		switch(parts[2]) {
 	    			case 'ok':
 	    				PythonIDE.files['assets.json'] = JSON.stringify(assets, null, 2);
-	    				PythonIDE.updateFileTabs();
+	    				//PythonIDE.updateFileTabs();
 	    			case 'cancel':
 	    				$('#PGZAssetManager').dialog("close");
 	    			break;
@@ -1206,21 +1235,14 @@ var $builtinmodule = function (name) {
     					if(type == "image") {
     						if(!assets.images) {
     							assets.images = {};
-    						}
-    						var url = $('#asset_new_image').val();
-    						var m = url.match(/\.(gif|jpg|jpeg|png)/i);
-    						if(m) {
-								var name = $('#asset_new_image_name').val();
-								if(name.match(/^[a-z0-9]+$/i)) {
-									assets.images[name] = {src:url};	
-		    						showAssetManager(false);
-								} else {
-									PythonIDE.showHint("Invalid image name");
-								}
-
-    						} else {
-    							PythonIDE.showHint("Invalid image URL");
-    						}
+    						}    						
+    						var url = document.getElementById("choose-file").files[0].name;
+    						var imageData = localStorage.getItem(url)   						
+							var name = url.split(".")[0];
+							name = name.toLowerCase();
+							assets.images[name] = {src:imageData};	
+		    				showAssetManager(false);
+		    				$('#btn_PGZAssetManager').css('background-color','#00ff00');
     					}
     					if(type == "sound") {
     						if(!assets.sounds) {
@@ -1400,6 +1422,7 @@ var $builtinmodule = function (name) {
 	});
 
 	function loadAssets() {
+		
 		return promises;
 	}
 
@@ -1426,10 +1449,10 @@ var $builtinmodule = function (name) {
 
     	// load images
     	if(assets.images) {
+			
 		    for(var name in assets.images) {
 	    		promises.push(new Promise(function(resolve, reject) {
 					var img = new Image;
-    				img.crossOrigin = "Anonymous";
     				img.name = name;
     				img.addEventListener("load", function(e) {
     					var a = assets.images[img.name];
@@ -1453,6 +1476,7 @@ var $builtinmodule = function (name) {
 			    			height: a.height
 			    		};
     					resolve(img.img);
+    					
     				}, false);
     				img.addEventListener("error", function(e) {
     					throw new Sk.builtin.Exception("Could not load image " + img.name + ". Images can only be loaded from servers that have enabled CORS - try a different URL");

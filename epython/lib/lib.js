@@ -1439,7 +1439,6 @@ var PythonIDE = {
 		
 		saveAs(blob, PythonIDE.projectName + ".py");
 	},
-
 	saveChoice: function() {
 		$("#save").dialog("open");
 	},
@@ -2326,6 +2325,11 @@ var PythonIDE = {
 
 		$('#btnDownload').button().click(function(e) {
 			PythonIDE.downloadFile();
+		});
+		
+		$('#btnAssetSave').button().click(function(e) {
+			console.log('Assets save');
+			PythonIDE.downloadAsset();
 		});
 
 		$('.linkbutton').button();		
