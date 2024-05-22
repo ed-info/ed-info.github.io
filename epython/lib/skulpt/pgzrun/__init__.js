@@ -1111,7 +1111,7 @@ var $builtinmodule = function (name) {
 		}
 
 // ----------------------- 	   
-	    PythonIDE.python.output('<div><button style="position:absolute;top:10px;right:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
+	    PythonIDE.python.output('<div><button style="position:fixed;bottom:10px;left:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
 	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 
 	    function getImageData(url, callback) {
@@ -1351,26 +1351,95 @@ var $builtinmodule = function (name) {
 
 	    // add event handlers
 	    if(Sk.globals.on_mouse_down) {
-    		jqCanvas.on('mousedown', function(e) {
+    		jqCanvas.on('mousedown', function(e) {	
+				var arg =[0,0];			
+				var mouseButton = 0;
+				if (e.buttons === 1) {mouseButton= Sk.globals.mouse.LEFT}
+				if (e.buttons === 4) {mouseButton= Sk.globals.mouse.MIDDLE}
+				if (e.buttons === 2) {mouseButton= Sk.globals.mouse.RIGHT}
+				var params = Sk.globals.on_mouse_down.func_code.co_varnames;
+				
+				function getParams() {
+					if (params.indexOf('pos')>-1) {
+						arg[params.indexOf('pos')] = pos;
+					}
+					if (params.indexOf('button')>-1) {
+						arg[params.indexOf('button')] = mouseButton;
+					}
+				}
+				
+				if (!params) { params =[]; }				
     			var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-    			if(Sk.globals.on_mouse_down.func_code.length > 1) {
-    				Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, Sk.globals.mouse.LEFT, pos);
-    			} else {
-    				Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, pos);
-    			}
+    			
+    			if (params.length === 2) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0], arg[1]);
+				} else
+				if (params.length === 1) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0]);
+				} else {
+							Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down); //no param
+						}
     			
     		});
     	}
 
     	if(Sk.globals.on_mouse_move) {
+			var px = -1;
+			var py;
     		jqCanvas.on('mousemove', function(e) {
+				var mouseButton = 0;
+				if (e.buttons === 1) {mouseButton= Sk.globals.mouse.LEFT}
+				if (e.buttons === 4) {mouseButton= Sk.globals.mouse.MIDDLE}
+				if (e.buttons === 2) {mouseButton= Sk.globals.mouse.RIGHT}
+				
+				var arg =[0,0,0];
+				var params = Sk.globals.on_mouse_move.func_code.co_varnames;
+				
+				function getParams() {
+					if (params.indexOf('pos')>-1) {
+						arg[params.indexOf('pos')] = pos;
+					}
+					if (params.indexOf('rel')>-1) {
+						arg[params.indexOf('rel')] = rel;
+					}
+					if (params.indexOf('button')>-1) {
+						arg[params.indexOf('button')] = mouseButton;
+					}
+				}	
+
     			var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-    			Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, pos);
+
+    			if (px<0) {
+					px =pos.v[0];
+					px =pos.v[1];
+				}
+					    			
+    			var rel = new Sk.builtin.tuple([pos.v[0]-px, pos.v[1]-py]);
+    			px =pos.v[0];
+    			py =pos.v[1];				
+				
+				if (!params) { params =[]; }				
+
+    			if (params.length === 3) {				
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0], arg[1], arg[2]);					
+				} else
+				if (params.length === 2) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0], arg[1]);
+				} else
+				if (params.length === 1) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0]);
+				} else {		
+    			 Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move);
+    			} 
     			
     		});	
     	}
 
-    
 
 	    Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 	    
