@@ -3011,7 +3011,7 @@ var PythonIDE = {
 
 				case 'btn_show_output':
 					//$('#btn_group_console').toggleClass('hiddenButtonPanel');
-					$('#dlg').dialog("open");
+					$('#dlg').dialog("close");
 				break;
 
 				case 'btn_show_settings':
