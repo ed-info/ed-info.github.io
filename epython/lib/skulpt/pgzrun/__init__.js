@@ -928,10 +928,10 @@ var $builtinmodule = function (name) {
 				props.fontname = "Arial";
 			}
 			if(props.fontsize === undefined) {
-				props.fontsize = 24;
+				props.fontsize = 18;
 			}
 			if(props.color === undefined) {
-				props.color = "#FFF";
+				props.color = 'white';
 			}
 			if(props.background) {
 				cx.fillStyle = getColor(props.background);
@@ -946,8 +946,22 @@ var $builtinmodule = function (name) {
 			if(props.align === undefined) {
 				props.align = "center";
 			}
-			cx.fillStyle = getColor(props.color);
-			cx.font = props.fontsize + "px " + props.fontname;
+			if(props.angle === undefined) {
+				props.angle = 0;
+			}
+			
+			cx.fillStyle = getColor(props.color); 
+			
+			cx.shadowOffsetX = 0;
+			cx.shadowOffsetY = 0;
+			if(props.scolor){
+			// Specify the shadow offset.
+				cx.shadowOffsetX = 2;
+				cx.shadowOffsetY = 2;
+				cx.shadowColor = props.scolor;
+			}		
+			
+			cx.font = 'bold '+props.fontsize + "px " + props.fontname;
 			var lines = jsText.split("\n");
 			var size = {
 				height: cx.measureText("M").width * lines.length,
@@ -967,6 +981,7 @@ var $builtinmodule = function (name) {
 
 			for(var i = 0; i < lines.length; i++) {
 				var x = props.x;
+				var yy = props.y;
 				switch(props.align) {
 					case 'center':
 						x += (size.width - size.lineWidths[i]) / 2;
@@ -975,12 +990,27 @@ var $builtinmodule = function (name) {
 						x += (size.width - size.lineWidths[i]);
 					break;
 				}
-				cx.fillText(lines[i], x, props.y + i * size.height);
-
+				
+				cx.save();
+				if(props.gcolor) {
+					const grad=cx.createLinearGradient(0,0,0,props.fontsize);
+					grad.addColorStop(0, props.color);
+					grad.addColorStop(1, props.gcolor);
+					cx.fillStyle = grad; 
+			} 
+				y = yy + (i * size.height)/2;
+				if(props.alpha) { cx.globalAlpha = props.alpha; }
+				cx.translate(x,y);
+				cx.rotate(-props.angle*Math.PI/180);
 				if(props.owidth) {
 					cx.strokeStyle = getColor(props.ocolor);
-					cx.strokeText(lines[i], x, props.y + (i * size.height / lines.length));
+					cx.lineWidth = props.owidth*4;
+					cx.strokeText(lines[i], 0, 0);
 				}	
+				cx.fillText(lines[i], 0, 0);
+				cx.restore();
+
+
 			}
 			
 		};
@@ -1380,6 +1410,38 @@ var $builtinmodule = function (name) {
 					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0]);
 				} else {
 							Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down); //no param
+						}
+    			
+    		});
+    	}
+    	
+    	if(Sk.globals.on_mouse_up) {
+    		jqCanvas.on('mouseup', function(e) {	
+				var arg =[0,0];				
+				var mouseButton = 1;				
+				var params = Sk.globals.on_mouse_up.func_code.co_varnames;
+				
+				function getParams() {
+					if (params.indexOf('pos')>-1) {
+						arg[params.indexOf('pos')] = pos;
+					}
+					if (params.indexOf('button')>-1) {
+						arg[params.indexOf('button')] = mouseButton;
+					}
+				}
+				
+				if (!params) { params =[]; }				
+    			var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+    			
+    			if (params.length === 2) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0], arg[1]);
+				} else
+				if (params.length === 1) {
+					getParams();
+					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0]);
+				} else {
+							Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up); //no param
 						}
     			
     		});
