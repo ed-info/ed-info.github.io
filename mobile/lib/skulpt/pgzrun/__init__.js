@@ -355,7 +355,9 @@ THECOLORS = {
 
 		$loc.__getattr__ = new Sk.builtin.func(function(self, name) {
 			var jsName = Sk.ffi.remapToJs(name);
-			switch(jsName) {
+			if (jsName==='x') {jsName ='left';}
+			if (jsName==='y') {jsName ='top';}
+			switch(jsName) {							
 				case 'centerx':
 					return Sk.ffi.remapToPy((self.coords.x1 + self.coords.x2) / 2);
 				break;
@@ -408,7 +410,9 @@ THECOLORS = {
 		$loc.__setattr__ = new Sk.builtin.func(function(self, name, value) {
 			var jsName = Sk.ffi.remapToJs(name);
 			var jsVal = Sk.ffi.remapToJs(value);
-			switch(jsName) {
+			if (jsName==='x') {jsName ='left';}
+			if (jsName==='y') {jsName ='top';}
+			switch(jsName) {		
 				case 'center':
 					var oX = jsVal[0] - ((self.coords.x2 - self.coords.x1) / 2) - self.coords.x1;
 					var oY = jsVal[1] - ((self.coords.y2 - self.coords.y1) / 2) - self.coords.y1;
@@ -1149,7 +1153,7 @@ THECOLORS = {
 		}
 
 // ----------------------- 	   
-	    PythonIDE.python.output('<div><button style="position:fixed;bottom:10px;left:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
+	    PythonIDE.python.output('<div><button style="position:fixed;z-index:999999 !important;bottom:120px;right:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
 	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 
 	    function getImageData(url, callback) {
