@@ -299,6 +299,7 @@ function getImageData(url, callback) {
 		}
 $(document).ready(function(){
   function showAssetManager(a) {
+	  $("#save").dialog("close");
 	  assetType='images';
 	    	var html = '<style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>У вебверсії Pygame Zero зображення та звуки перед використання необхідно попередньо завантажити до середовища програмування!<br>';
 	    		    	
@@ -348,6 +349,7 @@ $(document).ready(function(){
   $("#PGZAssetManager").empty();   	
   $("#PGZAssetManager").append(html);
   }
+
   $("#btn_PGZ").click(function(){
    	    	$('#PGZAssetManager').dialog( {
 	    		width: window.innerWidth * .8,
