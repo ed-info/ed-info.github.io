@@ -216,26 +216,25 @@ THECOLORS = {
 		Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
 		name = Sk.ffi.remapToJs(name);
 		var a = self.attributes;
-		a[name] = Sk.ffi.remapToJs(value);
-
+		a[name] = Sk.ffi.remapToJs(value);		
 		switch(name) {
 			case 'x':
-				a.x = a.x - self.anchorVal.x;
+				a.x = a[name];
 			break;
 			case 'y':
-				a.y = a.y - self.anchorVal.y;
+				a.y = a[name];
 			break;
 			case 'left':
-				a.x = a.left;
+				a.x = a[name];
 			break;
 			case 'right':
-				a.x = a.right - a.width;
+				a.x = a[name] - a.width;
 			break;
 			case 'top':
-				a.y = a.top;
+				a.y = a[name];
 			break;
 			case 'bottom':
-				a.y = a.bottom - a.height;
+				a.y = a[name] - a.height;
 			break;
 			case 'anchor':
 				self.anchor = Sk.ffi.remapToJs(value);
@@ -358,6 +357,7 @@ THECOLORS = {
 			var jsName = Sk.ffi.remapToJs(name);
 			if (jsName==='x') {jsName ='left';}
 			if (jsName==='y') {jsName ='top';}
+			console.log('GetAttr:',jsName);
 			switch(jsName) {							
 				case 'centerx':
 					return Sk.ffi.remapToPy((self.coords.x1 + self.coords.x2) / 2);
@@ -413,6 +413,7 @@ THECOLORS = {
 			var jsVal = Sk.ffi.remapToJs(value);
 			if (jsName==='x') {jsName ='left';}
 			if (jsName==='y') {jsName ='top';}
+			console.log('SetAttr:',jsName);
 			switch(jsName) {		
 				case 'center':
 					var oX = jsVal[0] - ((self.coords.x2 - self.coords.x1) / 2) - self.coords.x1;
