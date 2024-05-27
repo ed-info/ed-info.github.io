@@ -128,10 +128,15 @@
                             відвантажити з комп’ютера</span>.</label>
                 </div>
             </form>
+                  <br>
+                  <div id="btn_show_recover" class="toolButton"><button name="btn_show_recover"><i class="fa fa-history"></i> Відновити </button>
+				  </div> 
         </fieldset>
-       <div id="btn_PGZ" ><button style="position:fixed;z-index:999999 !important;bottom:120px;right:10px;background-color:'+btnAssetColor+'" 
+ 
+       <div id="btn_PGZ" ><button style="position:fixed;z-index:999999 !important;bottom:120px;right:10px;" 
 			name="btn_PGZ">
-		   <i class="fa fa-file-image-o"></i> Галерея </button></div>
+		   <i class="fa fa-file-image-o"></i> Галерея </button>
+	   </div>
     </div>
      <div id="PGZAssetManager" title="Галерея ресурсів" style="display:none;">   
      </div>   
@@ -192,7 +197,7 @@
             <legend>Режим запуску</legend>
             <p>Виконання коду рядок за рядком може бути корисним способом пошуку помилок</p>
             <div id="radio_run_mode">
-                <input type="radio" id="radio_run_mode_all" name="radio_run_mode" checked="checked"><label
+                <input type="radio" id="radio_run_mode_all" name="radio_run_mode" checked><label
                     for="radio_run_mode_all">Уся програма</label>
                 <input type="radio" id="radio_run_mode_single" name="radio_run_mode"><label
                     for="radio_run_mode_single">Рядок за рядком</label>
@@ -354,8 +359,7 @@ $(document).ready(function(){
 		showAssetManager(false);	
   });
   
-$(document).on('click','#btnAssetSave', function() {  
-			 console.log('asset save');		
+$(document).on('click','#btnAssetSave', function() { 			 	
 			 if(PythonIDE.files['assets.json']) {				
 					var blob = new Blob([PythonIDE.files['assets.json']], {type : "text/plain", endings: "transparent"});
 					saveAs(blob, 'assets.json');
@@ -363,8 +367,7 @@ $(document).on('click','#btnAssetSave', function() {
   });
 
 $(document).on('click','#btnAssetLoad', function() {  
-			 console.log('asset load');	
-			 if(PythonIDE.files['assets.json'] && reloadAssets) {
+			 if(PythonIDE.files['assets.json']) {
 				assets = JSON.parse(PythonIDE.files['assets.json']);
 				PythonIDE.updateFileTabs();
 				showAssetManager(false);
@@ -375,8 +378,7 @@ $(document).on('click','#btn_AssetManager_ok', function() {
 	PythonIDE.updateFileTabs();
 	$('#PGZAssetManager').dialog('close');
  });
-$(document).on('click','#btn_asset_add_image', function() {
-	console.log('add');
+$(document).on('click','#btn_asset_add_image', function() {	
 	if(!assets.images) {
     							assets.images = {};
     						}    						
@@ -393,8 +395,7 @@ $(document).on('click','#btn_AssetManager_cancel', function() {
 	 $('#PGZAssetManager').dialog("close");
  }); 
 $(document).on('click','.btn_trash', function(e) {  
-				var parts = e.currentTarget.id.split("_");
-				console.log('delete',parts);
+				var parts = e.currentTarget.id.split("_");				
 				var name = parts[4];
 	    		var type = parts[3];
 	    		$('#asset_' + type + '_' + name).remove();

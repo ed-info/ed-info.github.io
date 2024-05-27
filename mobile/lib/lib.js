@@ -34,7 +34,7 @@ function animateTitle(txt, id) {
 	t = setTimeout(onAnimTimeout, 50);
 
 }
-
+var exec_mode ='';
 var PythonIDE = {
 	updateConsoleSize: function() {
 		var h = $('#output').height() - $('#headerOut').height();
@@ -60,7 +60,7 @@ var PythonIDE = {
 		//console.log(filename, lineNumber);
 		var breakpoint = false;
 		if(PythonIDE.breakpoints[filename] && PythonIDE.breakpoints[filename][lineNumber] && PythonIDE.continueRunning) {
-			PythonIDE.showHint("Призупинено через точку зупинки на лінії " + (lineNumber));
+			PythonIDE.showHint("Призупинено через точку зупинки на рядку " + (lineNumber));
 			$('#btn_showREPL').show();
 			breakpoint = true;
 			PythonIDE.editFile(filename, lineNumber);
@@ -75,7 +75,7 @@ var PythonIDE = {
 		PythonIDE.currentScope = {};
 		var susp = result;
 		if(true || PythonIDE.runMode == "step" || breakpoint) {
-			var html = '<i id="btnToggleGlobals" class="fa fa-arrows-h"></i> <div id="globals"><h3>Global variables: </h3><table><tr><th>Name</th><th>Data type</th><th>Value</th></tr></div>';
+			var html = '<i id="btnToggleGlobals" class="fa fa-arrows-h"></i> <div id="globals"><h3>Глобальні змінні: </h3><table><tr><th>Ім'+"'"+'я</th><th>Тип даних</th><th>Значення</th></tr></div>';
 			PythonIDE.watchVariables.expandHandlers = [];
 			var context = susp;
 			if(context.child && context.child.$gbl) {
@@ -122,7 +122,7 @@ var PythonIDE = {
 			context = susp.child;
 			while(context && context.$tmps && context.$lineno) {
 			
-				html += '<h4>Local Variables from line ' + context.$lineno + '</h4><table><tr><th>Name</th><th>Data Type</th><th>Value</th></tr>';
+				html += '<h4>Локальні змінні у рядку ' + context.$lineno + '</h4><table><tr><th>Ім'+"'"+'я</th><th>Тип даних</th><th>Значення</th></tr>';
 				
 				for(var key in context.$tmps) {
 					var pyVal = context.$tmps[key];
@@ -571,16 +571,16 @@ var PythonIDE = {
 
 	recover: function() {
 		PythonIDE.saveSnapshot();
-		var html = '<p>A copy of your code is saved in your browser every time you run it.</p>';
-		html += '<p>Number of code backups currently stored in the vault:' + PythonIDE.vault.length + '</p>';
-		html += '<div id="slider_recover"></div><span id="recover_time">Drag the slider to go back in time and recover your code</span>';
+		var html = '<p>Копія вашого коду зберігається у сховищі вашого вебоглядача кожного разу, коли ви його запускаєте.</p>';
+		html += '<p>Кількість резервних копій коду, які зараз зберігаються в сховищі:' + PythonIDE.vault.length + '</p>';
+		html += '<div id="slider_recover"></div><span id="recover_time">Перетягніть повзунок, щоб переглянути попередній стан коду</span>';
 
-		html += '<p><button id="btn_recover">Recover</button></p>';
-		html += '<p>If more than one person on this computer uses the same login you may wish to clear all of the code stored in the recovery vault.</p><p><i class="fa fa-warning"></i> Be careful: once you\'ve pressed Delete all you can\'t go back.</p>';
-		html += '<p><button id="btn_recover_clear">Delete all</button></p>';
+		html += '<p><button id="btn_recover">Відновити обрану копію коду</button></p>';
+		html += '<p>За потреби ви можете видалити всі копії коду, що зберігаються у сховищі відновлення.</p><p><i class="fa fa-warning"></i> Будьте обережні: після того, як ви натиснули Видалити все, ви не зможете скасувати цю дію.</p>';
+		html += '<p><button id="btn_recover_clear" style="background-color:#FF0000;color:#FFFFFF">Видалити все зі сховища</button></p>';
 
-
-		$('#recover').html(html).dialog("open").parent().css({'opacity':0.8});
+		$("#save").dialog("close");
+		$('#recover').html(html).dialog("open").parent().css({'opacity':1.0});
 		$('#slider_recover').slider({
 			min: 0,
 			max: PythonIDE.vault.length - 1,
@@ -594,14 +594,14 @@ var PythonIDE = {
 				PythonIDE.updateFileTabs();
 				PythonIDE.editor.setCursor(0);
 				var ds = "" + (d.getMonth() + 1) + "/" + (d.getDate()) + "/" + d.getFullYear();
-				var hours = d.getHours() % 12;
+				var hours = d.getHours();
 				if(hours == 0) {
 					hours = 12;
 				}
-				var days = "Sun,Mon,Tue,Wed,Thu,Fri,Sat,Sun".split(",");
-				var months = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(",");
+				var days = "Нд,Пн,Вт,Ср,Чт,Пт,Сб,Нд".split(",");
+				var months = "Січ,Лют,Бер,Кві,Тра,Чер,Лип,Серп,Вер,Жовт,Лист,Гру".split(",");
 				function pad2(s){s = s.toString();return s.length < 2?"0"+s:s;}
-				$('#recover_time').html('<p class="recover_date">' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</p><p class="recover_label">Recovery time:</p><span id="recover_time_hours">' + (pad2(hours)) + '</span><span id="recover_time_mins">' + pad2(d.getMinutes()) + '</span><span id="recover_time_ampm">' + ((d.getHours() >= 12)? "PM" : "AM") + '</span>');
+				$('#recover_time').html('<p class="recover_date">' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</p><p class="recover_label">Час збереження:</p><span id="recover_time_hours">' + (pad2(hours)) + '</span><span id="recover_time_mins">' + pad2(d.getMinutes()) + '</span>');
 
 			}
 		});
@@ -2736,9 +2736,11 @@ var PythonIDE = {
 			switch(id) {
 				case 'radio_run_mode_all':
 					PythonIDE.runMode = "normal";
+					$("#btn_run").attr("src", "./media/play.png");
 				break;
 				case 'radio_run_mode_single':
 					PythonIDE.runMode = "step";
+					$("#btn_run").attr("src", "./media/step.png");
 				break;
 				case 'radio_run_mode_anim':
 					PythonIDE.runMode = "anim";
@@ -2948,71 +2950,7 @@ var PythonIDE = {
 			PythonIDE.runCode();
 		}
 
-
-		var btnAssetColor = '#00ff00';
-/*
-		$('#btn_PGZAssetManager').click(function() {console.log('click')});	
-	    function getImageData(url, callback) {
-		  var xhr = new XMLHttpRequest();
-		  xhr.onload = function() {
-		    var reader = new FileReader();
-		    reader.onloadend = function() {
-		      callback(reader.result);
-		    }
-		    reader.readAsDataURL(xhr.response);
-		  };
-		  xhr.open('GET', url);
-		  xhr.responseType = 'blob';
-		  xhr.send();
-		}
-*/
-	    function getAssetManagerHtml(assets, assetType) {
-	    	var html = '';
-	    	switch(assetType) {
-	    		case 'images':
-	    			if(assets.images) {
-	    				for(var name in assets.images) {							
-	    					var image = assets.images[name];
-	    					html += '<div class="asset" id="asset_image_' + name + '"><img class="asset_img" src="' + image.src + '">';
-	    					html += '<div><b>' + name + '</b></div>';
-	    					var src = image.src;
-	    					if(src.match(/data:image/)) {
-	    						src="base64";
-	    					} else {
-	    						getImageData(src, function(data) {
-	    							
-	    						})
-	    					};
-	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
-	    					html += '</div>';
-	    				}
-	    			}
-	    		break;
-	    		case 'sounds':
-	    			if(assets.sounds) {
-	    				for(var name in assets.sounds) {
-	    					var sound = assets.sounds[name];
-	    					html += '<div class="asset" id="asset_sound_' + name + '"><audio class="asset_snd" controls src="' + sound.src + '"></audio>';
-	    					html += '<div><b>' + name + '</b></div>';
-	    					html += '<button id="btn_asset_delete_sound_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
-	    					html += '</div>';
-	    				}
-	    			}
-	    		break;
-	    	}
-	    	return html;
-	    }
-	    
-	    
-//
-//	    function showAssetManager(reloadAssets) {
-//	    	$('#PGZAssetManager').remove();
-
-	   
-
-
-//---------------------		
-		
+//------------------------------
 		
 		function timeSince(date) {
 
@@ -3077,6 +3015,7 @@ var PythonIDE = {
 				break;
 
 				case 'btn_show_recover':
+					console.log('Recovr')
 					PythonIDE.recover();
 				break;
 
@@ -3107,13 +3046,16 @@ var PythonIDE = {
 				break;
 
 				case 'btn_run':
-					PythonIDE.runCode();
+						var bimg=$("#btn_run").attr("src");
+						if (bimg==="./media/play.png"){PythonIDE.runCode();}
+						if (bimg==="./media/step.png"){PythonIDE.runCode("step");}
 				break;
  	
 			}
 		});
 		PythonIDE.autoSize();
 	},
+//
 
 	resetFiles: function(all) {
 		if(PythonIDE.aT && PythonIDE.hash && PythonIDE.aT[PythonIDE.hash] && PythonIDE.defaultSavedCode) {
