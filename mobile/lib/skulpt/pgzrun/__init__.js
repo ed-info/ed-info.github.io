@@ -21,7 +21,7 @@ THECOLORS = {
 	var width = undefined;
 	var height = undefined;
 	var startTime = new Date().getTime();
-	var btnAssetColor = '#00ff00';
+
 
 	Sk.globals.dbg = new Sk.builtin.func(function(x) {
 		console.log(x, Sk.ffi.remapToJs(x));
@@ -114,12 +114,13 @@ THECOLORS = {
 	var canvas = undefined;
 	var cx = undefined;
 
-	var assets = {};
+
 	if(PythonIDE.files['assets.json']) {
 		assets = JSON.parse(PythonIDE.files['assets.json']);
 	}
 
 	var loadedAssets = {};
+// --------------
 
 	var promises = [];
 	
@@ -1153,159 +1154,9 @@ THECOLORS = {
 		}
 
 // ----------------------- 	   
-	    PythonIDE.python.output('<div><button style="position:fixed;z-index:999999 !important;bottom:120px;right:10px;background-color:'+btnAssetColor+'" id="btn_PGZAssetManager"><i class="fa fa-file-image-o"></i> Галерея </button></div><style>.asset_img{width:50px;float:left;margin-right:5px;} .asset{display:inline-block;background-color:#FF9;padding:5px;margin:5px;border-radius:10px;border: solid 1px #000;}</style>', true);
-	    PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
+		PythonIDE.python.output('<canvas id="PGZcanvas" width="' + width + '" height="' + height + '"></canvas>', true);	    
 
-	    function getImageData(url, callback) {
-		  var xhr = new XMLHttpRequest();
-		  xhr.onload = function() {
-		    var reader = new FileReader();
-		    reader.onloadend = function() {
-		      callback(reader.result);
-		    }
-		    reader.readAsDataURL(xhr.response);
-		  };
-		  xhr.open('GET', url);
-		  xhr.responseType = 'blob';
-		  xhr.send();
-		}
 
-	    function getAssetManagerHtml(assets, assetType) {
-	    	var html = '';
-	    	switch(assetType) {
-	    		case 'images':
-	    			if(assets.images) {
-	    				for(var name in assets.images) {							
-	    					var image = assets.images[name];
-	    					html += '<div class="asset" id="asset_image_' + name + '"><img class="asset_img" src="' + image.src + '">';
-	    					html += '<div><b>' + name + '</b></div>';
-	    					var src = image.src;
-	    					if(src.match(/data:image/)) {
-	    						src="base64";
-	    					} else {
-	    						getImageData(src, function(data) {
-	    							
-	    						})
-	    					};
-	    					html += '<button id="btn_asset_delete_image_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
-	    					html += '</div>';
-	    				}
-	    			}
-	    		break;
-	    		case 'sounds':
-	    			if(assets.sounds) {
-	    				for(var name in assets.sounds) {
-	    					var sound = assets.sounds[name];
-	    					html += '<div class="asset" id="asset_sound_' + name + '"><audio class="asset_snd" controls src="' + sound.src + '"></audio>';
-	    					html += '<div><b>' + name + '</b></div>';
-	    					html += '<button id="btn_asset_delete_sound_' + name + '" class="btn_asset"><i class="fa fa-trash"></i></button>'
-	    					html += '</div>';
-	    				}
-	    			}
-	    		break;
-	    	}
-	    	return html;
-	    }
-	    
-	    
-
-	    function showAssetManager(reloadAssets) {
-	    	$('#PGZAssetManager').remove();
-	    	if(PythonIDE.files['assets.json'] && reloadAssets) {
-				assets = JSON.parse(PythonIDE.files['assets.json']);
-			}
-	    	var html = '<div id="PGZAssetManager" title="Галерея ресурсів">У вебверсії Pygame Zero зображення та звуки перед використання необхідно попередньо завантажити до середовища програмування!<br>';
-	    		    	
-	    	html += '<fieldset id="pgz_assets_images"><legend>Зображення</legend>';
-	    	html += '<p>Перед використанням оберіть та завантажте потрібні файли зображень. </p>';
-	    	html += '<p>Підтримувані типи: .jpg, .png та .gif. </p><br>';	    	
-	    	html +=  '<div>Зображення: <input type="file" id="choose-file" name="choose-file" onchange="getFile()"/><button class="btn_asset" id="btn_asset_add_image">Додати зображення</button></div>';
-	    	html += getAssetManagerHtml(assets, 'images');
-	    	html += '</fieldset>'
-
-	    	html += '<fieldset id="pgz_assets_sounds"><legend>Звуки</legend>';
-	    	html += '<p>Підтримувані типи: .wav, .ogg and .mp3</p>';
-	    	html += '<div>Адреса звукового файлу:<input type="text" id="asset_new_sound"><button class="btn_asset" id="btn_asset_add_sound">Додати звук</button></div>';
-	    	html += getAssetManagerHtml(assets, 'sounds');
-	    	html += '</fieldset>';
-	    	html += '<button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> Гаразд</button>';
-	    	html += '<button id="btn_AssetManager_cancel" class="btn_asset"><i class="fa fa-times"></i> Скасувати</button>';
-	    	
-	    	html += '<div  style="position:absolute;bottom:0;left:0;display:inline-block;">Інформація про використані ресурси (зображення та звуки) зберігається у файлі assets.json.<br><button id="btnAssetSave"> Зберегти ресурси</button>';
-	    	html += '<p> Використати ресурси </p><input type="file" id="asset-file" name="asset-file" onchange="loadAsset()"/><button id="btnAssetLoad"> Використати</button></div>';
-	    	html += '</div>';
-	    	
-	    	$('body').append(html);
-	    	$('#PGZAssetManager').dialog( {
-	    		width: window.innerWidth * .8,
-	    		height: window.innerHeight * .8
-	    	});
-	    	$('#btnAssetSave').button().click(function(e) {			 
-			 if(PythonIDE.files['assets.json']) {				
-					var blob = new Blob([PythonIDE.files['assets.json']], {type : "text/plain", endings: "transparent"});
-					saveAs(blob, 'assets.json');
-				}	
-			});
-			$('#btnAssetLoad').button().click(function(e) {
-			 if(PythonIDE.files['assets.json'] && reloadAssets) {
-				assets = JSON.parse(PythonIDE.files['assets.json']);
-				showAssetManager(false);
-				$('#btn_PGZAssetManager').css('background-color','#00ff00');
-			 }
-			});
-	    	$('.btn_asset').button().click(function(e) {
-	    		var parts = e.currentTarget.id.split("_");
-	    		switch(parts[2]) {
-	    			case 'ok':
-	    				PythonIDE.files['assets.json'] = JSON.stringify(assets, null, 2);
-	    				//PythonIDE.updateFileTabs();
-	    			case 'cancel':
-	    				$('#PGZAssetManager').dialog("close");
-	    			break;
-	    			case 'delete':
-	    				var name = parts[4];
-	    				var type = parts[3];
-	    				$('#asset_' + type + '_' + name).remove();
-	    				delete assets[type + "s"][name];
-	    			break;
-	    			case 'add':
-		    			if(!assets) {
-							assets = {
-							};
-						}
-    					var type = parts[3];
-    					if(type == "image") {
-    						if(!assets.images) {
-    							assets.images = {};
-    						}    						
-    						var url = document.getElementById("choose-file").files[0].name;
-    						var imageData = localStorage.getItem(url)   						
-							var name = url.split(".")[0];
-							name = name.toLowerCase();
-							assets.images[name] = {src:imageData};	
-		    				showAssetManager(false);
-		    				$('#btn_PGZAssetManager').css('background-color','#00ff00');
-    					}
-    					if(type == "sound") {
-    						if(!assets.sounds) {
-    							assets.sounds = {
-    							}
-    						}
-    						var url = $('#asset_new_sound').val();
-    						var m = url.match(/\/([A-Z_\-0-9]+)\.(wav|ogg|mp3)/i);
-    						if(m) {
-								var name = m[1];
-	    						assets.sounds[name] = {src:url};	
-	    						showAssetManager(false);
-    						} else {
-    							PythonIDE.showHint("Invalid sound URL");
-    						}
-    					}
-	    			break;
-	    		}
-	    	});
-	    }
-	    $('#btn_PGZAssetManager').button().click(function() {showAssetManager(true);});
 		document.activeElement.blur();
 
 	    var jqCanvas = $('#PGZcanvas');    
