@@ -216,25 +216,25 @@ THECOLORS = {
 		Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
 		name = Sk.ffi.remapToJs(name);
 		var a = self.attributes;
-		a[name] = Sk.ffi.remapToJs(value);		
+		a[name] = Sk.ffi.remapToJs(value);
 		switch(name) {
 			case 'x':
-				a.x = a[name];
+				a.x = a.x - self.anchorVal.x;
 			break;
 			case 'y':
-				a.y = a[name];
+				a.y = a.y - self.anchorVal.y;
 			break;
 			case 'left':
-				a.x = a[name];
+				a.x = a.left;
 			break;
 			case 'right':
-				a.x = a[name] - a.width;
+				a.x = a.right - a.width;
 			break;
 			case 'top':
-				a.y = a[name];
+				a.y = a.top;
 			break;
 			case 'bottom':
-				a.y = a[name] - a.height;
+				a.y = a.bottom - a.height;
 			break;
 			case 'anchor':
 				self.anchor = Sk.ffi.remapToJs(value);
@@ -245,13 +245,11 @@ THECOLORS = {
 				a.x = pos[0] - self.anchorVal.x;
 				a.y = pos[1] - self.anchorVal.y;
 			break;
-			case 'scale':
-				a.scale = Sk.ffi.remapToJs(value);
-			break;
 			default:
 			self.others[name] = value;
 			break;
 		}
+		
 		
 		updateRectFromXY(self);
 	};
