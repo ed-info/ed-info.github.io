@@ -1796,9 +1796,10 @@ var PythonIDE = {
 				break;
 
 				case 'btn_show_settings':
+						
 						if ($('#settings').dialog("isOpen")===false) { 
 									$('#settings').dialog("open"); }
-						else {$('#settings').dialog("close"); }	
+						else {$('#settings').dialog("close");$(".ui-dialog-content").dialog("close");}	
 				break;
 
 				case 'btn_show_share':
