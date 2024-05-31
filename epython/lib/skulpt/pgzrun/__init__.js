@@ -217,6 +217,8 @@ THECOLORS = {
 		name = Sk.ffi.remapToJs(name);
 		var a = self.attributes;
 		a[name] = Sk.ffi.remapToJs(value);
+		console.log('updActor:',name,value);
+		var pos = Sk.ffi.remapToJs(value);
 		switch(name) {
 			case 'x':
 				a.x = a.x - self.anchorVal.x;
@@ -236,12 +238,47 @@ THECOLORS = {
 			case 'bottom':
 				a.y = a.bottom - a.height;
 			break;
+			case 'topleft':
+				a.x = pos[0];
+				a.y = pos[1];
+			break;
+			case 'topright':
+				a.x = pos[0] - a.width;
+				a.y = pos[1];
+			break;
+			case 'midtop':
+				a.x = pos[0] - a.width/2;
+				a.y = pos[1];				
+			break;
+			case 'bottomleft':
+				a.x = pos[0];
+				a.y = pos[1] - a.height;
+			break;
+			case 'bottomright':
+				a.x = pos[0] - a.width;
+				a.y = pos[1] - a.height;
+			break;			
+			case 'midbottom':
+				a.x = pos[0] - a.width/2;
+				a.y = pos[1] - a.height;
+			break;
+			case 'midleft':
+				a.x = pos[0];
+				a.y = pos[1] - a.height/2;
+			break;
+			case 'midright':
+				a.x = pos[0] - a.width;
+				a.y = pos[1] - a.height/2;
+			break;
+			case 'center':
+				a.x = pos[0] - self.anchorVal.x;
+				a.y = pos[1] - self.anchorVal.y;
+			break;
 			case 'anchor':
 				self.anchor = Sk.ffi.remapToJs(value);
 				updateAnchor(self);
 			break;
-			case 'pos':
-				var pos = Sk.ffi.remapToJs(value);
+			case 'pos':				
 				a.x = pos[0] - self.anchorVal.x;
 				a.y = pos[1] - self.anchorVal.y;
 			break;
