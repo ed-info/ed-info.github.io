@@ -720,6 +720,7 @@ THECOLORS = {
 
 			self.anchor = ['center', 'center'];
 			var args = unpackKWA(kwa);
+			
 			if(args.anchor) {
 				self.anchor = args.anchor;
 			}
@@ -729,7 +730,7 @@ THECOLORS = {
 				if(args.pos) {
 					pos = args.pos;
 				} else {
-					pos = [0,0];
+					pos = [-55555,0];
 				}
 			}
 			
@@ -757,11 +758,18 @@ THECOLORS = {
 					
 					pos[0] -= calculateAnchor(self.anchor[0], 'x', size.width);
 					pos[1] -= calculateAnchor(self.anchor[1], 'y', size.height);
+					
 					updateCoordsFromProps(args, size, pos);
+					
 					self.attributes.x = args.x;
 					self.attributes.y = args.y;
-					updateAnchor(self);
-		    		updateRectFromXY(self);	
+
+					updateAnchor(self);		    		
+		    		if (args.x < -55555){			// hook for non-initialise pos		
+						self.attributes.x = 0;
+						self.attributes.y = 0;						
+						}
+					updateRectFromXY(self);					
 		    		resolve();	
 		    	});
 			 
