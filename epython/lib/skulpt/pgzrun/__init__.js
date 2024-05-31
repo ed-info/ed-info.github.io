@@ -294,6 +294,7 @@ THECOLORS = {
 	var getActorAttribute = function(self, name) {
 		Sk.builtin.pyCheckArgs("__getattr__", 2, 2);
 		name = Sk.ffi.remapToJs(name);
+		if (name==='pos'){name='center';}
 		if(self.others[name] !== undefined) {
 			return self.others[name];
 		}
@@ -304,6 +305,10 @@ THECOLORS = {
 			case 'y':
 				return Sk.ffi.remapToPy(self.attributes.y + self.anchorVal.y);
 			break;
+			case 'center':
+					return new Sk.builtin.tuple(Sk.ffi.remapToPy([(self.coords.x1 + self.coords.x2) / 2, (self.coords.y1 + self.coords.y2) / 2]));
+			break;
+
 		}
 		if(self.attributes[name] !== undefined) {
 			return Sk.ffi.remapToPy(self.attributes[name]);
@@ -392,6 +397,7 @@ THECOLORS = {
 			var jsName = Sk.ffi.remapToJs(name);
 			if (jsName==='x') {jsName ='left';}
 			if (jsName==='y') {jsName ='top';}
+			if (jsName==='pos') {jsName ='center';}
 			console.log('GetAttr:',jsName);
 			switch(jsName) {							
 				case 'centerx':
@@ -712,7 +718,7 @@ THECOLORS = {
 			self.others = {};
 			self.others._surf = Sk.misceval.callsim(Surface, self);
 
-			self.anchor = ['left', 'top'];
+			self.anchor = ['center', 'center'];
 			var args = unpackKWA(kwa);
 			if(args.anchor) {
 				self.anchor = args.anchor;
@@ -748,7 +754,7 @@ THECOLORS = {
 						width: loadedAssets[self.attributes.image].width,
 						height: loadedAssets[self.attributes.image].height
 					};
-
+					
 					pos[0] -= calculateAnchor(self.anchor[0], 'x', size.width);
 					pos[1] -= calculateAnchor(self.anchor[1], 'y', size.height);
 					updateCoordsFromProps(args, size, pos);
@@ -772,8 +778,8 @@ THECOLORS = {
 				updateRectFromXY(self);
 				var i = loadedAssets[self.attributes.image];
 				var a = self.attributes;
-				var radians = a.angle * Math.PI / 180;
-				cx.save();
+				var radians = a.angle * Math.PI / 180;				
+				cx.save();				
 				cx.translate(a.x + self.anchorVal.x, a.y + self.anchorVal.y);
 				cx.rotate(-radians);
 				cx.translate(-a.x - self.anchorVal.x, -a.y - self.anchorVal.y);
