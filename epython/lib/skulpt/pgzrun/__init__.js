@@ -712,7 +712,7 @@ THECOLORS = {
 			self.others = {};
 			self.others._surf = Sk.misceval.callsim(Surface, self);
 
-			self.anchor = ['center', 'center'];
+			self.anchor = ['left', 'top'];
 			var args = unpackKWA(kwa);
 			if(args.anchor) {
 				self.anchor = args.anchor;
