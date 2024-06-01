@@ -120,13 +120,13 @@ $(document).ready(function(){
 	    			}
 	    		break;
 	    	}
-	    	html += '</fieldset>';
-	    	html += '<button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> Гаразд</button>';
+	    	html += '<br><button id="btn_AssetManager_ok" class="btn_asset"><i class="fa fa-check"></i> Гаразд</button>';
 	    	html += '<button id="btn_AssetManager_cancel" class="btn_asset"><i class="fa fa-times"></i> Скасувати</button>';
 	    	
-	    	html += '<div  style="position:absolute;bottom:0;left:0;display:inline-block;">Інформація про використані ресурси (зображення та звуки) зберігається у файлі assets.json.<br><button id="btnAssetSave"> Зберегти ресурси</button>';
+	    	html += '<br><br><div>Інформація про використані ресурси (зображення та звуки) зберігається у файлі assets.json.<br><button id="btnAssetSave"> Зберегти ресурси</button>';
 	    	html += '<p> Використати ресурси </p><input type="file" id="asset-file" name="asset-file" onchange="loadAsset()"/><button id="btnAssetLoad"> Використати</button></div>';
 	    	html += '</div>';
+	    	html += '</fieldset>';
   $("#PGZAssetManager").empty();   	
   $("#PGZAssetManager").append(html);
   }
