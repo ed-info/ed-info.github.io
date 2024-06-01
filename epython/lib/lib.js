@@ -1471,6 +1471,7 @@ var PythonIDE = {
 			PythonIDE.showShare();
 		});
 
+
 		$('#radio_share_mode').buttonset().change(function(e) {
 			var id = $('#radio_share_mode :radio:checked').attr('id');
 			switch(id) {
@@ -1566,7 +1567,11 @@ var PythonIDE = {
 			PythonIDE.editor.setCursor(0);
 			PythonIDE.editor.focus();
 		}
-		
+//----------------------
+
+
+
+//---------------------		
 
 		
 		Sk.python3 = true;
@@ -1591,7 +1596,8 @@ var PythonIDE = {
 				dependencies: ['lib/skulpt/numpy/deps/math.js'],
 			},
             matplotlib: {
-				path: 'lib/skulpt/matplotlib/__init__.js'
+				path: 'lib/skulpt/matplotlib/__init__.js',
+				dependencies: ['lib/skulpt/matplotlib/deps/chart.js'],
 			},
 			'matplotlib.pyplot': {
 				path: 'lib/skulpt/matplotlib/pyplot/__init__.js'				
@@ -1617,8 +1623,8 @@ var PythonIDE = {
 			lcddriver: {
 				path: 'lib/skulpt/lcddriver/__init__.js'
 			},
-			peopixel: {
-				path: 'lib/skulpt/peopixel/__init__.js'
+			neopixel: {
+				path: 'lib/skulpt/neopixel/__init__.js'
 			},
 			schooldirect: {
 				path: 'lib/skulpt/schooldirect/__init__.js'
