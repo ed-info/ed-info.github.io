@@ -1187,7 +1187,7 @@ THECOLORS = {
 
 		// create globals
 		Sk.globals.screen = Sk.misceval.callsim(Screen);
-
+		
 		width = 800;
 		if(Sk.globals.WIDTH) {
 			width = Sk.ffi.remapToJs(Sk.globals.WIDTH);
@@ -1212,7 +1212,7 @@ THECOLORS = {
 	    var jqCanvas = $('#PGZcanvas');    
 	    canvas = jqCanvas[0];
 	    cx = canvas.getContext("2d");
-
+		document.addEventListener('contextmenu', event => event.preventDefault());
 		var lastUpdate = new Date().getTime()
 	    function update() {
 	    	var tasks = [];
@@ -1264,8 +1264,7 @@ THECOLORS = {
 	    	if(Sk.globals.update) {
 	    		if(Sk.globals.update.func_code.length > 0) {
 					var newTime = new Date().getTime();
-					var dt = (lastUpdate - newTime) / 1000;
-					lastUpdate = newTime;
+					var dt = (newTime-lastUpdate) / 1000;					
 					lastUpdate = new Date().getTime();
     				tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, new Sk.ffi.remapToPy(dt)));
     			} else {
@@ -1379,8 +1378,8 @@ THECOLORS = {
 					if (params.indexOf('rel')>-1) {
 						arg[params.indexOf('rel')] = rel;
 					}
-					if (params.indexOf('button')>-1) {
-						arg[params.indexOf('button')] = mouseButton;
+					if (params.indexOf('buttons')>-1) {
+						arg[params.indexOf('buttons')] = mouseButton;
 					}
 				}	
 
