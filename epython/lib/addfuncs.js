@@ -177,13 +177,15 @@ $(document).on('click','#btn_asset_add_image', function() {
 $(document).on('click','#btn_AssetManager_cancel', function() { 
 	 $('#PGZAssetManager').dialog("close");
  }); 
+
 $(document).on('click','.btn_trash', function(e) {  
-				var parts = e.currentTarget.id.split("_");				
-				var name = parts[4];
-	    		var type = parts[3];
-	    		$('#asset_' + type + '_' + name).remove();
-	    		delete assets[type + "s"][name];
-			});	   	
+    var id = e.currentTarget.id.slice(0, 23);	
+    var parts = id.split("_");				
+    var name = e.currentTarget.id.slice(23);
+    var type = parts[3];
+    $('#asset_' + type + '_' + name).remove();
+    delete assets[type + "s"][name];
+});	  	
 	    	
 });
 
