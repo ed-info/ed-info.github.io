@@ -167,8 +167,8 @@ $(document).on('click','#btn_asset_add_image', function() {
     						}    						
     						var url = document.getElementById("choose-file").files[0].name;
     						var imageData = localStorage.getItem(url)   						
-							var name = url.split(".")[0];
-							name = name.toLowerCase();
+							var name = url.split(".")[0];							
+							name = name.toLowerCase().replaceAll(" ","_");
 							assets.images[name] = {src:imageData};	
 		    				showAssetManager(false);
 		    				
