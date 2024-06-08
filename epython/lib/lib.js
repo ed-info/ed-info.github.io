@@ -1159,6 +1159,7 @@ var PythonIDE = {
 			styleActiveLine: true,
 			inputStyle: "textarea",
 			lineWrapping: true,
+			searchbox: true,
 			hintOptions: {
 				hint: PythonIDE.autoComplete
 			}
