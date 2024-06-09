@@ -75,9 +75,21 @@
 
 				string.value     = "";				
 			};
-
+			
+			function bytesToBase64(bytes) {
+				const binString = Array.from(bytes, (byte) =>
+				String.fromCodePoint(byte),).join("");
+				return btoa(binString);
+			}
+			
+			function Clean()
+			{
+				string.value     = "";	
+			}
 			function Encode ()
 			{
+				console.log(string.value.substring(0, 3))
+			  if ((string.value!='') && (string.value.substring(0, 4)!='http')) {
 				var myUrl = document.getElementById('custom_url');
 				const radioButtons = document.querySelectorAll('input[name="fav_url"]');
 				var url;
@@ -86,14 +98,14 @@
                     url = radioButton.value;
                     break;
                 }
-            }
+				}
 				if (url==='custom') {
 						url = myUrl.value;
 					}
-				string.value = url + '#' +  window.btoa(string.value);
+				string.value = url + '#' +  bytesToBase64(new TextEncoder().encode(string.value));
 				string.focus();
+			 }
 			}
-
 			function toClipboard() {
 			// Get the text field
 			var copyText = document.getElementById("string");
@@ -132,7 +144,8 @@
 					<textarea id="string" name="string" rows="4" cols="50"> </textarea>
 					<br>
 				 
-				<button onclick="Encode();">Закодувати</button> 
+				<button onclick="Encode();">Закодувати</button>
+				<button onclick="Clean();">Очистити</button>
 				<br>
 				<h2>Результат:</h2>
 				<button onclick="toClipboard();">Копіювати</button>
