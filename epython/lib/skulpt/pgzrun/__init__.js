@@ -1261,15 +1261,15 @@ THECOLORS = {
 				}
 			}
 			
-	    	if(Sk.globals.update) {
+	    	if(Sk.globals.update) { /*
 	    		if(Sk.globals.update.func_code.length > 0) {
 					var newTime = new Date().getTime();
 					var dt = (newTime-lastUpdate) / 1000;					
 					lastUpdate = new Date().getTime();
     				tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, new Sk.ffi.remapToPy(dt)));
-    			} else {
+    			} else { */
     				tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update));
-    			}
+    			//}
 	    	}
 
 	    	if(Sk.globals.draw) {

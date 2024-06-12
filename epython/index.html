@@ -54,12 +54,14 @@
     <script src="./jquery/jquery-3.7.1.js"></script>
     <script src="./jquery/ui/1.13.3/jquery-ui.js"></script>
     <link rel="stylesheet" href="./styles.css">
-    <link rel="stylesheet" href="./lib/font-awesome.min.css">
-    <script src="./lib/p5.js"></script>
+    <link rel="stylesheet" href="./lib/font-awesome.min.css">    
     <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
     <script src="./lib/lib.js"></script>
     <script src="./lib/skulpt/skulpt.min.js"></script>
-    <script src="./lib/skulpt/skulpt-stdlib.js"></script> 
+    <script src="./lib/skulpt/skulpt-stdlib.js"></script>
+    <script src="./lib/skulpt/deps/math.js"></script>
+    <script src="./lib/skulpt/deps/chart.js"></script>
+    <script src="./lib/skulpt/deps/p5.js"></script>  
     
 </head>
 <body>
@@ -96,6 +98,7 @@
         PythonIDE.updateFileTabs();
     </script>
     <div id="hintBar"></div>
+    
     <span id="footer">
         <img title="Виконати" alt="Натисніть, щоб виконати код" id="btn_run" class="toolButton" src="./media/play.png">
         <img alt="Припинити виконання" title="Припинити" class="toolButton hiddenButton" src="./media/stop.png" id="btn_stopRunning">
@@ -106,10 +109,10 @@
     </span>
    
     <div id="recover" title="Відновлення коду" style="display:none"></div>
-    <div id="dlg" title="mycode.py" style="display:none">
+    <div id="dlg" title="mycode.py" style="display:none">        
         <div id="p5Sketch"></div>
-        <div id="output"></div>
-        <canvas id="myChart" style="width:100%;max-width:600px;max-height:500px;background-color: #CCC;display:none"></canvas>
+        <div id="output"></div>        
+        <canvas id="myChart" style="width:100%;max-width:600px;max-height:800px;background-color: #CCC;display:none"></canvas>
     </div>
     <div id="save" title="Файли - збереження, отримання, відновлення" style="display:none;">
         <fieldset>
@@ -124,17 +127,18 @@
         </fieldset>
 
         <fieldset>
-            <legend>Отримати файл:</legend>
-            <form class="box" method="post" action="#" enctype="multipart/form-data" style="background-color: #e9ff89;">
-                <div class="box__input" >
-                    <input class="box__file" type="file" name="files[]" id="file"
-                        data-multiple-caption="{count} files selected" multiple />
-                    <label style="display:block;text-align:center;" for="file"><strong>Виберіть
-                            Python-файл</strong><span class="box__dragndrop"> або перетягніть його сюди, щоб
-                            відвантажити з комп’ютера</span>.</label>
-                </div>
-            </form>
-                  <br>
+            <legend>Отримати файл:</legend>            
+				<!--default html file upload button-->
+				<input type="file" id="file-btn" hidden/>
+
+				<!--our custom file upload button-->
+				<label for="file-btn" style="cursor: pointer;">
+				<div class="box__input" style="background-color:#e9ff89;border-radius: 0.3rem;padding:1rem;border: 1px solid #ccc;">
+					<i class="fa fa-cloud-upload"></i>	
+					Виберіть Python-файл, щоб відвантажити його з комп’ютера в редактор
+				</div>	
+				</label>   
+                <br>
                   <div id="btn_show_recover" class="toolButton" style="margin-left:auto;margin-right: 5em;"><button name="btn_show_recover"><i class="fa fa-history"></i> Відновити </button>
 				  </div> 
         </fieldset><br><br>

@@ -1,6 +1,5 @@
 var $builtinmodule = function(name)
 {
-  var matplotlib = {};
-
+  var matplotlib = {};  
   return matplotlib;
 };

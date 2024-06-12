@@ -423,11 +423,13 @@ var PythonIDE = {
 					code = "__result = " + code;	
 				}
 				var r = eval(Sk.compile(code, "repl", "exec", true).code)(PythonIDE.currentScope?PythonIDE.currentScope:Sk.globals);
+				
 				var startTime = new Date().getTime();
 				while(r.$isSuspension) {
 					if(r.data.promise) {
 						r.data.promise.then(function(result) {
 							if(outputResult) {
+								
 								PythonIDE.python.output(Sk.ffi.remapToJs(Sk.builtin.repr(result)));	
 							}
 						}).catch(PythonIDE.handleError);
@@ -441,7 +443,9 @@ var PythonIDE = {
 					}
 				} 
 				if(r.__result && outputResult) {
-					PythonIDE.python.output(Sk.ffi.remapToJs(Sk.builtin.repr(r.__result)));
+					if (Sk.ffi.remapToJs(Sk.builtin.repr(r.__result))!='None'){
+						PythonIDE.python.output(Sk.ffi.remapToJs(Sk.builtin.repr(r.__result))); 
+					}
 				}	
 			
 			}
@@ -723,7 +727,7 @@ var PythonIDE = {
 		if(code.indexOf("turtle") > 0) {
 			html += '<div id="canvas"></div>';
 		}
-		html += '<div><button id="btn_showREPL"><i class="fa fa-terminal"></i> REPL</button></div>';
+		html += '<div><button id="btn_showREPL" style="color:#aaaaaa;outline: none;border:none;padding:0;background:none;">REPL>>></button></div>';
 
 
 
@@ -806,7 +810,7 @@ var PythonIDE = {
 
 		if(!PythonIDE.shareMode)
 			PythonIDE.shareMode = "code";
-
+/*
 		var link = "" + window.location;
 		var embed = ('https://create.withcode.uk' + window.location.pathname).replace('python/', 'embed/');
 
@@ -817,7 +821,7 @@ var PythonIDE = {
 		//console.log(link);
 		$('#share_link_val').val(link);
 		$('#share_embed_val').val('<iframe frameborder="0" width="100%" height="400px" src="' + embed + '"><a target="_blank" href="' + link + '">create.withcode.uk</a></iframe>');
-		$('#share_qr_val').html('<a target="_blank" href="' + link + '"><img src="https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=' + link + '"></a>');
+		$('#share_qr_val').html('<a target="_blank" href="' + link + '"><img src="https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=' + link + '"></a>'); */
 		var r = /\/python\/([\d\w]+)/;
 	
 		$('#share').dialog("open");
@@ -825,7 +829,7 @@ var PythonIDE = {
 
 	getPyType: function(v) {
 		if(v){
-				var type = v.skType?v.skType : v.__proto__.tp$name;
+				var type = v.skType?v.skType : v.tp$name;
 				if(type == "str") {
 					type = "string";
 				}
@@ -909,11 +913,12 @@ var PythonIDE = {
 				if($('#raw_input_holder').length > 0) {
 					return;
 				}
-				PythonIDE.python.output('<form><div id="raw_input_holder"><label for="raw_input">' + prompt + '</label><input class="ui-widget ui-state-default ui-corner-all" type="text" name="raw_input" id="raw_input" value="" autocomplete="off"/><button id="raw_input_accept" type="submit">OK</button></div></form>');
+				PythonIDE.python.output('<form><div id="raw_input_holder"><label for="raw_input">' + prompt + '</label><input class="ui-widget ui-state-default ui-corner-all" type="text" style="color:#ff0000;background:none;border:none;outline:none;" name="raw_input" id="raw_input" value="" autocomplete="off"/><button id="raw_input_accept" type="submit" style="border:none;padding:1em;background: none;">OK</button></div></form>');
 
 				var btn = $('#raw_input_accept').button().click(function() {
 					var val = $('#raw_input').val();
 					$('#raw_input_holder').remove();
+					console.log('val=',val);
 					PythonIDE.python.output(prompt + ' <span class="console_input">' + val + "</span>\n");
 					resolve(val);
 				});
@@ -946,7 +951,7 @@ var PythonIDE = {
 			readFile: PythonIDE.readFile,
 			fileopen: PythonIDE.openFile,
 			filewrite: PythonIDE.writeFile,
-			read: PythonIDE.readFile,
+			read: PythonIDE.builtinRead,
 			killableWhile: true,
 			/*killableFor: true,*/
 			inputfunTakesPrompt: true});
@@ -954,21 +959,6 @@ var PythonIDE = {
 	},
 
 	aT: {},
-	
-	api: function(cmd, data, onSuccess) {
-/*		data.cmd = cmd;
-			$.ajax({
-				url: 'https://tools.withcode.uk/keywords/api.php',
-			xhrFields: {
-					withCredentials: true
-				},
-			data: data,
-			dataType: "jsonp",
-			method: "POST",
-			cache: false
-		}).done(function(r) {onSuccess(r);});
-*/
-	},
 
 
 	stop: function() {
@@ -1066,7 +1056,31 @@ var PythonIDE = {
 			});
 		});
 	},
-	
+		builtinRead: function(file) {
+				const externalLibs = {
+					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
+					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
+					'./pgzrun/__init__.js': 'lib/skulpt/pgzrun/__init__.js',
+					'./matplotlib/__init__.js':'lib/skulpt/matplotlib/__init__.js',
+					'./matplotlib/pyplot/__init__.js':'lib/skulpt/matplotlib/pyplot/__init__.js',
+					'./numpy/random/__init__.js':'lib/skulpt/numpy/random/__init__.js',
+					'./numpy/__init__.js':'lib/skulpt/numpy/__init__.js',
+					'./microbit/__init__.js':'lib/skulpt/microbit/__init__.js'	
+			};
+			    console.log("search: " + Sk.ffi.remapToJs(file));
+				if (externalLibs[file] !== undefined) {
+						return Sk.misceval.promiseToSuspension(
+							fetch(externalLibs[file]).then(res => {								
+								return res.text()
+							})
+						)
+				}
+
+				if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[file] === undefined) {
+					throw `File not found: ${file}`
+				}
+				return Sk.builtinFiles.files[file];
+			},
 	// initialise the python ide
 	init: function(style) {
 		$('#hintBar').click(function() {
@@ -1074,11 +1088,7 @@ var PythonIDE = {
 			delete PythonIDE.hideHintTimeout;
 			$('#hintBar').fadeOut();
 		});	
-		
-		var isAdvancedUpload = function() {
-		  var div = document.createElement('div');
-		  return (('draggable' in div) || ('ondragstart' in div && 'ondrop' in div)) && 'FormData' in window && 'FileReader' in window;
-		}();
+
 				
 		var $form = $('.box');
 
@@ -1104,32 +1114,16 @@ var PythonIDE = {
 				
 			}
 		}
-		if (isAdvancedUpload) {
-		  $form.addClass('has-advanced-upload');
-
-		  var droppedFiles = false;
 		
-		  $form.on('drag dragstart dragend dragover dragenter dragleave drop', function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-		  })
-		  .on('dragover dragenter', function() {
-			$form.addClass('is-dragover');
-		  })
-		  .on('dragleave dragend drop', function() {
-			$form.removeClass('is-dragover');
-		  })
-		  .on('drop', function(e) {
-			  var file = e.originalEvent.dataTransfer.files[0];
-			  loadFile(file);
-		  });
-
-		  $('.box__file').on('change', function(e) { 
-			var file = e.currentTarget.files[0];
-			loadFile(file);  			
-		  });
 		
-		}
+		const fileBtn = document.getElementById('file-btn');
+		fileBtn.addEventListener('change', function(){
+				console.log(this.files[0].name);
+				var file = this.files[0];			
+			    loadFile(file);  
+		});	  
+
+		
 		
 		var r = /\/(python|embed|run)\/(.*)(\?|#)?/;
 		var m = r.exec(window.location.pathname);
@@ -1569,114 +1563,16 @@ var PythonIDE = {
 			PythonIDE.editor.setCursor(0);
 			PythonIDE.editor.focus();
 		}
-//----------------------
-
-
 
 //---------------------		
 
 		
-		Sk.python3 = true;
-		Sk.python2.print_function = true;
-		Sk.python2.unicode_literals = true;
-		Sk.python2.ceil_floor_int = true;
+
 		Sk.inputfunTakesPrompt = true;
 
 		(Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'canvas';
 
 		PythonIDE.configSkulpt("run");
-		var dev = "?v=" + Date.now() + ".js";
-		// add in additional libraries.
-		// not all of these are complete but they serve as an example of how you can code your own modules.
-		Sk.externalLibraries = {
-			numpy: {
-				path: 'lib/skulpt/numpy/dist/numpy/__init__.js',
-				dependencies: ['lib/skulpt/numpy/deps/math.js'],
-			},
-			'numpy.random': {
-				path: 'lib/skulpt/numpy/dist/numpy/random/__init__.js',
-				dependencies: ['lib/skulpt/numpy/deps/math.js'],
-			},
-            matplotlib: {
-				path: 'lib/skulpt/matplotlib/__init__.js',
-				dependencies: ['lib/skulpt/matplotlib/deps/chart.js'],
-			},
-			'matplotlib.pyplot': {
-				path: 'lib/skulpt/matplotlib/pyplot/__init__.js'				
-			},				
-			itertools: {
-				path: 'lib/skulpt/itertools/__init__.js'
-			},
-			colorsys: {
-				path: 'lib/skulpt/colorsys/__init__.js'
-			},
-			pgzrun: {
-				path: 'lib/skulpt/pgzrun/__init__.js',
-				dependencies: ['lib/skulpt/tkinter/colors.js']
-			},
-			tkinter: {
-				path: 'lib/skulpt/tkinter/__init__.js',
-				dependencies: ['lib/skulpt/tkinter/colors.js']
-			},
-			martypy: {
-				path: 'lib/skulpt/martypy/__init__.js',
-				dependencies: ['lib/skulpt/martypy/three.js', 'lib/skulpt/martypy/GLTFLoader.js', 'lib/skulpt/martypy/marty.js']
-			},
-			lcddriver: {
-				path: 'lib/skulpt/lcddriver/__init__.js'
-			},
-			neopixel: {
-				path: 'lib/skulpt/neopixel/__init__.js'
-			},
-			schooldirect: {
-				path: 'lib/skulpt/schooldirect/__init__.js'
-			},
-			// added as a farewell message to a school direct student			
-			withcode: {
-				path: 'lib/skulpt/withcode/__init__.js' + dev
-			},
-			// not quite complete implementation of sqlite3
-			sqlite3: {
-				path: 'lib/skulpt/sqlite3/__init__.js'
-			},
-			hashlib: {
-				path: 'skulpt/hashlib/__init__.js',
-				dependencies: ['lib/skulpt/hashlib/crypto-js.js']
-			},
-			// microbit simulator
-			microbit: {
-				path: 'lib/skulpt/microbit/__init__.js' + dev
-			},
-			// music module compatible with microbit music module
-			music: {
-				path: 'lib/skulpt/music/__init__.js'
-			},
-			// anyone fancy implementing this?! Imagine the possibilities!
-			py3d: {
-				path: 'lib/skulpt/py3d/__init__.js',
-				dependencies: ['lib/skulpt/py3d/hjson.js'],
-			},
-			RPi: {
-				path: 'lib/skulpt/rpi/__init__.js'
-			},
-			"RPi.GPIO": {
-				path: 'lib/skulpt/rpi/__init__.js'
-			},
-			gpiozero: {
-				path: 'lib/skulpt/rpi/gpiozero.js' + dev,
-				dependencies: ['lib/skulpt/rpi/raphael.js']
-			},
-			speech: {
-				path: 'lib/skulpt/speech/__init__.js',
-				dependencies: ['lib/skulpt/speech/sam.js']
-			},
-			radio: {
-				path: 'lib/skulpt/radio/__init__.js'
-			},
-			os:{
-				path: 'lib/skulpt/os/__init__.js'
-			}
-		};
 
 		// expand editor to fit height of the screen.
 		$('.holder').css({height: window.innerHeight - 80});
