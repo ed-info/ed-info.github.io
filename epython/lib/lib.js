@@ -810,18 +810,7 @@ var PythonIDE = {
 
 		if(!PythonIDE.shareMode)
 			PythonIDE.shareMode = "code";
-/*
-		var link = "" + window.location;
-		var embed = ('https://create.withcode.uk' + window.location.pathname).replace('python/', 'embed/');
 
-		if(PythonIDE.shareMode == "run") {
-			link = link.replace('python/', 'run/');
-			embed = embed.replace('embed/', 'run/');
-		}
-		//console.log(link);
-		$('#share_link_val').val(link);
-		$('#share_embed_val').val('<iframe frameborder="0" width="100%" height="400px" src="' + embed + '"><a target="_blank" href="' + link + '">create.withcode.uk</a></iframe>');
-		$('#share_qr_val').html('<a target="_blank" href="' + link + '"><img src="https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=' + link + '"></a>'); */
 		var r = /\/python\/([\d\w]+)/;
 	
 		$('#share').dialog("open");
@@ -1065,6 +1054,7 @@ var PythonIDE = {
 					'./matplotlib/pyplot/__init__.js':'lib/skulpt/matplotlib/pyplot/__init__.js',
 					'./numpy/random/__init__.js':'lib/skulpt/numpy/random/__init__.js',
 					'./numpy/__init__.js':'lib/skulpt/numpy/__init__.js',
+					'./music/__init__.js':'lib/skulpt/music/__init__.js',
 					'./microbit/__init__.js':'lib/skulpt/microbit/__init__.js'	
 			};
 			    console.log("search: " + Sk.ffi.remapToJs(file));
@@ -1384,12 +1374,13 @@ var PythonIDE = {
 
 		// setup keyboard shortcutts
 		$(window).keydown(function(e) {
+			
 			if(!PythonIDE.running) {
 				PythonIDE.keyHandlers = [];
 			} else {
 
 				// space and arrow keys
-			    if([37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+			    if([37, 38, 39, 40, 116].indexOf(e.keyCode) > -1) {
 			        e.preventDefault();
 			    }
 
@@ -1397,7 +1388,15 @@ var PythonIDE = {
 					PythonIDE.keyHandlers[i](e);
 				}	
 			}
-
+			if ((e.which || e.keyCode) == 116) {
+					if(e.shiftKey) {
+								PythonIDE.runCode("step");
+								e.preventDefault();
+							} 
+					else {
+								PythonIDE.runCode("normal");
+								e.preventDefault(); }
+					};
 			if(PythonIDE.resetCode) {
 				delete PythonIDE.resetCode;
 			}
@@ -1416,21 +1415,6 @@ var PythonIDE = {
 								PythonIDE.downloadFile();
 							}			
 						
-						e.preventDefault();
-						break;
-
-					case 190: // CTRL + . = step | CTRL SHIFT + . = anim
-						if(e.altKey) {
-							if(PythonIDE.abortDebug) {
-								PythonIDE.abortDebug();
-							}
-						} else {
-							if(e.shiftKey) {
-								PythonIDE.runCode("anim");
-							} else {
-								PythonIDE.runCode("step");
-							}
-						}
 						e.preventDefault();
 						break;
 
@@ -1603,8 +1587,8 @@ var PythonIDE = {
 			$('#dlg').remove();
 			PythonIDE.whenFinished = function() {
 				var link = window.location.href.replace('run/', 'python/');
-				var html = '<div><a class="nounderline" href="http://withcode.uk" target="_blank"></a></div>';
-				PythonIDE.python.output(html + '<p>This python app was written using <a href="https://create.withcode.uk">create.withcode.uk</a>. <a href="' + link + '">Click here to edit the python code and create/share your own version</a> or check out <a href="http://blog.withcode.uk">blog.withcode.uk</a> for ideas, tips and resources</p> <button id="btn_run_again">Run again</button>');
+				var html = '<div><p>This python app was written using create.withcode</p></div>';
+				PythonIDE.python.output(html+'<button id="btn_run_again">Run again</button>');
 				$('#btn_run_again').button().click(function() {PythonIDE.runCode()});
 			}
 			PythonIDE.runCode();
