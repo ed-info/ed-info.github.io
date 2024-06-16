@@ -19256,9 +19256,9 @@ Sk.builtin.file = function (name, mode, buffering) {
     } else if (this.name === "/dev/stderr") {
         this.fileno = 2;
     } else {
-        if (Sk.inBrowser) {  // todo:  Maybe provide a replaceable function for non-import files
+        if (Sk.inBrowser) {  
             this.fileno = 10;
-            // for PythonIDE !!!
+            // for PythonIDE ----------------------
             if(PythonIDE.files[name.v] != undefined){
 				if (document.getElementById(name.v)){
 						document.getElementById(name.v).remove();
@@ -19271,7 +19271,7 @@ Sk.builtin.file = function (name, mode, buffering) {
 				// Append to body:
 				document.body.appendChild(divFile);
 			}
-            // --------------------------           
+            // -----------------------------------           
             
             elem = document.getElementById(name.v);
             if (elem == null) {
