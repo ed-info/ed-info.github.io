@@ -342,6 +342,10 @@ var PythonIDE = {
 
 	files: {'mycode.py':''},
 
+<<<<<<< HEAD
+=======
+	// callback function to allow python (skulpt) to read from a file
+>>>>>>> 57ab3af639b8ed132e9afe2875a08a27aea14d73
 	readFile: function(filename) {
 		filename = filename.replace("./", "");
 		if(Sk.builtinFiles.files[filename]) {
@@ -349,6 +353,40 @@ var PythonIDE = {
 		}
 		return PythonIDE.files[filename];
 	},
+<<<<<<< HEAD
+=======
+
+	openFile: function(file) {
+		switch(Sk.ffi.remapToJs(file.mode)[0]) {
+			case 'w':
+				PythonIDE.files[file.name] = "";
+				PythonIDE.updateFileTabs();
+			break;
+			case 'r':
+				if(PythonIDE.files[file.name] === undefined) {
+					throw new Sk.builtin.IOError("No such file or directory: '" + file.name + "'");
+				}
+			break
+			case 'a':
+				if(PythonIDE.files[file.name] === undefined) {
+					PythonIDE.files[file.name] = "";	
+				}
+				file.data$ = PythonIDE.files[file.name];	
+				file.pos$ = file.data$.length;
+			break;
+			case 'x':
+				if(PythonIDE.files[file.name] !== undefined) {
+					throw new Sk.builtin.IOError("File already exists");
+				}
+				PythonIDE.files[file.name] = "";
+				PythonIDE.updateFileTabs();
+			break;
+		}
+	},
+
+	// callback function to allow python (skulpt) to write to a file
+	writeFile: function(file, contents) {
+>>>>>>> 57ab3af639b8ed132e9afe2875a08a27aea14d73
 
 	openFile: function(file) {
 		switch(Sk.ffi.remapToJs(file.mode)[0]) {
@@ -397,9 +435,17 @@ var PythonIDE = {
 		PythonIDE.files[file.name] = file.data$;
 		PythonIDE.updateFileTabs();
 	},
+<<<<<<< HEAD
 
 	welcomeMessage: "Натисніть Ctrl+Enter, щоб виконати код",
 
+=======
+	// message to display in the status bar at the bottom of the screen
+
+	welcomeMessage: "Натисніть F5, щоб виконати код",
+
+	// options are stored in browers's localstorage. Get the value of a specified option
+>>>>>>> 57ab3af639b8ed132e9afe2875a08a27aea14d73
 	getOption: function(optionName, defaultValue) {
 		if(localStorage && localStorage['OPT_' + optionName])
 			return localStorage['OPT_' + optionName]
@@ -1817,11 +1863,35 @@ var PythonIDE = {
 			});
 		});
 	},
+<<<<<<< HEAD
 	
 	lastGroupUpdateSearch: {
 		sort:"lastname",
 		direction:"asc"
 	},
+=======
+		builtinRead: function(file) {
+
+				const externalLibs = {
+					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
+					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
+					'./pgzrun/__init__.js': 'lib/skulpt/pgzrun/__init__.js',
+					'./matplotlib/__init__.js':'lib/skulpt/matplotlib/__init__.js',
+					'./matplotlib/pyplot/__init__.js':'lib/skulpt/matplotlib/pyplot/__init__.js',
+					'./numpy/random/__init__.js':'lib/skulpt/numpy/random/__init__.js',
+					'./numpy/__init__.js':'lib/skulpt/numpy/__init__.js',
+					'./music/__init__.js':'lib/skulpt/music/__init__.js',
+					'./microbit/__init__.js':'lib/skulpt/microbit/__init__.js'	
+			};
+			    console.log("search: " + Sk.ffi.remapToJs(file));
+				if (externalLibs[file] !== undefined) {
+						return Sk.misceval.promiseToSuspension(
+							fetch(externalLibs[file]).then(res => {								
+								return res.text()
+							})
+						)
+				}
+>>>>>>> 57ab3af639b8ed132e9afe2875a08a27aea14d73
 
 	updateGroupCode: function(sortBy, direction) {
 		if(!sortBy) {
@@ -2814,11 +2884,21 @@ var PythonIDE = {
 			PythonIDE.editor.setCursor(0);
 			PythonIDE.editor.focus();
 		}
+<<<<<<< HEAD
 		
 		Sk.python3 = true;
 		Sk.python2.print_function = true;
 		Sk.python2.unicode_literals = true;
 		Sk.python2.ceil_floor_int = true;
+=======
+
+//---------------------		
+
+
+		Sk.inBrowser = true;
+
+
+>>>>>>> 57ab3af639b8ed132e9afe2875a08a27aea14d73
 		Sk.inputfunTakesPrompt = true;
 
 		(Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'canvas';
