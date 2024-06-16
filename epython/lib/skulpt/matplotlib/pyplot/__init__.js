@@ -2,8 +2,8 @@
  Matplotlib module for Skulpt, use Chart.js
 */
 
-
 var $builtinmodule = function(name) {
+	
 	
 	var xdata = []; // actually x and y data may contain multiple lines
 	var ydata = [];
@@ -45,13 +45,9 @@ var $builtinmodule = function(name) {
   var xLabel = "";
   var yLabelView = false;
   var yLabel = "";
-  // import numpy
+ 
   var CLASS_NDARRAY = "numpy.ndarray"; // maybe make identifier accessible in numpy module
-  var np = Sk.importModule("numpy");
-  var ndarray_f = np['$d'].array.func_code;
-  var getitem_f = np['$d'][CLASS_NDARRAY]['__getitem__'].func_code;
-  var ndarray = Sk.misceval.callsim(np['$d'].array.func_code, new Sk.builtin.list([1,2,3,4]));
-
+ 
   var create_chart = function() {
     /* test if Canvas ist available should be moved to create_chart function */
     if (Sk.canvas === undefined) {
@@ -189,7 +185,8 @@ function GetParam(kwa,args) {
     var slice = new Sk.builtin.slice(0, undefined, 1); // getting complete first dimension of ndarray
 
     for (i = 0; i < args.length; i++) {
-      if (args[i] instanceof Sk.builtin.list || Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
+	
+      if (args[i] instanceof Sk.builtin.list || Sk.abstr.typeName(args[i]) === CLASS_NDARRAY || Sk.abstr.typeName(args[i])==='range') {
         // special treatment for ndarrays, though we allow basic lists too
         var _unpacked;
         if(Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
@@ -433,7 +430,7 @@ mod.show = new Sk.builtin.func(function() {
 		chartStatus.destroy();
 	}
 	//-- End of chart destroy   
-
+	
 	var chartCanvas = $('#myChart'); //<canvas> id
 	var $div_canvas =  $('#' + Sk.canvas);
     $div_canvas.show();
@@ -457,6 +454,7 @@ mod.show = new Sk.builtin.func(function() {
 						data:Charts[0].data
 						}]
 		}
+
 	new Chart(myChart, {
 		type: charts_type,
 		data : 
@@ -471,7 +469,7 @@ mod.show = new Sk.builtin.func(function() {
 			scales: {
 						y: {
 							 display:yAxis,
-							 beginAtZero: true,
+							 beginAtZero: false,
 							 title: {
 									display: yLabelView,
 									text: yLabel,
@@ -515,6 +513,7 @@ mod.show = new Sk.builtin.func(function() {
 		}
 	 
 	});
+	console.log('end show');
  });
 // ----------------------------------------------------------
 var title_f = function(label, fontdict, loc) {
