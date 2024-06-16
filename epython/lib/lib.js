@@ -311,13 +311,16 @@ var PythonIDE = {
 	// callback function to allow python (skulpt) to write to a file
 	writeFile: function(file, contents) {
 		console.log('Filepos:',file.pos$);
-
+		console.log('FileData:',file.data$);
 		if(!Sk.builtin.checkString(contents)) {
 			throw new Sk.builtin.TypeError("write() arguments must be str, not " + contents.tp$name); 
 		}
 		if (file.mode.v==='a') {
 				file.pos$ = file.data$.length;
 			}
+		if ((file.mode.v==='w')&&(file.pos$ ===0)) {
+				file.data$ = '';				
+			} 	
 
 		var before = file.data$; //.substr(0, file.pos$);
 
