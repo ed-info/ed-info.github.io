@@ -307,48 +307,24 @@ var PythonIDE = {
 	},
 	// stores each of the files in the project
 	files: {'mycode.py':''},
-	// callback function to allow python (skulpt) to read from a file
-	readFile: function(filename) {
-		filename = filename.replace("./", "");
-		if(Sk.builtinFiles.files[filename]) {
-			return Sk.builtinFiles.files[filename];
-		}
-		return PythonIDE.files[filename];
-	},
 
-	openFile: function(file) {
-		switch(Sk.ffi.remapToJs(file.mode)[0]) {
-			case 'w':
-				PythonIDE.files[file.name] = "";
-				PythonIDE.updateFileTabs();
-			break;
-			case 'r':
-				if(PythonIDE.files[file.name] === undefined) {
-					throw new Sk.builtin.IOError("No such file or directory: '" + file.name + "'");
-				}
-			break
-			case 'a':
-				if(PythonIDE.files[file.name] === undefined) {
-					PythonIDE.files[file.name] = "";	
-				}
-				file.data$ = PythonIDE.files[file.name];	
-				file.pos$ = file.data$.length;
-			break;
-			case 'x':
-				if(PythonIDE.files[file.name] !== undefined) {
-					throw new Sk.builtin.IOError("File already exists");
-				}
-				PythonIDE.files[file.name] = "";
-				PythonIDE.updateFileTabs();
-			break;
-		}
-	},
 	// callback function to allow python (skulpt) to write to a file
 	writeFile: function(file, contents) {
+
 		if(!Sk.builtin.checkString(contents)) {
 			throw new Sk.builtin.TypeError("write() arguments must be str, not " + contents.tp$name); 
 		}
-		var before = file.data$.substr(0, file.pos$);
+		if (file.mode.v==='a') {
+				file.pos$ = file.data$.length;
+			}
+		
+		if (file.mode.v==='w') {
+				file.pos$ = 0;
+				file.data$='';
+			}
+			
+		var before = file.data$; //.substr(0, file.pos$);
+
 		file.data$ = before + Sk.ffi.remapToJs(contents).toString();
 		file.pos$ = file.data$.length;
 		
@@ -361,10 +337,10 @@ var PythonIDE = {
         file.currentLine = 0;
 		
 		PythonIDE.files[file.name] = file.data$;
-		PythonIDE.updateFileTabs();
+		PythonIDE.updateFileTabs(); 
 	},
 	// message to display in the status bar at the bottom of the screen
-	welcomeMessage: "Натисніть Ctrl+Enter, щоб виконати код",
+	welcomeMessage: "Натисніть F5, щоб виконати код",
 	// options are stored in browers's localstorage. Get the value of a specified option
 	getOption: function(optionName, defaultValue) {
 		if(localStorage && localStorage['OPT_' + optionName])
@@ -829,7 +805,7 @@ var PythonIDE = {
 	downloadFile: function() {
 		var blob = new Blob([PythonIDE.files[PythonIDE.currentFile]], {type : "text/plain", endings: "transparent"});
 		
-		saveAs(blob, PythonIDE.projectName + ".py");
+		saveAs(blob, PythonIDE.currentFile); //  PythonIDE.projectName + ".py"
 	},
 	saveChoice: function() {
 		if ($("#save").dialog("isOpen")===false) { 
@@ -915,9 +891,9 @@ var PythonIDE = {
 			});
 			return p;
 		}
-
+		console.log('Sk.configure');
 		Sk.configure({
-			breakpoints:function(filename, line_number, offset, s) {
+				breakpoints:function(filename, line_number, offset, s) {
 				//debugger;
 				if(PythonIDE.runMode == "anim") {
 					if(PythonIDE.continueDebug) {
@@ -937,16 +913,13 @@ var PythonIDE = {
 			//debugging: !(mode == "run" || mode == "normal") ,
 			debugging: debugging,
 			output: PythonIDE.python.outputSanitized,
-			readFile: PythonIDE.readFile,
-			fileopen: PythonIDE.openFile,
 			filewrite: PythonIDE.writeFile,
 			read: PythonIDE.builtinRead,
 			killableWhile: true,
 			/*killableFor: true,*/
 			inputfunTakesPrompt: true});
 
-	},
-
+	},	
 	aT: {},
 
 
@@ -1046,6 +1019,7 @@ var PythonIDE = {
 		});
 	},
 		builtinRead: function(file) {
+				
 				const externalLibs = {
 					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
 					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
@@ -1550,7 +1524,7 @@ var PythonIDE = {
 
 //---------------------		
 
-		
+		Sk.inBrowser = true;
 
 		Sk.inputfunTakesPrompt = true;
 
