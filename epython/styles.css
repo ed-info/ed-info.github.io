@@ -1,3 +1,117 @@
+.pack-container {
+  display: grid;
+  gap: 3px;
+  padding: 3px;
+}
+
+.pack-item {
+  text-align: center;
+  padding: 3px;
+}
+
+.NW {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.N {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.NE {
+  grid-column: 3;
+  grid-row: 1;
+}
+.W {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.C {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.E {
+  grid-column: 3;
+  grid-row: 2;
+}
+.SW {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.S {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.SE {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.grid-container {
+  display: grid;
+  gap: 3px;  
+  padding: 3px;
+}
+
+.grid-item {  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-self: center; 
+  border: 2px solid #e5e5e5; 
+  border-style: solid;
+}
+
+progress[value] {
+  /* Reset the default appearance */
+  -webkit-appearance: none;
+   appearance: none;
+  width: 250px;
+  height: 10px;
+}
+
+.hr {
+  display: block;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+  height: auto;
+  top: auto;
+  left: 50%; 
+  width: -moz-available;
+}
+
+.vl {
+ 	width: 2px;
+    height: 200px;
+    margin: 0 auto;
+    transform: rotate(180deg);
+}
+
+.tracker_activity_placeholder {
+	background-color: #ccc;
+	list-style-type: none;
+	height: 2em;
+	border-radius: 5px;
+	border: dotted 2px #000;
+}
+
+.tracker_activity {
+	padding: 1em;
+	border: 1px solid #000;
+	margin: 1em;
+	border-radius: 5px;
+	list-style-type: none;
+	background-color:#ffff98;
+}
 
 .remote-cursor {
 	width: 1em;
@@ -265,7 +379,6 @@ width: 80%;
 }
 
 .tkinter button {
-	margin-top: 1px;
 	vertical-align:middle;
 	background-color: #a9a9a9;	
 }
