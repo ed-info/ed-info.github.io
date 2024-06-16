@@ -308,6 +308,43 @@ var PythonIDE = {
 	// stores each of the files in the project
 	files: {'mycode.py':''},
 
+	// callback function to allow python (skulpt) to read from a file
+	readFile: function(filename) {
+		filename = filename.replace("./", "");
+		if(Sk.builtinFiles.files[filename]) {
+			return Sk.builtinFiles.files[filename];
+		}
+		return PythonIDE.files[filename];
+	},
+
+	openFile: function(file) {
+		switch(Sk.ffi.remapToJs(file.mode)[0]) {
+			case 'w':
+				PythonIDE.files[file.name] = "";
+				PythonIDE.updateFileTabs();
+			break;
+			case 'r':
+				if(PythonIDE.files[file.name] === undefined) {
+					throw new Sk.builtin.IOError("No such file or directory: '" + file.name + "'");
+				}
+			break
+			case 'a':
+				if(PythonIDE.files[file.name] === undefined) {
+					PythonIDE.files[file.name] = "";	
+				}
+				file.data$ = PythonIDE.files[file.name];	
+				file.pos$ = file.data$.length;
+			break;
+			case 'x':
+				if(PythonIDE.files[file.name] !== undefined) {
+					throw new Sk.builtin.IOError("File already exists");
+				}
+				PythonIDE.files[file.name] = "";
+				PythonIDE.updateFileTabs();
+			break;
+		}
+	},
+
 	// callback function to allow python (skulpt) to write to a file
 	writeFile: function(file, contents) {
 
@@ -340,7 +377,9 @@ var PythonIDE = {
 		PythonIDE.updateFileTabs(); 
 	},
 	// message to display in the status bar at the bottom of the screen
+
 	welcomeMessage: "Натисніть F5, щоб виконати код",
+
 	// options are stored in browers's localstorage. Get the value of a specified option
 	getOption: function(optionName, defaultValue) {
 		if(localStorage && localStorage['OPT_' + optionName])
@@ -1019,7 +1058,7 @@ var PythonIDE = {
 		});
 	},
 		builtinRead: function(file) {
-				
+
 				const externalLibs = {
 					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
 					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
@@ -1524,7 +1563,9 @@ var PythonIDE = {
 
 //---------------------		
 
+
 		Sk.inBrowser = true;
+
 
 		Sk.inputfunTakesPrompt = true;
 
