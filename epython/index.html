@@ -77,8 +77,13 @@
     </div>
     <script>
 		var assets = {};
-		var params = new URL(document.location).searchParams;
-		var embed = (params.get("param")).includes("embed");
+		var embed = false;
+		if (window.location.search!='') {
+			var params = new URL(window.location).searchParams;
+			if (params) {
+				embed = (params.get("param")).includes("embed");
+			}
+		}	
 		console.log(embed);
 		$('#logo').show();
 		$('#file_tabs').show();	
@@ -93,6 +98,7 @@
 			return decodeURIComponent(escape(window.atob(str)));
 		}
 		var uhash=window.location.hash;
+		console.log('hash:',uhash);
 		var uuhash=decode(uhash.substring(1));		
         var files = uuhash;
         
