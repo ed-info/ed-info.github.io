@@ -68,7 +68,7 @@
     <div id="loading">
         Завантаження...
     </div>
-	<img src="logo.png" alt="logo" width="280" height="70">
+	<img src="logo.png" id="logo" width="280" height="70">
     <div id="holder" class="holder" style="display:none">
         <span id="file_tabs"><span class="file_tab file_tab_selected">mycode.py</span></span>
         <pre>
@@ -77,6 +77,15 @@
     </div>
     <script>
 		var assets = {};
+		var params = new URL(document.location).searchParams;
+		var embed = (params.get("param")).includes("embed");
+		console.log(embed);
+		$('#logo').show();
+		$('#file_tabs').show();	
+		if (embed) {
+			$('#logo').hide();
+			$('#file_tabs').hide();	
+		}
 		function encode(str) {
 			return window.btoa(unescape(encodeURIComponent(str)));
 		}
@@ -224,7 +233,7 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
-   <div id="filename">Hello from the dom</div> 
+
 <script src="./lib/addfuncs.js"></script> 
 
 </body>
