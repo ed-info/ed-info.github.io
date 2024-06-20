@@ -1,6 +1,7 @@
 var $builtinmodule = function(name) {
 	var mod = {};
 // mml player
+var play_state = false;
 var support = {audioContext: true, onended: false, stopTwice: true, isChrome: true, isSafari: false};
 if (!/AppleWebKit\/537\.36/.test(navigator.userAgent)) support.isChrome = false;
 if (/AppleWebKit/.test(navigator.userAgent) && !support.isChrome) support.isSafari = true;
@@ -243,9 +244,16 @@ function Player(sequence){
 
 Player.prototype.playNote = function(pitch,start,end){
 
+
   var src = audioctx.createBufferSource();
   var env = audioctx.createGain();
   var env2 = audioctx.createGain();
+  play_state = false;
+  src.addEventListener('ended', () => {
+		play_state = true;// done!
+	});
+  
+  
   src.buffer = fPiano.sample;
   src.playbackRate.value = Math.pow(2, (pitch - fPiano.center) / 12);
   src.loop = true;
@@ -877,14 +885,27 @@ function combineTime(parts, tempo){
 
 //
 	var play = function(melody){
-		
-		play_(Sk.ffi.remapToJs(melody));
+		console.log("arguments.length=",arguments.length);
+		console.log("arguments=",arguments);
+		  for (let i = 1; i < arguments.length; i++) {
+				play_(Sk.ffi.remapToJs(arguments[i]));
+		}
 		
 	}
-	play.co_varnames = ['music'];
-	play.$defaults = [undefined];
-	play.co_numargs = 1;
+	
+	play.co_kwargs = true;
 	mod.play = new Sk.builtin.func(play);
+	
+	var playing = function() {
+		 
+			return Sk.ffi.remapToPy(!play_state);
+	}
+	mod.playing = new Sk.builtin.func(playing);
+	
+	var stop_playing = function() {
+		stop();
+	}
+	mod.stop_playing = new Sk.builtin.func(stop_playing);	
 	
 	mod.TWINKLE = Sk.ffi.remapToPy("T100L8\nCCGGAAG4\nFFEEDDC4\nGGFFEED4\nGGFFEED4\nCCGGAAG4\nFFEEDDC4");
 	mod.YEE = Sk.ffi.remapToPy("T120L12\nCD6C\nE4E4D6C4D3G6G4DE6D\nF4F4G6A6P\nB4");
