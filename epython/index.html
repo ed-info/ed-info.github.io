@@ -37,24 +37,21 @@
     <script src="./lib/cm/xml.js"></script>
     <script src="./lib/cm/javascript.js"></script>
     <script src="./lib/cm/css.js"></script>
-    <script src="./lib/cm/htmlmixed.js"></script>
-    
-    <script src="./lib/cm/dialog.js"></script>    
-       
+    <script src="./lib/cm/htmlmixed.js"></script>    
+    <script src="./lib/cm/dialog.js"></script>       
     <script src="./lib/cm/searchcursor.js"></script>
     <script src="./lib/cm/search.js"></script>
     <script src="./lib/cm/searchbox.js"></script> 
               
-    <link rel="stylesheet" href="./lib/cm/codemirror.css">
-    
+    <link rel="stylesheet" href="./lib/cm/codemirror.css">    
     <link rel="stylesheet" href="./lib/cm/cobalt.css">
     <link rel="stylesheet" href="./lib/cm/blackboard.css">
-
-    <link rel="stylesheet" href="./jquery/ui/1.13.3/themes/base/jquery-ui.css">
-    <script src="./jquery/jquery-3.7.1.js"></script>
-    <script src="./jquery/ui/1.13.3/jquery-ui.js"></script>
     <link rel="stylesheet" href="./styles.css">
-    <link rel="stylesheet" href="./lib/font-awesome.min.css">    
+    <link rel="stylesheet" href="./lib/font-awesome.min.css">   
+    <link rel="stylesheet" href="./jquery/ui/1.13.3/themes/base/jquery-ui.css">
+    
+    <script src="./jquery/jquery-3.7.1.js"></script>
+    <script src="./jquery/ui/1.13.3/jquery-ui.js"></script> 
     <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
     <script src="./lib/lib.js"></script>
     <script src="./lib/skulpt/skulpt.min.js"></script>
@@ -62,6 +59,7 @@
     <script src="./lib/skulpt/deps/math.js"></script>
     <script src="./lib/skulpt/deps/chart.js"></script>
     <script src="./lib/skulpt/deps/p5.js"></script>
+    <script src="./lib/extlibs.js"></script>
     
 </head>
 <body>
@@ -143,10 +141,7 @@
 
         <fieldset>
             <legend>Отримати файл:</legend>            
-				<!--default html file upload button-->
 				<input type="file" id="file-btn" hidden/>
-
-				<!--our custom file upload button-->
 				<label for="file-btn" style="cursor: pointer;">
 				<div class="box__input" style="background-color:#e9ff89;border-radius: 0.3rem;padding:1rem;border: 1px solid #ccc;">
 					<i class="fa fa-cloud-upload"></i>	
@@ -239,7 +234,6 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
-
 <script src="./lib/addfuncs.js"></script> 
 
 </body>

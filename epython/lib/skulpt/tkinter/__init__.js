@@ -2328,7 +2328,7 @@ function getOffsetRect(elem) {
 		
 	}, 'Tk', [s.Widget]);
 
-	PythonIDE.python.output('<small>tkinter/Skulpt, by Pete Dring, 30042024</small><br><br>');
+	//PythonIDE.python.output('<small>tkinter/Skulpt, by Pete Dring, 30042024</small><br><br>');
 
 	s.ttk = new Sk.builtin.module();
 	var ttk = function(name) {

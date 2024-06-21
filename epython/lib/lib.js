@@ -470,18 +470,6 @@ var PythonIDE = {
 			c.innerHTML = '';
 			var c = c.parentNode.parentNode;
 			c.scrollTop = c.scrollHeight;
-		},
-
-		builtinread: function(x) {
-			if(x.slice(0,2) == "./") {
-				var f = x.slice(2);
-				if(PythonIDE.files[f]) {
-					return PythonIDE.files[f];
-				}
-			}
-			if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
-            throw "File not found: '" + x + "'";
-			return Sk.builtinFiles["files"][x];
 		}
 	},
 	// convenience function that allows modules to run syncronous code asyncrounously.
@@ -1018,19 +1006,8 @@ var PythonIDE = {
 		});
 	},
 		builtinRead: function(file) {
-				
-				const externalLibs = {
-					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
-					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
-					'./pgzrun/__init__.js': 'lib/skulpt/pgzrun/__init__.js',
-					'./matplotlib/__init__.js':'lib/skulpt/matplotlib/__init__.js',
-					'./matplotlib/pyplot/__init__.js':'lib/skulpt/matplotlib/pyplot/__init__.js',
-					'./numpy/random/__init__.js':'lib/skulpt/numpy/random/__init__.js',
-					'./numpy/__init__.js':'lib/skulpt/numpy/__init__.js',
-					'./music/__init__.js':'lib/skulpt/music/__init__.js',
-					'./microbit/__init__.js':'lib/skulpt/microbit/__init__.js'	
-			};
-			    console.log("search: " + Sk.ffi.remapToJs(file));
+				console.log("search: " + Sk.ffi.remapToJs(file));
+			   
 				if (externalLibs[file] !== undefined) {
 						return Sk.misceval.promiseToSuspension(
 							fetch(externalLibs[file]).then(res => {								
@@ -1039,6 +1016,15 @@ var PythonIDE = {
 						)
 				}
 
+				var f = file; // search in PythonIDE files
+				console.log("f: ", f);
+				if (f.slice(0,8) == "src/lib/") {
+				 var f = f.slice(8);
+				 if(PythonIDE.files[f]) {
+					return PythonIDE.files[f];
+					}
+				}				
+				
 				if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[file] === undefined) {
 					throw `File not found: ${file}`
 				}
