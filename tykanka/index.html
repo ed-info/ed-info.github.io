@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Тиканка</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<script>
+	var exercises = [
+	"аааооо ааоао оааоо аоаоа ао оао вввооо ввово оввоо вовов во ввава авваа вавав аавав ав ав вова вова",
+	"лллввв ллвлв вллвв аааллл аалал лаалл алала алла вал лава оолол лоолл ололо лов лола овал алло олово",
+	"дддввв дввдв двдвд ададд адада даада да дав два д лдллд лддлд одоод ододо до лад ода лада вода влада",
+	"іііддд ідіід ідіді дід івівв іівів від ілліл ілііл діл іаіаі іааіа далі іоііо іооіо діло воді доволі",
+	"фффддд ффдфд дффдд фдфдф ддфдф фафаф аафаф даф флффл лфлфл фал лафа фофоф фол фіфіф фвффв ліф філіал",
+	"жжжффф жжфжф фжжфф жфжфж аж жіжжі ііжіж іж жджжд ждджд діжа фіджі жввжв ажажа жалів лжлжж ложа жало",
+	"мммжжж ммдмд момом лммлл мамам мама мода міммі між міла мввмв вам мало фмффм фм міф вім мова вам лом",
+	"мммттт ммтмт тмттм мтмтм ттмтм та фата літа тотто мото лот літо том тоді ліфт та фото флот атом жмот",
+	"иииттт иитит тиитт ти ви аиааи аиаиа жадати жито иимим миими ми ти мимо мило ждати мати жалити живіт",
+	"ьььиии ььиьи ттьть ьттьь жить ловить ммьмь ьмьмь тьма міль фільм вимить оььоь толь виводить молотить",
+	"пппооо ппапа вппвв піпіп ллплп пффпф ппжж мпипм птпьп пола піп пол пиж випав фап падав підвал помити",
+	"пппррр ппрпр рппрр прпрп ррпрп пир пар ріпа риф рило пара пори порт правда прорив рапіра пир пропажа",
+	"кккррр кклкл іккіі рік крик рик вк вік викрик кооко код кілок кіт лікоть аккак макі підковка плакати",
+	"кккггг ккгкг кг гак гол кгккг гкгкг гірко граф вага оггог ргррг гора ворог кіготь кігтик кігті грифа",
+	"еееггг еекек аееае пепеп де вітер реле режим джемпер кекек еппеп лепет перо торпеда тепер же реферат",
+	"еееннн гнгнн рнррн ононо фанера липень жовтень півень перина монети пень примір ремінь на арені поні",
+	"уууннн уооуо вувву фуга кут куток рагу уауау уііуі луллу вугіль утка луг круг дуга джгут гудок група",
+	"ууушшш ошшош лшлшл гшггш шум шуруп куш душ фішка шуміти шумувати шишка шквал кишка шкура укушу грушу",
+	"цццшшш ццвцв цфцфц цііці цілити ціль цдцдд цідити цацца ціна лице цариці цуцуц цукор кцккц цирк цент",
+	"щщщццц щшщшщ щдщдщ щлщщл щщжщж щит щука дощ теща щока щипці жалощі щілина щавель щиглик пищати що це",
+	"йййщщщ йфйфй цйццй йіййі файл йога цой герой щуплий шкільний жаркий повний щедрий куций вакцинований",
+	"йййззз жзжзж щззщз дзддз злий заразний зайка фзффз фазан груздь зигзаг зазор зашити пізніше що за це",
+	"йййххх зхзхх жххжх лшщзх жах хан храм кірха шах халіф хороша хата халупа запахи худий хижак на ногах",
+	"фффєєє жєжжє зєзєз хєєхє джєдє лжєлж теє віє давнє двоє заєць європа житіє геєна єгипет шкодує немає",
+	"сссєєє всвсв лслсс асаас сад вуса маса сосоо іссіс дсдсд фсффс шанс жерсть гасити світлий пісок єсте",
+	"сссббб лблбл оббоб дбддб вбвбб жбжжб бокс собор соболь барс субота батько фабрика щебінь бути робить",
+	"чччббб ічічі фчффч чуб піч бочок бричка чвчвв ддчдч бачить чахнути чари чи часник чорний чєрєз обруч",
+	"чччююю дюдюд жююжю дюна сюжет ключ колючі глючні люллю юббюб брючні брюнет бюджет юрист флюгер мюслі",
+	"юююяяя фяфяф вяявя іяіія чячяя які якщо зайця ящір ящик шухляда яхта бляха сяє хвоя хартія галя юлія",
+	"яяя... ж.ж.ж ю..ю. є.єє. і т. д. і т. п. та ін. мед. муз. і сл. шк. м. англ. грец. лат. укр. фр. яп.",
+	"...,,, я,я,, я, ти, він, вона... раз, два, три, чотири... точка, точка, кома. загалом, все так само.",
+	"...,,, я,я,, я, ти, він, вона... раз, два, три, чотири... точка, точка, кома. загалом, все так само.",
+	"Токмак Київ Львів Миргород Нетішин Одеса Полтава Рівне Тернопіль Ужгород Харків Чернігів Шостка Белз",
+	"Джек Лондон. Смок Беллью йшов здовж берега, хитаючись від поривів чужого вітру, що взявши майже ненастанно. У сірому світі шестеро човнів навантажували дорогоцінною поклажею, перенесенню через Чількут... Фаїна, Європа."
+	];
+	var taskString = exercises[0];
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<link href="tykstyle.css" rel="stylesheet" type="text/css">
+
+<script type="text/javascript"> </script><noscript><p class="aRed">У вашому браузері JavaScript відключено!</p></noscript>
+<div class=upperBox>
+
+<div class="box"> 
+<div class="hmenubar">
+  <a class="button" title="Тут можна обрати потрібну вправу" onclick="lessonSelect()">&nbsp;&nbsp;&nbsp;Вправи&nbsp;&nbsp;&nbsp;</a>
+  <a class="button" title="Тут можна переглянути поступ у виконанні вправи" id = "exercise" onclick="showProgress()">&nbsp;&nbsp;&nbsp;Поступ&nbsp;&nbsp;&nbsp;</a>
+  <a class="button" title="Тут можна дізнатися про цю програму" onclick="about()">&nbsp;&nbsp;Про "Тиканку"&nbsp;&nbsp;</a>
+</div>
+</div>
+
+   <div id=taskBox>
+      <div id=leftPart>Щось не так,&nbsp; </div><div id=rightPart>має бути вправа</div>
+   </div>
+   <div id=progressBar noshade style="width:0%;"></div>
+</div>
+<h1 class="title" id="message">Клавіатурний тренажер 'Тиканка'</h1>
+<div class="keyboard">
+  <ul class="row row-0">
+    <li class="pinky" id="tilda">~</li>
+    <li class="pinky" id="1">1</li>
+    <li class="ring" id="2">2</li>
+    <li class="middle" id="3">3</li>
+    <li class="pointer1st" id="4">4</li>
+    <li class="pointer2nd" id="5">5</li>
+    <li class="pointer2nd" id="6">6</li>
+    <li class="pointer1st" id="7">7</li>
+    <li class="middle" id="8">8</li>
+    <li class="ring" id="9">9</li>
+    <li class="pinky" id="0">0</li>
+    <li class="pinky" id="minus">-</li>
+    <li class="pinky" id="plus">+</li>
+    <li class="pinky" id="backspace">←Back</li>
+  </ul>
+  <ul class="row row-1">
+    <li class="pinky" id="tab">Tab ↹</li>
+    <li class="pinky" id="Q">Q</li>
+    <li class="ring" id="W">W</li>
+    <li class="middle" id="E">E</li>
+    <li class="pointer1st" id="R">R</li>
+    <li class="pointer2nd" id="T">T</li>
+    <li class="pointer2nd" id="Y">Y</li>
+    <li class="pointer1st" id="U">U</li>
+    <li class="middle" id="I">I</li>
+    <li class="ring" id="O">O</li>
+    <li class="pinky" id="P">P</li>
+    <li class="pinky" id="lsc">[</li>
+    <li class="pinky" id="rsc">]</li>
+    <li class="pinky" id="bckslash" >\</li>
+  </ul>
+  <ul class="row row-2">
+    <li class="pinky" id="capslock">CapsLock</li>
+    <li class="pinky" id="A">A</li>
+    <li class="ring" id="S">S</li>
+    <li class="middle" id="D">D</li>
+    <li class="pointer1st" id="F">F</li>
+    <li class="pointer2nd" id="G">G</li>
+    <li class="pointer2nd" id="H">H</li>
+    <li class="pointer1st" id="J">J</li>
+    <li class="middle" id="K">K</li>
+    <li class="ring" id="L">L</li>
+    <li class="pinky" id ="ddot">:</li>
+    <li class="pinky" id = "apo">''</li>
+    <li class="pinky" id="enter">Enter↵</li>
+  </ul>
+  <ul class="row row-3">
+    <li class="pinky" id="shiftleft">⇧Shift</li>
+    <li class="pinky" id="Z">Z</li>
+    <li class="ring" id="X">X</li>
+    <li class="middle" id="C">C</li>
+    <li class="pointer1st" id="V">V</li>
+    <li class="pointer2nd" id="B">B</li>
+    <li class="pointer2nd" id="N">N</li>
+    <li class="pointer1st" id="M">M</li>
+    <li class="middle" id ="comma">,</li>
+    <li class="ring" id = "dot">.</li>
+    <li class="pinky" id = "slash">/</li>
+    <li class="pinky" id="shiftright">⇧Shift</li>
+  </ul>
+ <ul class="row row-4">
+    <li class="pinky" id="controlleft">Ctrl</li>
+    <li class="pinky" id="metaleft">⌘</li>
+    <li class="ring" id="altleft">Alt</li>
+    <li class="pointer2nd" id="space"></li>
+    <li class="ring" id="altright">AltGr</li>
+    <li class="pinky" id="metaright">⌘</li>
+    <li class="pinky" id="menu">≣</li>
+    <li class="pinky" id="controlright">Ctrl</li>
+  </ul>
+</div>
+
+<script>
+var totalChars;
+var taskNum    = 1; // номер вправи
+var countChars = 0;
+var currentKey = "";
+var key ='';
+var keyShift;
+var capsState = false;
+let charRight = '',
+correctChars = 0,
+incorrectChars = 0,
+started = false,
+strLeft = '',
+timeDuration = 0,
+timeStart = 0,
+timeEnd   = 0,
+charKey = ' ';
+
+const keys    = ["tilda","1","2","3","4","5","6","7","8","9","0","minus","plus","Q","W","E","R","T","Y","U","I","O","P","lsc","rsc","bckslash","A","S","D","F","G","H","J","K","L","ddot","apo","Z","X","C","V","B","N","M","comma","dot","slash","space"];
+const cyrUp   = ["ʼ","1","2","3","4","5","6","7","8","9","0","_","+","Й","Ц","У","К","Е","Н","Г","Ш","Щ","З","Х","Ї","Ґ","Ф","І","В","А","П","Р","О","Л","Д","Ж","Є","Я","Ч","С","М","И","Т","Ь","Б","Ю",","," "];
+const engUp   = ["~","1","2","3","4","5","6","7","8","9","0","_","+","Q","W","E","R","T","Y","U","I","O","P","{","}","|","A","S","D","F","G","H","J","K","L",":","\"","Z","X","C","V","B","N","M","<",">","?"," "];
+const cyrLow  = ["'","1","2","3","4","5","6","7","8","9","0","-","=","й","ц","у","к","е","н","г","ш","щ","з","х","ї","ґ","ф","і","в","а","п","р","о","л","д","ж","є","я","ч","с","м","и","т","ь","б","ю","."," "];
+const engLow  = ["`","1","2","3","4","5","6","7","8","9","0","-","=","q","w","e","r","t","y","u","i","o","p","[","]","\\","a","s","d","f","g","h","j","k","l",";","'","z","x","c","v","b","n","m",",",".","/"," "];
+function cyrLayoutLow() {
+	for (i=0;i<47;i++) {
+		document.getElementById(keys[i]).innerHTML = cyrLow[i];
+	}
+}
+function cyrLayoutUp() {
+	for (i=0;i<47;i++) {
+		document.getElementById(keys[i]).innerHTML = cyrUp[i];
+	}
+}
+function engLayoutLow() {
+	for (i=0;i<47;i++) {
+		document.getElementById(keys[i]).innerHTML = engLow[i];
+	}
+}
+function engLayoutUp() {
+	for (i=0;i<47;i++) {
+		document.getElementById(keys[i]).innerHTML = engUp[i];
+	}
+}
+function about(){
+	let content = 'Клавіатурний онлайн-тренажер для школярів і не тільки для них.<br>\
+Щира подяка:<br>\
+- Pelle Lundgren (evilpaper) - за Keyboard Hero;<br>\
+- спільноті KDE - за уроки для Ktouch;<br>\
+- Animista.net - за css-анімацію;<br>\
+- спільноті вчителів інформатики "Шкільна інформатика від А до Я" - за натхнення.<br>\
+Автор: Громко Г.Ю.';
+	customAlert.alert(content,'Про клавіатурний тренажер');
+}
+function showProgress(){
+	timeEnd = getTimestamp();
+	if (timeStart===0){timeStart = timeEnd}
+	let taskTime = timeEnd- timeStart;
+	let tMinuts = Math.floor(taskTime / 60);
+	let tSeconds = taskTime % 60;
+	let tTime = ""+tMinuts + " хвилин "+ tSeconds + " секунд";
+	let speed = Math.floor(correctChars/taskTime*60);
+	let correctness = Math.floor(correctChars/countChars*100);
+	let content = "час виконання: "+tTime+"<br>натикано символів: "+correctChars+"<br>швидкість: "+speed+" симв/хв<br>правильність: "+correctness+"%<br>";
+	customAlert.alert(content,'Результати виконання вправи');
+}
+function lessonSelect(){
+	let content = '<select id="taskSelect" size="15">\
+<option>Вправа 1: ва о</option>\
+<option>Вправа 2: л</option>\
+<option>Вправа 3: д</option>\
+<option>Вправа 4: і</option>\
+<option>Вправа 5: ф</option>\
+<option>Вправа 6: ж</option>\
+<option>Вправа 7: м</option>\
+<option>Вправа 8: т</option>\
+<option>Вправа 9: и</option>\
+<option>Вправа 10: ь</option>\
+<option>Вправа 11: п</option>\
+<option>Вправа 12: р</option>\
+<option>Вправа 13: к</option>\
+<option>Вправа 14: г</option>\
+<option>Вправа 15: е</option>\
+<option>Вправа 16: н</option>\
+<option>Вправа 17: у</option>\
+<option>Вправа 18: ш</option>\
+<option>Вправа 19: ц</option>\
+<option>Вправа 20: щ</option>\
+<option>Вправа 21: й</option>\
+<option>Вправа 22: з</option>\
+<option>Вправа 23: х</option>\
+<option>Вправа 24: є</option>\
+<option>Вправа 25: с</option>\
+<option>Вправа 26: б</option>\
+<option>Вправа 27: ч</option>\
+<option>Вправа 28: ю</option>\
+<option>Вправа 29: я</option>\
+<option>Вправа 30: .</option>\
+<option>Вправа 31: ,</option>\
+<option>Вправа 32: ї</option>\
+<option>Вправа 33: ВЕЛИКІ літери</option>\
+<option>Вправа 34: Іспит (218 знаків)</option>\
+</select>';
+	customAlert.alert(content,'Оберіть вправу для виконання');
+	var select = document.getElementById("taskSelect");
+	select.addEventListener("change", function () {
+		var index = select.selectedIndex;
+		// Добавить данные в <p>
+		console.log("selectedIndex: ",index);
+		startTyping(index+1);
+	});
+}
+
+
+function taskEnd() { // якщо вправу виконано
+	showProgress();
+	taskNum++;
+	startTyping(taskNum);
+}
+function startTyping(n) {
+    const highlightedKey = document.querySelector(".selected"); // символ виділеної клавіші
+	if (highlightedKey) {highlightedKey.classList.remove("selected");} //  прибираємо виділення	
+	taskNum        = n;
+	document.getElementById('exercise').innerHTML = "Вправа "+taskNum;
+	taskString     = exercises[n-1]; // текстовий рядок для вправи
+	totalChars     = taskString.length;
+	started        = true;
+	countChars     = 0;
+	correctChars   = 0;
+	incorrectChars = 0;
+	strLeft        = '';
+	document.getElementById('leftPart').innerHTML = ' '; // ліва частина порожня
+	document.getElementById('rightPart').innerHTML = taskString.substr(0, 16); // у праву частину
+	document.getElementById('progressBar').style.width = progressBar() + '%'; // оновлюємо індикатор поступу
+	cyrLayoutLow();
+	nextKey(); // Отримати клавішу
+}
+function updateAll(){
+	correctChars++ ; // збільшуємо кількість правильних відповідей
+	strLeft = strLeft.replace("&nbsp;", " "); // вилучаємо &nbsp
+	if (charRight === " ") { charRight = "&nbsp;"}
+	strLeft = strLeft.substr(-11) + charRight; // ліва частина - виконане
+	document.getElementById('leftPart').innerHTML = strLeft; // оновлену ліву частину на екран
+	taskString = taskString.slice(1);
+	nbsp ='';
+	cst = 0;
+	if (taskString[0]===' ') { 
+		nbsp = "&nbsp;";
+		cst = 1;
+		}
+	document.getElementById('rightPart').innerHTML = nbsp+taskString.substr(cst, 16); // права частина на екран
+	document.getElementById('progressBar').style.width = progressBar() + '%'; // оновлюємо індикатор поступу
+}
+function getKeyId(kkey){ // Знаходимо ідентифікатор клавіші за символом
+	let kcyr = cyrUp.indexOf(kkey.toUpperCase());
+	let keng = engUp.indexOf(kkey.toUpperCase());
+	var keyId = kkey;
+	if (kcyr > -1) {
+		keyId = keys[kcyr];
+	}
+	if (keng > -1) {
+		keyId = keys[keng];
+	} 
+	console.log("keyID=",keyId);
+	return keyId;
+}
+
+function keyShiftPressed(state){
+	if (state){
+		cyrLayoutUp();
+	} else {
+		cyrLayoutLow();
+	}
+}
+
+document.addEventListener("keydown", event => {
+	console.log("Keydown =",event.code);
+	if (event.key === "Shift"){
+		keyShiftPressed(!capsState);
+		if (event.code === "ShiftLeft") {shiftPressed="shiftleft"; }
+		else { shiftPressed="shiftright"; }
+		keyShift = document.getElementById(shiftPressed); // отримати клавішу по символу
+		keyShift.classList.add("selected"); // виділити клавішу з потрібним символом
+	}
+	if (event.key === "CapsLock"){
+		if (capsState){
+			capsState = false;
+			keyShiftPressed(false);
+		} else {
+			capsState = true;
+			keyShiftPressed(true);
+		}
+	}
+})
+
+
+
+// Опрацьовування натиску клавіші
+document.addEventListener("keyup", event => {
+	if (started){
+		started = false;
+		timeStart = getTimestamp(); // відлік часу початку в секундах розпочинається після першого натиску клавіші
+	}
+	currentKey = event.key;
+	console.log('CurKey =',currentKey);
+	countChars++; // збільшуємо кількість натисків
+	var keyPressed = getKeyId(currentKey); // ідентифікатор натиснутої клавіші
+  
+    if (event.key === "Shift"){
+		keyShiftPressed(capsState);
+		keyShift.classList.remove("selected");
+	}
+	if ((keyPressed === "Shift")||(keyPressed === "Control")||(keyPressed === "Meta")||
+	    (keyPressed === "Alt")||(keyPressed === "AltGraph")||(keyPressed === "Enter")||
+	    (keyPressed === "Tab")||(keyPressed === "Backspace")||(keyPressed === "CapsLock")){
+		keyPressed=event.code.toLowerCase();
+		countChars--; // натиски службових клавіш не враховуємо
+		console.log('KeyPressed =',keyPressed);
+	}
+    const keyElement = document.getElementById(keyPressed);   
+    
+    const highlightedKey = document.querySelector(".selected"); // символ виділеної клавіші
+  
+    keyElement.classList.add("hit") // анімуємо натиснуту клавішу
+    keyElement.addEventListener('animationend', () => {
+        keyElement.classList.remove("hit")
+    })
+  
+  if (currentKey === taskString[0]) { // якщо натиснуто потрібну клавішу
+		charRight = currentKey;
+		updateAll();
+		highlightedKey.classList.remove("selected"); //  прибираємо виділення
+		
+		if (correctChars < exercises[taskNum-1].length) {
+			console.log("Length = ",correctChars, exercises[taskNum-1].length);
+			nextKey(); // отримуємо новий символ
+		} else {
+			taskEnd();
+		}
+	} else {
+		if ((currentKey === taskString[0].toUpperCase()) || (currentKey === taskString[0].toLowerCase())) {
+			document.getElementById("message").innerHTML="Змініть регістр символів!";
+            setTimeout(function(){
+				document.getElementById("message").innerHTML="";
+			},2000);
+		}
+		if (((currentKey.charCodeAt(0)>127)&&(taskString[0].charCodeAt(0)<127))||((currentKey.charCodeAt(0)<127)&&(taskString[0].charCodeAt(0)>127))){
+			if (currentKey!=" ") {
+				document.getElementById("message").innerHTML="Змініть розкладку клавіатури!";
+				setTimeout(function(){
+					document.getElementById("message").innerHTML="";
+				},2000);
+			}
+		}
+	} 
+})
+
+function progressBar() {
+	let z = correctChars * 98 / totalChars
+	return z.toFixed(1)
+	}
+
+function nextKey() {
+	let ckey = taskString[0];
+    const key = document.getElementById(getKeyId(ckey)); // отримати клавішу по символу
+	key.classList.add("selected"); // виділити клавішу з потрібним символом
+}
+
+function getTimestamp() {
+  return Math.floor(Date.now() / 1000) // поточний час у секундах
+}
+
+function CustomAlert(){ // спливаюче модальне вікно для повідомлень
+  this.alert = function(message,title){
+    document.body.innerHTML = document.body.innerHTML + '<div id="dialogoverlay"></div><div id="dialogbox" class="slit-in-vertical"><div><div id="dialogboxhead"></div><div id="dialogboxbody" style="line-height: 1.8em;"></div><div id="dialogboxfoot"></div></div></div>';
+
+    let dialogoverlay = document.getElementById('dialogoverlay');
+    let dialogbox = document.getElementById('dialogbox');
+    
+    let winH = window.innerHeight;
+    dialogoverlay.style.height = winH+"px";
+    
+    dialogbox.style.top = "100px";
+
+    dialogoverlay.style.display = "block";
+    dialogbox.style.display = "block";
+    
+    document.getElementById('dialogboxhead').style.display = 'block';
+
+    if(typeof title === 'undefined') {
+      document.getElementById('dialogboxhead').style.display = 'none';
+    } else {
+      document.getElementById('dialogboxhead').innerHTML = '<i class="fa fa-exclamation-circle" aria-hidden="true"></i> '+ title;
+    }
+    document.getElementById('dialogboxbody').innerHTML = message;
+    document.getElementById('dialogboxfoot').innerHTML = '<button class="pure-material-button-contained active" onclick="customAlert.ok()">OK</button>';
+  }
+  
+  this.ok = function(){
+    document.getElementById('dialogbox').style.display = "none";
+    document.getElementById('dialogoverlay').style.display = "none";
+  }
+}
+let customAlert = new CustomAlert();
+startTyping(taskNum);
+</script>
+</html>
