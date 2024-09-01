@@ -139,13 +139,14 @@
 
 <script>
 var totalChars;
+var lang = "ua";
 var taskNum    = 1; // номер вправи
 var countChars = 0;
 var currentKey = "";
 var key ='';
 var keyShift;
 var capsState = false;
-let charRight = '',
+var charRight = '',
 correctChars = 0,
 incorrectChars = 0,
 started = false,
@@ -156,10 +157,11 @@ timeEnd   = 0,
 charKey = ' ';
 
 const keys    = ["tilda","1","2","3","4","5","6","7","8","9","0","minus","plus","Q","W","E","R","T","Y","U","I","O","P","lsc","rsc","bckslash","A","S","D","F","G","H","J","K","L","ddot","apo","Z","X","C","V","B","N","M","comma","dot","slash","space"];
-const cyrUp   = ["ʼ","1","2","3","4","5","6","7","8","9","0","_","+","Й","Ц","У","К","Е","Н","Г","Ш","Щ","З","Х","Ї","Ґ","Ф","І","В","А","П","Р","О","Л","Д","Ж","Є","Я","Ч","С","М","И","Т","Ь","Б","Ю",","," "];
-const engUp   = ["~","1","2","3","4","5","6","7","8","9","0","_","+","Q","W","E","R","T","Y","U","I","O","P","{","}","|","A","S","D","F","G","H","J","K","L",":","\"","Z","X","C","V","B","N","M","<",">","?"," "];
+const cyrUp   = ["ʼ","!",'"',"№",";","%",":","?","*","(",")","_","+","Й","Ц","У","К","Е","Н","Г","Ш","Щ","З","Х","Ї","Ґ","Ф","І","В","А","П","Р","О","Л","Д","Ж","Є","Я","Ч","С","М","И","Т","Ь","Б","Ю",","," "];
+const engUp   = ["~","!","@","#","$","%","^","&","*","(",")","_","+","Q","W","E","R","T","Y","U","I","O","P","{","}","|","A","S","D","F","G","H","J","K","L",":","\"","Z","X","C","V","B","N","M","<",">","?"," "];
 const cyrLow  = ["'","1","2","3","4","5","6","7","8","9","0","-","=","й","ц","у","к","е","н","г","ш","щ","з","х","ї","ґ","ф","і","в","а","п","р","о","л","д","ж","є","я","ч","с","м","и","т","ь","б","ю","."," "];
 const engLow  = ["`","1","2","3","4","5","6","7","8","9","0","-","=","q","w","e","r","t","y","u","i","o","p","[","]","\\","a","s","d","f","g","h","j","k","l",";","'","z","x","c","v","b","n","m",",",".","/"," "];
+
 function cyrLayoutLow() {
 	for (i=0;i<47;i++) {
 		document.getElementById(keys[i]).innerHTML = cyrLow[i];
@@ -178,6 +180,22 @@ function engLayoutLow() {
 function engLayoutUp() {
 	for (i=0;i<47;i++) {
 		document.getElementById(keys[i]).innerHTML = engUp[i];
+	}
+}
+
+function capsLock(state){
+	if (state) {
+		for (i=13;i<47;i++) {
+			var cU = cyrUp[i]
+			if (lang==="eng") { cU = engUp[i]}
+			document.getElementById(keys[i]).innerHTML = cU;
+		}
+	} else {
+		for (i=13;i<47;i++) {
+			var cL = cyrLow[i];
+			if (lang==="eng") { cL = engLow[i]}
+			document.getElementById(keys[i]).innerHTML = cL;
+		}
 	}
 }
 function about(){
@@ -243,17 +261,31 @@ function lessonSelect(){
 	var select = document.getElementById("taskSelect");
 	select.addEventListener("change", function () {
 		var index = select.selectedIndex;
-		// Добавить данные в <p>
 		console.log("selectedIndex: ",index);
 		startTyping(index+1);
 	});
 }
 
-
 function taskEnd() { // якщо вправу виконано
 	showProgress();
 	taskNum++;
 	startTyping(taskNum);
+}
+
+function kbdSetup(up){
+	if (lang==="ua"){
+		if (up) {
+			cyrLayoutUp();
+		} else {
+			cyrLayoutLow();
+		}
+	} else {
+		if (up) {
+			engLayoutUp();
+		} else {
+			engLayoutLow();
+		}
+	}
 }
 function startTyping(n) {
     const highlightedKey = document.querySelector(".selected"); // символ виділеної клавіші
@@ -262,6 +294,7 @@ function startTyping(n) {
 	document.getElementById('exercise').innerHTML = "Вправа "+taskNum;
 	taskString     = exercises[n-1]; // текстовий рядок для вправи
 	totalChars     = taskString.length;
+	lang = "ua";
 	started        = true;
 	countChars     = 0;
 	correctChars   = 0;
@@ -270,7 +303,7 @@ function startTyping(n) {
 	document.getElementById('leftPart').innerHTML = ' '; // ліва частина порожня
 	document.getElementById('rightPart').innerHTML = taskString.substr(0, 16); // у праву частину
 	document.getElementById('progressBar').style.width = progressBar() + '%'; // оновлюємо індикатор поступу
-	cyrLayoutLow();
+	kbdSetup(false); // нижній регістр
 	nextKey(); // Отримати клавішу
 }
 function updateAll(){
@@ -290,8 +323,14 @@ function updateAll(){
 	document.getElementById('progressBar').style.width = progressBar() + '%'; // оновлюємо індикатор поступу
 }
 function getKeyId(kkey){ // Знаходимо ідентифікатор клавіші за символом
-	let kcyr = cyrUp.indexOf(kkey.toUpperCase());
-	let keng = engUp.indexOf(kkey.toUpperCase());
+	var kcyr = cyrUp.indexOf(kkey.toUpperCase());
+	if (kcyr === -1) {
+		kcyr = cyrLow.indexOf(kkey.toLowerCase());
+	}
+	var keng = engUp.indexOf(kkey.toUpperCase());
+	if (keng === -1) {
+		keng = engLow.indexOf(kkey.toLowerCase())
+	}
 	var keyId = kkey;
 	if (kcyr > -1) {
 		keyId = keys[kcyr];
@@ -303,49 +342,49 @@ function getKeyId(kkey){ // Знаходимо ідентифікатор кла
 	return keyId;
 }
 
-function keyShiftPressed(state){
-	if (state){
-		cyrLayoutUp();
+function keyShiftPressed(){
+	if (capsState){ // якщо увімкнено capsLock - перемикаємо на нижній регістр
+		kbdSetup(false);
 	} else {
-		cyrLayoutLow();
+		kbdSetup(true);
 	}
 }
 
-document.addEventListener("keydown", event => {
+function keyShiftUnPressed(){
+	if (capsState){ // якщо увімкнено capsLock - перемикаємо на верхній регістр
+		kbdSetup(true);
+	} else {
+		kbdSetup(false);
+	}
+}
+document.addEventListener("keydown", event => { // при натиску на клавішу опрацьовуємо Shift та CapsLock 
 	console.log("Keydown =",event.code);
 	if (event.key === "Shift"){
-		keyShiftPressed(!capsState);
+		keyShiftPressed();
 		if (event.code === "ShiftLeft") {shiftPressed="shiftleft"; }
 		else { shiftPressed="shiftright"; }
 		keyShift = document.getElementById(shiftPressed); // отримати клавішу по символу
 		keyShift.classList.add("selected"); // виділити клавішу з потрібним символом
 	}
-	if (event.key === "CapsLock"){
-		if (capsState){
-			capsState = false;
-			keyShiftPressed(false);
-		} else {
-			capsState = true;
-			keyShiftPressed(true);
-		}
+	if (event.key === "CapsLock"){ // якщо CapsLock - алфавітні клавіші у верхній регістр
+		capsState =!capsState;
+		capsLock(capsState)
 	}
 })
 
-
-
-// Опрацьовування натиску клавіші
+// Опрацьовування відпускання клавіші
 document.addEventListener("keyup", event => {
 	if (started){
 		started = false;
 		timeStart = getTimestamp(); // відлік часу початку в секундах розпочинається після першого натиску клавіші
 	}
 	currentKey = event.key;
-	console.log('CurKey =',currentKey);
+	if (currentKey==='GroupNext') {return}
 	countChars++; // збільшуємо кількість натисків
 	var keyPressed = getKeyId(currentKey); // ідентифікатор натиснутої клавіші
   
     if (event.key === "Shift"){
-		keyShiftPressed(capsState);
+		keyShiftUnPressed();
 		keyShift.classList.remove("selected");
 	}
 	if ((keyPressed === "Shift")||(keyPressed === "Control")||(keyPressed === "Meta")||
@@ -382,16 +421,28 @@ document.addEventListener("keyup", event => {
 				document.getElementById("message").innerHTML="";
 			},2000);
 		}
-		if (((currentKey.charCodeAt(0)>127)&&(taskString[0].charCodeAt(0)<127))||((currentKey.charCodeAt(0)<127)&&(taskString[0].charCodeAt(0)>127))){
-			if (currentKey!=" ") {
-				document.getElementById("message").innerHTML="Змініть розкладку клавіатури!";
-				setTimeout(function(){
-					document.getElementById("message").innerHTML="";
-				},2000);
-			}
+		// якщо не співпадає регістр символів
+		if (isLetter(currentKey)&&(currentKey.length===1)){
+				if ((isEng(currentKey)&&isCyr(taskString[0]))||(isEng(taskString[0])&&isCyr(currentKey))) {
+						document.getElementById("message").innerHTML="Змініть розкладку клавіатури!";
+						setTimeout(function(){
+							document.getElementById("message").innerHTML="";
+						},2000);
+				}
 		}
 	} 
 })
+function isLetter(ckey){
+	return isEng(ckey)+isCyr(ckey)
+}
+
+function isEng(ckey) {
+	return ckey.match(/([a-zA-Z]+)/)
+}
+
+function isCyr(ckey) {
+	return ckey.match(/([а-яіїєґА-ЯІЇЄҐ]+)/)
+}
 
 function progressBar() {
 	let z = correctChars * 98 / totalChars
@@ -400,6 +451,13 @@ function progressBar() {
 
 function nextKey() {
 	let ckey = taskString[0];
+	if (isEng(ckey)){
+		lang = "eng";
+	}
+	if (isCyr(ckey)){
+		lang = "ua";
+	}
+	kbdSetup(false);
     const key = document.getElementById(getKeyId(ckey)); // отримати клавішу по символу
 	key.classList.add("selected"); // виділити клавішу з потрібним символом
 }
