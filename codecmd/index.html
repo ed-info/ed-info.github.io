@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Code Commander</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <meta charset="utf-8">
+  <link href="./css/main.css" media="all" rel="stylesheet" type="text/css">
+  <script src="./js/jquery-1.7.1.js"></script>
+  <script src="./js/plugins/json-2.3.min.js"></script>
+  <!-- <script src="./js/crafty-0.4.4.js"></script> -->
+  <script src="./js/crafty-dev.js"></script>
+  <script src="./js/soundmanager2.js"></script>
+  <script src="./js/class.js"></script>
+  <script src="./js/classes/settings.js"></script>
+  <script src="./js/classes/sound.js"></script>
+  <script src="./js/classes/app.js"></script>
+  <script src="./js/classes/overlay.js"></script>
+  <script src="./js/classes/program.js"></script>
+  <script src="./js/classes/level.js"></script>
+  <script src="./js/classes/map_object.js"></script>
+  <script src="./js/classes/map.js"></script>
+  <script src="./js/classes/dir.js"></script>
+  <script src="./js/classes/pos.js"></script>
+  <script src="./js/classes/tank.js"></script>
+  <script src="./js/classes/mine.js"></script>
+  <script src="./js/classes/base.js"></script>
+  <script src="./js/classes/tree.js"></script>
+  <script src="./js/classes/rock.js"></script>
+  <script src="./js/classes/wall.js"></script>
+  <script src="./js/classes/bullet.js"></script>
+  <script src="./js/classes/beam_tower.js"></script>
+  <script src="./js/classes/beam.js"></script>
+  <script src="./js/classes/explosion.js"></script>
+  <script>
+    // Config sound manager
+    soundManager.url = '/swf/';
+    soundManager.flashVersion = 9;
+    soundManager.debugMode = false;
+    soundManager.useHighPerformance = true;
+    // All classes now loaded...
+    Class.classesLoaded();
+  </script>
+</head>
+<body>
+<div id="wrapper">
+  
+<div id="header" class="boxed">
+  <div style="float: right;">
+    <button id="audio-toggle" class="toggle off"><img src="./images/icons/24/Audio.png"></button>
+  </div>
+  <h1>Code Commander</h1>
+</div>
+
+<div id="body">
+  
+  <div id="main" class="boxed">
+    <div id="title">Рівень: Не обрано</div>
+    <div id="canvas">
+      <div id="cr-stage"></div>
+      <div id="overlay"></div>
+      <div id="overlay-contents"></div>
+    </div>
+  </div>
+  
+  <div id="sidebar" class="boxed">
+    <div class="section">
+      <button id="help-button" style="float: right;font-size: 14px;margin-top:-4px;">Про програмування</button>
+      <h2>Програма</h2>
+    </div>
+    <div class="section">
+      <textarea id="program"></textarea>
+    </div>
+    <div class="section">
+      <button id="run-button" style="float: right;">Запуск програми</button>
+      <button id="select-button">Обрати рівень</button>
+    </div>
+  </div>
+  
+  <div style="text-align: right;padding: 10px;clear:both;color: #888;">
+    <a href="#" id="about-button">Про CodeCommander</a> -  
+    <a href="#" id="reset-button">Скинути поступ</a>
+  </div>
+
+</div>
+
+</div>
+<div id="res">
+  <script>
+    var app = null;
+    $(function() {
+      app = App.start();
+    });
+  </script>
+</div>
+</body>
+</html>

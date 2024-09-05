@@ -1,0 +1,204 @@
+@font-face {
+  font-family: 'RussoOne';
+  src: url('./fonts/RussoOne-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  background: #4C5561 url(./images/bg.gif);
+  font-family: sans-serif;
+}
+
+a, a:visited {
+  color: #888;
+  text-decoration: none;
+}
+a:hover, a:active {
+  text-decoration: underline;
+}
+
+#wrapper {
+  margin: auto;
+  width: 1000px;
+}
+
+#header {
+  position: relative;
+  margin-bottom: 16px;
+  width: 960px;
+}
+#header h1 {
+  margin: 0;
+  font-size: 40px;
+  padding-left: 10px;
+  line-height: 40px;
+  text-shadow: 3px 3px 0 #bbb;
+}
+
+#body {
+  position: relative;
+}
+
+#main {
+  float: left;
+  width: 600px;
+  margin-right: 20px;
+  height: 600px;
+}
+
+#sidebar {
+  float: left;
+  width: 300px;
+  height: 600px;
+}
+
+#title {
+  height: 16px;
+  line-height: 16px;
+  margin-bottom: 4px;
+  color: #666;
+  font-weight: bold; 
+}
+
+#canvas {
+  width: 512px;
+  height: 512px;
+  border: 2px solid #888;
+  background: url(./images/stage-bg.png);
+}
+
+#program {
+  border: 2px solid #888;
+  width: 277px;
+  height: 400px;
+  padding: 5px;
+  color: #cdf;
+  background: #222;
+  font-size: 18px;
+  line-height: 22px; 
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'RussoOne', verdana;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 10px;
+  font-weight: normal;
+  color: #444;
+}
+
+button {
+  font-size: 16px;
+  border: 2px solid #444;
+  box-shadow: 0 0 3px #000;
+  background: #ddd;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 8px;
+
+  background-image: linear-gradient(top, rgb(230,230,230) 28%, rgb(186,186,186) 68%);
+  background-image: -o-linear-gradient(top, rgb(230,230,230) 28%, rgb(186,186,186) 68%);
+  background-image: -moz-linear-gradient(top, rgb(230,230,230) 28%, rgb(186,186,186) 68%);
+  background-image: -webkit-linear-gradient(top, rgb(230,230,230) 28%, rgb(186,186,186) 68%);
+  background-image: -ms-linear-gradient(top, rgb(230,230,230) 28%, rgb(186,186,186) 68%);
+
+  background-image: -webkit-gradient(
+  	linear,
+  	left top,
+  	left bottom,
+  	color-stop(0.28, rgb(230,230,230)),
+  	color-stop(0.68, rgb(186,186,186))
+  );
+}
+button.toggle.on {
+}
+button.toggle.off {
+  background: #ddd;
+  background-image: 0;
+  box-shadow: none;
+  border-color: #888;
+}
+button.toggle.off img {
+  opacity: 0.4;
+}
+
+.section {
+  margin-bottom: 10px;
+}
+
+.indent {
+  margin-left: 15px;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.boxed {
+  background: #ddd;
+  padding: 18px; 
+  box-shadow: 1px 3px 8px #000;
+  border: 2px solid #aaa;
+  border-radius: 8px;
+}
+
+#overlay {
+  display: none;
+  position: absolute;
+  left: 33px;
+  top: 53px;
+  opacity: 0.5;
+  background: #000;
+  width: 492px;
+  height: 492px;
+}
+#overlay-contents {
+  display: none;
+  position: absolute;
+  left: 33px;
+  top: 53px;
+  padding: 25px;
+  width: 442px;
+  height: 442px;
+  color: #fff !important;
+  font-family: sans-serif;
+  line-height: 20px;
+}
+#overlay-contents h1 {
+  font-size: 25px;
+  color: #fff; 
+}
+#overlay-contents td {
+  color: #fff; 
+}
+#overlay-contents a {
+  color: #aca !important;
+}
+
+table {
+  border-collapse: collapse;
+}
+td {
+  padding: 4px;
+}
+
+.level {
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  font-weight: bold;
+  float: left;
+  margin-right: 10px;
+  border: 1px solid #fff;
+  text-align: center;
+}
+.level:hover {
+  background: #444; 
+}
+.level.completed {
+  background: #553;
+  color: #ffa;
+  border-color: #aa6; 
+}
