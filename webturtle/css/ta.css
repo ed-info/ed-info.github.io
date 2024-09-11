@@ -1,0 +1,326 @@
+body {
+ font-family: "Avenir Next", "Lucida Grande", "Lucida Sans Unicode",  sans-serif;
+ font-size: 10px;
+ margin: 0;
+ padding: 0;
+ overflow: hidden;
+ background: #fdfcfa;
+}
+
+div.frame {
+ position: absolute;
+ background: #fdfcfa;  /*#fbf8f4; #faf5ef;*/
+ width: 100%;
+ height: 100%;
+ overflow: hidden;
+}
+
+div.cnvframe {
+ position: absolute;
+ margin: 0px;
+ padding: 0px;
+ width: 700px;
+ height: 560px;
+ top: 0px;
+ left: 225px;
+ overflow: hidden;
+ border:solid 1px rgba(228, 203, 169, 0.7); 
+ outline: none;
+}
+
+*.blockcanvas {
+	position: absolute;
+ 	margin: 0px;
+	padding: 0px;
+ 	width: 1840px;
+ 	height: 1472px;
+ 	top: 0px;
+ 	left: 0px;
+ 	z-index: 50;
+}
+
+canvas.cnv {
+ position: absolute;
+ width: 700px;
+ height: 560px;
+}
+
+div.palframe {
+ position: absolute;
+ top: 0px;
+ left: 40px;
+ width: 180px;
+ height: 560px; 
+ text-align: center;
+ z-index: 20;
+ overflow: hidden;
+ -webkit-border-radius: 6px;
+ background: rgb(255, 255, 255);
+ border: 1px solid rgba(228, 203, 169, 0.5); 
+ -webkit-user-select: none;
+}
+
+div.paldiv {
+ position: relative;
+ top: 0;
+ text-align: center;
+ padding: 0px;
+ padding-top: 9px; 
+ padding-bottom: 9px;
+ margin: 0px;
+ z-index: 20;
+ overflow: hidden;
+ white-space: nowrap;
+ -webkit-user-select: none;
+ user-select: none;
+ background: rgba(255,255, 255, 0.5);
+ width: 100%;
+ height: 100%;
+}
+
+div.paldiv.scroll {
+ overflow-y: scroll;
+ overflow-x: hidden;
+}
+
+div.spacer {
+ position: relative;
+ width: 100%;
+ height: 18px;
+}
+
+hr.blockshr {
+ position: relative;
+ margin: 5px 14px 5px;
+ height: 2px;
+ border: 0;
+ box-shadow: inset 0 4px 4px -4px rgba(228, 203, 169, 0.9);
+}
+
+
+div.categories {
+ position: absolute;
+ top: 33px;
+ left: 0px;
+ margin: 0px;
+ padding: 0px;
+ width: 40px;
+ height: 250px;
+}
+
+.selector {
+ position: relative;
+ display: inline-block;
+ word-spacing: -1;
+ width: 40px;
+ height: 42px;
+ margin: 0px;
+ margin-top: 2px;
+}
+
+.selector.green.on { background:  url('../assets/categories/OpenGreen.svg') no-repeat top right;}
+.selector.green.off { background:  url('../assets/categories/ClosedGreen.svg') no-repeat top right;}
+.selector.cyan.on { background:  url('../assets/categories/OpenCyan.svg') no-repeat top right;}
+.selector.cyan.off { background:  url('../assets/categories/ClosedCyan.svg') no-repeat top right;}
+.selector.pink.on { background:  url('../assets/categories/OpenPink.svg') no-repeat top right;}
+.selector.pink.off { background:  url('../assets/categories/ClosedPink.svg') no-repeat top right;}
+.selector.orange.on { background:  url('../assets/categories/OpenOrange.svg') no-repeat top right;}
+.selector.orange.off { background:  url('../assets/categories/ClosedOrange.svg') no-repeat top right;}
+.selector.yellow.on { background:  url('../assets/categories/OpenYellow.svg') no-repeat top right;}
+.selector.yellow.off { background:  url('../assets/categories/ClosedYellow.svg') no-repeat top right;}
+
+
+
+div.blocksbutton {
+ position: absolute; 
+ background:  url('../assets/tools/blocksbutton.svg') no-repeat top left; 
+ top: 400px;
+ left: 0px;
+ margin: 0px;
+ padding: 0px;
+ width: 70px;
+ height: 70px;
+ zoom: 0.5;
+}
+
+p.footer {
+  position: absolute;
+  top: 200px;
+  left: 50px;
+  height: 32px;
+  width: 524px;
+  text-align: center;
+  font-weight: normal; 
+  font-size: 16px;
+  line-height: 32px;
+  z-index: 11000;
+  border: 1px solid rgba(228, 203, 169, 0.4);
+  border-bottom: 0px solid rgba(228, 203, 169, 0.4);
+  background: #ffaa00;
+  color: #4A4B4C;
+  -webkit-border-top-left-radius: 8px;
+  -webkit-border-top-right-radius: 8px;
+  visibility: hidden;
+}
+
+/* scroll bars */
+
+div.vscroll {
+	position: absolute;
+	width: 5px;
+	height: 362px;
+	top: 2px;
+	left: 200px;
+	background: rgba(0,0,0, 0.1);
+	border: 1px solid rgba(255,255,255, 0.2);
+	-webkit-border-radius: 10px;
+	visibility: hidden;
+}
+
+div.hscroll {
+	position: absolute;
+	width: 452px;
+	height: 5px;
+	top: 100px;
+	left: 2px;
+	background: rgba(0,0,0, 0.1);
+	border: 1px solid rgba(255,255,255, 0.2);
+	-webkit-border-radius: 10px;
+	visibility: hidden;
+}
+
+/* Right side icons */
+
+*.playicon {
+ position: absolute;
+ top: 12px;
+ right: 0px;
+ width: 46px;
+ height: 46px;
+ background: url('../assets/icons/play.svg') no-repeat center center;
+  zoom: 0.9;
+}
+
+*.playicon.normal {display: block;}
+*.playicon.fullscreen {display: none;}
+
+*.playicon.off.shown {background:  url('../../../www.playfulinvention.com/webturtleart/assets/icons/stopShown.html') no-repeat center center;}
+*.playicon.off {background:  url('../assets/icons/stop.svg') no-repeat center center;}
+*.playicon.on {background:  url('../assets/icons/play.svg') no-repeat center center;}
+
+*.openmenu {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 46px;
+  height: 46px;
+ 	background:  url('../assets/icons/menuOff.svg') no-repeat center center;
+ 	z-index: 6000;
+}
+
+*.openmenu:active {	background:  url('../assets/icons/menuOff.svg') no-repeat center center;}
+
+*.openmenu.on {background: url('../assets/icons/menuOff.svg') no-repeat center center; }
+
+*.openmenu.normal {display: block;}
+*.openmenu.fullscreen {display: none;}
+
+
+
+*.blockstoggle {
+ position: absolute;
+ top: 358px;
+ right: 0px;
+ width: 46px;
+ height: 46px;
+ background:  url('../assets/icons/hideOff.svg');
+}
+
+*.blockstoggle.on {background:  url('../assets/icons/hideOn.svg') no-repeat center center; }
+*.blockstoggle.off {background:  url('../assets/icons/hideOff.svg') no-repeat center center;}
+
+
+
+*.wrenchicon {
+ position: absolute;
+ top: 358px;
+ right: 0px;
+ width: 51px;
+ height: 54px;
+ background:  url('../../../www.playfulinvention.com/webturtleart/assets/icons/wrenchOff.html');
+}
+
+.wrenchicon:active {	background:  url('../../../www.playfulinvention.com/webturtleart/assets/icons/wrenchOn2.html') no-repeat center center;}
+
+*.wrenchicon.on {background:  url('../../../www.playfulinvention.com/webturtleart/assets/icons/wrenchOn2.html') no-repeat center center; }
+*.wrenchicon.off {background:  url('../../../www.playfulinvention.com/webturtleart/assets/icons/wrenchOff.html') no-repeat center center;}
+
+*.wrenchicon.normal {display: block;}
+*.wrenchicon.fullscreen {display: none;}
+
+div.savebutton {
+ position: absolute; 
+ background:  url('../assets/icons/saveOff.svg') no-repeat center left; 
+ bottom: 46px;
+ left: 0px;
+ width: 46px;
+ height: 46px;
+ margin: 0px;
+ padding: 0px;
+}
+
+/* help */
+
+
+iframe.helpframe {
+ position: absolute;
+ width: 542px;
+ height: 295px;
+ border:none;
+ background: none;
+ -webkit-border-radius: 8px;
+ z-index: 100000;
+  -webkit-user-select: none;
+}
+
+iframe.helpframe.zoomout {zoom: 100%;}
+
+iframe.helpframe body {
+	background: none;
+	  -webkit-user-select: none;
+	}
+
+*.turtle {
+  -webkit-user-select: none;   
+ -khtml-user-select: none;
+ -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+/* zoom */
+
+*.zoomctrl{
+	position: absolute;
+	display: inline-block;
+	margin: 4px;
+	padding: 0px;
+	width: 48px;
+	right: 0px;
+	bottom: 0px;
+	z-index: 1000;
+}
+
+*.zoom {
+	position: relative;
+ 	display: inline-block;
+ 	margin: 5px;
+ 	padding: 0;
+ 	width: 36px;
+	height: 36px;	
+	opacity: 0.75;
+}
+
+*.zoom.in {background: url('../assets/ui/zoom-in.svg') no-repeat left center;}
+*.zoom.out {background: url('../assets/ui/zoom-out.svg') no-repeat left center;}
+*.zoom.reset {background: url('../assets/ui/zoom-reset.svg') no-repeat left center;}

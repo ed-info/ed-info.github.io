@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<link rel="icon" 
+      type="image/png"
+      href="assets/favicon.png">
+      
+<title>TurtleArt</title>
+<link href="css/ta.css" rel="stylesheet" type="text/css">
+<link href="css/taaccessories.css" rel="stylesheet" type="text/css">
+<link href="css/help.css" rel="stylesheet" type="text/css">
+<link href="css/modal.css" rel="stylesheet" type="text/css">
+<link href="css/blocks.css" rel="stylesheet" type="text/css">
+
+<script type="text/javascript" src="js/lib.js"></script>
+<script type="text/javascript" src="js/engine/ta.js"></script>
+<script type="text/javascript" src="js/engine/block.js"></script>
+<script type="text/javascript" src="js/engine/scripts.js"></script>
+<script type="text/javascript" src="js/engine/turtle.js"></script>
+<script type="text/javascript" src="js/engine/runtime.js"></script>
+<script type="text/javascript" src="js/engine/project.js"></script>
+<script type="text/javascript" src="js/ui/editfield.js"></script>
+<script type="text/javascript" src="js/ui/defs.js"></script>
+<script type="text/javascript" src="js/ui/palette.js"></script>
+<script type="text/javascript" src="js/ui/events.js"></script>
+<script type="text/javascript" src="js/ui/UI.js"></script>
+
+<script type="text/javascript" src="js/tac/SVGTurtle.js"></script>
+<script type="text/javascript" src="js/tac/PathConverter.js"></script>
+<script type="text/javascript" src="js/tac/Optimizer.js"></script>
+<script type="text/javascript" src="js/tac/PathFinder.js"></script>
+<script type="text/javascript" src="js/tac/ExportVM.js"></script>
+<script type="text/javascript" src="js/tac/Exporter.js"></script>
+
+<script type="text/javascript" src="js/tac/utils/SVG.js"></script>
+<script type="text/javascript" src="js/tac/utils/path.js"></script>
+<script type="text/javascript" src="js/tac/utils/rectangle.js"></script>
+<script type="text/javascript" src="js/tac/utils/vector.js"></script>
+<script type="text/javascript" src="js/tac/utils/segment.js"></script>
+<script type="text/javascript" src="js/tac/utils/part.js"></script>
+<script type="text/javascript" src="js/tac/utils/Geom.js"></script>   
+<script type="text/javascript" src="js/tac/utils/tests.js"></script>   
+
+</head>
+
+<body style="background-color:#213452;">
+<div class="frame" id="frame" style="background-color:#213452;">
+	<div class="cnvframe" id="cnvframe" tabindex="0">
+		<canvas class="cnv" id="canvas"></canvas>
+		<p class="footer" id="footer">footer</p>
+
+		<g class="zoomctrl" id="zoomctrl" style="visibility: hidden;">
+			<div class="zoom in" id="zoomin"></div>
+			<div class="zoom out" id="zoomout"></div>
+			<div class="zoom reset" id="zoomreset"></div>
+		</g>
+	</div>
+	<div class="palframe" id="palframe">
+		<div class="paldiv" id="paldiv"></div>
+	</div>
+	<div class="categories" id="categories">
+		<div class="selector green off" id="green"></div>
+		<div class="selector cyan off" id="cyan"></div>
+		<div class="selector pink off" id="pink"></div>
+		<div class="selector orange off" id="orange"></div>
+		<div class="selector yellow off" id="yellow"></div>
+	</div>
+	<div class="savebutton" id="savebutton"></div>
+	<div class="playicon" id="playbutton"></div>
+	<div class="openmenu" id="openmenu"></div>
+	<div class="blockstoggle" id="togglebutton"></div>	
+</div>
+	<div class="modal-backdrop fade" id="backdrop"></div>
+	<div class="dialogbox fade" id="dialogbox">	
+	 <div class="closebox" id="closebox"></div>
+	 <div class="svgstatus" id="svgstatus">
+	 	 <div class="loader off" id="loader"></div>
+		 <div class="svgimage" id="svgimage"></div>
+	 </div>
+	 <div class="svgpanel" id="svgpanel">
+		 <p class="paneltitle" id="paneltitle">Choose type</p>
+		 <div class="svgbuttons" id="svgbuttons">
+		 		<div class="imagebutton" id="image">
+		 			<div class="menuicon image"></div> 
+		 			<p>image</p>
+		 		</div>
+				<div class="imagebutton" id="hairline">
+					<div class="menuicon hairline"></div>
+						<p>hairline</p>
+				</div>		
+				<div class="imagebutton" id="outline">
+					<div class="menuicon outline"></div> 
+						<p>outline</p>
+				</div>		
+		 </div>
+			<hr class="divider off" id="optionshr"></hr>	
+		 <div class="svgbuttons off" id="svgframingoptions">
+		 		<div class="imagebutton" id="imageplain">
+		 			<div class="menuicon noborder"></div> 
+		 			<p>plain</p>
+		 		</div>
+		 		<div class="imagebutton" id="imageborder">
+		 			<div class="menuicon border"></div> 
+		 			<p>border</p>	
+		 		</div>
+		 		<div class="imagebutton" id="imageframed">
+		 			<div class="menuicon framed"></div> 
+		 			<p>framed</p>
+		 		</div>		
+		 	 <form class="numericform" id="bordersize"><span>border size:</span><input class="numericinput" id="marginsize"></input></form> 	
+			</div>
+			<hr class="divider off" id="savehr"></hr>	
+		 <div class="svgbuttons centered off" id="savestep">
+			 <div class="button centered" id="savesvg">Save SVG</div>
+			 </div>	
+	 </div>	 
+	
+ 
+	</div>
+	<div class="alertdialog fade" id="alertdialog">		
+		<div class="alertmessage on" id="alertmessage"></div>
+			<div class="alertactions" id="actions">
+				<div class="buttons" id="actions">
+					<div class="button" id="Cancel">Cancel</div>
+					<div class="button" id="OK">OK</div>		
+				</div>
+			</div>
+		</div>
+	</div>	
+</body>
+
+
+</html>

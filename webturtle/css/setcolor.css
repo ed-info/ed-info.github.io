@@ -1,0 +1,54 @@
+*.colortable   {
+  position: absolute; 
+  font-size: 14px;
+  color: #777;
+  text-align: left;
+  margin-top: 220px;
+  font-family: 'Avenir Next', 'Lucida Grande', 'Lucida Sans Unicode',  sans-serif;
+  margin-left: 15px;
+}
+
+*.dots  {
+	position: relative;
+	height: 48px;
+  	margin: 0px;
+  	padding: 0px;
+}
+	
+*.dot {
+	position: relative;	
+ 	display: inline-block;
+	width: 40px;
+	height: 48px;
+	margin: 0px;
+	text-align: center;
+}
+
+*.dottext {
+	position: relative;	
+ 	display: inline-block;
+	width: 40px;
+	height: 48px;
+	margin: 0px;
+	bottom: 25px;
+}
+	
+*.colordot { 
+ 	position: relative;	
+ 	display: inline-block;
+	width: 20px;
+	height: 20px;
+	margin: 0px;
+	margin-left: 10px;
+	margin-right: 10px;
+	-webkit-border-radius: 24px;
+	border: 1px solid #e4cca9;
+}​
+*.dot > span {
+	position: absolute;
+	top: 20px;
+	margin: 0 auto 0;
+	width: 60px;
+	overflow: hidden;
+	height: 20px;
+}

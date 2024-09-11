@@ -1,0 +1,212 @@
+ /* Accesories */
+
+/* Backpack Design */
+
+*.backpack {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  right: 51px;
+  bottom: -8px;
+  height: 24px;
+ 	width: 920px;
+	overflow: hidden;
+  -webkit-user-select: none;
+	-webkit-border-top-right-radius: 6px;
+	-webkit-border-top-left-radius: 6px;
+	 	background: none;
+	-webkit-transition: bottom 0.3s, height 0.3s, background-color 0.3s, -webkit-transform 0.3s;
+}
+
+*.backpack > *.backpackarrow {
+  position: relative;
+  margin: 0 auto 0;
+  width: 62px;
+  height: 24px;
+	-webkit-border-top-right-radius: 6px;
+	-webkit-border-top-left-radius: 6px;
+	-webkit-transform-origin: center;
+	-webkit-transition:  background-color 0.1s, -webkit-transform 0.3s;
+	 	background: none;
+/* 	background: rgba(228, 203, 169, 0.4) url('../assets/icons/tools/arrowup.svg') no-repeat center top; */
+}
+
+*.backpack.open {
+	background: rgba(245, 238, 222, 0.4);
+	border: 1px solid rgba(228, 203, 169, 0.4); 
+	height: 160px;
+	bottom: 15px;
+}
+
+*.backpack.open > *.backpackarrow {
+	-webkit-transform:rotate(180deg);
+	background-color: none;
+	 background: url('../../../www.playfulinvention.com/webturtleart/assets/icons/arrowup.html') no-repeat center top;
+	 width: 62px;
+  height: 24px;
+}
+
+*.backpack.normal {display: block;}
+*.backpack.fullscreen {display: none;}
+
+.backpackscroll {
+ 	height: 130px;
+ 	background: rgba(245, 238, 222, 0.4);
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+*.codeThumb { 
+	display: inline-block;
+	word-spacing: -1;
+	height: 128px;
+	width: 207px;
+	margin: 0px 10px 0px;
+	padding: 0px;
+	-webkit-border-radius: 5px;
+	background: #FAFAFA;
+	border:  1px solid rgba(228, 203, 169, 0.4); 
+ 	}​
+
+*.textcontainer { 
+	display: block;
+	position: relative;
+	left: 100px;
+	top: 5px;
+	height: 80px;
+	width: 100px;
+ 	}​
+ 	
+*.textcontainer p{ 
+	color: #77787b;
+  color: #000;
+  width: 80px;
+  height: 50px;
+ 	margin: 5px auto;
+	overflow: hidden;
+	font-size: 13px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+ }
+ 
+*.stackicon {
+	display: block;
+	position: relative;
+	float: left;
+	margin: 5px;
+	height: 118px;
+	width: 197px;	
+	vertical-align: middle;
+	padding: 0px;
+}
+
+*.canvasPlace {
+	position: relative;
+	margin: 0 auto 0;
+	height: 50px;
+	width: 50px;
+	overflow: hidden;
+	padding: 0px;
+}
+
+ *.backpackscroll .empty {
+  padding: 0px;
+  top: 10px;
+  border: 1px solid rgba(228, 203, 169, 0.4);
+  height: 130px;
+  background:  rgba(255, 255, 255, 0.4);
+}
+
+
+/*UI drop downs*/
+
+.dropdownballoon {
+  position: absolute;
+  margin: 0px;
+  padding: 0px;
+  z-index: 10000;
+}
+
+.dropdown { 
+  position: absolute;
+  white-space: nowrap;
+  top: 0px;
+  left: 0px;
+ 	margin: 0px;
+  padding: 0px;
+  overflow: hidden; 
+  background: #fff;
+  -webkit-border-radius: 6px;
+  border: 1px solid #E4CBA9;
+  -webkit-box-shadow: -3px 3px 0px rgba(228, 203, 169, 0.5);
+}
+
+.dropdown ul {
+	position: relative;
+  list-style-position: none;
+  margin: 0px;
+  padding: 0px;
+  line-height: 49px;
+  font-weight: bold;
+  font-size: 16px;
+  height: 49px;
+  vertical-align: middle;
+  font-weight: normal;
+  color: #A08E78;
+  z-index: 1000; 
+  cursor: default;
+}
+
+
+.dropdown li { 
+	display: block;
+	height: 49px;
+	text-align: center;
+	vertical-align: middle;
+	padding: 0 20px 0px;
+	margin: 0px;
+ }​
+
+.dropdown li.selectmenu {
+  background-color: #FF8833;
+  color: #FFF;
+  cursor: pointer;
+}
+
+.dropdown li:hover {
+  background-color: #F5EEDE;
+  color: #FF8833;
+  margin: 0px;
+  cursor: pointer;
+}
+
+.dropdown li:active {
+  background-color: #FF8833;
+  color: #FFF;
+  cursor: pointer;
+}
+
+.dropdown ul li.divider {
+  border-top: 1px solid #E4CBA9;
+  height: 1px;
+  margin: 0px;
+  margin: 0px 0px 0px;
+}
+
+*.menuarrow {
+	position: absolute;
+	bottom: 16px;
+	right: 0px;
+	margin: 0px;
+	padding: 0px;
+	width: 16px;
+	height: 16px;
+	background: #fff;
+	z-index: 200; 
+	-webkit-transform: rotate(45deg);
+	-webkit-box-shadow: 1px -1px 0px #E4CBA9;
+}
+
+

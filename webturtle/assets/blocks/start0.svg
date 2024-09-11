@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 23.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="78px" height="50px" viewBox="0 0 78 50" enable-background="new 0 0 78 50" xml:space="preserve">
+<g transform="matrix(1 0 0 1 0 0)">
+	<g transform="matrix( 1 0 0 1 0 0)">
+		<path fill="none" stroke="#BFAF00" stroke-width="1.89" stroke-miterlimit="10" d="M4.9,37.7c0-18.1,17.8-32.8,35.9-32.8
+			s35.9,14.7,35.9,32.8c0,4.2-3.4,7.6-7.6,7.6H48.4v1.1c0,1.4-1.1,2.5-2.5,2.5H35.8c-1.4,0-2.5-1.1-2.5-2.5v-1.1H12.5
+			C8.3,45.2,4.9,41.8,4.9,37.7z"/>
+		
+			<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="23.3877" y1="551.46" x2="43.1877" y2="594.66" gradientTransform="matrix(1 0 0 1 0 -554.004)">
+			<stop  offset="0" style="stop-color:#FFFF72"/>
+			<stop  offset="1" style="stop-color:#FFF600"/>
+		</linearGradient>
+		<path fill="url(#SVGID_1_)" d="M4.9,37.7c0-18.1,17.8-32.8,35.9-32.8s35.9,14.7,35.9,32.8c0,4.2-3.4,7.6-7.6,7.6H48.4v1.1
+			c0,1.4-1.1,2.5-2.5,2.5H35.8c-1.4,0-2.5-1.1-2.5-2.5v-1.1H12.5C8.3,45.2,4.9,41.8,4.9,37.7z"/>
+		<text x="39.6px" y="30.6px" alignment-baseline="middle" text-anchor="middle" fill="#8C7A15" font-family="'Verdana'" font-size="11.7px">i</text>
+	</g>
+</g>
+</svg>

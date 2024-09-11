@@ -1,0 +1,74 @@
+*.contentwrap {
+	position: absolute;
+	width: 100%;	
+}
+
+*.contentwrap.scroll {overflow-x: hidden; overflow-y: scroll; -webkit-overflow-scrolling: touch;}
+
+.htmlcontents {
+	color: #808080;
+	font-family: 'Avenir Next', 'Lucida Grande', 'Lucida Sans Unicode',  sans-serif;
+ 	margin: 0px;
+ 	margin-bottom: 50px;
+ 	border: 0;
+ 	padding: 10px 0px 60px;
+ 	background: #FFF;
+ 	z-index: 5;
+}
+
+.htmlcontents.scrolled {
+  height: auto;
+  margin: 0 40px 0;
+}
+
+.section-header {
+  font-size: 24px;
+  font-family: 'AvenirNext-DemiBold', 'Arial Bold',  sans-serif;
+	color: #69D2E7;
+  text-shadow: 0 1px #fff;
+	font-weight: normal;
+ 	margin: 0;
+ 	margin-bottom: 15px;
+ 	padding: 0;
+}
+
+.wrapper-all{
+	float: left;
+	width: 100%;
+	padding-top: 0px;
+	padding-bottom: 10px;
+}
+
+.wrapper-left{
+	float: left;
+	width: 50%;
+	padding-top: 0px;
+	padding-bottom: 10px;
+}
+
+.wrapper-svg{
+	float: left;
+	width: 30%;
+	padding-top: 0px;
+	padding-bottom: 10px;
+}
+
+.wrapper-left > img{
+	-webkit-border-radius: 12px;
+  border: 1px solid #EFE4CE;
+}
+
+.wrapper-right {
+	float: right;
+	width: 50%;
+	padding-bottom: 10px;
+}
+
+.image-style {
+	zoom: 75%;
+	margin: 0 auto 0;
+}
+
+.toptext {
+	margin-left: 20px;
+}
