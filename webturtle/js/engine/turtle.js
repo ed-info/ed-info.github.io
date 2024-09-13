@@ -373,7 +373,7 @@ loadpng(url, name, fcn){
 savepng(){
 	var name = prompt('Зберегти як', project.name);
 	if(name==null) return;
-	this.saveproject (name)
+	this.saveproject (name+'-ta')
 }
 
 saveproject(name, fcn){
