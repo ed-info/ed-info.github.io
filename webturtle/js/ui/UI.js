@@ -108,6 +108,7 @@ static newproject (e){
 	runtime.boxes = {box1: 0, box2: 0, box3: 0};
 	palette.updateProcs()
 	project.name = 'untitled';
+	console.log("UI.digitalfab=",UI.digitalfab);
 	if (UI.digitalfab) UI.addOnPlayBlock(); // Exploratorium request
 }
 

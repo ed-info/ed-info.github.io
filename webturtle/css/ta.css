@@ -73,7 +73,7 @@ div.paldiv {
  white-space: nowrap;
  -webkit-user-select: none;
  user-select: none;
- background: rgba(255,255, 255, 0.5);
+ background: rgba(155,155, 155, 0.5);
  width: 100%;
  height: 100%;
 }
@@ -112,22 +112,22 @@ div.categories {
  position: relative;
  display: inline-block;
  word-spacing: -1;
- width: 40px;
- height: 42px;
+ width: 50px;
+ height: 52px;
  margin: 0px;
  margin-top: 2px;
 }
 
-.selector.green.on { background:  url('../assets/categories/OpenGreen.svg') no-repeat top right;}
-.selector.green.off { background:  url('../assets/categories/ClosedGreen.svg') no-repeat top right;}
-.selector.cyan.on { background:  url('../assets/categories/OpenCyan.svg') no-repeat top right;}
-.selector.cyan.off { background:  url('../assets/categories/ClosedCyan.svg') no-repeat top right;}
-.selector.pink.on { background:  url('../assets/categories/OpenPink.svg') no-repeat top right;}
-.selector.pink.off { background:  url('../assets/categories/ClosedPink.svg') no-repeat top right;}
-.selector.orange.on { background:  url('../assets/categories/OpenOrange.svg') no-repeat top right;}
-.selector.orange.off { background:  url('../assets/categories/ClosedOrange.svg') no-repeat top right;}
-.selector.yellow.on { background:  url('../assets/categories/OpenYellow.svg') no-repeat top right;}
-.selector.yellow.off { background:  url('../assets/categories/ClosedYellow.svg') no-repeat top right;}
+.selector.green.on { background:  url('../assets/categories/OpenGreen.svg') no-repeat top right; background-size: cover;}
+.selector.green.off { background:  url('../assets/categories/ClosedGreen.svg') no-repeat top right; background-size: cover;}
+.selector.cyan.on { background:  url('../assets/categories/OpenCyan.svg') no-repeat top right; background-size: cover;}
+.selector.cyan.off { background:  url('../assets/categories/ClosedCyan.svg') no-repeat top right; background-size: cover;}
+.selector.pink.on { background:  url('../assets/categories/OpenPink.svg') no-repeat top right; background-size: cover;}
+.selector.pink.off { background:  url('../assets/categories/ClosedPink.svg') no-repeat top right; background-size: cover;}
+.selector.orange.on { background:  url('../assets/categories/OpenOrange.svg') no-repeat top right; background-size: cover;}
+.selector.orange.off { background:  url('../assets/categories/ClosedOrange.svg') no-repeat top right; background-size: cover;}
+.selector.yellow.on { background:  url('../assets/categories/OpenYellow.svg') no-repeat top right; background-size: cover;}
+.selector.yellow.off { background:  url('../assets/categories/ClosedYellow.svg') no-repeat top right; background-size: cover;}
 
 
 
@@ -229,7 +229,7 @@ div.hscroll {
 
 *.blockstoggle {
  position: absolute;
- top: 358px;
+ top: 50%;
  right: 0px;
  width: 46px;
  height: 46px;
@@ -257,6 +257,32 @@ div.hscroll {
 
 *.wrenchicon.normal {display: block;}
 *.wrenchicon.fullscreen {display: none;}
+
+div.upload {
+ position: absolute; 
+ background:  url('../assets/icons/loadOff.svg') no-repeat center left; 
+ bottom: 50%;
+ left: 0px;
+ width: 46px;
+ height: 46px;
+ margin: 0px;
+ padding: 0px;
+}
+
+.upload>input {
+  display: none;
+}
+
+div.loadbbutton {
+ position: absolute; 
+ background:  url('../assets/icons/loadOff.svg') no-repeat center left; 
+ bottom: 260px;
+ left: 0px;
+ width: 46px;
+ height: 46px;
+ margin: 0px;
+ padding: 0px;
+}
 
 div.savebutton {
  position: absolute; 
@@ -313,7 +339,7 @@ iframe.helpframe body {
 
 *.zoom {
 	position: relative;
- 	display: inline-block;
+ 	display: hidden;
  	margin: 5px;
  	padding: 0;
  	width: 36px;

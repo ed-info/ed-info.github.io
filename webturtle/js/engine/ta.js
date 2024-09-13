@@ -45,7 +45,7 @@ function setup(){
 	openmenu.onclick = UI.toggleMenu;	
 	playbutton.onclick = UI.runOrStop;
 	UI.fastmode = urlvars["mode"] == "fast";
-	UI.digitalfab = !urlvars["fab"] ? false : eval (urlvars["fab"]);
+	UI.digitalfab = true; //!urlvars["fab"] ? false : eval (urlvars["fab"]);
 	gn("zoomin")[events.dispatch["start"]] = UI.zoomin;
   gn("zoomout")[events.dispatch["start"]] = UI.zoomout;
 	gn("zoomreset")[events.dispatch["start"]] = UI.zoomreset;
@@ -143,11 +143,22 @@ function handleDropText(evt,str){
 	project.dropText(str,x,y);
 }
 
+document.getElementById('fileInput');
+document.addEventListener('change', function (event) {
+                let file = event.target.files[0];
+				loadFile(file);
+});
+
 function handleDropFile (evt) { 
 	evt.preventDefault(); 
 	if (evt.stopPropagation) evt.stopPropagation();
 	else evt.cancelBubble = true;
 	var file = evt.dataTransfer.files[0];
+	loadFile(file);
+}	
+
+function loadFile(file) {
+	console.log("Load File");
 	if(file.type=='text/plain'){
 		var reader = new FileReader();
 	  reader.onload = readstack;

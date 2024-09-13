@@ -28,8 +28,8 @@
    inkscape:deskcolor="#d1d1d1"
    showgrid="false"
    inkscape:zoom="10.762155"
-   inkscape:cx="32.707203"
-   inkscape:cy="38.142917"
+   inkscape:cx="32.707204"
+   inkscape:cy="38.235837"
    inkscape:window-width="1920"
    inkscape:window-height="1019"
    inkscape:window-x="0"
@@ -78,11 +78,12 @@
    font-size="11.7px"
    id="text426">дуга</text>
 		<text
-   transform="translate(30.6097,20.5392)"
    fill="#128c12"
    font-family="Verdana"
    font-size="8.1px"
-   id="text428">кут</text>
+   id="text428"
+   x="38.609699"
+   y="20.5392">кут</text>
 		<text
    transform="translate(27.9007,56.4264)"
    fill="#128c12"

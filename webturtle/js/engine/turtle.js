@@ -473,6 +473,7 @@ dragmoveMove(t,e,x,y){
 	var t = turtle;
 	var newx = t.xcor+x*t.cnvWidth/canvas.offsetWidth;
 	var newy = t.ycor-y*t.cnvHeight/canvas.offsetHeight;
+	UI.showText("Turtle X="+Math.round(t.xcor+x*t.cnvWidth/canvas.offsetWidth)+", Y="+Math.round(t.ycor-y*t.cnvHeight/canvas.offsetHeight));
 	t.setxy(newx,newy);
 	t.move();
 }
@@ -488,6 +489,7 @@ dragAngle(e){
 	var cnvy = localy(e.clientY);
 	var tx = cnvx*t.cnvWidth/canvas.offsetWidth-(t.cnvWidth/2);
 	var ty = (t.cnvHeight/2)-cnvy*t.cnvHeight/canvas.offsetHeight;
+	UI.showText("Turtle Angle: "+Math.round(90-deg(Math.atan2(ty-turtle.ycor,tx-turtle.xcor))));
 	return 90-deg(Math.atan2(ty-turtle.ycor,tx-turtle.xcor));
 }
 

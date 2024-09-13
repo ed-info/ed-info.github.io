@@ -102,6 +102,7 @@ function getUrlVars(){
 		hash = hashes[i].split('=');
 		vars[hash[0]] = hash[1];
 	}
+	console.log("UrlVars=",vars);
   return vars;
 }
 
