@@ -319,7 +319,8 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			return  Sk.ffi.remapToPy(self.value);
+			let intvalue = Number.parseInt(self.value)
+			return  Sk.ffi.remapToPy(intvalue);
 		});
 	}, "IntVar", []);
 // Value holder for float variables------------------------------------
@@ -352,7 +353,8 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			return  Sk.ffi.remapToPy(self.value);
+			let floatvalue = Number.parseFloat(self.value)
+			return  Sk.ffi.remapToPy(floatvalue);
 		});
 	}, "DoubleVar", []);
 // Value holder for boolean variables ---------------------------------
@@ -387,7 +389,7 @@ var $builtinmodule = function (name) {
 			}
 			value = ""+value;	
 			value=value.toLowerCase();
-			console.log('VAL:',value);
+			console.log('Set VAL:',value);
 			if ((value==='true')||(value==='1')) {
 				self.value='1'
 			}
@@ -400,7 +402,8 @@ var $builtinmodule = function (name) {
 		});
 
 		$loc.get = new Sk.builtin.func(function(self) {
-			getvalue = (self.value==='1');
+			getvalue = ((""+self.value)==='1');
+			console.log('Get VAL:',self.value);
 			return Sk.ffi.remapToPy(getvalue); });
 	}, "BooleanVar", [])
 	

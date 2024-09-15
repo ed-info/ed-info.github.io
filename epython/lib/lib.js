@@ -792,7 +792,11 @@ var PythonIDE = {
 	downloadFile: function() {
 		var blob = new Blob([PythonIDE.files[PythonIDE.currentFile]], {type : "text/plain", endings: "transparent"});
 		
-		saveAs(blob, PythonIDE.currentFile); //  PythonIDE.projectName + ".py"
+		let file_name = PythonIDE.currentFile;
+		if (file_name=='mycode.py') {
+			file_name = PythonIDE.projectName + ".py";
+		}		
+		saveAs(blob, file_name); //  PythonIDE.currentFile
 	},
 	saveChoice: function() {
 		if ($("#save").dialog("isOpen")===false) { 
