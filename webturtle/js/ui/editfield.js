@@ -135,17 +135,17 @@ numEdit(b){
 
 numKeyDown(e){
  	e.preventDefault();
- 	e.stopPropagation(); 
+ 	e.stopPropagation(); 	
 	var s;
 	var t = editfield;
 	var valid = "-.0123456789";
-	var key = e.which || e.keyCode;
+	var key = e.which || e.keyCode;	
 	if(key == 13){t.editDone(); return;}
 	if(key == 8){t.numEditDelete();  return;}
 	if(key==46) return;
 	if(key==190) s='.';
 	else if(key==189) s='-';
-	else s = String.fromCharCode(key);
+	else s = e.key;
 	if (valid.indexOf(s)< 0) return;
 	t.numEditChar(s);
 }
