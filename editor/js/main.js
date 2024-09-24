@@ -486,9 +486,9 @@ E(document).ready(function () {
     E('.toggle-view').on('click', function () {
         E(this).toggleClass('enabled');
         if (E(this).hasClass('enabled')) {
-            E(this).html('view<span class="fa-solid fa-fw fa-chevron-up"></span>');
+            E(this).html('view<span class="fa fa-chevron-up"></span>');
         } else {
-            E(this).html('view<span class="fa-solid fa-fw fa-chevron-down"></span>');
+            E(this).html('view<span class="fa fa-chevron-down"></span>');
         }
     });
     
@@ -496,9 +496,9 @@ E(document).ready(function () {
     E('.toggle-tools').on('click', function () {
         E(this).toggleClass('active');
         if (E(this).hasClass('active')) {
-            E(this).html('tools<span class="fa-solid fa-fw fa-chevron-up"></span>');
+            E(this).html('tools<span class="fa fa-chevron-up"></span>');
         } else {
-            E(this).html('tools<span class="fa-solid fa-fw fa-chevron-down"></span>');
+            E(this).html('tools<span class="fa fa-chevron-down"></span>');
         }
     });
     
@@ -507,10 +507,10 @@ E(document).ready(function () {
         E(this).toggleClass('active');
         if (E(this).hasClass('active')) {
             editorHTML.setOption('lineWrapping', true);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-on"></span>');
         } else {
             editorHTML.setOption('lineWrapping', false);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-off"></span>');
         }
     });
     
@@ -519,10 +519,10 @@ E(document).ready(function () {
         E(this).toggleClass('active');
         if (E(this).hasClass('active')) {
             editorCSS.setOption('lineWrapping', true);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-on"></span>');
         } else {
             editorCSS.setOption('lineWrapping', false);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-off"></span>');
         }
     });
     
@@ -531,10 +531,10 @@ E(document).ready(function () {
         E(this).toggleClass('active');
         if (E(this).hasClass('active')) {
             editorJS.setOption('lineWrapping', true);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-on"></span>');
         } else {
             editorJS.setOption('lineWrapping', false);
-            E(this).html('wrap<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('wrap<span class="fa fa-toggle-off"></span>');
         }
     });
     
@@ -544,11 +544,11 @@ E(document).ready(function () {
         if (E(this).hasClass('active')) {
             emmetCodeMirror(editorHTML);
             emmetCodeMirror(editorCSS);
-            E(this).html('emmet<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('emmet<span class="fa fa-toggle-on"></span>');
         } else {
             emmetCodeMirror.dispose(editorHTML);
             emmetCodeMirror.dispose(editorCSS);
-            E(this).html('emmet<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('emmet<span class="fa fa-toggle-off"></span>');
         }
     });
     
@@ -559,12 +559,12 @@ E(document).ready(function () {
             editorHTML.setOption('lint', true);
             editorCSS.setOption('lint', true);
             editorJS.setOption('lint', true);
-            E(this).html('lint<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('lint<span class="fa fa-toggle-on"></span>');
         } else {
             editorHTML.setOption('lint', false);
             editorCSS.setOption('lint', false);
             editorJS.setOption('lint', false);
-            E(this).html('lint<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('lint<span class="fa fa-toggle-off"></span>');
         }
     });
     
@@ -576,10 +576,10 @@ E(document).ready(function () {
             watch = true;
             loadHTML();
             loadCSS();
-            E(this).html('watch<span class="fa-solid fa-fw fa-toggle-on"></span>');
+            E(this).html('watch<span class="fa fa-toggle-on"></span>');
         } else {
             watch = false;
-            E(this).html('watch<span class="fa-solid fa-fw fa-toggle-off"></span>');
+            E(this).html('watch<span class="fa fa-toggle-off"></span>');
         }
     });
     
