@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+  box-sizing: border-box;
+}
+.column1 {
+  float: left;
+  width: 20%;
+  padding: 10px;
+  height: 900px;
+
+}
+.column2 {
+  float: left;
+  width: 80%;
+  padding: 10px;
+
+}
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+
+#output {
+  outline: none;
+}
+</style>
+<script  src="caesarcipher.js"></script>
+<body>
+<div class="column1" style="background-color:#aaa;">
+<div class="container">
+  <div class="row justify-content-around">
+    <div class="col-md-6">
+      <div id="encrypt-block">
+        <h3>Введіть текст: </h3>
+        <textarea name="user-text" id="text-to-work" cols="40" rows="3"></textarea>
+        <br><br>
+        <div class="form-group">
+          <button class="btn btn-primary" id="encrypt-btn">Зашифрувати</button>
+          <button class="btn btn-primary" id="decrypt-btn">Розшифрувати</button>
+          <button class="btn btn-danger" id="btn-reset">Очистити</button>
+        </div>
+        <h4>Зсув символів:</h4>
+        <select name="user_step" id="encrypt-step" size="1">
+          <option>1</option>
+          <option>2</option>
+          <option selected>3</option>
+          <option>4</option>
+          <option>5</option>
+          <option>6</option>
+          <option>7</option>
+          <option>8</option>
+          <option>9</option>
+          <option>10</option>
+          <option>11</option>
+          <option>12</option>
+          <option>13</option>
+          <option>14</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-6">
+        <h3>Результат:</h3>
+        <textarea readonly id="output" cols="40" rows="3"></textarea>
+    </div>
+  </div>
+</div>
+<br>
+<img src="caesar.png" width="600" class="center">
+<br>
+<img src="ballista.png" width="600" class="center">
+</div>
+<div class="column2" style="background-color:#fff;">
+<h1>Шифр Цезаря</h1>
+<p>У криптографії шифр Цезаря є одним із найпростіших і найвідоміших методів шифрування. Метод названий на честь римського імператора Юлія Цезаря, який таким чином надсилав секретні повідомлення своїм військовим. 
+У випадку, якщо повідомлення було перехоплено, ворог не міг його зрозуміти, оскільки на вигляд це був безладний набір символів. 
+Це забезпечувало Цезарю значну стратегічну перевагу, адже вороги не могли довідатись про його воєнні плани.
+</p>
+<h2>Як це працює?</h2>
+Шифр Цезаря має ключ, який забезпечує шифрування та дешифрування. 
+Ключ — це ціле число, визначене відправником повідомлення, і для того щоб одержувач міг розшифрувати і прочитати повідомлення, він також має знати цей ключ.
+<h2>Шифрування</h2>
+<img src="encode.png" width="700">
+<br>
+<i>Зсув праворуч на 3</i>
+<br>
+Шифрування — це зсув праворуч кожної літери повідомлення на відстань, визначену ключем, для отримання символа зашифрованого тексту. 
+Ворог побачить зашифрований текст замість справжнього повідомлення. 
+Для прикладу, Цезар хотів написати «BALLISTA» своєму воєначальнику. Визначивши ключ шифрування рівним 3, Цезар повинен посунути кожну літеру свого повідомлення на три позиції вправо, щоб отримати зашифрований текст. 
+<br>
+Шифрований текст «BALLISTA» — «EDOOLVWD»:
+<br>
+<b>B → E, A → D, L → O, L → O, I → L, S → V, T → W, A → D</b>
+
+<h2>Розшифрування</h2>
+<img src="decode.png" width="700">
+<br>
+<i>Зсув ліворуч на 3</i>
+<br>
+Після того, як Цезар зашифрував своє повідомлення, воно стає незрозумілим для супротивника. 
+Але якщо одержувач його не розшифрує, він також не зрозуміє повідомлення. 
+Дешифрування дуже схоже на шифрування, єдина відмінність полягає в тому, що літери не зміщуються праворуч, а ліворуч. 
+Процес дешифрування для «EDOOLVWD»:
+<br>
+<b>E → B, D → A, O → L, O → L, L → I, V → S, W → T, D → A</b>
+<br>
+Результат: BALLISTA
+	</div>
+</body>
+</html>
