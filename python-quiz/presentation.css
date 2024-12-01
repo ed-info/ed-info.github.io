@@ -1,0 +1,80 @@
+body {
+    padding-left:42px;
+    background-image: url(marge_python.png);
+    background-repeat:no-repeat;
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	background-color: #161D6F;
+	color: #ffffff;
+	margin: 15px;
+}
+h1 {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	color: #ffff00;
+	margin: 15px;
+	padding-top: 15px;
+	padding-bottom:15px;
+	text-align: center;
+}
+.cadre {
+	font-family:serif;
+	background-color: #ffffff;
+	color: #006300;
+	border: 3px solid #c5d6e6;
+	-moz-border-radius: 15px;
+	margin-top: 20px;
+	margin-bottom: 20px;
+	padding-right: 10px;
+	padding-left: 10px;
+}
+.titre_cadre {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	background-color: #ffffff;
+	color: #6F3700;
+	padding-top: 10px;
+	padding-bottom: 5px;
+}
+.contenu_cadre {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	background-color: #ffffff;
+	color: #000000;
+	padding: 10px;
+}
+#menu {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	background-color: #98DED9;
+	color: #6F3700;
+	border-top: 3px solid #c5d6e6;
+	border-bottom: 3px solid #c5d6e6;
+	margin-top: 20px;
+	padding: 10px;
+	text-align: center;
+}
+button {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	display: inline;
+	margin-right: 3px;
+	margin-left: 3px;
+}
+input {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	margin-right: 3px;
+	margin-left: 3px;	
+}
+
+pre {
+  font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+  font-size: 16px;
+  background-color: #000000;
+  color: #C7FFD8;
+  border: 2px solid grey;
+  width: 450px;
+  border-left: 12px solid green;
+  border-radius: 5px;
+  padding: 14px;
+}
+/* classe valeur ajoutée le 6 avril 2017 pour mettre en rouge les valeurs numériques dans les questions avec une balise span */
+.valeur {
+	color:#FF0000;
+	font-weight:bold;
+}
+
