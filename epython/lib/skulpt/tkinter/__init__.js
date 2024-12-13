@@ -643,6 +643,14 @@ function getOffsetRect(elem) {
 			return new Sk.builtin.int_($('#tkinter_' + self.id).height());
 		});
 		
+		$loc.winfo_x = new Sk.builtin.func(function(self) {			
+			return new Sk.builtin.int_($('#tkinter_' + self.id).position().left);
+		});
+
+		$loc.winfo_y = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.int_($('#tkinter_' + self.id).position().top);
+		});
+		
 		$loc.cget = new Sk.builtin.func(function(self, value) { // widget .cget() method
 			var p = Sk.ffi.remapToJs(value);
 					switch(p) {
@@ -1092,8 +1100,14 @@ function getOffsetRect(elem) {
 			}
 			
 			if(props.dash) {
-				var dash = Sk.ffi.remapToJs(props.dash);
-				cx.setLineDash(dash);
+				var dash = Sk.ffi.remapToJs(props.dash);				
+				if (Array.isArray(dash)) { 
+					cx.setLineDash(dash);
+				}
+				else {
+					var dashes=[dash,dash];
+					cx.setLineDash(dashes);					
+				}
 			}
 
 			if(props.font) {
@@ -2145,6 +2159,8 @@ function getOffsetRect(elem) {
 // TopLevel ---------------------------------------------------------
 	s.Toplevel = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
+			self.tk_left = 0;
+            self.tk_top = 0;
 			self.props = {};
 			self.id = idCount++;
 			if(!firstRoot) firstRoot = self;
@@ -2222,7 +2238,8 @@ function getOffsetRect(elem) {
 		});
 
 		$loc.__init__ = new Sk.builtin.func(function(self) {
-
+            self.tk_left = 0;
+            self.tk_top = 0;
 			self.props = {};
 		
 			self.id = idCount++;
@@ -2248,6 +2265,8 @@ function getOffsetRect(elem) {
 			});
 			self.props.width = 300;
 			self.props.height = 200;
+			self.tk_left = Math.ceil($('#tkinter_' + self.id).offset().left- $(window).scrollLeft());
+			self.tk_top = Math.ceil($('#tkinter_' + self.id).offset().top- $(window).scrollTop());
 		});
 
 		$loc.winfo_screenwidth = new Sk.builtin.func(function(self) {
@@ -2258,6 +2277,15 @@ function getOffsetRect(elem) {
 			return new Sk.builtin.int_(window.screen.height);
 		});
 
+		$loc.winfo_x = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.int_(self.tk_left);
+		});
+
+		$loc.winfo_y = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.int_(self.tk_top);
+		});
+
+        
 		$loc.destroy = new Sk.builtin.func(function(self) {
 			$('#tkinter_' + self.id).remove();
 			if(self.closeMainLoop) {
@@ -2318,7 +2346,8 @@ function getOffsetRect(elem) {
 					}
                       
                   $('#tkinter_' + self.id).dialog({ position: { my: 'left top', at: 'left+'+x_pos+' top+'+y_pos, of:window}, });             
-					
+				  self.tk_left = x_pos;
+			      self.tk_top = y_pos;
                 }
 						
 				$('#tkinter_' + self.id).dialog('option', {width: v[0], height: v[1]});
