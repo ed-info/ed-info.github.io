@@ -965,6 +965,7 @@ function getOffsetRect(elem) {
 			} 
 
 			self.elements.push(element);
+			console.log("elements=",self.elements);
 			return new Sk.ffi.remapToPy(self.elements.length - 1);
 		}
 
@@ -1314,7 +1315,48 @@ function getOffsetRect(elem) {
 		}
 		create_rectangle.co_kwargs = true;
 		$loc.create_rectangle = new Sk.builtin.func(create_rectangle);
+// create image
+		var create_image = function(kwa, self, x1, y1) {
+			var coords = {
+				x1: Sk.ffi.remapToJs(x1),
+				y1: Sk.ffi.remapToJs(y1)
+			}
 
+			var props = unpackKWA(kwa);
+			console.log("Create image:",props);
+			return commonCanvasElement(self, {type:"image", props:props, coords:coords, draw: function(canvas) {
+				var cx = canvas.getContext('2d');
+				base_image = new Image();
+                base_image.src = props.image;
+                console.log("Width=",base_image.width);
+                var img_width = base_image.width;
+                var img_height = base_image.height;
+                var dx = 0;
+                var dy = 0;
+                var anchor="CENTER";
+                if (props.anchor){
+                     anchor =props.anchor.v;
+                     console.log("Anchor=",anchor);
+                     anchor = anchor.toUpperCase();
+			    }
+                if (anchor=="N") { dx= -base_image.width/2;dy= 0;}
+                if (anchor=="S") { dx= -base_image.width/2;dy= -base_image.height;}
+                if (anchor=="W") { dx = 0;dy= -base_image.height/2;}
+                if (anchor=="E") { dx = -base_image.width;dy= -base_image.height/2;}
+                if (anchor=="CENTER") { dx= -base_image.width/2;dy= -base_image.height/2;}
+                if (anchor=="NW") { dx = 0;dy = 0;}
+                if (anchor=="NE") { dx = -base_image.width;dy= 0;}
+                if (anchor=="SW") { dx= 0;dy= -base_image.height;}
+                if (anchor=="SE") { dx = -base_image.width;dy= -base_image.height;}
+                if (anchor=="CENTER") { dx= -base_image.width/2;dy= -base_image.height/2;}
+                cx.drawImage(base_image,coords.x1+dx, coords.y1+dy);	
+			}});
+
+		}
+		create_image.co_kwargs = true;
+		$loc.create_image = new Sk.builtin.func(create_image);
+
+//
 		var create_oval = function(kwa, self, x1, y1, x2, y2) {
 			var coords = {
 				x1: Sk.ffi.remapToJs(x1),
@@ -1606,6 +1648,22 @@ function getOffsetRect(elem) {
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 	}, 'Message', [s.Widget]);	
+// PhotoImage
+	s.PhotoImage = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+		var props;
+		var image;
+        var init = function(kwa, self, master) {			
+			props = unpackKWA(kwa);
+			console.log("kwa=",props.file.v);
+			image = fsToBrowse.read( props.file.v );
+		}
+		$loc.__str__ = new Sk.builtin.func(function(self) {
+			return new Sk.builtin.str(image)
+		})
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
+
+	}, 'PhotoImage', []);
 // Label +++------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {

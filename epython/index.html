@@ -23,7 +23,10 @@
             to {
                 background-color: #0C0;
             }
-        }        
+        }
+        table, tr, td,tbody {
+             border: none;
+      }  
      </style>
 
     <meta charset="UTF-8">
@@ -49,7 +52,7 @@
     <link rel="stylesheet" href="./styles.css">
     <link rel="stylesheet" href="./lib/font-awesome.min.css">   
     <link rel="stylesheet" href="./jquery/ui/1.13.3/themes/base/jquery-ui.css">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/google-closure-library/20230802.0.0/base.js"></script>
     <script src="./jquery/jquery-3.7.1.js"></script>
     <script src="./jquery/ui/1.13.3/jquery-ui.js"></script> 
     <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
@@ -60,7 +63,10 @@
     <script src="./lib/skulpt/deps/chart.js"></script>
     <script src="./lib/skulpt/deps/p5.js"></script>
     <script src="./lib/extlibs.js"></script>
-    
+    <script src="./lib/jsfs.js"></script>
+    <script src="./lib/filedialog.js"></script>
+    <script src="./lib/customfile.js"></script>
+    <script src="./lib/samplefile.js"></script>
 </head>
 <body>
     <div id="loading">
@@ -73,6 +79,7 @@
             <div id="editor"></div>
         </pre>
     </div>
+    <div id="myfilename.txt">Hello from the dom</div>
     <script>
 		var assets = {};
 		var embed = false;
@@ -153,16 +160,15 @@
 				  </div> 
         </fieldset><br><br>
 		<fieldset>	   
-	    <legend>Завантаження файлів до Галереї ресурсів</legend>
+	    <legend>Завантаження файлів ресурсів</legend>
             <div class="save_option" style="background-color: #cab4ff;" id="btn_PGZ" name="btn_PGZ">
-                <h2><i class="fa fa-file-image-o" ></i> Галерея ресурсів</h2>
-                <p>Отримати файли зображень для Pygame Zero</p>               
+                <h2><i class="fa fa-folder-open-o" ></i> Розпорядник файлів</h2>
+                <p>Тут ви зможете додавати файли для своїх проєктів</p>               
                 
             </div>	   
 	   </fieldset>
     </div>
-     <div id="PGZAssetManager" title="Галерея ресурсів" style="display:none;">   
-     </div>   
+
     <div id="project_settings" title="Проєкт" style="display:none">
         <p>Перейменування проєкту допоможе вам упорядкувати збережений код</p>
         <label for="txt_project_name">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
@@ -234,6 +240,9 @@
             <div id="slider_output_transparency" class="slider"></div>
         </fieldset>
     </div>
+    <dialog id='filemanager'> 
+	</div>
+	
 <script src="./lib/addfuncs.js"></script> 
 
 </body>

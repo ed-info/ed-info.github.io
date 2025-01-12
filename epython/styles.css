@@ -300,8 +300,8 @@ width: 80%;
 	opacity: 1;
 }
 
-button {
-	
+#button {
+	font-size: 12px;
 }
 
 .console_input {
@@ -396,7 +396,7 @@ button {
 }
 
 #watch table,th,td {
-	border: 1px solid black;
+	border: 0px solid black;
 	word-wrap:break-word;
 }
 

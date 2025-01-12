@@ -114,12 +114,24 @@ THECOLORS = {
 	var canvas = undefined;
 	var cx = undefined;
 
+    var default_assets = '{\
+  "images": {\
+    "$player": {\
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA7CAYAAADLjIzcAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAADXUlEQVRo3u1ZS2gTQRj+ZpOYbNW1oSRKKYi61SJS6UGFVkpPgmgVqkhFsXjTk8WCWnxQKR6KCi300pOiSBEfUBWKN/F5EBE9FZsqaAkkFaNJm41N0/HSlDYm2d1mZ2e3yQ972OfM9/3f/5hZgKPFOjt9kw37IihWUySZKpJMw/39q3jNgfAEv/BcjAZI0RCQCZ4nCcQq4HmRIJg5GB0YKFN7Zqq2Kb5sFaDmfR4qIFYDbzYJAixqsfoDE8tGAXq9b6YKLKsAAIjtaR2zvQKW6n2zVGBpBQDA5K69EdsqoFDvm6ECpgQEg2FDCKis9NuPAKPAsybB8jmgqMugbQkIBsOfrB5SaXMyIrZW7YGWQd+i88dHJ4onBDLB57pmSwIikUg5w8qStDwBipJk2bk5l0UIFH0ZzJbweCVBwiBOKcsJz87iZFWV/7YlFRAMhs8wl6yAW1YOgV675QAnr4G//3aifdgLADi+fQotW+P2zwFa4j/wy4lzz71Z7610Udw9/NPUlaHpVSAXeACYSpr/p85UArS0u2a3xKVGqERAiYASAVzXAJl2/4h6GQyFQmttq4CG9X/z3nc51JcSiuLwWqoRins3HSIp8jAy8lbzO9dfS3j3ww0AEF0U9zQ0QGnzbmsMYWZmjRgNiNwJiK+ubiWEDgKAHgIKMW9NPZ2b+7QYDbi5rQUUSZ4GqItjC79CkWRayK8zoQDwFAAP8LnmsnQFdPU+2Z1KkVcLro92dzRvZjFg2k48qsDktKCrQqiRkE8JF3uGtghOYWR+YwWYuNbR7BcAIAM8AFSzBN8y6FsE3qg1gCLJlEKWskp9Afg56fsu3Xh2Vbh882lWQJnXE+7qjUb97mZpCQl/lHJ5NB+W+URC6BVBI7NfqZuOwS42C1mrswSNCWaDHdtcLSQIrLKr3paY1ba4GgZD9wQ9L15+TDQ11ukhQUkSiC5+qcXQtYB46kKd7nd0gncPDb+3FAGEkgdiNEDSB2uPVZxu25kei1DaXuj3dIWAR0qUkfFxxSpJzhMb6wPQlyXuU1qdm5eA/zwatUf2F6MBx6I+AKCmJEEAePPh2/nPX8I9dimVTGI2V+dVqHV3NBs+39KeIIuPOggpbgK6zu43nIEaeV2bbQhgYccO7rjD4rv/ACxCMkhHLtaAAAAAAElFTkSuQmCC"\
+    },\
+    "$alien": {\
+      "src": "data:image/png;base64,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"\
+    }}}';
 
 	if(PythonIDE.files['assets.json']) {
-		assets = JSON.parse(PythonIDE.files['assets.json']);
+		assets = JSON.parse(PythonIDE.files['assets.json']); // якщо наявний файл ресурсів - розбираємо його
 	}
-
-	var loadedAssets = {};
+	else {
+		assets = JSON.parse(default_assets);
+		console.log("Assets=",assets);
+	}
+    
+	var loadedAssets = {}; // Тут Завантажені ресурси
 // --------------
 
 	var promises = [];
@@ -736,9 +748,57 @@ THECOLORS = {
 			
 			
 			self.anchorVal = {x:0, y:0};
-			var jsName = Sk.ffi.remapToJs(name);
-			if (assets.images) {
-				if(!assets.images[jsName]) {
+			var jsName = Sk.ffi.remapToJs(name); //ім'я ресурсу
+			// ресурс завантажуємо у assets.images
+            var error = false;
+			var images_path = "/images/";
+			var file_name = images_path + jsName + ".png";
+			try {
+			    var image_data = fsToBrowse.read( file_name ); // прочитано
+           
+                var img = new Image;
+    		    img.name = jsName;
+    		    img.src = image_data;
+			    var a = img;
+			    if(!a.width) {
+   						a.width = img.width * (a.height / img.height);
+			    }
+			    if(!a.width) {
+   						a.width = img.width;
+			    }
+			    if(!a.height) {
+   				 		a.height = img.height * (a.width / img.width);
+			    }
+			    if(!a.height) {
+ 						a.height = img.height;
+			    }
+			    loadedAssets[img.name] = {
+			        			image: img,
+			        			name: img.name,
+			        			type: "image",
+		    	    			width: a.width,
+	    		    			height: a.height
+        		};
+                console.log("LoadedAssets = ",loadedAssets);
+                assets.images[jsName] = {src:img.src, width:a.width, height:a.height};
+		    } catch (err) {
+                //console.log("ERROR",err);
+                // файл не знайдено
+               					    
+					    //alert(err.toString())
+						error = true;
+						
+
+             }
+			if (error) {
+				console.log("ERR");
+				
+				
+				}
+			
+			if (assets.images) { //якщо існує файл ресурсів
+				if(!assets.images[jsName]) {					    
+					    
 						PythonIDE.showHint("Помилка: зображення '"+ jsName + "' не завантажено!"); btnAssetColor ='#ff0000';					
 					}
 			else { return PythonIDE.runAsync(function(resolve, reject) {
