@@ -602,7 +602,7 @@ var   fsToBrowse;
     if (screenWidth<500) {dlgWidth=400}
     var fdlg = $("#filemanager").dialog({
                     autoOpen: false,
-                    maxWidth:600,
+                    maxWidth:dlgWidth,
                     maxHeight: 500,
                     width: dlgWidth,                   
                     modal: false                    
