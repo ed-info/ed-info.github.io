@@ -714,10 +714,10 @@ THECOLORS = {
 		$loc.__getattr__ = new Sk.builtin.func(getActorAttribute);
 
 		$loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
-
-		var init = function(kwa, self, name, pos) {	
+//-----------------------------------
+var init = function(kwa, self, name, pos) {	
 					
-			Sk.builtin.pyCheckArgs("__init__", 2, 2);
+			Sk.builtin.pyCheckArgs("_init_", 2, 2);
 			self.id = idCount++;
 
 			self.attributes = {
@@ -746,97 +746,54 @@ THECOLORS = {
 				}
 			}
 			
-			
 			self.anchorVal = {x:0, y:0};
 			var jsName = Sk.ffi.remapToJs(name); //ім'я ресурсу
 			// ресурс завантажуємо у assets.images
             var error = false;
 			var images_path = "/images/";
 			var file_name = images_path + jsName + ".png";
-			try {
-			    var image_data = fsToBrowse.read( file_name ); // прочитано
-           
+            try {
+                var image_data = fsToBrowse.read(file_name); // прочитано
+                
+                //throw new Error("Спеціально викликаємо помилку");
+                
                 var img = new Image;
     		    img.name = jsName;
     		    img.src = image_data;
-			    var a = img;
-			    if(!a.width) {
-   						a.width = img.width * (a.height / img.height);
-			    }
-			    if(!a.width) {
-   						a.width = img.width;
-			    }
-			    if(!a.height) {
-   				 		a.height = img.height * (a.width / img.width);
-			    }
-			    if(!a.height) {
- 						a.height = img.height;
-			    }
-			    loadedAssets[img.name] = {
-			        			image: img,
-			        			name: img.name,
-			        			type: "image",
-		    	    			width: a.width,
-	    		    			height: a.height
-        		};
-                console.log("LoadedAssets = ",loadedAssets);
-                assets.images[jsName] = {src:img.src, width:a.width, height:a.height};
-		    } catch (err) {
+			    
+                img.onload = function () {
+                    var a = img;
+                    loadedAssets[img.name] = {
+                                    image: img,
+                                    name: img.name,
+                                    type: "image",
+                                    width: a.width,
+                                    height: a.height
+                    };
+                    assets.images[jsName] = {src:img.src, width:a.width, height:a.height};
+                    
+                    //console.log(JSON.stringify(assets.images, null, 4));
+                    console.log("LoadedAssets = ", loadedAssets);
+                }
+                
+                img.onerror = function () {
+                    if (Object.keys(assets.images).length === 0) {
+                        PythonIDE.showHint("Помилка: ресурси Pygame Zero не завантажено!");  btnAssetColor ='#ff0000';  
+                    }                         
+                };
+            } catch (err) {
+                PythonIDE.showHint("Помилка: зображення '"+ jsName + "' не завантажено!"); btnAssetColor ='#ff0000'; 
+                
                 //console.log("ERROR",err);
                 // файл не знайдено
-               					    
-					    //alert(err.toString())
-						error = true;
-						
-
-             }
+                //alert(err.toString())
+				error = true;
+	        }
 			if (error) {
 				console.log("ERR");
-				
-				
-				}
-			
-			if (assets.images) { //якщо існує файл ресурсів
-				if(!assets.images[jsName]) {					    
-					    
-						PythonIDE.showHint("Помилка: зображення '"+ jsName + "' не завантажено!"); btnAssetColor ='#ff0000';					
-					}
-			else { return PythonIDE.runAsync(function(resolve, reject) {
-				
-				
-				Promise.all(promises).then(function() {
-					
-					var jsName = Sk.ffi.remapToJs(name);
-					if(!loadedAssets[jsName]) {
-						var e = new Sk.builtin.KeyError("No image found like '" + jsName + "'. Are you sure the image exists?");
-						reject(e);
-					}
-					var size = {
-						width: loadedAssets[self.attributes.image].width,
-						height: loadedAssets[self.attributes.image].height
-					};
-					
-					pos[0] -= calculateAnchor(self.anchor[0], 'x', size.width);
-					pos[1] -= calculateAnchor(self.anchor[1], 'y', size.height);
-					
-					updateCoordsFromProps(args, size, pos);
-					
-					self.attributes.x = args.x;
-					self.attributes.y = args.y;
-
-					updateAnchor(self);		    		
-		    		if (args.x < -55555){			// hook for non-initialise pos		
-						self.attributes.x = 0;
-						self.attributes.y = 0;						
-						}
-					updateRectFromXY(self);					
-		    		resolve();	
-		    	});
-			 
-			}); } } else { PythonIDE.showHint("Помилка: ресурси Pygame Zero не завантажено!");  btnAssetColor ='#ff0000'; } 
+            }
+}
 		
-			
-		}
 		init.co_kwargs = true;
 
 		$loc.__init__ = new Sk.builtin.func(init);
