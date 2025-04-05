@@ -471,7 +471,7 @@ def circle(x, y, d):
 #  @param ang the angle at which the text is drawn
 def text(x, y, what, align="c", ang=0):
   try:
-    __shape = __canvas.create_text(x + 1, y + 1, text=str(what), anchor=align, fill=__outline, font=__font, angle=ang)
+    __shape = __canvas.create_text(x + 1, y + 1, text=str(what), fill=__outline, font=(__font, __font_size, __font_modifiers))
     __update()
     return __shape
   except Exception as e:
