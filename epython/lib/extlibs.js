@@ -2,6 +2,7 @@
 
 const externalLibs = {
 					'./p5/__init__.js': 'lib/skulpt/p5/__init__.js',
+                    './SimpleGraphics.py':'lib/skulpt/simplegraphics/simplegraphics.py',
 					'./tkinter/__init__.js': 'lib/skulpt/tkinter/__init__.js',
 					'./pgzrun/__init__.js': 'lib/skulpt/pgzrun/__init__.js',
 					'./matplotlib/__init__.js':'lib/skulpt/matplotlib/__init__.js',

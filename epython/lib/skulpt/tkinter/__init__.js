@@ -984,7 +984,7 @@ function getOffsetRect(elem) {
 			} 
 
 			self.elements.push(element);
-			console.log("elements=",self.elements);
+			
 			return new Sk.ffi.remapToPy(self.elements.length - 1);
 		}
 
@@ -1145,6 +1145,154 @@ function getOffsetRect(elem) {
 			}
 		}		
 // -----------------		
+function draw_spline(ctx, pointsArray, isClosed, tension = 0.5, numOfSegments = 12) {
+    if (pointsArray.length < 2) return;
+    var points = [];
+    for (var i = 0; i < pointsArray.length; i += 2) {
+        points.push({ x: pointsArray[i], y: pointsArray[i + 1] });
+    }
+
+    //ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    // Додаємо точки для закриття кривої
+    if (isClosed) {
+        points.push(points[0]); // Додаємо лише початок для замикання
+        if (points.length === 3) {
+            points.push(points[1]); // Якщо кількість парна, додаємо ще одну
+        }
+    }
+
+    const plength = points.length;
+    const ofc = isClosed ? 1 : 1; // Корекція для закриття
+
+    for (let i = 0; i < plength - 1; i++) {
+        const p0 = i > 0 ? points[i - 1] : (isClosed ? points[points.length - 2] : points[i]);
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = i < points.length - 2 ? points[i + 2] : (isClosed ? points[1] : points[i + 1]);
+
+        for (let t = 0; t <= numOfSegments; t++) {
+            const t1 = t / numOfSegments;
+            const t2 = t1 * t1;
+            const t3 = t2 * t1;
+
+            // Коефіцієнти для сплайну Катмулла-Рома
+            const m1 = tension * (p2.x - p0.x);
+            const m2 = tension * (p3.x - p1.x);
+            const n1 = tension * (p2.y - p0.y);
+            const n2 = tension * (p3.y - p1.y);
+
+            const x = (2 * t3 - 3 * t2 + 1) * p1.x + (t3 - 2 * t2 + t1) * m1 + (-2 * t3 + 3 * t2) * p2.x + (t3 - t2) * m2;
+            const y = (2 * t3 - 3 * t2 + 1) * p1.y + (t3 - 2 * t2 + t1) * n1 + (-2 * t3 + 3 * t2) * p2.y + (t3 - t2) * n2;
+
+            if (t === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+    }
+
+    ctx.stroke();
+}
+// --------------
+function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
+    if (pointsArray.length < 6) {
+        console.error('Need at least 3 points (6 coordinates) to smooth a polygon');
+        return;
+    }
+
+    const points = [];
+    for (let i = 0; i < pointsArray.length; i += 2) {
+        points.push({ x: pointsArray[i], y: pointsArray[i + 1] });
+    }
+
+    if (closed) {
+        points.push(points[0]);
+        points.push(points[1]);
+    }
+
+    //ctx.beginPath();
+
+    // Починаємо з середини першої сторони
+    let firstX = (points[0].x + points[1].x) / 2;
+    let firstY = (points[0].y + points[1].y) / 2;
+    let pend = 1;
+    if (!closed){
+       firstX = points[0].x;
+       firstY = points[0].y;
+       pend = 2;
+    }
+    ctx.moveTo(firstX, firstY);
+
+    for (let i = 1; i < points.length - pend; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+
+        // Обчислюємо середини сторін
+        const mid1 = {
+            x: (prev.x + curr.x) / 2,
+            y: (prev.y + curr.y) / 2
+        };
+        const mid2 = {
+            x: (curr.x + next.x) / 2,
+            y: (curr.y + next.y) / 2
+        };
+
+        // Обчислюємо контрольні точки всередині полігона
+        const control1 = {
+            x: mid1.x + (curr.x - mid1.x) * smoothing,
+            y: mid1.y + (curr.y - mid1.y) * smoothing
+        };
+        const control2 = {
+            x: mid2.x + (curr.x - mid2.x) * smoothing,
+            y: mid2.y + (curr.y - mid2.y) * smoothing
+        };
+
+        // Малюємо криву Безьє
+        
+        ctx.bezierCurveTo(
+            control1.x, control1.y,
+            control2.x, control2.y,
+            mid2.x, mid2.y        
+         );
+    }
+
+    if (closed) {
+    
+        ctx.closePath();
+        ctx.fill()
+ 
+    }
+    else {                   
+        ctx.quadraticCurveTo(            
+            points[3].x, points[3].y,
+            points[4].x, points[4].y );
+    
+    }
+
+    ctx.stroke();
+    
+}
+
+
+
+
+// ---------------
+    function draw_polygon(ctx, pointsArray,isClosed) {
+        		ctx.moveTo(pointsArray[0], pointsArray[1]);
+				for(var i = 2; i < pointsArray.length; i+=2) {
+					ctx.lineTo(pointsArray[i], pointsArray[i+1]);	
+				}
+				if (isClosed) {
+                           ctx.closePath();
+                       } 
+                ctx.stroke();
+        
+    }
+//----------------
 		var create_polygon = function(kwa, self, coords) {
 			var jsCoords = Sk.ffi.remapToJs(coords);
 			if(self.props.fill){				
@@ -1169,13 +1317,26 @@ function getOffsetRect(elem) {
 			return commonCanvasElement(self, {props:props, coords:jsCoords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyStyles(props, cx);				
-				cx.moveTo(jsCoords[0], jsCoords[1]);
-				for(var i = 2; i < jsCoords.length; i+=2) {
-					cx.lineTo(jsCoords[i], jsCoords[i+1]);	
-				}
-				cx.closePath();
-				cx.stroke();				
+				applyStyles(props, cx);
+                let smooth = false;
+                
+                if (self.props.smooth) {
+                        smooth  = Sk.ffi.remapToJs(self.props.smooth)                        
+                        if (smooth){
+                            draw_curve(cx, jsCoords, true)
+                            //if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
+                            //    cx.lineWidth = 1;
+                            //    draw_polygon(cx, jsCoords, true)
+                            //    }
+                            }
+                            
+                        if (!smooth){
+                            draw_polygon(cx, jsCoords, true) }
+                    }                    
+                else { 
+                        draw_polygon(cx, jsCoords, true)
+                    }
+                self.props.smooth ="";
 				if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
 					cx.fillStyle =  Sk.ffi.remapToJs(self.props.fill);
 					cx.fill();	
@@ -1245,11 +1406,20 @@ function getOffsetRect(elem) {
 					cx.strokeStyle = 'black';
 					cx.fillStyle   = 'black';
 				}	
-				cx.moveTo(jsCoords[0], jsCoords[1]);
-				for(var i = 2; i < jsCoords.length; i+=2) {
-					cx.lineTo(jsCoords[i], jsCoords[i+1]);					
-				}
-				cx.stroke();			
+               
+                if (self.props.smooth){
+                        smooth  = Sk.ffi.remapToJs(self.props.smooth);                        
+                        if (smooth){
+                            draw_curve(cx, jsCoords, false) }
+                        if (!smooth){
+                            draw_polygon(cx, jsCoords, false) }
+                    }
+                else {
+                        draw_polygon(cx, jsCoords, false)
+                    }
+                
+                
+                self.props.smooth ="";
 				// arrow head
 				if (props.arrow) {
 					arrw=Sk.ffi.remapToJs(props.arrow);
@@ -2002,10 +2172,8 @@ var PhotoImage = function(kwa)
 
 			$loc.get = new Sk.builtin.func(function(self, pos) {
 				var pos = Sk.ffi.remapToJs(pos);
-				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
-				var items=[]
-				items.push(result);
-				return new Sk.builtin.tuple(items);
+				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();				
+				return new Sk.builtin.str(result)
 			});
 
 			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
@@ -2023,14 +2191,17 @@ var PhotoImage = function(kwa)
 			// .insert(END, item)
 			// .insert(pos, item)
 			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
-						
+			
+            var select_length = $('#tkinter_' + self.id).find('option').length;	// кількість елементів
 			var pos = Sk.ffi.remapToJs(pos);
-			item = Sk.ffi.remapToJs(newItem);
-
-			if ((pos===1)&&(empty)) {
+			var item = Sk.ffi.remapToJs(newItem);
+            var n_pos = Number(pos);
+            if (n_pos >= select_length){  
 				pos='end';
 			}
-			if(pos == "end") {
+            
+			if (empty||(pos === "end")) { // Додаємо в кінець
+                console.log("Add end");
 				var data = {
 						id: generateUUID(),
 						text: item
@@ -2039,9 +2210,11 @@ var PhotoImage = function(kwa)
 				$('#tkinter_' + self.id).append(newOption).trigger('change');
 				empty=false;
 			}
-			else {	
-				pos = pos-2;		
-				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+generateUUID()+'>'+item+'</option>');				
+			else {              
+				            
+                
+                console.log("n_pos=",n_pos,item,select_length);		
+				$('#tkinter_' + self.id+ ' option:eq('+n_pos+')').before('<option value='+generateUUID()+'>'+item+'</option>').trigger('change');                                				
 				empty=false;
 			}	
 		
