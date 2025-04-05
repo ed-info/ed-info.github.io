@@ -1027,10 +1027,7 @@ var PythonIDE = {
 				 if(PythonIDE.files[f]) {
 					return PythonIDE.files[f];
 					}
-				}
-				
-				//var content = fsToBrowse.read( f );
-								
+				}				
 				
 				if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[file] === undefined) {
 					throw `File not found: ${file}`

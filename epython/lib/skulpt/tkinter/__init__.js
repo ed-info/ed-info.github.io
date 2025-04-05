@@ -23,7 +23,6 @@ var $builtinmodule = function (name) {
 	}
     var s = {
 	};
-	
 // Tkinter aliases
 	s.__name__ = new Sk.builtin.str("tkinter");
 	s.END = new Sk.builtin.str("end");
@@ -193,25 +192,7 @@ var $builtinmodule = function (name) {
 					labelElement.innerHTML = PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text));
 			} 
 			else {
-					
-					var vimg = "";
-					var vtxt = PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text))
-					var html = vtxt;
-					if (self.props.image) {
-					  var imgd = Sk.ffi.remapToJs(self.props.image);
-				      vimg='<img src="'+self.props.image+'"/>';
-					
-					 if (self.props.compound){
-						var comp = Sk.ffi.remapToJs(self.props.compound);
-						if (comp=="top") {html = vimg+'<br>'+vtxt}
-						if (comp=="bottom") {html = vtxt+'<br>'+vimg}
-						if (comp=="left") {html = vimg+vtxt}
-						if (comp=="roght") {html = vtxt+vimg}
-					 }  else {html=vimg}
-				    }
-					$('#tkinter_' + self.id).html(html);
-					$('#tkinter_' + self.id).css('vertical-align', 'middle');
-					
+					$('#tkinter_' + self.id).text(PythonIDE.sanitize(Sk.ffi.remapToJs(self.props.text)));
 			}
 		}
 		if(self.props.state) {
@@ -984,7 +965,6 @@ function getOffsetRect(elem) {
 			} 
 
 			self.elements.push(element);
-			
 			return new Sk.ffi.remapToPy(self.elements.length - 1);
 		}
 
@@ -1145,154 +1125,6 @@ function getOffsetRect(elem) {
 			}
 		}		
 // -----------------		
-function draw_spline(ctx, pointsArray, isClosed, tension = 0.5, numOfSegments = 12) {
-    if (pointsArray.length < 2) return;
-    var points = [];
-    for (var i = 0; i < pointsArray.length; i += 2) {
-        points.push({ x: pointsArray[i], y: pointsArray[i + 1] });
-    }
-
-    //ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-
-    // Додаємо точки для закриття кривої
-    if (isClosed) {
-        points.push(points[0]); // Додаємо лише початок для замикання
-        if (points.length === 3) {
-            points.push(points[1]); // Якщо кількість парна, додаємо ще одну
-        }
-    }
-
-    const plength = points.length;
-    const ofc = isClosed ? 1 : 1; // Корекція для закриття
-
-    for (let i = 0; i < plength - 1; i++) {
-        const p0 = i > 0 ? points[i - 1] : (isClosed ? points[points.length - 2] : points[i]);
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = i < points.length - 2 ? points[i + 2] : (isClosed ? points[1] : points[i + 1]);
-
-        for (let t = 0; t <= numOfSegments; t++) {
-            const t1 = t / numOfSegments;
-            const t2 = t1 * t1;
-            const t3 = t2 * t1;
-
-            // Коефіцієнти для сплайну Катмулла-Рома
-            const m1 = tension * (p2.x - p0.x);
-            const m2 = tension * (p3.x - p1.x);
-            const n1 = tension * (p2.y - p0.y);
-            const n2 = tension * (p3.y - p1.y);
-
-            const x = (2 * t3 - 3 * t2 + 1) * p1.x + (t3 - 2 * t2 + t1) * m1 + (-2 * t3 + 3 * t2) * p2.x + (t3 - t2) * m2;
-            const y = (2 * t3 - 3 * t2 + 1) * p1.y + (t3 - 2 * t2 + t1) * n1 + (-2 * t3 + 3 * t2) * p2.y + (t3 - t2) * n2;
-
-            if (t === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-    }
-
-    ctx.stroke();
-}
-// --------------
-function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
-    if (pointsArray.length < 6) {
-        console.error('Need at least 3 points (6 coordinates) to smooth a polygon');
-        return;
-    }
-
-    const points = [];
-    for (let i = 0; i < pointsArray.length; i += 2) {
-        points.push({ x: pointsArray[i], y: pointsArray[i + 1] });
-    }
-
-    if (closed) {
-        points.push(points[0]);
-        points.push(points[1]);
-    }
-
-    //ctx.beginPath();
-
-    // Починаємо з середини першої сторони
-    let firstX = (points[0].x + points[1].x) / 2;
-    let firstY = (points[0].y + points[1].y) / 2;
-    let pend = 1;
-    if (!closed){
-       firstX = points[0].x;
-       firstY = points[0].y;
-       pend = 2;
-    }
-    ctx.moveTo(firstX, firstY);
-
-    for (let i = 1; i < points.length - pend; i++) {
-        const prev = points[i - 1];
-        const curr = points[i];
-        const next = points[i + 1];
-
-        // Обчислюємо середини сторін
-        const mid1 = {
-            x: (prev.x + curr.x) / 2,
-            y: (prev.y + curr.y) / 2
-        };
-        const mid2 = {
-            x: (curr.x + next.x) / 2,
-            y: (curr.y + next.y) / 2
-        };
-
-        // Обчислюємо контрольні точки всередині полігона
-        const control1 = {
-            x: mid1.x + (curr.x - mid1.x) * smoothing,
-            y: mid1.y + (curr.y - mid1.y) * smoothing
-        };
-        const control2 = {
-            x: mid2.x + (curr.x - mid2.x) * smoothing,
-            y: mid2.y + (curr.y - mid2.y) * smoothing
-        };
-
-        // Малюємо криву Безьє
-        
-        ctx.bezierCurveTo(
-            control1.x, control1.y,
-            control2.x, control2.y,
-            mid2.x, mid2.y        
-         );
-    }
-
-    if (closed) {
-    
-        ctx.closePath();
-        ctx.fill()
- 
-    }
-    else {                   
-        ctx.quadraticCurveTo(            
-            points[3].x, points[3].y,
-            points[4].x, points[4].y );
-    
-    }
-
-    ctx.stroke();
-    
-}
-
-
-
-
-// ---------------
-    function draw_polygon(ctx, pointsArray,isClosed) {
-        		ctx.moveTo(pointsArray[0], pointsArray[1]);
-				for(var i = 2; i < pointsArray.length; i+=2) {
-					ctx.lineTo(pointsArray[i], pointsArray[i+1]);	
-				}
-				if (isClosed) {
-                           ctx.closePath();
-                       } 
-                ctx.stroke();
-        
-    }
-//----------------
 		var create_polygon = function(kwa, self, coords) {
 			var jsCoords = Sk.ffi.remapToJs(coords);
 			if(self.props.fill){				
@@ -1317,26 +1149,13 @@ function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
 			return commonCanvasElement(self, {props:props, coords:jsCoords, draw: function(canvas) {
 				var cx = canvas.getContext('2d');
 				cx.beginPath();
-				applyStyles(props, cx);
-                let smooth = false;
-                
-                if (self.props.smooth) {
-                        smooth  = Sk.ffi.remapToJs(self.props.smooth)                        
-                        if (smooth){
-                            draw_curve(cx, jsCoords, true)
-                            //if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
-                            //    cx.lineWidth = 1;
-                            //    draw_polygon(cx, jsCoords, true)
-                            //    }
-                            }
-                            
-                        if (!smooth){
-                            draw_polygon(cx, jsCoords, true) }
-                    }                    
-                else { 
-                        draw_polygon(cx, jsCoords, true)
-                    }
-                self.props.smooth ="";
+				applyStyles(props, cx);				
+				cx.moveTo(jsCoords[0], jsCoords[1]);
+				for(var i = 2; i < jsCoords.length; i+=2) {
+					cx.lineTo(jsCoords[i], jsCoords[i+1]);	
+				}
+				cx.closePath();
+				cx.stroke();				
 				if(self.props.fill && Sk.ffi.remapToJs(self.props.fill) != '') {
 					cx.fillStyle =  Sk.ffi.remapToJs(self.props.fill);
 					cx.fill();	
@@ -1406,20 +1225,11 @@ function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
 					cx.strokeStyle = 'black';
 					cx.fillStyle   = 'black';
 				}	
-               
-                if (self.props.smooth){
-                        smooth  = Sk.ffi.remapToJs(self.props.smooth);                        
-                        if (smooth){
-                            draw_curve(cx, jsCoords, false) }
-                        if (!smooth){
-                            draw_polygon(cx, jsCoords, false) }
-                    }
-                else {
-                        draw_polygon(cx, jsCoords, false)
-                    }
-                
-                
-                self.props.smooth ="";
+				cx.moveTo(jsCoords[0], jsCoords[1]);
+				for(var i = 2; i < jsCoords.length; i+=2) {
+					cx.lineTo(jsCoords[i], jsCoords[i+1]);					
+				}
+				cx.stroke();			
 				// arrow head
 				if (props.arrow) {
 					arrw=Sk.ffi.remapToJs(props.arrow);
@@ -1504,48 +1314,7 @@ function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
 		}
 		create_rectangle.co_kwargs = true;
 		$loc.create_rectangle = new Sk.builtin.func(create_rectangle);
-// create image
-		var create_image = function(kwa, self, x1, y1) {
-			var coords = {
-				x1: Sk.ffi.remapToJs(x1),
-				y1: Sk.ffi.remapToJs(y1)
-			}
 
-			var props = unpackKWA(kwa);
-			console.log("Create image:",props);
-			return commonCanvasElement(self, {type:"image", props:props, coords:coords, draw: function(canvas) {
-				var cx = canvas.getContext('2d');
-				base_image = new Image();
-                base_image.src = props.image;
-                console.log("Width=",base_image.width);
-                var img_width = base_image.width;
-                var img_height = base_image.height;
-                var dx = 0;
-                var dy = 0;
-                var anchor="CENTER";
-                if (props.anchor){
-                     anchor =props.anchor.v;
-                     console.log("Anchor=",anchor);
-                     anchor = anchor.toUpperCase();
-			    }
-                if (anchor=="N") { dx= -base_image.width/2;dy= 0;}
-                if (anchor=="S") { dx= -base_image.width/2;dy= -base_image.height;}
-                if (anchor=="W") { dx = 0;dy= -base_image.height/2;}
-                if (anchor=="E") { dx = -base_image.width;dy= -base_image.height/2;}
-                if (anchor=="CENTER") { dx= -base_image.width/2;dy= -base_image.height/2;}
-                if (anchor=="NW") { dx = 0;dy = 0;}
-                if (anchor=="NE") { dx = -base_image.width;dy= 0;}
-                if (anchor=="SW") { dx= 0;dy= -base_image.height;}
-                if (anchor=="SE") { dx = -base_image.width;dy= -base_image.height;}
-                if (anchor=="CENTER") { dx= -base_image.width/2;dy= -base_image.height/2;}
-                cx.drawImage(base_image,coords.x1+dx, coords.y1+dy);	
-			}});
-
-		}
-		create_image.co_kwargs = true;
-		$loc.create_image = new Sk.builtin.func(create_image);
-
-//
 		var create_oval = function(kwa, self, x1, y1, x2, y2) {
 			var coords = {
 				x1: Sk.ffi.remapToJs(x1),
@@ -1837,18 +1606,6 @@ function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 	}, 'Message', [s.Widget]);	
-// PhotoImage
-var PhotoImage = function(kwa)
-    {          
-        props = unpackKWA(kwa);
-        console.log("kwa=",props.file.v);
-        imgData = fsToBrowse.read( props.file.v );
-        return new Sk.builtin.str(imgData)
-    };
-    PhotoImage['co_kwargs'] = true;
-    s.PhotoImage = new Sk.builtin.func(PhotoImage);
-
-
 // Label +++------------------------------------------------------
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
@@ -1900,37 +1657,23 @@ var PhotoImage = function(kwa)
 			if(self.props.state) {
 				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
 			}
-			var vtxt = "";
+			var v = "";
 			if(self.props.text) {
-					vtxt = Sk.ffi.remapToJs(self.props.text);
-					
+					v = Sk.ffi.remapToJs(self.props.text);
 			}			
 			if(self.props.textvariable) {
-				vtxt = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-			if(vtxt==="") { 
-					vtxt="\u2000\u2000"; // blank button
+			if(v==="") { 
+					v="\u2000\u2000"; // blank button
 			}
-			var vimg ="";
-			if(self.props.image) {
-				var imgd = Sk.ffi.remapToJs(self.props.image);
-				
-				vimg='<img src="'+self.props.image+'"/>';
-				if (vtxt=="\u2000\u2000"){vtxt=""}
-		        }
-		    
-		    
-		    vtxt=vtxt+vimg;
-		    console.log("Txt data=",vtxt); 
-			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>'+vtxt+'</button>';
-			//var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '><img src="data:image/png;base64,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", "$savedKeyHash": "data:image/png;base64,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", v: "data:image/png;base64,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">This is Text</button>';
+			var html = '<button id="tkinter_' + self.id + '"' + (disabled?' disabled':'') + '>'+v+'</button>';
 			return html;
 		}
 
 		var init = function(kwa, self, master) {
 			commonWidgetConstructor(kwa, self, master, getHtml);
-			/*			
 			self.update = function() {
 				var v = "";
 				if(self.props.text) {
@@ -1942,14 +1685,12 @@ var PhotoImage = function(kwa)
 				if(v==="") { 
 					v="\u2000\u2000"; // blank button
 				}
-
 				$('#tkinter_' + self.id).text(Sk.ffi.remapToJs(v));					
 					if (self.props.width===1) {						
 						self.props.width = v.length+1;
 					}
 					$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
-			}
-			*/	
+			}	
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
@@ -2172,8 +1913,10 @@ var PhotoImage = function(kwa)
 
 			$loc.get = new Sk.builtin.func(function(self, pos) {
 				var pos = Sk.ffi.remapToJs(pos);
-				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();				
-				return new Sk.builtin.str(result)
+				var result= $('#tkinter_' + self.id + '  option:eq('+pos+')').text();
+				var items=[]
+				items.push(result);
+				return new Sk.builtin.tuple(items);
 			});
 
 			$loc.delete_$rw$ = new Sk.builtin.func(function(self, pos) {
@@ -2191,17 +1934,14 @@ var PhotoImage = function(kwa)
 			// .insert(END, item)
 			// .insert(pos, item)
 			$loc.insert = new Sk.builtin.func(function(self, pos, newItem) {
-			
-            var select_length = $('#tkinter_' + self.id).find('option').length;	// кількість елементів
+						
 			var pos = Sk.ffi.remapToJs(pos);
-			var item = Sk.ffi.remapToJs(newItem);
-            var n_pos = Number(pos);
-            if (n_pos >= select_length){  
+			item = Sk.ffi.remapToJs(newItem);
+
+			if ((pos===1)&&(empty)) {
 				pos='end';
 			}
-            
-			if (empty||(pos === "end")) { // Додаємо в кінець
-                console.log("Add end");
+			if(pos == "end") {
 				var data = {
 						id: generateUUID(),
 						text: item
@@ -2210,11 +1950,9 @@ var PhotoImage = function(kwa)
 				$('#tkinter_' + self.id).append(newOption).trigger('change');
 				empty=false;
 			}
-			else {              
-				            
-                
-                console.log("n_pos=",n_pos,item,select_length);		
-				$('#tkinter_' + self.id+ ' option:eq('+n_pos+')').before('<option value='+generateUUID()+'>'+item+'</option>').trigger('change');                                				
+			else {	
+				pos = pos-2;		
+				$('#tkinter_' + self.id+ ' option:eq('+pos+')').after('<option value='+generateUUID()+'>'+item+'</option>');				
 				empty=false;
 			}	
 		
