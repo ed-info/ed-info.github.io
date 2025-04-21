@@ -1204,15 +1204,56 @@ $loc.grid = new Sk.builtin.func(grid);
 			return new Sk.builtin.tuple(matches);
 		});
 
-		var coords = function(kwa, self, item) {
-			var id = Sk.ffi.remapToJs(item);
-			var c = [];
-			if(self && self.elements && self.elements[id] && !self.elements[id].deleted) {
-				c.push(new Sk.builtin.int_(self.elements[id].coords.x1));
-				c.push(new Sk.builtin.int_(self.elements[id].coords.y1));
-				c.push(new Sk.builtin.int_(self.elements[id].coords.x2));
-				c.push(new Sk.builtin.int_(self.elements[id].coords.y2));
+		var coords = function(kwa, self, item,coords) {
+            var id = Sk.ffi.remapToJs(item);
+            if (coords){
+            var jsCoords = Sk.ffi.remapToJs(coords);
+			if(typeof(jsCoords) == "number"){
+				jsCoords = [];
+				var found = false;
+				for(var i = 0; i < arguments.length; i++) {
+					if(arguments[i] == coords) {
+						found = true;
+					}
+					if(found) {
+						jsCoords.push(Sk.ffi.remapToJs(arguments[i]));
+					}
+				}
 			}
+                        
+            if (self.elements[id].coords.x1) { // перевірка як задані координати - як об’єкт: { x1: ..., y1: ..., x2: ..., y2: ... } або як масив: [x1, y1, x2, y2]
+                if (jsCoords.length === 2) {
+                    self.elements[id].coords.x1 = jsCoords[0];
+                    self.elements[id].coords.y1 = jsCoords[1];
+            } else if (jsCoords.length === 4) {
+                    self.elements[id].coords.x1 = jsCoords[0];
+                    self.elements[id].coords.y1 = jsCoords[1];
+                    self.elements[id].coords.x2 = jsCoords[2];
+                    self.elements[id].coords.y2 = jsCoords[3];
+                    }
+            } else 
+                 for(var i = 0; i < jsCoords.length; i ++) {
+                        self.elements[id].coords[i]=jsCoords[i];
+                    }
+            self.onShow();
+            }
+			var c = [];
+            if (self && self.elements && self.elements[id] && !self.elements[id].deleted) {
+                var crd = self.elements[id].coords;
+        
+                if (Array.isArray(crd)) {
+                    // Якщо coords — масив
+                    for (var i = 0; i < crd.length; i++) {
+                        c.push(new Sk.builtin.int_(crd[i]));
+                    }
+                } else if (typeof crd === "object") {
+                    // Якщо coords — об’єкт
+                    if (crd.x1 !== undefined) c.push(new Sk.builtin.int_(crd.x1));
+                    if (crd.y1 !== undefined) c.push(new Sk.builtin.int_(crd.y1));
+                    if (crd.x2 !== undefined) c.push(new Sk.builtin.int_(crd.x2));
+                    if (crd.y2 !== undefined) c.push(new Sk.builtin.int_(crd.y2));
+                }
+            }
 			return new Sk.builtin.tuple(c);
 		};
 		coords.co_kwargs = true;
