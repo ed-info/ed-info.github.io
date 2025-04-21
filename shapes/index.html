@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Редактор фігур</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #toolbar {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+    .tool-btn.selected {
+      border: 2px solid #007bff;
+      background: #ccc;
+    }
+    .icon { width: 24px; height: 24px; }
+    input[type="color"], input[type="range"] {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <div class="tool-btn selected" data-shape="rect"><img src="rect.png" /></div>
+    <div class="tool-btn" data-shape="triangle"><img src="triangle.png" /></div>
+    <div class="tool-btn" data-shape="circle"><img src="circle.png" /></div>
+    <div class="tool-btn" data-shape="ellipse"><img src="ellipse.png" /></div>
+    <div class="tool-btn" data-shape="trapezoid"><img src="quad.png" /></div>
+    <div class="tool-btn" data-shape="line"><img src="line.png" /></div>
+    <div class="tool-btn" data-shape="arc"><img src="arc.png" /></div>
+    <input class="color-picker" type="color" id="fillColor" value="#ff0000" title="Fill color">
+    <input class="color-picker" type="color" id="strokeColor" value="#000000" title="Stroke color">
+    <button id="exportBtn"> 👁 </button> 
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5.collide2d"></script>
+  <script>
+    let shapes = [];
+    let currentShape = 'rect';
+    let selected = null;
+    let dragOffsetX, dragOffsetY;
+    let resizing = false;
+    let activeHandle = null;
+    const handleSize = 10;
+
+    let currentFill = '#ff0000';
+    let currentStroke = '#000000';
+    let currentStrokeWeight = 2;
+    
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentShape = btn.dataset.shape;
+      });
+    });
+
+    document.getElementById('fillColor').addEventListener('input', e => {
+      currentFill = e.target.value;
+      if (selected) selected.fill = currentFill;
+    });
+
+    document.getElementById('strokeColor').addEventListener('input', e => {
+      currentStroke = e.target.value;
+      if (selected) selected.stroke = currentStroke;
+    });
+
+
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      let content = '';
+      for (let s of shapes) {
+        content += `\nFill: ${s.fill}\n`;
+        let shape = s.type;
+        if (shape==="trapezoid") shape = "quad/polygon"  
+        content += `Shape: ${shape}\n`;
+
+        if (s.points) {
+          s.points.forEach((p, i) => {
+            content += `  point ${i + 1}: (${int(p.x)}, ${int(p.y)})\n`;
+          });
+        } else if (s.type === 'arc') {
+          content += `  center: (${int(s.x + s.w / 2)}, ${int(s.y + s.h / 2)})\n`;
+          content += `  radius: ${int(s.w / 2)}\n`;
+          content += `  start angle: ${int(degrees(s.start), 1, 2)}°\n`;
+          content += `    end angle: ${int(degrees(s.stop), 1, 2)}°\n`;
+        } else {
+          content += `  x: ${int(s.x)}, y: ${int(s.y)}, w: ${int(s.w)}, h: ${int(s.h)}\n`;
+        }
+
+       
+      }
+
+      let newWin = window.open('', '', 'width=600,height=600');
+      newWin.document.write(`<pre>${content}</pre>`);
+      newWin.document.title = "Shape data";
+    });
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight - 48);
+    }
+
+    function draw() {
+      background(255);
+      stroke(230);
+      strokeWeight(1);
+      for (let x = 0; x < width; x += 10) line(x, 0, x, height);
+      for (let y = 0; y < height; y += 10) line(0, y, width, y);
+      for (let shape of shapes) {
+        drawShape(shape);
+        if (shape === selected) {
+          drawHandles(shape);
+          showCoords(shape);
+        }
+      }
+    }
+
+    function mousePressed() {
+      if (mouseY < 0) return;
+      for (let shape of shapes.slice().reverse()) {
+        if (overHandle(shape)) {
+          resizing = true;
+          selected = shape;
+          updateColorPickers();
+          return;
+        }
+        if (inside(shape, mouseX, mouseY)) {
+          selected = shape;
+          dragOffsetX = mouseX - shape.x;
+          dragOffsetY = mouseY - shape.y;
+          updateColorPickers();
+          return;
+        }
+      }
+
+      const s = {
+        type: currentShape,
+        x: mouseX,
+        y: mouseY,
+        w: 100,
+        h: 100,
+        fill: currentFill,
+        stroke: currentStroke,
+        strokeWeight: currentStrokeWeight
+      };
+
+      if (currentShape === 'triangle') {
+        s.points = [
+          { x: mouseX + 50, y: mouseY },
+          { x: mouseX, y: mouseY + 100 },
+          { x: mouseX + 100, y: mouseY + 100 }
+        ];
+      } else if (currentShape === 'trapezoid') {
+        s.points = [
+          { x: mouseX + 25, y: mouseY },
+          { x: mouseX + 75, y: mouseY },
+          { x: mouseX + 100, y: mouseY + 100 },
+          { x: mouseX, y: mouseY + 100 }
+        ];
+      } else if (currentShape === 'line') {
+        s.points = [
+          { x: mouseX, y: mouseY },
+          { x: mouseX + 100, y: mouseY + 100 }
+        ];
+      } else if (currentShape === 'arc') {
+        s.w = 100;
+        s.h = 100;
+        s.start = PI;
+        s.stop = 0;
+      }
+
+      shapes.push(s);
+      selected = s;
+      updateColorPickers();
+    }
+
+    function mouseDragged() {
+      if (!selected) return;
+      if (resizing && activeHandle !== null) {
+        if (selected.type === 'arc' && (activeHandle === 'start' || activeHandle === 'stop')) {
+          let cx = selected.x + selected.w / 2;
+          let cy = selected.y + selected.h / 2;
+          let angle = atan2(mouseY - cy, mouseX - cx);
+          if (angle < 0) angle += TWO_PI;
+          selected[activeHandle] = angle;
+        } else if (selected.points) {
+          selected.points[activeHandle].x = mouseX;
+          selected.points[activeHandle].y = mouseY;
+        } else if (activeHandle === 'br') {
+          if (selected.type === 'arc' || selected.type === 'circle') {
+            let size = max(abs(mouseX - selected.x), abs(mouseY - selected.y));
+            selected.w = size;
+            selected.h = size;
+          } else {
+            selected.w = abs(mouseX - selected.x);
+            selected.h = abs(mouseY - selected.y);
+          }
+        }
+      } else {
+        if (selected.points) {
+          const dx = mouseX - dragOffsetX - selected.x;
+          const dy = mouseY - dragOffsetY - selected.y;
+          selected.points.forEach(p => {
+            p.x += dx;
+            p.y += dy;
+          });
+          selected.x = mouseX - dragOffsetX;
+          selected.y = mouseY - dragOffsetY;
+        } else {
+          selected.x = mouseX - dragOffsetX;
+          selected.y = mouseY - dragOffsetY;
+        }
+      }
+    }
+
+    function mouseReleased() {
+      resizing = false;
+      activeHandle = null;
+    }
+
+    function drawShape(s) {
+      fill(s.fill);
+      stroke(s.stroke);
+      strokeWeight(2);
+      if (s.points) {
+        if (s.type === 'line') {
+          line(s.points[0].x, s.points[0].y, s.points[1].x, s.points[1].y);
+        } else {
+          beginShape();
+          for (let p of s.points) vertex(p.x, p.y);
+          endShape(CLOSE);
+        }
+      } else if (s.type === 'arc') {
+        arc(s.x + s.w / 2, s.y + s.h / 2, s.w, s.h, s.start, s.stop, CHORD);
+      } else {
+        switch (s.type) {
+          case 'rect': rect(s.x, s.y, s.w, s.h); break;
+          case 'ellipse': ellipse(s.x + s.w / 2, s.y + s.h / 2, s.w, s.h); break;
+          case 'circle':
+            let d = min(s.w, s.h);
+            ellipse(s.x + d / 2, s.y + d / 2, d, d);
+            break;
+        }
+      }
+    }
+
+    function arcHandlePosition(shape, angle) {
+      let rx = shape.w / 2;
+      let ry = shape.h / 2;
+      let cx = shape.x + rx;
+      let cy = shape.y + ry;
+      return {
+        x: cx + rx * cos(angle),
+        y: cy + ry * sin(angle)
+      };
+    }
+
+    function drawHandles(s) {
+      fill(0);
+      noStroke();
+      if (s.points) {
+        s.points.forEach(p => rect(p.x - 5, p.y - 5, 10, 10));
+      } else if (s.type === 'arc') {
+        let start = arcHandlePosition(s, s.start);
+        let stop = arcHandlePosition(s, s.stop);
+        rect(start.x - 5, start.y - 5, 10, 10);
+        rect(stop.x - 5, stop.y - 5, 10, 10);
+        rect(s.x + s.w - 5, s.y + s.h - 5, 10, 10);
+      } else {
+        rect(s.x + s.w - 5, s.y + s.h - 5, 10, 10);
+      }
+    }
+
+    function overHandle(s) {
+      if (s.points) {
+        for (let i = 0; i < s.points.length; i++) {
+          if (dist(mouseX, mouseY, s.points[i].x, s.points[i].y) < handleSize) {
+            activeHandle = i;
+            return true;
+          }
+        }
+      } else if (s.type === 'arc') {
+        let start = arcHandlePosition(s, s.start);
+        let stop = arcHandlePosition(s, s.stop);
+        if (dist(mouseX, mouseY, start.x, start.y) < handleSize) {
+          activeHandle = 'start';
+          return true;
+        }
+        if (dist(mouseX, mouseY, stop.x, stop.y) < handleSize) {
+          activeHandle = 'stop';
+          return true;
+        }
+        if (dist(mouseX, mouseY, s.x + s.w, s.y + s.h) < handleSize) {
+          activeHandle = 'br';
+          return true;
+        }
+      } else {
+        if (dist(mouseX, mouseY, s.x + s.w, s.y + s.h) < handleSize) {
+          activeHandle = 'br';
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function inside(s, x, y) {
+      if (s.points) return collidePointPoly(x, y, s.points);
+      if (s.type === 'arc') {
+        let cx = s.x + s.w / 2;
+        let cy = s.y + s.h / 2;
+        let dx = (x - cx) / (s.w / 2);
+        let dy = (y - cy) / (s.h / 2);
+        if (dx * dx + dy * dy > 1) return false;
+        let angle = atan2(dy, dx);
+        if (angle < 0) angle += TWO_PI;
+        let start = (s.start + TWO_PI) % TWO_PI;
+        let end = (s.stop + TWO_PI) % TWO_PI;
+        return start < end ? (angle >= start && angle <= end) : (angle >= start || angle <= end);
+      }
+      return x > s.x && x < s.x + s.w && y > s.y && y < s.y + s.h;
+    }
+
+    function showCoords(s) {
+      fill(0);
+      noStroke();
+      textSize(14);
+      let label = s.points
+        ? s.points.map((p, i) => `P${i + 1}: (${int(p.x)}, ${int(p.y)})`).join('  ')
+        : s.type === 'arc'
+        ? `x: ${int(s.x)}, y: ${int(s.y)}, w: ${int(s.w)}, h: ${int(s.h)}, start: ${nf(s.start, 1, 2)}, stop: ${nf(s.stop, 1, 2)}`
+        : `x: ${int(s.x)}, y: ${int(s.y)}, w: ${int(s.w)}, h: ${int(s.h)}`;
+      text(label, 10, height - 20);
+    }
+
+    function updateColorPickers() {
+      if (selected) {
+        document.getElementById('fillColor').value = selected.fill;
+        document.getElementById('strokeColor').value = selected.stroke;
+        document.getElementById('strokeWidth').value = selected.strokeWeight || 1;
+      }
+    }
+
+    function keyPressed() {
+      if (keyCode === DELETE && selected) {
+        shapes = shapes.filter(s => s !== selected);
+        selected = null;
+      }
+    }
+  </script>
+</body>
+</html>
