@@ -517,6 +517,10 @@ function getOffsetRect(elem) {
 					commonKeyHandler(ev);
 				}
 				
+                
+                
+                
+                
 				if(self.eventHandlers['<Button>']) {
 					$('#tkinter_' + self.id).mousedown(function(e) {
 						if(e.buttons) {
@@ -535,23 +539,23 @@ function getOffsetRect(elem) {
 					});
 				}
 				
-				if(self.eventHandlers['<Double-Button>']) {
-					$('#tkinter_' + self.id).dblclick(function(e) {
-						if(e.buttons) {
-							var x = e.pageX - getOffsetRect(this).left;
-							var y = e.pageY - getOffsetRect(this).top;							
-							
-							var pyE = Sk.misceval.callsim(s.Event);
-							pyE.props.x = new Sk.builtin.int_(x);
-							pyE.props.y = new Sk.builtin.int_(y);
-							Sk.misceval.callsimAsync(null, self.eventHandlers['<Double-Button>'], pyE).then(function success(r) {
-							
-							}, function fail(e) {
-								window.onerror(e);
-							});
-					    }
-					});
-				}
+                if(self.eventHandlers['<DoubleButton>']) {
+                    $('#tkinter_' + self.id).dblclick(function(e) {
+                        
+                        var x = e.pageX - getOffsetRect(this).left;
+                        var y = e.pageY - getOffsetRect(this).top;
+                
+                        var pyE = Sk.misceval.callsim(s.Event);
+                        pyE.props.x = new Sk.builtin.int_(x);
+                        pyE.props.y = new Sk.builtin.int_(y);
+                        Sk.misceval.callsimAsync(null, self.eventHandlers['<DoubleButton>'], pyE).then(function success(r) {
+                
+                        }, function fail(e) {
+                            window.onerror(e);
+                        });
+                    });
+                }
+                
 
 				if(self.eventHandlers['<B1Motion>']) {
 					$('#tkinter_' + self.id).mousemove(function(e) {
@@ -1066,6 +1070,7 @@ $loc.grid = new Sk.builtin.func(grid);
 		function bind(self, event, command) {
 			var e = Sk.ffi.remapToJs(event);
 			if (e==='<B1-Motion>') { e='<B1Motion>'; }
+            if (e==='<Double-Button>') { e='<DoubleButton>'; }
 			if(e.indexOf("-") > -1) {
 				var parts = e.substr(1, e.length - 2).split("-");
 				command.eventDetails = parts[1];
