@@ -11,9 +11,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const lang = navigator.language || navigator.userLanguage;
-            let target = 'index_en.html/';
+            let target = 'index_en.html';
             if (lang.startsWith('uk') || lang.startsWith('ru')) {
-               target = 'index_uk.html/';
+               target = 'index_uk.html';
             }            
             // Отримуємо поточний URL
             const currentUrl = window.location.href;            
@@ -26,16 +26,10 @@
             console.log("dataAfterPath=",dataAfterPath);
             document.getElementById("demo2").innerHTML = dataAfterPath;
             // Якщо є дані після pathname
-            if (dataAfterPath) {
-                // Формуємо новий URL з next.html і даними
-                const newUrl = basePath.replace(/[^/]*$/, '') + target + dataAfterPath;
-                console.log("newUrl=",newUrl);
+            
                 // Перенаправляємо на нову сторінку
-                //window.location.href = newUrl;
-            } else {
-                // Якщо даних немає, просто перенаправляємо на next.html
-                //window.location.href = basePath.replace(/[^/]*$/, '') + target;
-            }
+                window.location.href = newUrl;
+           
         });
     </script>
 </body>
