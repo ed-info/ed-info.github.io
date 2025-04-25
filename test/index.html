@@ -6,8 +6,6 @@
     <title>Обробка URL</title>
 </head>    
 <body> 
-    <p id="demo1"></p>
-    <p id="demo2"></p>   
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -26,19 +24,10 @@
             if (lang.startsWith('uk') || lang.startsWith('ru')) {
                target = 'index_uk.html';
             }            
-            // Отримуємо поточний URL
-            const currentUrl = window.location.href;            
             // Отримуємо базовий шлях (pathname)
             const basePath = window.location.pathname;
-             console.log("basePath=",basePath);
-             document.getElementById("demo1").innerHTML = basePath;
-            // Виділяємо частину URL після pathname
-            const dataAfterPath = currentUrl.split(basePath)[1];
-            console.log("dataAfterPath=",dataAfterPath);
-            document.getElementById("demo2").innerHTML = dataAfterPath;
-            
-                // Перенаправляємо на нову сторінку
-               // window.location.href = target;
+            console.log("basePath=",basePath);
+            window.location.href = basePath.replace(/[^/]*$/, '') + target;
            
         });
     </script>
