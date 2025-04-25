@@ -1,12 +1,10 @@
 <html>
 Українська мова
  <script>
-    (function () {      
-      const fullUrl = window.location.href;
-      let params = fullUrl;
-
-      console.log("Params=",params);
-
-    })();
+            let data1 = JSON.parse(localStorage.getItem('epythonHash')).key;
+            let data2 = JSON.parse(localStorage.getItem('epythonParam')).key;
+            if (data2) {console.log("Yess")} else {console.log("Nein")}
+            console.log("Hash=",data1);
+            console.log("Params=",data2);
   </script>
 </html>
