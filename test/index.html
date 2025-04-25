@@ -10,6 +10,17 @@
     <p id="demo2"></p>   
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            
+            var hash=window.location.hash;
+            var params = new URLSearchParams(window.location.search);
+            let style = params.get('style');
+            console.log("Hash0=",hash);
+            console.log("Style0=",style);
+            
+            localStorage.setItem('epythonHash', JSON.stringify({ key: hash }));
+            localStorage.setItem('epythonParam', JSON.stringify({ key: style }));
+            
+            
             const lang = navigator.language || navigator.userLanguage;
             let target = 'index_en.html';
             if (lang.startsWith('uk') || lang.startsWith('ru')) {
@@ -25,7 +36,6 @@
             const dataAfterPath = currentUrl.split(basePath)[1];
             console.log("dataAfterPath=",dataAfterPath);
             document.getElementById("demo2").innerHTML = dataAfterPath;
-            // Якщо є дані після pathname
             
                 // Перенаправляємо на нову сторінку
                 window.location.href = target;
