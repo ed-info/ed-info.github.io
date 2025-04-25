@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЄPython</title>
+    <title>ЄPython loading...</title>
 </head>    
 <body> 
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            
+            var hash=window.location.hash;
+            var params = new URLSearchParams(window.location.search);
+            let style = params.get('style');
+            console.log("Hash=",hash);
+            console.log("Style=",style);
+            
+            localStorage.setItem('epythonHash', JSON.stringify({ key: hash }));
+            localStorage.setItem('epythonParam', JSON.stringify({ key: style }));
+            
+            
             const lang = navigator.language || navigator.userLanguage;
             let target = 'index_en.html';
             if (lang.startsWith('uk') || lang.startsWith('ru')) {
                target = 'index_uk.html';
             }            
-            // Отримуємо поточний URL
-            const currentUrl = window.location.href;            
             // Отримуємо базовий шлях (pathname)
             const basePath = window.location.pathname;
-             console.log("basePath=",basePath);
-
-            // Виділяємо частину URL після pathname
-            const dataAfterPath = currentUrl.split(basePath)[1];
-
-            // Якщо є дані після pathname
-            if (dataAfterPath) {
-                // Формуємо новий URL з next.html і даними
-                const newUrl = basePath.replace(/[^/]*$/, '') + target + dataAfterPath;
-                
-                // Перенаправляємо на нову сторінку
-                window.location.href = newUrl;
-            } else {
-                // Якщо даних немає, просто перенаправляємо на next.html
-                window.location.href = basePath.replace(/[^/]*$/, '') + target;
-            }
+            console.log("basePath=",basePath);
+            window.location.href = basePath.replace(/[^/]*$/, '') + target;
+           
         });
     </script>
 </body>

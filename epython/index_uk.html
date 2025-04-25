@@ -73,14 +73,11 @@
     </div>
     <div id="myfilename.txt"></div>
     <script>
+        var uhash = JSON.parse(localStorage.getItem('epythonHash')).key;
+        var ustyle = JSON.parse(localStorage.getItem('epythonParam')).key;
 		var assets = {};
-		var embed = false;
-		if (window.location.search!='') {
-			var params = new URL(window.location).searchParams;
-			if (params) {
-				embed = (params.get("param")).includes("embed");
-			}
-		}	
+		var embed = false; 
+        if (ustyle) {embed =ustyle.startsWith("embed")}
 		console.log(embed);
 		$('#logo').show();
 		$('#file_tabs').show();	
@@ -94,8 +91,9 @@
 		function decode(str) {
 			return decodeURIComponent(escape(window.atob(str)));
 		}
-		var uhash=window.location.hash;
+		
 		console.log('hash:',uhash);
+        
 		var uuhash=decode(uhash.substring(1));		
         var files = uuhash;
         

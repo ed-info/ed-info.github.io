@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Обробка URL</title>
+    <title>ЄPython loading...</title>
 </head>    
 <body> 
     <script>
@@ -12,8 +12,8 @@
             var hash=window.location.hash;
             var params = new URLSearchParams(window.location.search);
             let style = params.get('style');
-            console.log("Hash0=",hash);
-            console.log("Style0=",style);
+            console.log("Hash=",hash);
+            console.log("Style=",style);
             
             localStorage.setItem('epythonHash', JSON.stringify({ key: hash }));
             localStorage.setItem('epythonParam', JSON.stringify({ key: style }));
