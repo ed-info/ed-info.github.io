@@ -767,8 +767,7 @@ function openDialog(file,message) {
     $( "#vdialog" ).dialog("option","title",file).dialog('open');
     $("#vdialog" ).dialog("widget").position({
        my: 'left',
-       at: 'right',
-       of: target
+       at: 'right'
     });
 }
 function viewFile(file) {

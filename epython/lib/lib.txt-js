@@ -1,6 +1,3 @@
-let userLang = navigator.language || navigator.userLanguage;
-let selectedLang = userLang.startsWith('en') ? 'en' : 'uk';
-
 var t;
 var wscale =0.5;
 /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
@@ -33,8 +30,7 @@ var PythonIDE = {
 		//console.log(filename, lineNumber);
 		var breakpoint = false;
 		if(PythonIDE.breakpoints[filename] && PythonIDE.breakpoints[filename][lineNumber] && PythonIDE.continueRunning) {
-			//PythonIDE.showHint("Призупинено через точку зупинки на рядку " + (lineNumber));
-            PythonIDE.showHint(selectedLang === 'en' ? "Paused due to a breakpoint on the line " + (lineNumber) : "Призупинено через точку зупинки на рядку " + (lineNumber));
+			PythonIDE.showHint("Призупинено через точку зупинки на рядку " + (lineNumber));
 			$('#btn_showREPL').show();
 			breakpoint = true;
 			PythonIDE.editFile(filename, lineNumber);
@@ -49,7 +45,7 @@ var PythonIDE = {
 		PythonIDE.currentScope = {};
 		var susp = result;
 		if(true || PythonIDE.runMode == "step" || breakpoint) {
-			var html = '<i id="btnToggleGlobals" class="fa fa-arrows-h"></i> <div id="globals"><h3 data-i18n="global_vars">Глобальні змінні: </h3><table><tr><th>Ім'+"'"+'я</th><th data-i18n="data_type">Тип даних</th><th data-i18n="variable_values">Значення</th></tr></div>';
+			var html = '<i id="btnToggleGlobals" class="fa fa-arrows-h"></i> <div id="globals"><h3>Глобальні змінні: </h3><table><tr><th>Ім'+"'"+'я</th><th>Тип даних</th><th>Значення</th></tr></div>';
 			PythonIDE.watchVariables.expandHandlers = [];
 			var context = susp;
 			if(context.child && context.child.$gbl) {
@@ -96,7 +92,7 @@ var PythonIDE = {
 			context = susp.child;
 			while(context && context.$tmps && context.$lineno) {
 			
-				html += '<h4><span data-i18n="local_variables">Локальні змінні у рядку</span> ' + context.$lineno + '</h4><table><tr><th>Ім'+"'"+'я</th><th data-i18n="data_type">Тип даних</th><th data-i18n="variable_values">Значення</th></tr>';
+				html += '<h4>Локальні змінні у рядку ' + context.$lineno + '</h4><table><tr><th>Ім'+"'"+'я</th><th>Тип даних</th><th>Значення</th></tr>';
 				
 				for(var key in context.$tmps) {
 					var pyVal = context.$tmps[key];
@@ -266,12 +262,7 @@ var PythonIDE = {
 			}
 			html += file + '</span> ';
 		}
-		//html += '<span class="file_tab"><img class="btn_file_settings" data-i18n-alt="create_file_alt" alt="Створити новий файл" data-i18n-title="create_file_title" title="Створити новий файл" src="./media/tools.png"></span>';
-        html += '<span class="file_tab"><img class="btn_file_settings" ' 
-        + (selectedLang === 'en' 
-            ? 'data-i18n-alt="create_file_alt" alt="Create a new file" data-i18n-title="create_file_title" title="Create a new file"' 
-            : 'data-i18n-alt="create_file_alt" alt="Створити новий файл" data-i18n-title="create_file_title" title="Створити новий файл"') 
-        + ' src="./media/tools.png"></span>';
+		html += '<span class="file_tab"><img class="btn_file_settings" alt="Створити новий файл" title="Створити новий файл" src="./media/tools.png"></span>';
 		$('#file_tabs').html(html);
 		$('.file_tab').click(function(e) {
 			var fileName = e.currentTarget.textContent;
@@ -348,9 +339,7 @@ var PythonIDE = {
 		PythonIDE.updateFileTabs(); 
 	},
 	// message to display in the status bar at the bottom of the screen
-	welcomeMessage: selectedLang === 'en'
-    ? "Press F5 to run the code"
-    : "Натисніть F5, щоб виконати код",
+	welcomeMessage: "Натисніть F5, щоб виконати код",
 	// options are stored in browers's localstorage. Get the value of a specified option
 	getOption: function(optionName, defaultValue) {
 		if(localStorage && localStorage['OPT_' + optionName])
@@ -424,8 +413,7 @@ var PythonIDE = {
 					}
 					var now = new Date().getTime();
 					if(now - startTime > 5000) {
-						//PythonIDE.showHint("Зупинено через 5 секунд, щоб запобігти збою у роботі вебпереглядача");
-                        PythonIDE.showHint(selectedLang === 'en' ? "Stopped after 5 seconds to prevent web browser crashes" : "Зупинено через 5 секунд, щоб запобігти збою у роботі вебпереглядача");
+						PythonIDE.showHint("Зупинено через 5 секунд, щоб запобігти збою у роботі вебпереглядача");
 						break;
 					}
 				} 
@@ -516,41 +504,13 @@ var PythonIDE = {
 	// recover code from a previous session in this browser. This is client side only. To save in the cloud, visit create.withcode.uk
 	recover: function() {
 		PythonIDE.saveSnapshot();
-		/*var html = '<p data-i18n="code_stored">Копія вашого коду зберігається у сховищі вашого вебоглядача кожного разу, коли ви його запускаєте.</p>';
-		html += '<p><span data-i18n="number_backups">Кількість резервних копій коду, які зараз зберігаються в сховищі:</span>' + PythonIDE.vault.length + '</p>';
-		html += '<div id="slider_recover"></div><span id="recover_time" data-i18n="previous_state_code">Перетягніть повзунок, щоб переглянути попередній стан коду</span>';
+		var html = '<p>Копія вашого коду зберігається у сховищі вашого вебоглядача кожного разу, коли ви його запускаєте.</p>';
+		html += '<p>Кількість резервних копій коду, які зараз зберігаються в сховищі:' + PythonIDE.vault.length + '</p>';
+		html += '<div id="slider_recover"></div><span id="recover_time">Перетягніть повзунок, щоб переглянути попередній стан коду</span>';
 
-		html += '<p><button id="btn_recover" data-i18n="restore_code">Відновити обрану копію коду</button></p>';
-		html += '<p data-i18n="delete_storage_message">За потреби ви можете видалити всі копії коду, що зберігаються у сховищі відновлення.</p><p><i class="fa fa-warning"></i> <span data-i18n="warning_storage_message">Будьте обережні: після того, як ви натиснули Видалити все, ви не зможете скасувати цю дію.</span></p>';
-		html += '<p><button id="btn_recover_clear" style="background-color:#FF0000;color:#FFFFFF" data-i18n="delete_storage">Видалити все зі сховища</button></p>';*/
-        var html = '<p>' + (selectedLang === 'en'
-            ? 'A copy of your code is stored in your browser’s storage every time you run it.'
-            : 'Копія вашого коду зберігається у сховищі вашого вебоглядача кожного разу, коли ви його запускаєте.') + '</p>';
-
-        html += '<p>' + (selectedLang === 'en'
-            ? 'Number of code backups currently stored in browser storage:'
-            : 'Кількість резервних копій коду, які зараз зберігаються в сховищі:') + PythonIDE.vault.length + '</p>';
-
-        html += '<div id="slider_recover"></div><span id="recover_time">' + (selectedLang === 'en'
-            ? 'Drag the slider to view a previous state of the code'
-            : 'Перетягніть повзунок, щоб переглянути попередній стан коду') + '</span>';
-
-        html += '<p><button id="btn_recover">' + (selectedLang === 'en'
-            ? 'Restore selected code copy'
-            : 'Відновити обрану копію коду') + '</button></p>';
-
-        html += '<p>' + (selectedLang === 'en'
-            ? 'If needed, you can delete all code copies stored in recovery storage.'
-            : 'За потреби ви можете видалити всі копії коду, що зберігаються у сховищі відновлення.') + '</p>';
-
-        html += '<p><i class="fa fa-warning"></i> ' + (selectedLang === 'en'
-            ? 'Be careful: after you click Delete All, you will not be able to undo this action.'
-            : 'Будьте обережні: після того, як ви натиснули Видалити все, ви не зможете скасувати цю дію.') + '</p>';
-
-        html += '<p><button id="btn_recover_clear" style="background-color:#FF0000;color:#FFFFFF">' + (selectedLang === 'en'
-            ? 'Delete all from storage'
-            : 'Видалити все зі сховища') + '</button></p>';
-
+		html += '<p><button id="btn_recover">Відновити обрану копію коду</button></p>';
+		html += '<p>За потреби ви можете видалити всі копії коду, що зберігаються у сховищі відновлення.</p><p><i class="fa fa-warning"></i> Будьте обережні: після того, як ви натиснули Видалити все, ви не зможете скасувати цю дію.</p>';
+		html += '<p><button id="btn_recover_clear" style="background-color:#FF0000;color:#FFFFFF">Видалити все зі сховища</button></p>';
 
 		$("#save").dialog("close");
 		$('#recover').html(html).dialog("open").parent().css({'opacity':1.0});
@@ -571,19 +531,10 @@ var PythonIDE = {
 				if(hours == 0) {
 					hours = 12;
 				}
-				//var days = "Нд,Пн,Вт,Ср,Чт,Пт,Сб,Нд".split(",");
-				//var months = "Січ,Лют,Бер,Кві,Тра,Чер,Лип,Серп,Вер,Жовт,Лист,Гру".split(",");
-                var days = selectedLang === 'en' 
-                    ? "Sun,Mon,Tue,Wed,Thu,Fri,Sat,Sun".split(",") 
-                    : "Нд,Пн,Вт,Ср,Чт,Пт,Сб,Нд".split(",");
-
-                var months = selectedLang === 'en' 
-                    ? "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(",") 
-                    : "Січ,Лют,Бер,Кві,Тра,Чер,Лип,Серп,Вер,Жовт,Лист,Гру".split(",");
+				var days = "Нд,Пн,Вт,Ср,Чт,Пт,Сб,Нд".split(",");
+				var months = "Січ,Лют,Бер,Кві,Тра,Чер,Лип,Серп,Вер,Жовт,Лист,Гру".split(",");
 				function pad2(s){s = s.toString();return s.length < 2?"0"+s:s;}
-				//$('#recover_time').html('<p class="recover_date">' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</p><p class="recover_label" data-i18n="storage_time">Час збереження:</p><span id="recover_time_hours">' + (pad2(hours)) + '</span><span id="recover_time_mins">' + pad2(d.getMinutes()) + '</span>');
-                $('#recover_time').html('<p class="recover_date">' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</p><p class="recover_label" data-i18n="storage_time">' + (selectedLang === 'en' ? 'Storage time:' : 'Час збереження:') + '</p><span id="recover_time_hours">' + (pad2(hours)) + '</span><span id="recover_time_mins">' + pad2(d.getMinutes()) + '</span>');
-
+				$('#recover_time').html('<p class="recover_date">' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</p><p class="recover_label">Час збереження:</p><span id="recover_time_hours">' + (pad2(hours)) + '</span><span id="recover_time_mins">' + pad2(d.getMinutes()) + '</span>');
 
 			}
 		});
@@ -692,8 +643,7 @@ var PythonIDE = {
 		PythonIDE.runMode = runMode;
 		PythonIDE.python.outputListeners = [];
 
-		//PythonIDE.showHint("Програма виконується...");
-        PythonIDE.showHint(selectedLang === 'en' ? "Program is running..." : "Програма виконується...");
+		PythonIDE.showHint("Програма виконується...");
 		$('#btn_stopRunning').addClass('visibleButton');
 
 		var code = PythonIDE.files['mycode.py'];
@@ -771,8 +721,7 @@ var PythonIDE = {
 		Sk.misceval.callsimAsync(handlers, function() {
 			return Sk.importMainWithBody(PythonIDE.currentFile.replace(".py", ""),false,code,true);
 		}).then(function(module){
-			//PythonIDE.showHint('Програма завершила виконання>');
-            PythonIDE.showHint(selectedLang === 'en' ? "The program has completed execution." : "Програма завершила виконання.");
+			PythonIDE.showHint('Програма завершила виконання');
 			PythonIDE.continueRunning = false;
 			if(PythonIDE.continueDebug)
 				delete PythonIDE.continueDebug;
@@ -1124,7 +1073,7 @@ var PythonIDE = {
 		
 		
 		const fileBtn = document.getElementById('file-btn');
-        fileBtn.addEventListener('change', function(){
+		fileBtn.addEventListener('change', function(){
 				console.log(this.files[0].name);
 				var file = this.files[0];			
 			    loadFile(file);  
@@ -1239,13 +1188,11 @@ var PythonIDE = {
 				case 'btn_file_rename':
 					var newFileName = $('#txt_file_name').val();
 					if(!newFileName.match(/^[A-Za-z0-9_.]+$/)){
-						//PythonIDE.showHint("Некоректне ім'я файлу");
-                        PythonIDE.showHint(selectedLang === 'en' ? "Invalid file name" : "Некоректне ім'я файлу");
+						PythonIDE.showHint("Некоректне ім'я файлу");
 						break;
 					}
 					if(PythonIDE.files[newFileName] || (PythonIDE.projectName + ".py" == newFileName)) {
-						//PythonIDE.showHint('Файл із такою назвою вже існує');
-                        PythonIDE.showHint(selectedLang === 'en' ? "A file with that name already exists" : "Файл із такою назвою вже існує");
+						PythonIDE.showHint('Файл із такою назвою вже існує');
 						break;
 					}
 					var fileContents = PythonIDE.files[PythonIDE.currentFile]
@@ -1650,9 +1597,8 @@ var PythonIDE = {
 				PythonIDE.files = PythonIDE.aT[PythonIDE.hash].c;
 				PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
 				PythonIDE.updateFileTabs();
-				//PythonIDE.showHint("Відображається код, який ви редагували востаннє " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " тому");	
-                PythonIDE.showHint(selectedLang === 'en' ? "Showing the code you last edited " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " ago" : "Відображається код, який ви редагували востаннє " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " тому");
-				var html = '<img id="btn_reset_code" data-i18n-title="reset_code_title" data-i18n-alt="reset_code_alt" alt="Скинути код до збереженої версії" title="Скинути код" class="toolButton hiddenButton visibleButton" src="./media/reset.png">';
+				PythonIDE.showHint("Відображається код, який ви редагували востаннє " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " тому");	
+				var html = '<img id="btn_reset_code" alt="Скинути код до збереженої версії" title="Скинути код" class="toolButton hiddenButton visibleButton" src="./media/reset.png">';
 				$("#btn_stopRunning").after(html);
 			}
 				
@@ -1735,8 +1681,7 @@ var PythonIDE = {
 			PythonIDE.files = JSON.parse(PythonIDE.defaultSavedCode);
 			PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
 			PythonIDE.updateFileTabs();
-			//PythonIDE.showHint("Відновити збережений код за замовчуванням. Для скасування скористайтеся кнопкою відновлення коду.");
-            PythonIDE.showHint(selectedLang === 'en' ? "Restore the saved default code. To cancel, use the restore code button." : "Відновити збережений код за замовчуванням. Для скасування скористайтеся кнопкою відновлення коду.");
+			PythonIDE.showHint("Відновити збережений код за замовчуванням. Для скасування скористайтеся кнопкою відновлення коду.");
 		}
 	}
 }

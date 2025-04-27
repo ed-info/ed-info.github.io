@@ -1,35 +1,255 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+    <style>
+        #loading {
+            position: absolute;
+            top: 40%;
+            left: 48%;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        table, tr, td,tbody {
+             border: none;
+      }  
+    </style>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЄPython loading...</title>
-</head>    
-<body> 
+    <title data-i18n="title">ЄPython - програмувати просто!</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">    
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0">
+
+    <script src="./lib/cm/codemirror.js"></script>
+    <script src="./lib/cm/active-line.js"></script>
+    <script src="./lib/cm/show-hint.js"></script>
+    <script src="./lib/cm/python.js"></script>
+    <script src="./lib/cm/xml.js"></script>
+    <script src="./lib/cm/javascript.js"></script>
+    <script src="./lib/cm/css.js"></script>
+    <script src="./lib/cm/htmlmixed.js"></script>    
+    <script src="./lib/cm/dialog.js"></script>       
+    <script src="./lib/cm/searchcursor.js"></script>
+    <script src="./lib/cm/search.js"></script>
+    <script src="./lib/cm/searchbox.js"></script> 
+              
+    <link rel="stylesheet" href="./lib/cm/codemirror.css">    
+    <link rel="stylesheet" href="./lib/cm/cobalt.css">
+    <link rel="stylesheet" href="./lib/cm/blackboard.css">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./lib/font-awesome.min.css">   
+    <link rel="stylesheet" href="./jquery/ui/1.13.3/themes/base/jquery-ui.css">
+    
+    <script src="./lib/base.js"></script>
+    <script src="./jquery/jquery-3.7.1.js"></script>
+    <script src="./jquery/ui/1.13.3/jquery-ui.js"></script> 
+    <script src="./lib/jq/jquery.ui.touch-punch.min.js"></script>
+    <script src="./lib/lib.js"></script>
+    <script src="./lib/skulpt/skulpt.min.js"></script>
+    <script src="./lib/skulpt/skulpt-stdlib.js"></script>
+    <script src="./lib/skulpt/deps/math.js"></script>
+    <script src="./lib/skulpt/deps/chart.js"></script>
+    <script src="./lib/skulpt/deps/p5.js"></script>
+    <script src="./lib/extlibs.js"></script>
+    <script src="./lib/jsfs.js"></script>
+    
+    <!--<script src="./lib/filedialog.js"></script>-->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            
-            var hash=window.location.hash;
-            var params = new URLSearchParams(window.location.search);
-            let style = params.get('style');
-            console.log("Hash=",hash);
-            console.log("Style=",style);
-            
-            localStorage.setItem('epythonHash', JSON.stringify({ key: hash }));
-            localStorage.setItem('epythonParam', JSON.stringify({ key: style }));
-            
-            
-            const lang = navigator.language || navigator.userLanguage;
-            let target = 'index_en.html';
-            if (lang.startsWith('uk') || lang.startsWith('ru')) {
-               target = 'index_uk.html';
-            }            
-            // Отримуємо базовий шлях (pathname)
-            const basePath = window.location.pathname;
-            console.log("basePath=",basePath);
-            window.location.href = basePath.replace(/[^/]*$/, '') + target;
-           
-        });
+        let script = document.createElement('script');
+        script.src = selectedLang === 'en' ? './lib/filedialog-en.js' : './lib/filedialog.js';
+        document.head.appendChild(script);
     </script>
+    <script src="./lib/customfile.js"></script>
+    <script src="./lib/samplefile.js"></script>   
+    
+    <!-- Підключення мовного файла -->
+    <script src="./lib/translations.js"></script>
+    
+</head>
+<body>
+    <div id="loading"></div>
+	<img src="logo.png" id="logo" width="150" height="60">
+    <div id="holder" class="holder" style="display:none">
+        <span id="file_tabs"><span class="file_tab file_tab_selected" data-i18n="file_tab_name">mycode.py</span></span>
+        <pre>
+            <div id="editor"></div>
+        </pre>
+    </div>
+    <div id="myfilename.txt"></div>
+    <script>
+		var assets = {};
+		var embed = false;
+		if (window.location.search!='') {
+			var params = new URL(window.location).searchParams;
+			if (params) {
+				embed = (params.get("param")).includes("embed");
+			}
+		}	
+		
+		$('#logo').show();
+		$('#file_tabs').show();	
+		if (embed) {
+			$('#logo').hide();
+			$('#file_tabs').hide();	
+		}
+		function encode(str) {
+			return window.btoa(unescape(encodeURIComponent(str)));
+		}
+		function decode(str) {
+			return decodeURIComponent(escape(window.atob(str)));
+		}
+		var uhash=window.location.hash;
+		//console.log('hash:',uhash);
+		var uuhash=decode(uhash.substring(1));		
+        var files = uuhash;
+        
+        try {
+            PythonIDE.files = JSON.parse(files);
+        } catch (e) {
+            PythonIDE.files['mycode.py'] = files;
+        }
+		
+        PythonIDE.currentFile = 'mycode.py';
+        PythonIDE.projectName = 'mycode.py'.replace(".py", "");
+        PythonIDE.updateFileTabs();
+        
+    </script>
+    
+    <div id="hintBar" data-i18n="hint_bar"></div>
+    
+    <span id="footer">
+        <img title="Виконати" data-i18n-title="run_title" alt="Натисніть, щоб виконати код" data-i18n-alt="run_alt" id="btn_run" class="toolButton" src="./media/play.png">
+        <img alt="Припинити виконання" data-i18n-alt="stop_alt" title="Припинити" data-i18n-title="stop_title" class="toolButton hiddenButton" src="./media/stop.png" id="btn_stopRunning">
+        <img alt="Натисніть, щоб показати/сховати кнопки" data-i18n-alt="tools_alt" title="Показати/сховати кнопки" data-i18n-title="tools_title" class="toolButton" src="./media/ttools.png" id="btn_tools">
+        <img title="Відкрити консоль" data-i18n-title="console_title" alt="Консоль - показати або сховати вікно консолі" data-i18n-alt="console_alt" id="btn_show_output" class="toolButton hiddenButton" src="./media/console.png">
+        <img title="Завантажити та отримати файли" data-i18n-title="share_title" alt="Файли - завантажити та отримати" data-i18n-alt="share_alt" id="btn_show_share" class="toolButton hiddenButton" src="./media/share.png">
+        <img title="Налаштування" data-i18n-title="settings_title" alt="Налаштувати екран" data-i18n-alt="settings_alt" id="btn_show_settings" class="toolButton hiddenButton" src="./media/settings.png">
+    </span>
+   
+    <div id="recover" title="Відновлення коду" style="display:none"></div>
+    <div id="dlg" title="mycode.py" data-i18n-title="file_tab_name_title" style="display:none">        
+        <div id="p5Sketch"></div>
+        <div id="output"></div>        
+        <canvas id="myChart" style="width:100%;max-width:600px;max-height:800px;background-color: #CCC;display:none"></canvas>
+    </div>
+    <div id="save" title="Файли - збереження, отримання, відновлення" style="display:none;">
+        <fieldset>
+            <legend data-i18n="save_current_file">Зберегти поточний файл:</legend>
+
+            <div class="save_option" style="background-color: #82ffab;" id="btnDownload">
+                <h2><i class="fa fa-save" ></i> <span data-i18n="save_btn">Зберегти</span> </h2>
+                <p data-i18n="save_description">Поточний файл буде завантажено на цей комп’ютер.</p>
+               
+                <h3><i class="fa fa-keyboard-o"></i> Ctrl + Alt + S</h3>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend data-i18n="load_file">Отримати файл:</legend>            
+				<input type="file" id="file-btn" hidden>
+				<label for="file-btn" style="cursor: pointer;">
+				<div class="box__input" style="background-color:#e9ff89;border-radius: 0.3rem;padding:1rem;border: 1px solid #ccc;">
+					<i class="fa fa-cloud-upload"></i>	
+					<span data-i18n="upload_file_instruction">Виберіть Python-файл, щоб відвантажити його з комп’ютера в редактор</span>
+				</div>	
+				</label>   
+                <br>
+                  <div id="btn_show_recover" class="toolButton" style="margin-left:auto;margin-right: 5em;"><button name="btn_show_recover"><i class="fa fa-history"></i> <span data-i18n="recover_btn">Відновити</span> </button>
+				  </div> 
+        </fieldset><br><br>
+		<fieldset>	   
+	    <legend data-i18n="resource_files">Завантаження файлів ресурсів</legend>
+            <div class="save_option" style="background-color: #cab4ff;" id="btn_PGZ" name="btn_PGZ">
+                <h2><i class="fa fa-folder-open-o" ></i> <span data-i18n="file_manager">Розпорядник файлів</span></h2>
+                <p data-i18n="file_manager_description">Тут ви зможете додавати файли для своїх проєктів</p>               
+                
+            </div>	   
+	   </fieldset>
+    </div>
+
+    <div id="project_settings" title="Проєкт" style="display:none">
+        <p data-i18n="project_rename_help">Перейменування проєкту допоможе вам упорядкувати збережений код</p>
+        <label for="txt_project_name" data-i18n="project_name_label">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
+            value="mycode">
+        <button id="btn_project_ok" data-i18n="ok">OK</button>
+        <button id="btn_project_cancel" data-i18n="cancel">Скасувати</button>
+    </div>
+    <div id="file_settings" title="Файл" style="display:none">
+        <p data-i18n="file_warning">Будьте обережні: якщо ви вирішите видалити файл, ви не зможете відновити його, якщо не збережете копію</p>
+        <label for="txt_file_name" data-i18n="file_rename_label">Перейменувати файл:</label><input id="txt_file_name" name="txt_file_name" value="">
+        <button id="btn_file_rename" data-i18n="rename_file">Перейменувати</button>
+        <button id="btn_file_delete" data-i18n="delete_file">Видалити</button>
+        <button id="btn_file_cancel" data-i18n="cancel">Скасувати</button>
+    </div>
+
+    <div id="settings" title="Налаштування" style="display:none">
+        <fieldset>
+            <legend data-i18n="text_size_legend">Розміри тексту</legend>
+            <label for="txt_code_size" data-i18n="code_font_size">Розмір шрифту коду:</label><input type="text" id="txt_code_size" readonly>
+            <div id="slider_code_size" class="slider"></div>
+            <label for="txt_output_size" data-i18n="output_font_size">Розмір шрифту тексту:</label><input type="text" id="txt_output_size"
+                readonly>
+            <div id="slider_output_size" class="slider"></div>
+        </fieldset>
+        <fieldset>
+            <legend data-i18n="editor_colors_legend">Кольори редактора</legend>
+            <div id="radio_code_style">
+                <p data-i18n="editor_colors_desc">Більш світлі кольори чудово підходять для кодування вдень. Деякі люди віддають перевагу кодуванню
+                    вночі:</p>
+                <input type="radio" id="radio_code_style_light" name="radio_code_style" checked="checked"><label
+                    for="radio_code_style_light" data-i18n="day">День</label>
+                <input type="radio" id="radio_code_style_dusk" name="radio_code_style"><label
+                    for="radio_code_style_dusk" data-i18n="dusk">Сутінки</label>
+                <input type="radio" id="radio_code_style_dark" name="radio_code_style"><label
+                    for="radio_code_style_dark" data-i18n="night">Ніч</label>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend data-i18n="console_colors_legend">Кольори консолі</legend>
+            <p data-i18n="console_colors_desc">Темніші кольори більше схожі на командний рядок. Світліші кольори більше схожі на вікно програми:</p>
+            <div id="radio_output_style">
+                <input type="radio" id="radio_output_style_light" name="radio_output_style"><label
+                    for="radio_output_style_light" data-i18n="day">День</label>
+                <input type="radio" id="radio_output_style_dusk" name="radio_output_style"><label
+                    for="radio_output_style_dusk" data-i18n="dusk">Сутінки</label>
+                <input type="radio" id="radio_output_style_dark" name="radio_output_style" checked="checked"><label
+                    for="radio_output_style_dark" data-i18n="night">Ніч</label>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend data-i18n="run_mode_legend">Режим запуску</legend>
+            <p data-i18n="run_mode_desc">Виконання коду рядок за рядком може бути корисним способом пошуку помилок</p>
+            <div id="radio_run_mode">
+                <input type="radio" id="radio_run_mode_all" name="radio_run_mode" checked><label
+                    for="radio_run_mode_all" data-i18n="run_whole">Уся програма</label>
+                <input type="radio" id="radio_run_mode_single" name="radio_run_mode"><label
+                    for="radio_run_mode_single" data-i18n="run_step">Покроково</label>
+                <input type="radio" id="radio_run_mode_anim" name="radio_run_mode"><label
+                    for="radio_run_mode_anim" data-i18n="run_animated">Анімація рядків</label>
+            </div>
+            <p data-i18n="animation_hint">Вибір довшого часу між анімацією кожного рядка допоможе вам зрозуміти та пояснити код під час його
+                виконання</p>
+            <label for="txt_step_anim_time" data-i18n="delay_time">Час затримки між виконанням кожного рядка:</label><input type="text"
+                id="txt_step_anim_time" readonly>
+            <div id="slider_step_anim_time" class="slider"></div>
+            <p data-i18n="output_transparency_hint">Зробивши вікно виведення прозорим, ви зможете бачити свій код під ним</p>
+            <label for="txt_output_transparency" data-i18n="output_transparency">Прозорість вікна</label><input type="text" id="txt_output_transparency"
+                readonly>
+            <div id="slider_output_transparency" class="slider"></div>
+        </fieldset>
+    </div>
+    <dialog id='filemanager'> 
+	</div>
+       
+    <script src="./lib/addfuncs.js"></script> 
+    <script src="./lib/main.js"></script>
 </body>
 </html>
