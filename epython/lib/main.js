@@ -28,18 +28,29 @@ $(function () {
         });
         
         // Переклад jQuery UI заголовків діалогових вікон
-        const dialogTitles = {
-            "#ui-id-2": "recover_title",
-            "#ui-id-4": "save_title",
-            "#ui-id-5": "project_title",
-            "#ui-id-6": "file_title",
-            "#ui-id-7": "settings_title"
-        };
+        
+        ukTranslations = translations['uk'];
+        enTranslations = translations['en'];
 
-        Object.entries(dialogTitles).forEach(([selector, key]) => {
-            const el = document.querySelector(selector);
-            if (el && translation[key]) {
-                el.textContent = translation[key];
+        // Додаємо слухач події для перекладу title в діалогах після їх відкриття
+        $(document).on('dialogopen', '.ui-dialog', function() {
+            const dialog = $(this); // Отримуємо сам елемент діалогу
+            const dialogTitleElement = dialog.find('.ui-dialog-title');
+            
+            if (dialogTitleElement.length) {
+                const dialogTitleText = dialogTitleElement.text().split("\n")[0]; // Отримуємо частину до \n
+
+                // Шукаємо ключ в uk.json
+                const key = Object.keys(ukTranslations).find(k => ukTranslations[k] === dialogTitleText);
+
+                if (key && enTranslations[key]) {
+                    // Оновлюємо заголовок діалогу через innerHTML
+                    const translatedTitle = enTranslations[key];
+                    console.log("Setting dialog title:", translatedTitle);
+                    dialogTitleElement[0].innerHTML = translatedTitle; // Заміна тексту через innerHTML
+                } else {
+                    console.warn("Key for dialog title not found:", dialogTitleText);
+                }
             }
         });
     }
