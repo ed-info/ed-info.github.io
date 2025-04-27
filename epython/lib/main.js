@@ -1,7 +1,7 @@
 $(function () {
     // Автоматичне визначення мови (українська стандартно)
     let userLang = navigator.language || navigator.userLanguage; 
-    console.log('Мова вебпереглядача:', userLang);
+    console.log('user language:', userLang);
     let selectedLang = userLang.startsWith('en') ? 'en' : 'uk';
         
     function applyTranslations(lang) {
