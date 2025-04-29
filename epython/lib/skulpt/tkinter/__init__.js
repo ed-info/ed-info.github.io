@@ -2336,28 +2336,46 @@ var PhotoImage = function(kwa)
 				$('#tkinter_' + self.id + ' input').prop('checked', value);
 			});
 		}, 'Radiobutton', [s.Widget]);
-// Listbox ---------------------------------	
-s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
-        const getHtml = function(self) {
-            const items = self.items || [];
-        
-            const widthChars = self.props.width || 20;
-            const heightLines = self.props.height || 6;
-        
-            let html = `<select id="tkinter_${self.id}" multiple
-                style="width: ${widthChars}ch; height: ${heightLines}em;">`;
-        
-            for (let i = 0; i < items.length; i++) {
-                html += `<option value="${i}">${PythonIDE.sanitize(items[i])}</option>`;
-            }
-        
-            html += `</select>`;
-            return html;
-        };                
 
-    const init = function(kwa, self, master) {
+// Listbox ---------------------------------
+s.Listbox = new Sk.misceval.buildClass(s, function ($gbl, $loc) {
+    const getHtml = function (self) {
+        const items = self.items || [];
+        const widthChars = self.props.width || 20;
+        const heightLines = self.props.height || 6;
+
+        let html = `<select id="tkinter_${self.id}" multiple
+            style="width: ${widthChars}ch; height: ${heightLines}em;">`;
+
+        for (let i = 0; i < items.length; i++) {
+            html += `<option value="${i}">${PythonIDE.sanitize(items[i])}</option>`;
+        }
+
+        html += `</select>`;
+        return html;
+    };
+
+    const init = function (kwa, self, master) {
         commonWidgetConstructor(kwa, self, master, getHtml);
         self.items = [];
+
+        // Support for listvariable
+        if (self.props.listvariable) {
+            const listVar = self.props.listvariable;
+            listVar.updateID = self.id;
+
+            const jsList = Sk.ffi.remapToJs(listVar.value);
+            
+            if (Array.isArray(jsList)) {
+                self.items = jsList.map(item => item.toString());
+            } else if (typeof jsList === "string") {
+                self.items = jsList.trim().length > 0 ? jsList.trim().split(",") : [];
+            } else {
+                self.items = [];
+            }
+            
+            listVar.linkedWidget = self;
+        }
 
         self.onShow = function () {
             const el = $(`#tkinter_${self.id}`);
@@ -2369,16 +2387,15 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
             });
         };
 
-        self.insert = function(index, value) {
+        self.insert = function (index, value) {
             const jsval = Sk.ffi.remapToJs(value);
             const el = $('#tkinter_' + self.id);
-        
+
             let newOption = $('<option>', {
                 text: jsval,
                 value: self.items.length
             });
-        
-            // Додаємо в DOM
+
             if (index === "end" || (index.v && index.v === "end")) {
                 el.append(newOption).trigger('change');
                 self.items.push(jsval);
@@ -2393,12 +2410,12 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
                 el.trigger('change');
             }
         };
-        
-        self.delete = function(first, last) {
-            const el = $('#tkinter_' + self.id); 
+
+        self.delete = function (first, last) {
+            const el = $('#tkinter_' + self.id);
             const from = Sk.ffi.remapToJs(first);
             let to;
-        
+
             if (typeof last === "undefined") {
                 to = from;
             } else {
@@ -2406,24 +2423,22 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
                     ? self.items.length - 1
                     : Sk.ffi.remapToJs(last);
             }
-        
-            // Перевірка діапазону
+
             if (from < 0 || from >= self.items.length || to < from) {
                 throw new Sk.builtin.IndexError("listbox index out of range");
             }
-          
-            // Видалити з кінця, щоби індекси не зсувались
+
             for (let i = to; i >= from; i--) {
                 self.items.splice(i, 1);
                 el.find(`option:eq(${i})`).remove();
             }
         };
 
-        self.get = function(index, ilast) {
+        self.get = function (index, ilast) {
             const first = Sk.ffi.remapToJs(index);
             let last;
             let result = [];
-        
+
             if (typeof ilast === "undefined") {
                 last = first;
             } else {
@@ -2431,7 +2446,7 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
                     ? self.items.length - 1
                     : Sk.ffi.remapToJs(ilast);
             }
-        
+
             if (first >= 0 && last < self.items.length && first <= last) {
                 for (let i = first; i <= last; i++) {
                     result.push(Sk.ffi.remapToPy(self.items[i]));
@@ -2442,13 +2457,13 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
             }
         };
 
-        self.size = function() {
+        self.size = function () {
             return new Sk.builtin.int_(self.items.length);
         };
 
-        self.curselection = function() {
+        self.curselection = function () {
             let selected = [];
-            $(`#tkinter_${self.id} option:selected`).each(function() {
+            $(`#tkinter_${self.id} option:selected`).each(function () {
                 selected.push(new Sk.builtin.int_($(this).index()));
             });
             return new Sk.builtin.tuple(selected);
@@ -2465,7 +2480,7 @@ s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
     $loc.curselection = new Sk.builtin.func(self => self.curselection());
 
 }, "Listbox", [s.Widget]);
-	
+
 // SpinBox ---------------------------------------------------------
 s.Spinbox = new Sk.misceval.buildClass(s, function ($gbl, $loc) {
 
