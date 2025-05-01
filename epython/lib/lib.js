@@ -448,8 +448,10 @@ var PythonIDE = {
 		output: function(text, header, sanitized) {
 			if(PythonIDE.runningTests)
 				return;
-			var id = header == undefined?'consoleOut': 'headerOut';
+            
+			var id = header == undefined?'consoleOut': 'headerOut';            
 			var c = document.getElementById(id);
+            
 			if(!c) {
 				console.error(text);
 				return;
@@ -933,7 +935,7 @@ var PythonIDE = {
 			});
 			return p;
 		}
-		console.log('Sk.configure');
+		//console.log('Sk.configure');
 		Sk.configure({
 				breakpoints:function(filename, line_number, offset, s) {
 				//debugger;
@@ -1061,8 +1063,7 @@ var PythonIDE = {
 		});
 	},
 		builtinRead: function(file) {
-				console.log("search: " + Sk.ffi.remapToJs(file));
-			   
+				//console.log("search: " + Sk.ffi.remapToJs(file));			   
 				if (externalLibs[file] !== undefined) {
 						return Sk.misceval.promiseToSuspension(
 							fetch(externalLibs[file]).then(res => {								
@@ -1072,7 +1073,7 @@ var PythonIDE = {
 				}
 
 				var f = file; // search in PythonIDE files
-				console.log("f: ", f);
+				//console.log("f: ", f);
 				if (f.slice(0,8) == "src/lib/") {
 				 var f = f.slice(8);
 				 if(PythonIDE.files[f]) {
