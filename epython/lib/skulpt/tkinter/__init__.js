@@ -2755,6 +2755,12 @@ s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
             $('#tkinter_' + self.id).dialog({
                 width: 200,
                 height: 200,
+                open: function(event, ui) {
+                    $(this).parent().find(".ui-dialog-titlebar").css({
+                        "background-color": "#4b42d6",
+                        "color": "white"
+                        });
+                },
                 close: function() {
                     if(self.closeMainLoop) {
                         self.closeMainLoop();
@@ -2763,6 +2769,8 @@ s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
             }).parent().css({
                 position: "fixed",
                 'background-color': '#BBB',
+                'border': '1px solid #550',
+                'box-shadow': '0 8px 16px rgba(0, 0, 0, 0.4)',
                 'font-size':'12pt'
             });  
             $('#tkinter_' + self.id).dialog({
@@ -2844,6 +2852,12 @@ s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
             $('#tkinter_' + self.id).dialog({
                 width: 300,
                 height: 300,
+                open: function(event, ui) {
+                    $(this).parent().find(".ui-dialog-titlebar").css({
+                        "background-color": "#025a9a",
+                        "color": "white"
+                        });
+                },
                 close: function() {
                     if(self.closeMainLoop) {
                         self.closeMainLoop();
@@ -2853,15 +2867,18 @@ s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
                 padding:'0px'
             }).parent().css({
                  position: "fixed",
-                'background-color': '#CCC',
+                'background-color': '#CCC', 
+                'border': '1px solid #225',
+                'box-shadow': '0 8px 16px rgba(0, 0, 0, 0.4)',                  
                 'font-size': '11pt',
                 'line-height': '2em'
             });
             self.props.width = 300;
             self.props.height = 300;
-            $('#tkinter_' + self.id).dialog({
+            $('#tkinter_' + self.id).dialog({                             
                 position: { my: "center", at: "center", of: window }
             });
+
             self.tk_left = Math.ceil($('#tkinter_' + self.id).offset().left- $(window).scrollLeft());
             self.tk_top = Math.ceil($('#tkinter_' + self.id).offset().top- $(window).scrollTop());
             
