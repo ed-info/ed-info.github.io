@@ -120,20 +120,26 @@
             files['mycode.py'] = codeFromParam;
             initEditor(files);
         } else if (loadFromURL) {
-            console.log("load=",loadFromURL);
-            fetch(loadFromURL)
-                .then(response => response.text())
-                .then(text => {
-                    console.log("text=",text);
-                    files['mycode.py'] = text;
-                    initEditor(files);
-                })
-                .catch(err => {
-                    console.error("Error file loading:", err);
-                    files['mycode.py'] = "# Error file loading : Помилка завантаження файлу";
-                    initEditor(files);
-                });
-        } else {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", loadFromURL, true);
+            xhr.responseType = "text";
+    
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    files["mycode.py"] = xhr.responseText;
+                } else {
+                    files["mycode.py"] = "# Помилка завантаження: HTTP ${xhr.status}";
+                }
+            initEditor(files);
+            };
+    
+        xhr.onerror = function () {
+            files["mycode.py"] = `# Помилка запиту`;
+            initEditor(files);
+        };
+    
+      xhr.send();
+    } else {
             files['mycode.py'] = '';
             initEditor(files);
         }
