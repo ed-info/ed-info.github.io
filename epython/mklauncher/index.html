@@ -102,7 +102,7 @@
 				if (url==='custom') {
 						url = myUrl.value;
 					}
-				string.value = url + '#' +  bytesToBase64(new TextEncoder().encode(string.value));
+				string.value = url + '?code=' +  bytesToBase64(new TextEncoder().encode(string.value));
 				string.focus();
 			 }
 			}
