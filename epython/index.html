@@ -110,26 +110,28 @@
             }
     
             let files = {};
+    
             if (codeFromParam) {
                 files['mycode.py'] = codeFromParam;
                 initEditor(files);
             } else if (loadFromURL) {
-                fetch(loadFromURL)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', loadFromURL, true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            files['mycode.py'] = xhr.responseText;
+                        } else {
+                            files['mycode.py'] = `# Load error: HTTP ${xhr.status}`;
                         }
-                        return response.text();
-                    })
-                    .then(text => {
-                        files['mycode.py'] = text;
                         initEditor(files);
-                    })
-                    .catch(err => {
-                        console.error("Load error:", err);
-                        files['mycode.py'] = `# Load error: ${err.message}`;
-                        initEditor(files);
-                    });
+                    }
+                };
+                xhr.onerror = function () {
+                    files['mycode.py'] = '# Load error: request failed';
+                    initEditor(files);
+                };
+                xhr.send();
             } else {
                 files['mycode.py'] = '';
                 initEditor(files);
@@ -143,6 +145,7 @@
             }
         });
     </script>
+    
     
     
     
