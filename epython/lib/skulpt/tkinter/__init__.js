@@ -185,7 +185,7 @@ var $builtinmodule = function(name) {
 			let height = Sk.ffi.remapToJs(self.props.height);           
             if (e.find("tk_charsized")) { 
                 mh = 1;
-                if (e.is("button")) { mh = 1.8;}              
+                if (e.is("button")) { mh = 1.25;}              
                 e.css('height', height * mh + 'em');
             }
 			else {
