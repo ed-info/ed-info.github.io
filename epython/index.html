@@ -85,72 +85,65 @@
     </div>
     <div id="myfilename.txt"></div>
     <script>
-        var assets = {};
-        var viewEmbed = false;
-        var codeFromParam = '';
-        var loadFromURL = '';
-    
-        if (window.location.search !== '') {
+        document.addEventListener('DOMContentLoaded', function () {
             const params = new URL(window.location).searchParams;
-            viewEmbed = params.get("view") === "embed";
-            loadFromURL = params.get("load") || '';
-    
+            const viewEmbed = params.get("view") === "embed";
+            const loadFromURL = params.get("load") || '';
             const codeParam = params.get("code");
+            let codeFromParam = '';
+    
+            if (viewEmbed) {
+                document.getElementById('logo').style.display = 'none';
+                document.getElementById('file_tabs').style.display = 'none';
+            } else {
+                document.getElementById('logo').style.display = 'block';
+                document.getElementById('file_tabs').style.display = 'block';
+            }
+    
             if (codeParam) {
                 try {
                     codeFromParam = decodeURIComponent(escape(window.atob(codeParam)));
                 } catch (e) {
-                    console.error("Error code decoding:", e);
-                    codeFromParam = "# Error code decoding : Помилка декодування параметра code";
+                    console.error("Error decoding code parameter:", e);
+                    codeFromParam = "# Error decoding code parameter";
                 }
             }
-        }
     
-        if (viewEmbed) {
-            $('#logo').hide();
-            $('#file_tabs').hide();
-        } else {
-            $('#logo').show();
-            $('#file_tabs').show();
-        }
+            let files = {};
+            if (codeFromParam) {
+                files['mycode.py'] = codeFromParam;
+                initEditor(files);
+            } else if (loadFromURL) {
+                fetch(loadFromURL)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        files['mycode.py'] = text;
+                        initEditor(files);
+                    })
+                    .catch(err => {
+                        console.error("Load error:", err);
+                        files['mycode.py'] = `# Load error: ${err.message}`;
+                        initEditor(files);
+                    });
+            } else {
+                files['mycode.py'] = '';
+                initEditor(files);
+            }
     
-        let files = {};
-    
-        if (codeFromParam) {
-            files['mycode.py'] = codeFromParam;
-            initEditor(files);
-        } else if (loadFromURL) {
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", loadFromURL, true);
-            xhr.responseType = "text";
-    
-            xhr.onload = function () {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    files["mycode.py"] = xhr.responseText;
-                } else {
-                    files["mycode.py"] = "# Помилка завантаження: HTTP ${xhr.status}";
-                }
-            initEditor(files);
-            };
-    
-        xhr.onerror = function () {
-            files["mycode.py"] = `# Помилка запиту`;
-            initEditor(files);
-        };
-    
-      xhr.send();
-    } else {
-            files['mycode.py'] = '';
-            initEditor(files);
-        }
-    
-        function initEditor(filesObj) {
-            PythonIDE.files = filesObj;
-            PythonIDE.currentFile = 'mycode.py';
-            PythonIDE.projectName = 'mycode';
-            PythonIDE.updateFileTabs();
-        }
+            function initEditor(filesObj) {
+                PythonIDE.files = filesObj;
+                PythonIDE.currentFile = 'mycode.py';
+                PythonIDE.projectName = 'mycode';
+                PythonIDE.updateFileTabs();
+            }
+        });
     </script>
+    
     
     
     <div id="hintBar" data-i18n="hint_bar"></div>
