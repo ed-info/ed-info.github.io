@@ -140,23 +140,26 @@
             py_file = '';
             initEditor(py_file);
         }
-    
-        function initEditor(files) {
-            try {
-                PythonIDE.files = JSON.parse(files);
+             
+            
+       function initEditor(files) {
+        try {
+            PythonIDE.files = JSON.parse(files);
             } catch (e) {
                 PythonIDE.files['mycode.py'] = files;
+                if (loadFromURL) { 
+                    try {         
+                        PythonIDE.editor.setValue(files);
+                        PythonIDE.editor.refresh();
+                    } catch (e) {}   
+                }   
             }            
             PythonIDE.currentFile = 'mycode.py';
             PythonIDE.projectName = 'mycode.py'.replace(".py", "");
-            PythonIDE.updateFileTabs();
-            
-             if (loadFromURL) { 
-                 try {               
-                    PythonIDE.editor.refresh();
-                 } catch (e) {}   
-            }
-        }
+            PythonIDE.updateFileTabs();  
+        }          
+
+   
     </script>
     
     
