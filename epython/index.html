@@ -122,23 +122,19 @@
         } else if (loadFromURL) {
             const xhr = new XMLHttpRequest();
             xhr.open("GET", loadFromURL, true);
-            xhr.responseType = "text";
-    
+            xhr.responseType = "text";    
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    py_file = xhr.responseText;
-                    
+                    py_file = xhr.responseText;                    
                 } else {
                     files = "# Error loading file: HTTP ${xhr.status}";
                 }
             initEditor(py_file);
-            };
-    
+            };    
         xhr.onerror = function () {
             files = "# Error request file";
             initEditor(py_file);
-        };
-    
+        };    
       xhr.send();
     } else {
             py_file = '';
@@ -150,13 +146,14 @@
                 PythonIDE.files = JSON.parse(files);
             } catch (e) {
                 PythonIDE.files['mycode.py'] = files;
-            }
-            
+            }            
             PythonIDE.currentFile = 'mycode.py';
-            PythonIDE.projectName = 'mycode.py'.replace(".py", ""); 
-            PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
-            PythonIDE.updateFileTabs();
-            PythonIDE.editor.refresh();
+            PythonIDE.projectName = 'mycode.py'.replace(".py", "");
+            PythonIDE.updateFileTabs(); 
+            if (files!=''){
+                PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
+                PythonIDE.editor.refresh();
+            }
         }
     </script>
     
