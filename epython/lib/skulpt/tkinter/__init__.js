@@ -1,4 +1,4 @@
-// Tkinter module for Skulpt. Pete Dring, 2018
+// Tkinter module for Skulpt. Pete Dring, 2015-2018, Gr.Gromko, 2020-2024
 var $builtinmodule = function(name) {
 	// clear all previous frames
 	$('.tkinter').remove();
@@ -27,16 +27,16 @@ var $builtinmodule = function(name) {
 	// Tkinter aliases
 	s.__name__ = new Sk.builtin.str("tkinter");
 	s.END = new Sk.builtin.str("end");
-	s.W = new Sk.builtin.str("w");
-	s.E = new Sk.builtin.str("e");
-	s.N = new Sk.builtin.str("n");
-	s.S = new Sk.builtin.str("s");
-	s.NW = new Sk.builtin.str("nw");
-	s.NE = new Sk.builtin.str("ne");
-	s.SW = new Sk.builtin.str("sw");
-	s.SE = new Sk.builtin.str("se");
-	s.Y = new Sk.builtin.str("y");
-	s.X = new Sk.builtin.str("x");
+	s.W   = new Sk.builtin.str("w");
+	s.E   = new Sk.builtin.str("e");
+	s.N   = new Sk.builtin.str("n");
+	s.S   = new Sk.builtin.str("s");
+	s.NW  = new Sk.builtin.str("nw");
+	s.NE  = new Sk.builtin.str("ne");
+	s.SW  = new Sk.builtin.str("sw");
+	s.SE  = new Sk.builtin.str("se");
+	s.Y   = new Sk.builtin.str("y");
+	s.X   = new Sk.builtin.str("x");
 	s.DISABLED = new Sk.builtin.str("disabled");
 	s.NORMAL = new Sk.builtin.str("normal");
 	s.YES = new Sk.builtin.int_(1);
@@ -173,36 +173,25 @@ var $builtinmodule = function(name) {
 
 		if (self.props.width) {
 			let width = Sk.ffi.remapToJs(self.props.width);
-
-			if (e.is("input")) {
-				// Entry → ширина в символах
-				e.css('width', width + 'ch');
-			} else if (e.is("select[multiple]")) {
-				// Listbox → ширина в символах (як у tkinter)
-				e.css('width', width + 'ch');
-			} else {
-				// інші віджети
-				if (unit === "em") {
-					width = Math.round(width * 0.75);
-				}
-				e.css('width', width + unit);
+            if (e.find("tk_charsized")) {                
+                e.css('width', width + 'ch');
+            }
+			else {
+				e.css('width', width + 'px');
 			}
 		}
 
 		if (self.props.height) {
-			let height = Sk.ffi.remapToJs(self.props.height);
-
-			if (e.is("select[multiple]")) {
-				// Listbox → висота в рядках
-				e.css('height', height + 'em');
-			} else {
-				// інші віджети
-				if (unit === "em") {
-					height += 0.5;
-				}
-				e.css('height', height + unit);
+			let height = Sk.ffi.remapToJs(self.props.height);           
+            if (e.find("tk_charsized")) { 
+                mh = 1;
+                if (e.is("button")) { mh = 1.8;}              
+                e.css('height', height * mh + 'em');
+            }
+			else {
+				e.css('height', height + 'px');
 			}
-		}
+        }
 
 		if (self.props.text) {
 			if (self.hasLabel) {
@@ -257,20 +246,24 @@ var $builtinmodule = function(name) {
 	}
 	configure.co_kwargs = true;
 
-	//------------------------------------------------
+//------------------------------------------------
 	s.mainloop = new Sk.builtin.func(function() {
 		Sk.builtin.pyCheckArgs("mainloop", arguments, 0, 0);
 	});
 
-	// Variable, StringVar, IntVar, BooleanVar    
-	//🔡 Variable
+// Variable, StringVar, IntVar, BooleanVar    
+//🔡 Variable
 	s.Variable = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		$loc.__init__ = new Sk.builtin.func(function(self, kwargs) {
-			initVariable(self, kwargs, '');
-
-		}, {
-			co_kwargs: true
-		});
+		var init = function(kwa, self, master,value) {            
+            if (value) {
+                self.value = Sk.ffi.remapToJs(value);
+                }
+            else {self.value ='';}    
+			initVariable(self, kwa, self.value);
+			self.value = String(self.value);
+		}
+		init.co_kwargs = true;
+		$loc.__init__ = new Sk.builtin.func(init);
 
 		$loc.__str__ = new Sk.builtin.func(self =>
 			new Sk.builtin.str("PY_VAR" + self.id)
@@ -289,6 +282,7 @@ var $builtinmodule = function(name) {
 	}, "Variable", []);
 	// 
 	function initVariable(self, kwa, defaultValue) {
+        
 		self.props = unpackKWA(kwa);
 		self.value = defaultValue;
 
@@ -301,8 +295,12 @@ var $builtinmodule = function(name) {
 	}
 
 	s.StringVar = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		var init = function(kwa, self, master) {
-			initVariable(self, kwa, '');
+		var init = function(kwa, self, master,value) {            
+            if (value) {
+                self.value = Sk.ffi.remapToJs(value);
+                }
+            else {self.value ='';}    
+			initVariable(self, kwa, self.value);
 			self.value = String(self.value);
 		}
 		init.co_kwargs = true;
@@ -325,8 +323,12 @@ var $builtinmodule = function(name) {
 	}, "StringVar", []);
 
 	s.IntVar = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		var init = function(kwa, self, master) {
-			initVariable(self, kwa, 0);
+		var init = function(kwa, self, master,value) {            
+            if (value) {
+                self.value = Sk.ffi.remapToJs(value);
+                }
+            else {self.value =0;}    
+			initVariable(self, kwa, self.value);
 			self.value = parseInt(self.value);
 		}
 		init.co_kwargs = true;
@@ -349,8 +351,12 @@ var $builtinmodule = function(name) {
 	}, "IntVar", []);
 
 	s.DoubleVar = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		var init = function(kwa, self, master) {
-			initVariable(self, kwa, 0.0);
+		var init = function(kwa, self, master,value) {            
+            if (value) {
+                self.value = Sk.ffi.remapToJs(value);
+                }
+            else {self.value =0.0;}    
+			initVariable(self, kwa, self.value);
 			self.value = parseFloat(self.value);
 		}
 		init.co_kwargs = true;
@@ -373,9 +379,14 @@ var $builtinmodule = function(name) {
 	}, "DoubleVar", []);
 
 	s.BooleanVar = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		var init = function(kwa, self, master) {
-			initVariable(self, kwa, false);
-			let jsval = Sk.ffi.remapToJs(self.value);
+        
+        var init = function(kwa, self, master,value) {            
+            if (value) {
+                self.value = Sk.ffi.remapToJs(value);
+                }
+            else {self.value =false;}    
+			initVariable(self, kwa, self.value);
+			let jsval = self.value;
 			self.value = (jsval === true || jsval === "true" || jsval === 1 || jsval === "1") ? "1" : "0";
 		}
 		init.co_kwargs = true;
@@ -409,7 +420,7 @@ var $builtinmodule = function(name) {
 		);
 	}, "BooleanVar", []);
 
-	// Event -------------------------------------------------------    
+// Event ---    
 	s.Event = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var init = function(kwa, self, master) {
 			self.props = unpackKWA(kwa);
@@ -469,7 +480,7 @@ var $builtinmodule = function(name) {
 			left: Math.round(left)
 		}
 	}
-	// Common widget class --------------------------------------------
+// Common widget class ---
 	s.Widget = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		function updateEventHandlers(self) {
@@ -689,7 +700,7 @@ var $builtinmodule = function(name) {
 					break;
 			}
 		});
-		//--------------        
+//--------------        
 		var commonDisplay = function(kwa, self, parent) {
 			var props = unpackKWA(kwa);
 			if (self.getHtml) {
@@ -799,7 +810,7 @@ var $builtinmodule = function(name) {
 			}
 		}
 
-		// place layout manager ---------------------------------------
+		// place layout manager ---
 		var place = function(kwa, self) {
 			var props = unpackKWA(kwa);
 			var elementId = 'tkinter_' + self.id;
@@ -933,7 +944,7 @@ var $builtinmodule = function(name) {
 		place.co_kwargs = true;
 		$loc.place = new Sk.builtin.func(place);
 
-		// pack layout manager ----------------------------------------
+		// pack layout manager ---
 		var pack = function(kwa, self) {
 			let props = unpackKWA(kwa);
 
@@ -1049,7 +1060,7 @@ var $builtinmodule = function(name) {
 
 
 
-		// grid layout manager ----------------------------
+		// grid layout manager ---
 		var grid = function(kwa, self) {
 			var props = unpackKWA(kwa);
 			var elementId = 'tkinter_' + self.id;
@@ -1172,7 +1183,7 @@ var $builtinmodule = function(name) {
 		self.id = idCount++;
 		self.getHtml = getHtml;
 	}
-	// Canvas -------------------------------------
+	// Canvas ---
 	s.Canvas = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var canvasBg = '#eeeeee';
 		var getHtml = function(self) {
@@ -1401,7 +1412,7 @@ var $builtinmodule = function(name) {
 			}
 		}
 
-		// -----------------        
+// -----------------        
 		function draw_curve(ctx, pointsArray, closed = true, smoothing = 0.6) {
 			if (pointsArray.length < 6) {
 				console.error('Need at least 3 points (6 coordinates) to smooth a polygon');
@@ -1912,7 +1923,7 @@ var $builtinmodule = function(name) {
 
 	}, 'Canvas', [s.Widget]);
 
-	// Entry +++ -----------------------------------------------------
+// Entry ---
 	s.Entry = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			var v = "";
@@ -1920,7 +1931,7 @@ var $builtinmodule = function(name) {
 				v = Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-			return '<input type="text" id="tkinter_' + self.id + '" style="text-align:right;" value="' + v + '">';
+			return '<input type="text" id="tkinter_' + self.id + '" class="tk_charsized" style="text-align:right;" value="' + v + '">';
 		}
 
 		var init = function(kwa, self, master) {
@@ -1980,7 +1991,7 @@ var $builtinmodule = function(name) {
 		});
 	}, 'Entry', [s.Widget]);
 
-	// Scale ----------------------------------------------------------
+// Scale ---
 	s.Scale = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			let min = 0;
@@ -2079,7 +2090,7 @@ var $builtinmodule = function(name) {
 		});
 	}, "Scale", [s.Widget]);
 
-	// Message +++------------------------------------------------------
+// Message ---
 	s.Message = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
@@ -2097,7 +2108,7 @@ var $builtinmodule = function(name) {
 				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-			var html = '<div id="tkinter_' + self.id + '" style="word-wrap:break-word;line-height:120%" >' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tk_charsized" style="word-wrap:break-word;line-height:120%" >' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
@@ -2123,17 +2134,18 @@ var $builtinmodule = function(name) {
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 	}, 'Message', [s.Widget]);
-	// PhotoImage
+
+// PhotoImage ---
 	var PhotoImage = function(kwa) {
 		props = unpackKWA(kwa);
-		imgData = fsToBrowse.read(props.file.v);
+		imgData = fsToBrowse.read(Sk.ffi.remapToJs(props.file));
 		return new Sk.builtin.str(imgData)
 	};
 	PhotoImage['co_kwargs'] = true;
 	s.PhotoImage = new Sk.builtin.func(PhotoImage);
 
 
-	// Label +++------------------------------------------------------
+// Label ---
 	s.Label = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 
@@ -2145,11 +2157,12 @@ var $builtinmodule = function(name) {
 			if (!self.props.width) {
 				self.props.width = txtwidth;
 			}
+            
 			if (self.props.textvariable) {
 				v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
 				self.props.textvariable.updateID = self.id;
 			}
-			var html = '<div id="tkinter_' + self.id + '" style="display:flex;align-items:center;justify-content:center;">' + PythonIDE.sanitize(v) + '</div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tk_charsized" style="display:flex;align-items:center;justify-content:center;">' + PythonIDE.sanitize(v) + '</div>';
 			return html;
 		}
 
@@ -2170,78 +2183,81 @@ var $builtinmodule = function(name) {
 					self.props.width = v.length + 0;
 				}
 				$('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'ch');
+                $('#tkinter_' + self.id).classList.add("tk-label")
 			}
 		}
 		init.co_kwargs = true;
 		$loc.__init__ = new Sk.builtin.func(init);
 
 	}, 'Label', [s.Widget]);
-	// Button +++------------------------------------------------------
-	s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
-		var getHtml = function(self) {
-
-			var disabled = false;
-			if (self.props.state) {
-				disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
-			}
-			var vtxt = "";
-			if (self.props.text) {
-				vtxt = Sk.ffi.remapToJs(self.props.text);
-
-			}
-			if (self.props.textvariable) {
-				vtxt = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
-				self.props.textvariable.updateID = self.id;
-			}
-			if (vtxt === "") {
-				vtxt = "\u2000\u2000"; // blank button
-			}
-			var vimg = "";
-			if (self.props.image) {
-				var imgd = Sk.ffi.remapToJs(self.props.image);
-
-				vimg = '<img src="' + self.props.image + '"/>';
-				if (vtxt == "\u2000\u2000") {
-					vtxt = ""
-				}
-			}
-
-
-			vtxt = vtxt + vimg;
-			var html = '<button id="tkinter_' + self.id + '"' + (disabled ? ' disabled' : '') + '>' + vtxt + '</button>';
-
-			return html;
-		}
-
-		var init = function(kwa, self, master) {
-			commonWidgetConstructor(kwa, self, master, getHtml);
-			/*            
-			self.update = function() {
-			    var v = "";
-			    if(self.props.text) {
-			        v = Sk.ffi.remapToJs(self.props.text);
-			    }            
-			    if(self.props.textvariable) {
-			        v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
-			    }
-			    if(v==="") { 
-			        v="\u2000\u2000"; // blank button
-			    }
-
-			    $('#tkinter_' + self.id).text(Sk.ffi.remapToJs(v));                    
-			        if (self.props.width===1) {                        
-			            self.props.width = v.length+1;
-			        }
-			        $('#tkinter_' + self.id).css('width', Sk.ffi.remapToJs(self.props.width) + 'em');
-			}
-			*/
-		}
-		init.co_kwargs = true;
-		$loc.__init__ = new Sk.builtin.func(init);
-	}, 'Button', [s.Widget]);
-
-	// Checkbutton +++---------------------------------------------------------
+// Button ---
+        s.Button = new Sk.misceval.buildClass(s, function($gbl, $loc) {
+        
+            var getHtml = function(self) {
+                var disabled = false;
+                if (self.props.state) {
+                    disabled = Sk.ffi.remapToJs(self.props.state) == 'disabled';
+                }
+                var vtxt = "";
+                if (self.props.text) {
+                    vtxt = Sk.ffi.remapToJs(self.props.text);
+                }
+                if (self.props.textvariable) {
+                    vtxt = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+                    self.props.textvariable.updateID = self.id;
+                }
+                if (vtxt === "") {
+                    vtxt = "\u2000\u2000"; // blank button
+                }
+                var vimg = "";
+                if (self.props.image) {
+                    var imgd = Sk.ffi.remapToJs(self.props.image);
+                    vimg = '<img src="' + self.props.image + '"/>';
+                    if (vtxt == "\u2000\u2000") {
+                        vtxt = "";
+                    }
+                }
+        
+                vtxt = vtxt + vimg;
+                var html = '<button id="tkinter_' + self.id + '" class="tk_charsized"' + (disabled ? ' disabled' : '') + '>' + vtxt + '</button>';
+                return html;
+            }
+        
+            var init = function(kwa, self, master) {
+                commonWidgetConstructor(kwa, self, master, getHtml);
+        
+                self.update = function() {
+                    var v = "";
+                    if (self.props.textvariable) {
+                        v = "" + Sk.ffi.remapToJs(self.props.textvariable.value);
+                    } else if (self.props.text) {
+                        v = Sk.ffi.remapToJs(self.props.text);
+                    }
+        
+                    if (v === "") {
+                        v = "\u2000\u2000";
+                    }
+        
+                    var vimg = "";
+                    if (self.props.image) {
+                        vimg = '<img src="' + self.props.image + '"/>';
+                        if (v === "\u2000\u2000") {
+                            v = "";
+                        }
+                    }
+        
+                    v = v + vimg;
+                    $('#tkinter_' + self.id).html(v);
+                };
+            }
+        
+            init.co_kwargs = true;
+            $loc.__init__ = new Sk.builtin.func(init);
+        
+        }, 'Button', [s.Widget]);
+        
+// Checkbutton ---
 	s.Checkbutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		var getHtml = function(self) {
@@ -2319,7 +2335,7 @@ var $builtinmodule = function(name) {
 
 	}, 'Checkbutton', [s.Widget]);
 
-	// Radiobutton -------------------------------------------------------------
+// Radiobutton ---
 	s.Radiobutton = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			self.props.justify = 'left';
@@ -2401,15 +2417,14 @@ var $builtinmodule = function(name) {
 		});
 	}, 'Radiobutton', [s.Widget]);
 
-	// Listbox ---------------------------------
+// Listbox ---
 	s.Listbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		const getHtml = function(self) {
 			const items = self.items || [];
 			const widthChars = self.props.width || 20;
 			const heightLines = self.props.height || 6;
 
-			let html = `<select id="tkinter_${self.id}" multiple
-            style="width: ${widthChars}ch; height: ${heightLines}em;">`;
+			let html = `<select id="tkinter_${self.id}" multiple  class="tk_charsized" style="width: ${widthChars}ch; height: ${heightLines}em;">`;
 
 			for (let i = 0; i < items.length; i++) {
 				html += `<option value="${i}">${PythonIDE.sanitize(items[i])}</option>`;
@@ -2570,7 +2585,7 @@ var $builtinmodule = function(name) {
 
 	}, "Listbox", [s.Widget]);
 
-	// SpinBox ---------------------------------------------------------
+// SpinBox ---
 	s.Spinbox = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		const getSpinData = function(self) {
@@ -2622,7 +2637,7 @@ var $builtinmodule = function(name) {
 
 			const id$ = `id='tkinter_${self.id}'`;
 			const html = `
-            <div ${id$} style='margin: 5px 0; width: 120px; display: flex; gap: 4px; align-items: center; border: 1px solid gray; padding: 2px; border-radius: 4px;'>
+            <div ${id$} class="tk_charsized" style='margin: 5px 0; width: 120px; display: flex; gap: 4px; align-items: center; border: 1px solid gray; padding: 2px; border-radius: 4px;'>
                 <input type='text' id='spinner_input_${self.id}' value='${startVal}' 
                     style='width: 100px; color: black; border: none; outline: none;'>
                 <div style='display: flex; flex-direction: column; gap: 0px;'>
@@ -2699,7 +2714,7 @@ var $builtinmodule = function(name) {
 
 
 
-	// Frame ---------------------------------------------------------
+// Frame ---
 	s.Frame = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var getHtml = function(self) {
 			var width = 200;
@@ -2738,7 +2753,8 @@ var $builtinmodule = function(name) {
 
 		$loc.mainloop = new Sk.builtin.func(function(self) {});
 	}, 'Frame', [s.Widget]);
-	// Text ----------------------------------------------------------
+
+// Text ---
 	s.Text = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		function parseIndex(text, indexStr) {
@@ -2761,7 +2777,7 @@ var $builtinmodule = function(name) {
 			self.props.textarea = true;
 			let rows = self.props.height || 10; // height в рядках
 			let cols = self.props.width || 40; // width у символах
-			return `<textarea id="tkinter_${self.id}" rows="${rows}" cols="${cols}" style="resize:none;"></textarea>`;
+			return `<textarea id="tkinter_${self.id}" class="tk_charsized" rows="${rows}" cols="${cols}" style="resize:none;"></textarea>`;
 		}
 
 		const init = function(kwa, self, master) {
@@ -2818,7 +2834,7 @@ var $builtinmodule = function(name) {
 	}, "Text", [s.Widget]);
 
 
-	// TopLevel ---------------------------------------------------------
+// TopLevel ---
 	s.Toplevel = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 
@@ -2909,7 +2925,8 @@ var $builtinmodule = function(name) {
 
 		});
 	}, "Toplevel", [s.Widget]);
-	// Tk main class -----------------------------------------------
+
+// Tk main class ---
 	s.Tk = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		$loc.update = new Sk.builtin.func(function(self) {});
@@ -3080,72 +3097,95 @@ var $builtinmodule = function(name) {
 			Scale: s.Scale,
 			Spinbox: s.Spinbox
 		};
-		// Combobox --------------------------------------------------------------
-		t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
-			var getHtml = function(self) {
-				var html = '<select id="tkinter_' + self.id + '">';
-				if (self.props.width) {
-					self.props.width = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.width) * 10);
-				} else {
-					self.props.width = 100;
-				}
-				if (self.props.height) {
-					self.props.height = new Sk.builtin.int_(Sk.ffi.remapToJs(self.props.height) * 24);
-				} else {
-					self.props.height = 24;
-				}
-				if (self.props.values) {
-					var vals = Sk.ffi.remapToJs(self.props.values);
-					for (var i = 0; i < vals.length; i++) {
-						var val = PythonIDE.sanitize("" + vals[i]);
-						var selected = self.props.current && self.props.current == i;
-						html += '<option value="' + i + '"' + (selected ? ' selected' : '') + '>' + val + '</option>';
-					}
-				}
-				html += '</select>'
-				return html;
-			}
+// Combobox ---
+        t.Combobox = new Sk.misceval.buildClass(t, function($gbl, $loc) {
+        	var getHtml = function(self) {
+        		var html = '<select id="tkinter_' + self.id + '" class="tk_charsized">';
+        		if (self.props.values) {
+        			var vals = Sk.ffi.remapToJs(self.props.values);
+        			for (var i = 0; i < vals.length; i++) {
+        				var val = PythonIDE.sanitize("" + vals[i]);
+        				var selected = self.props.current && self.props.current == i;
+        				html += '<option value="' + i + '"' + (selected ? ' selected' : '') + '>' + val + '</option>';
+        			}
+        		}
+        		html += '</select>';
+        		return html;
+        	};
+        
+        	var init = function(kwa, self, master) {
+        		commonWidgetConstructor(kwa, self, master, getHtml);
+        
+        		self.onShow = function() {
+        			const select = $('#tkinter_' + self.id);
+        			select.on('change', function() {
+        				const selectedText = select.find("option:selected").text();
+        				if (self.props.textvariable) {
+        					self.props.textvariable.value = new Sk.builtin.str(selectedText);
+        				}
+        			});
+        		};
+        
+        		self.update = function() {
+        			if (self.props.textvariable) {
+        				const value = Sk.ffi.remapToJs(self.props.textvariable.value);
+        				const select = $('#tkinter_' + self.id);
+        				select.find('option').each(function(index) {
+        					if ($(this).text() === value) {
+        						select.val(index);
+        						self.props.current = index;
+        						return false;
+        					}
+        				});
+        			}
+        		};
+        
+        		if (self.props.textvariable) {
+        			self.props.textvariable.updateID = self.id;
+        		}
+        	};
+        	init.co_kwargs = true;
+        	$loc.__init__ = new Sk.builtin.func(init);
+        
+        	$loc.current = new Sk.builtin.func(function(self, item) {
+        		var val = Sk.ffi.remapToJs(item);
+        		$('#tkinter_' + self.id).val(val);
+        		self.props.current = val;
+        	});
+        
+        	$loc.set = new Sk.builtin.func(function(self, value) {
+        		let target = Sk.ffi.remapToJs(value);
+        		let select = $('#tkinter_' + self.id);
+        		let found = false;
+        
+        		select.find('option').each(function(index) {
+        			if ($(this).text() === target) {
+        				select.val(index);
+        				self.props.current = index;
+        				found = true;
+        				return false;
+        			}
+        		});
+        
+        		if (!found) {
+        			let newIndex = select.children().length;
+        			select.append('<option value="' + newIndex + '" selected>' + PythonIDE.sanitize(target) + '</option>');
+        			self.props.current = newIndex;
+        		}
+        
+        		if (self.props.textvariable) {
+        			self.props.textvariable.value = new Sk.builtin.str(target);
+        		}
+        	});
+        
+        	$loc.get = new Sk.builtin.func(function(self) {
+        		const value = $('#tkinter_' + self.id + ' option:selected').text();
+        		return new Sk.builtin.str(value);
+        	});
+        
+        }, 'Combobox', [s.Widget]);
 
-			var init = function(kwa, self, master) {
-				commonWidgetConstructor(kwa, self, master, getHtml);
-			}
-			init.co_kwargs = true;
-			$loc.__init__ = new Sk.builtin.func(init);
-
-			$loc.current = new Sk.builtin.func(function(self, item) {
-				var val = Sk.ffi.remapToJs(item);
-				$('#tkinter_' + self.id).val(val);
-				self.props.current = val;
-			});
-			$loc.set = new Sk.builtin.func(function(self, value) {
-				let target = Sk.ffi.remapToJs(value);
-				let select = $('#tkinter_' + self.id);
-				let found = false;
-
-				select.find('option').each(function(index) {
-					if ($(this).text() === target) {
-						select.val(index);
-						self.props.current = index;
-						found = true;
-						return false;
-					}
-				});
-
-				if (!found) {
-					// Додаємо новий <option>
-					let newIndex = select.children().length;
-					select.append('<option value="' + newIndex + '" selected>' + PythonIDE.sanitize(target) + '</option>');
-					self.props.current = newIndex;
-				}
-			});
-
-			$loc.get = new Sk.builtin.func(function(self) {
-				return new Sk.builtin.str($('#tkinter_' + self.id + ' option:selected').text());
-			});
-
-		}, 'Combobox', [s.Widget]);
-
-		// Separator ---------------------------------------------------------
+// Separator ---
 		t.Separator = new Sk.misceval.buildClass(t, function($gbl, $loc) {
 			const getHtml = function(self) {
 				let html = "";
@@ -3177,7 +3217,7 @@ var $builtinmodule = function(name) {
 		}, "Separator", [s.Widget]);
 
 
-		// Progressbar ---------------------------------------------------------
+// Progressbar ---
 		t.Progressbar = new Sk.misceval.buildClass(s, function($gbl, $loc) {
 			const getHtml = function(self) {
 				let value = 0;
@@ -3297,7 +3337,7 @@ var $builtinmodule = function(name) {
 		return t;
 	}
 
-	// tkinter.colorchooser ------------------
+// tkinter.colorchooser ---
 	s.colorchooser = new Sk.builtin.module();
 
 	(function() {
@@ -3345,7 +3385,7 @@ var $builtinmodule = function(name) {
 		Sk.sysmodules.mp$ass_subscript(modName, s.colorchooser);
 	})();
 
-	// Заглушка для tkinter.font ----------------------
+// Заглушка для tkinter.font ---
 	var font_mod = new Sk.builtin.module({});
 	font_mod.$d = new Sk.builtin.dict();
 
@@ -3361,7 +3401,7 @@ var $builtinmodule = function(name) {
 	const pyModName0 = new Sk.builtin.str("tkinter.ttk");
 	Sk.sysmodules.mp$ass_subscript(pyModName0, s.ttk);
 
-	// message box -------------------------------------
+// message box ---
 	s.messagebox = new Sk.builtin.module();
 	var messagebox = function(name) {
 		var m = {};
@@ -3427,7 +3467,7 @@ var $builtinmodule = function(name) {
 	Sk.sysmodules.mp$ass_subscript(pyModName1, s.messagebox);
 
 
-	// simpledialog ---
+// simpledialog ---
 	s.simpledialog = new Sk.builtin.module();
 	var simpledialog = function(name) {
 		var m = {};
@@ -3533,7 +3573,7 @@ var $builtinmodule = function(name) {
 	const pyModName3 = new Sk.builtin.str("tkinter.simpledialog");
 	Sk.sysmodules.mp$ass_subscript(pyModName3, s.simpledialog);
 
-	//------------------------------   
+//------------------------------   
 
 	return s;
 };

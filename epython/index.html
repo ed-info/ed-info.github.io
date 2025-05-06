@@ -85,43 +85,65 @@
     </div>
     <div id="myfilename.txt"></div>
     <script>
-		var assets = {};
-		var embed = false;
-		if (window.location.search!='') {
-			var params = new URL(window.location).searchParams;
-			if (params) {
-				embed = (params.get("param")).includes("embed");
-			}
-		}	
-		
-		$('#logo').show();
-		$('#file_tabs').show();	
-		if (embed) {
-			$('#logo').hide();
-			$('#file_tabs').hide();	
-		}
-		function encode(str) {
-			return window.btoa(unescape(encodeURIComponent(str)));
-		}
-		function decode(str) {
-			return decodeURIComponent(escape(window.atob(str)));
-		}
-		var uhash=window.location.hash;
-		//console.log('hash:',uhash);
-		var uuhash=decode(uhash.substring(1));		
-        var files = uuhash;
-        
-        try {
-            PythonIDE.files = JSON.parse(files);
-        } catch (e) {
-            PythonIDE.files['mycode.py'] = files;
+        var assets = {};
+        var viewEmbed = false;
+        var codeFromParam = '';
+        var loadFromURL = '';
+    
+        if (window.location.search !== '') {
+            const params = new URL(window.location).searchParams;
+            viewEmbed = params.get("view") === "embed";
+            loadFromURL = params.get("load") || '';
+    
+            const codeParam = params.get("code");
+            if (codeParam) {
+                try {
+                    codeFromParam = decodeURIComponent(escape(window.atob(codeParam)));
+                } catch (e) {
+                    console.error("Error code decoding:", e);
+                    codeFromParam = "# Error code decoding : Помилка декодування параметра code";
+                }
+            }
         }
-		
-        PythonIDE.currentFile = 'mycode.py';
-        PythonIDE.projectName = 'mycode.py'.replace(".py", "");
-        PythonIDE.updateFileTabs();
-        
+    
+        if (viewEmbed) {
+            $('#logo').hide();
+            $('#file_tabs').hide();
+        } else {
+            $('#logo').show();
+            $('#file_tabs').show();
+        }
+    
+        let files = {};
+    
+        if (codeFromParam) {
+            files['mycode.py'] = codeFromParam;
+            initEditor(files);
+        } else if (loadFromURL) {
+            fetch(loadFromURL)
+                .then(response => response.text())
+                .then(text => {
+                    files['mycode.py'] = text;
+                    initEditor(files);
+                })
+                .catch(err => {
+                    console.error("Error file loading:", err);
+                    files['mycode.py'] = "# Error file loading : Помилка завантаження файлу";
+                    initEditor(files);
+                });
+        } else {
+            files['mycode.py'] = '';
+            initEditor(files);
+        }
+    
+        function initEditor(filesObj) {
+            PythonIDE.files = filesObj;
+            PythonIDE.currentFile = 'mycode.py';
+            PythonIDE.projectName = 'mycode';
+            PythonIDE.updateFileTabs();
+        }
     </script>
+    
     
     <div id="hintBar" data-i18n="hint_bar"></div>
     
