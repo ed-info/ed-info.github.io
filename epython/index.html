@@ -120,6 +120,7 @@
             files['mycode.py'] = codeFromParam;
             initEditor(files);
         } else if (loadFromURL) {
+            console.log("load=",loadFromURL);
             fetch(loadFromURL)
                 .then(response => response.text())
                 .then(text => {
