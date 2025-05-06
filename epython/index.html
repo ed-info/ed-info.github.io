@@ -92,8 +92,8 @@
     
         if (window.location.search !== '') {
             const params = new URL(window.location).searchParams;
-            viewEmbed = params.get("view") === "embed";
-            loadFromURL = params.get("load") || '';
+            var viewEmbed = params.get("view") === "embed";
+            var loadFromURL = params.get("load") || '';
     
             const codeParam = params.get("code");
             if (codeParam) {
@@ -117,7 +117,7 @@
         let py_file = '';
     
         if (codeFromParam) {
-            files = codeFromParam;
+            py_file = codeFromParam;
             initEditor(py_file);
         } else if (loadFromURL) {
             const xhr = new XMLHttpRequest();
@@ -149,10 +149,12 @@
             }            
             PythonIDE.currentFile = 'mycode.py';
             PythonIDE.projectName = 'mycode.py'.replace(".py", "");
-            PythonIDE.updateFileTabs(); 
-            if (files!=''){
-                PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
-                PythonIDE.editor.refresh();
+            PythonIDE.updateFileTabs();
+            
+             if (loadFromURL) { 
+                 try {               
+                    PythonIDE.editor.refresh();
+                 } catch (e) {}   
             }
         }
     </script>
