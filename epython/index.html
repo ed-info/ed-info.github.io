@@ -124,6 +124,7 @@
             fetch(loadFromURL)
                 .then(response => response.text())
                 .then(text => {
+                    console.log("text=",text);
                     files['mycode.py'] = text;
                     initEditor(files);
                 })
