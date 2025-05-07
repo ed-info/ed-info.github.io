@@ -36,10 +36,18 @@ def __init():
   global __background
 
   __master = tk.Tk()
-  __master.geometry("810x670")
+  __wx = __master.winfo_screenwidth()
+  __wy = __master.winfo_screenheight()
+  __mw = 810
+  __mh = 670
+  if __wx < 810:
+      __mw = __wx-20
+  if __wy < 670:
+      __mh = __wy    
+  __master.geometry(f"{__mw}x{__mh}")
   __master.title("SimpleGraphics")
 
-  __canvas = tk.Canvas(__master, width=800, height=600)
+  __canvas = tk.Canvas(__master, width=__mw-10, height=__mh-70)
   __canvas.pack()
 
   setFont("Arial")

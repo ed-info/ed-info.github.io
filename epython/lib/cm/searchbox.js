@@ -506,7 +506,7 @@
             var elSearch,
                 el      = document.querySelector('.CodeMirror'),
                 div     = document.createElement('div'),
-                html    = [
+                html_uk    = [
                     '<div class="ace_search right">',
                         '<button type="button" action="hide" class="ace_searchbtn_close"></button>',
                         '<div class="ace_search_form">',
@@ -527,7 +527,32 @@
                         '</div>',
                     '</div>'
                 ].join('');
-            
+                var html,
+                    html_en    = [
+                    '<div class="ace_search right">',
+                        '<button type="button" action="hide" class="ace_searchbtn_close"></button>',
+                        '<div class="ace_search_form">',
+                            '<input class="ace_search_field" placeholder="Search" spellcheck="false"></input>',
+                            '<button type="button" action="findNext" class="ace_searchbtn next"></button>',
+                            '<button type="button" action="findPrev" class="ace_searchbtn prev"></button>',
+                            '<button type="button" action="findAll" class="ace_searchbtn" title="Alt-Enter">All</button>',
+                        '</div>',
+                        '<div class="ace_replace_form">',
+                            '<input class="ace_search_field" placeholder="Replace to" spellcheck="false"></input>',
+                            '<button type="button" action="replaceAndFindNext" class="ace_replacebtn">Replace </button>',
+                            '<button type="button" action="replaceAll" class="ace_replacebtn"> All</button>',
+                        '</div>',
+                        '<div class="ace_search_options">',
+                            '<span action="toggleRegexpMode" class="ace_button" title="Regexp Mode">.*</span>',
+                            '<span action="toggleCaseSensitive" class="ace_button" title="CaseSensitive">Aa</span>',
+                            '<span action="toggleWholeWords" class="ace_button" title="WholeWords">\\b</span>',
+                        '</div>',
+                    '</div>'
+                ].join('');    
+            let userLang = navigator.language || navigator.userLanguage; 
+            let selectedLang = userLang.startsWith('en') ? 'en' : 'uk';
+            html = html_en;
+            if (selectedLang == "uk") { html = html_uk}
             div.innerHTML = html;
             
             elSearch = div.firstChild;

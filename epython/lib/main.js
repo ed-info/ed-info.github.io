@@ -1,8 +1,11 @@
 $(function () {
     // Автоматичне визначення мови (українська стандартно)
     let userLang = navigator.language || navigator.userLanguage; 
-    console.log('user language:', userLang);
-    let selectedLang = userLang.startsWith('en') ? 'en' : 'uk';
+    console.log('user Language:', userLang);
+    let selectedLang = 'en';
+    if (userLang.startsWith('uk')||userLang.startsWith('ru')){
+        selectedLang = 'uk';
+    }
         
     function applyTranslations(lang) {
         const translation = translations[lang] || {};
@@ -46,10 +49,10 @@ $(function () {
                 if (key && enTranslations[key]) {
                     // Оновлюємо заголовок діалогу через innerHTML
                     const translatedTitle = enTranslations[key];
-                    console.log("Setting dialog title:", translatedTitle);
+                    //console.log("Setting dialog title:", translatedTitle);
                     dialogTitleElement[0].innerHTML = translatedTitle; // Заміна тексту через innerHTML
                 } else {
-                    console.warn("Key for dialog title not found:", dialogTitleText);
+                    //console.warn("Key for dialog title not found:", dialogTitleText);
                 }
             }
         });

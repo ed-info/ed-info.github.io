@@ -163,9 +163,8 @@ var $builtinmodule = function(name) {
 				'font-style': fontStyle
 			});
 		}
-		var unit = "px";
+		
 		if ((self.props.text) || (self.props.textarea)) {
-			unit = "em";
 			if (!(self.props.justify)) {
 				e.css('text-align', 'center');
 			}
@@ -173,7 +172,7 @@ var $builtinmodule = function(name) {
 
 		if (self.props.width) {
 			let width = Sk.ffi.remapToJs(self.props.width);
-            if (e.find("tk_charsized")) {                
+            if (e.hasClass("tk_charsized")) {                
                 e.css('width', width + 'ch');
             }
 			else {
@@ -183,7 +182,7 @@ var $builtinmodule = function(name) {
 
 		if (self.props.height) {
 			let height = Sk.ffi.remapToJs(self.props.height);           
-            if (e.find("tk_charsized")) { 
+            if (e.hasClass("tk_charsized")) { 
                 mh = 1;
                 if (e.is("button")) { mh = 1.25;}              
                 e.css('height', height * mh + 'em');
@@ -1202,7 +1201,7 @@ var $builtinmodule = function(name) {
 			if (self.props.height) {
 				height = Sk.ffi.remapToJs(self.props.height);
 			}
-			return '<canvas id="tkinter_' + self.id + '" width="' + width + '" height="' + height + '"></canvas>';
+			return '<canvas id="tkinter_' + self.id + '" class="tk_pixelsized" width="' + width + '" height="' + height + '"></canvas>';
 		}
 
 		function commonCanvasElement(self, element) {
@@ -2024,7 +2023,7 @@ var $builtinmodule = function(name) {
 			}
 
 			let html = `<input id="slider_${self.id}" type="range" min="${min}" max="${max}" value="${value}" step="${step}" orient="${orientation}" />`;
-			return `<div id="tkinter_${self.id}" style="margin:auto;">
+			return `<div id="tkinter_${self.id}" class="tk_pixelsized" style="margin:auto;">
                     <span id="slider_${self.id}_Value">${value}</span>
                     <div style="line-height:0px;margin:0px;"></div>
                     ${html}
@@ -2731,7 +2730,7 @@ var $builtinmodule = function(name) {
 				self.props.height = height
 			}
 
-			return '<div id="tkinter_' + self.id + '" style="margin:auto;width:' + width + 'px; height:' + height + 'px;"></div>';
+			return '<div id="tkinter_' + self.id + '" class="tk_pixelsized" style="margin:auto;width:' + width + 'px; height:' + height + 'px;"></div>';
 		}
 
 		var init = function(kwa, self, master) {
@@ -2844,7 +2843,7 @@ var $builtinmodule = function(name) {
 			self.id = idCount++;
 			if (!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk"></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" class="tk_pixelsized" title="Tk"></div>';
 			PythonIDE.python.output(html);
 			$('#tkinter_' + self.id).dialog({
 				width: 200,
@@ -2941,7 +2940,7 @@ var $builtinmodule = function(name) {
 			self.id = idCount++;
 			if (!firstRoot) firstRoot = self;
 			s.lastCreatedWin = self;
-			var html = '<div id="tkinter_' + self.id + '" class="tkinter" title="Tk" ></div>';
+			var html = '<div id="tkinter_' + self.id + '" class="tkinter" class="tk_pixelsized" title="Tk" ></div>';
 			PythonIDE.python.output(html);
 
 			$('#tkinter_' + self.id).dialog({
@@ -3195,14 +3194,14 @@ var $builtinmodule = function(name) {
 					const orient = Sk.ffi.remapToJs(self.props.orient);
 					if (orient === "vertical") {
 						// Вертикальна лінія: вузький блок з border
-						html = `<div id="${id}" style="display:inline-block; width:1px; height:100px; background-color:gray; margin:0 5px;"></div>`;
+						html = `<div id="${id}" class="tk_pixelsized" style="display:inline-block; width:1px; height:100px; background-color:gray; margin:0 5px;"></div>`;
 					} else {
 						// Горизонтальна лінія
-						html = `<hr id="${id}" style="margin:5px 0;">`;
+						html = `<hr id="${id}" class="tk_pixelsized" style="margin:5px 0;">`;
 					}
 				} else {
 					// За замовчуванням горизонтальна
-					html = `<hr id="${id}" style="margin:5px 0;">`;
+					html = `<hr id="${id}" class="tk_pixelsized" style="margin:5px 0;">`;
 				}
 
 				return html;
@@ -3241,7 +3240,7 @@ var $builtinmodule = function(name) {
 				const isIndeterminate = self._mode === "indeterminate";
 				const attrs = isIndeterminate ? "" : `max="${maximum}" value="${value}"`;
 
-				return `<progress id="tkinter_${self.id}" ${attrs} style="height: 10px; width: 100%;"></progress>`;
+				return `<progress id="tkinter_${self.id}" ${attrs} class="tk_pixelsized" style="height: 10px; width: 100%;"></progress>`;
 			};
 
 			const init = function(kwa, self, master) {
