@@ -96,7 +96,7 @@
             var viewEmbed = params.get("view") === "embed";
             var loadFromURL = params.get("load") || '';
     
-            const codeParam = params.get("code");
+            var codeParam = params.get("code");
             if (codeParam) {
                 codeParam = codeParam.replace(/\s/g, "+");
                 try {
