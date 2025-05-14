@@ -98,6 +98,7 @@
     
             const codeParam = params.get("code");
             if (codeParam) {
+                codeParam = codeParam.replace(/\s/g, "+");
                 try {
                     codeFromParam = decodeURIComponent(escape(window.atob(codeParam)));
                 } catch (e) {
