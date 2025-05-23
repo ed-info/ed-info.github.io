@@ -782,8 +782,10 @@ function PyArray_FROM_OTF(m, type, flags) {
  */
 var $builtinmodule = function(name) {
     var mod = {};
+   
 
     var randomState_c = function($gbl, $loc) {
+        console.log("randomState_c=",$gbl, $loc)
         var js__init__ = function(self, seed) {
             if (seed == null) {
                 seed = Sk.builtin.none.none$;
@@ -949,8 +951,12 @@ var $builtinmodule = function(name) {
         "half-open" interval [`low`, `high`). If `high` is None (the default),
         then results are from [0, `low`).
         */
-        var js_randint = function(self, low, high, size) {
-            Sk.builtin.pyCheckArgs("randint", arguments, 1, 3, true);
+        var js_randint = function(self,low, high, size) {
+            console.log("js_randint self =", self)
+            console.log("js_randint low =", low)
+            console.log("js_randint high=", high)
+            console.log("js_randint size =", size)
+            //Sk.builtin.pyCheckArgs("randint", arguments, 1, 3, true);
             if (size == null) {
                 size = Sk.builtin.none.none$;
             }
@@ -998,8 +1004,8 @@ var $builtinmodule = function(name) {
                 return array;
             }
         };
-        js_randint.co_varnames = ['self', 'low', 'high', 'size'];
-        js_randint.$defaults = [Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.none.none$];
+ 
+        js_randint.$defaults = [Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.none.none$];    
         $loc.randint = new Sk.builtin.func(js_randint);
 
         var js_random_integers = function(self, low, high, size) {
@@ -1093,38 +1099,318 @@ var $builtinmodule = function(name) {
         };
         $loc.uniform = new Sk.builtin.func(js_uniform);
 
+        // Додаємо метод rand до класу RandomState
+        $loc.rand = new Sk.builtin.func(function(self) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (args.length === 0) {
+                return Sk.misceval.callsim(self.random_sample, self);
+            }
+            return Sk.misceval.callsim(self.random_sample, self, new Sk.builtin.tuple(args));
+        });
+
+        // Додаємо метод standard_normal до класу RandomState
+        $loc.standard_normal = new Sk.builtin.func(function(self, size) {
+            if (size === undefined || Sk.builtin.checkNone(size)) {
+                return new Sk.builtin.float_(rk_gauss(self.internal_state));
+            }
+            
+            var array = Sk.misceval.callsim(np.$d.empty, size, Sk.builtin.float_);
+            var array_data = array.v.buffer;
+            
+            for (var i = 0; i < array_data.length; i++) {
+                array_data[i] = new Sk.builtin.float_(rk_gauss(self.internal_state));
+            }
+            
+            return array;
+        });
+
+        // Додаємо метод randn до класу RandomState
         $loc.randn = new Sk.builtin.func(function(self) {
-            args = new Sk.builtins.tuple(Array.prototype.slice.call(arguments, 1));
-            if (args.v.length === 0) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (args.length === 0) {
                 return Sk.misceval.callsim(self.standard_normal, self);
             }
-
-            return Sk.misceval.callsim(self.standard_normal, self, args);
+            return Sk.misceval.callsim(self.standard_normal, self, new Sk.builtin.tuple(args));
         });
 
         $loc.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
 
         $loc.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
+        
+        
+$loc.shuffle = new Sk.builtin.func(function(self, x) {
+
+
+    if (!Sk.builtin.checkSequence(x)) {
+        throw new Sk.builtin.TypeError("Object is not a sequence");
+    }
+
+    var len = Sk.builtin.len(x).v;
+
+    for (var i = len - 1; i > 0; i--) {
+        var j = rk_interval(i, self.internal_state);
+
+        // numpy.ndarray перевірка
+        var is_ndarray = (x.tp$name === "numpy.ndarray");
+        if (is_ndarray) {
+            var temp = x.v.buffer[i];
+            x.v.buffer[i] = x.v.buffer[j];
+            x.v.buffer[j] = temp;
+        } else if (Sk.builtin.checkList(x)) {
+            var temp = x.v[i];
+            x.v[i] = x.v[j];
+            x.v[j] = temp;
+        } else if (Sk.builtin.checkTuple(x)) {
+            var arr = x.v.slice();
+            var temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+            return new Sk.builtin.tuple(arr);
+        } else {
+            var temp = Sk.misceval.callsimOrSuspend(x.tp$getitem, x, new Sk.builtin.int_(i));
+            var valj = Sk.misceval.callsimOrSuspend(x.tp$getitem, x, new Sk.builtin.int_(j));
+            Sk.misceval.callsimOrSuspend(x.tp$setitem, x, new Sk.builtin.int_(i), valj);
+            Sk.misceval.callsimOrSuspend(x.tp$setitem, x, new Sk.builtin.int_(j), temp);
+        }
+    }
+
+    return Sk.builtin.none.none$;
+});
+
+$loc.permutation = new Sk.builtin.func(function(self, x) {
+    var i, j;
+
+    // Якщо x — це int, створюємо масив від 0 до x-1
+    if (Sk.builtin.checkInt(x)) {
+        var n = Sk.ffi.remapToJs(x);
+        if (n < 0) {
+            throw new Sk.builtin.ValueError("Input must be a non-negative integer");
+        }
+
+        var arr = [];
+        for (i = 0; i < n; i++) {
+            arr.push(new Sk.builtin.int_(i));
+        }
+
+        for (i = n - 1; i > 0; i--) {
+            j = rk_interval(i, self.internal_state);
+            var temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+
+        return new Sk.builtin.list(arr);
+    }
+
+    // Якщо x — це послідовність
+    if (!Sk.builtin.checkSequence(x)) {
+        throw new Sk.builtin.TypeError("Object is not a sequence or int");
+    }
+
+    var len = Sk.builtin.len(x).v;
+
+    // numpy.ndarray
+    if (x.tp$name === "numpy.ndarray") {
+        var arr = x.v.buffer.slice();  // копія буфера
+        for (i = len - 1; i > 0; i--) {
+            j = rk_interval(i, self.internal_state);
+            var temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+
+        return Sk.misceval.callsim(x.constructor, x.v.shape, x.v.dtype, new Sk.builtin.list(arr));
+    }
+
+    // Python list
+    if (Sk.builtin.checkList(x)) {
+        var listCopy = x.v.slice();
+        for (i = len - 1; i > 0; i--) {
+            j = rk_interval(i, self.internal_state);
+            var temp = listCopy[i];
+            listCopy[i] = listCopy[j];
+            listCopy[j] = temp;
+        }
+        return new Sk.builtin.list(listCopy);
+    }
+
+    // Python tuple
+    if (Sk.builtin.checkTuple(x)) {
+        var tupleCopy = x.v.slice();
+        for (i = len - 1; i > 0; i--) {
+            j = rk_interval(i, self.internal_state);
+            var temp = tupleCopy[i];
+            tupleCopy[i] = tupleCopy[j];
+            tupleCopy[j] = temp;
+        }
+        return new Sk.builtin.tuple(tupleCopy);
+    }
+
+    // generic sequence: convert to list, shuffle, return list
+    var pyList = Sk.misceval.callsim(Sk.builtin.list, x);
+    var data = pyList.v.slice();
+    for (i = len - 1; i > 0; i--) {
+        j = rk_interval(i, self.internal_state);
+        var temp = data[i];
+        data[i] = data[j];
+        data[j] = temp;
+    }
+    return new Sk.builtin.list(data);
+});
+
+        
     };
 
+	function unpackKWA(kwa) {
+		result = {};
 
+		for (var i = 0; i < kwa.length; i += 2) {
+			var key = Sk.ffi.remapToJs(kwa[i]);
+			var val = Sk.ffi.remapToJs(kwa[i + 1]);
+			result[key] = val;
+		}
+		return result;
+	}
+    function parseArgs(args) {
+        var pos_args = [];
+        var kwargs = new Sk.builtin.dict();
+        for (var i = 0; i < args.length; i++) {
+            if (Array.isArray(args[i])) {                
+                kwargs = args[i];
+            } else {
+                pos_args.push(args[i]);
+            }
+        }
+        var props = unpackKWA(kwargs);
+        return [pos_args,props];
+    
+    }
     mod[CLASS_RANDOMSTATE] = Sk.misceval.buildClass(mod, randomState_c,
       CLASS_RANDOMSTATE, []);
 
+    // Створюємо екземпляр RandomState
+    var randInstance = Sk.misceval.callsim(mod[CLASS_RANDOMSTATE]);
 
-    // _rand is just an instance of the RandomState class!
-    mod._rand = Sk.misceval.callsim(mod[CLASS_RANDOMSTATE]);
+    // Визначаємо методи модуля, які делегують виклики до randInstance
+    mod.seed = function(seed) {
+        if (seed === undefined) seed = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.seed, randInstance, seed);
+    };
 
-    // map _rand.rand
-    mod.rand = Sk.abstr.gattr(mod._rand, 'rand', true);
-    mod.seed = Sk.abstr.gattr(mod._rand, 'seed', true);
-    mod.random_sample = Sk.abstr.gattr(mod._rand, 'random_sample', true);
+    mod.random_sample = function(size) {
+        if (size === undefined) size = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.random_sample, randInstance, size);
+    };
     mod.random = mod.random_sample;
     mod.sample = mod.random_sample;
-    mod.binomial = Sk.abstr.gattr(mod._rand, 'binomial', true);
-    mod.randint = Sk.abstr.gattr(mod._rand, 'randint', true);
-    mod.random_integers = Sk.abstr.gattr(mod._rand, 'random_integers', true);
 
+    mod.binomial = function(n, p, size) {
+        if (size === undefined) size = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.binomial, randInstance, n, p, size);
+    };
+/*
+    mod.random_integers = function(low, high, size) {
+        if (high === undefined) high = Sk.builtin.none.none$;
+        if (size === undefined) size = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.random_integers, randInstance, low, high, size);
+    };
+*/
+     mod.random_integers = function() {
+        var args = Array.prototype.slice.call(arguments);
+        let p_args = parseArgs(args);
+        var pos_args = p_args[0]; 
+        var props = p_args[1];
+        
+        let size = null;
+        if (props.size) {
+            size = props.size;
+            }
+        let low = Sk.ffi.remapToJs(pos_args[0])
+        let high = null;
+        if (pos_args.length==2) {
+          high = Sk.ffi.remapToJs(pos_args[1])
+        }
+        return Sk.misceval.callsim(randInstance.random_integers, randInstance, low, high, size); 
+    };
+     mod.random_integers.co_kwargs = true;
+
+
+    mod.randint = function() {
+        var args = Array.prototype.slice.call(arguments);
+        let p_args = parseArgs(args);
+        var pos_args = p_args[0]; 
+        var props = p_args[1];
+        
+        let size = null;
+        if (props.size) {
+            size = props.size;
+            }
+        let low = Sk.ffi.remapToJs(pos_args[0])
+        let high = null;
+        if (pos_args.length==2) {
+          high = Sk.ffi.remapToJs(pos_args[1])
+        }
+        return Sk.misceval.callsim(randInstance.randint, randInstance, low, high, size); 
+    };
+    mod.randint.co_kwargs = true;
+
+
+    mod.rand = function() {
+        // Перетворюємо аргументи в кортеж
+        var argsArray = Array.prototype.slice.call(arguments);
+        // Якщо аргументи передано, використовуємо їх як size
+        if (argsArray.length > 0) {
+            var size;
+            if (argsArray.length === 1) {
+                size = argsArray[0];
+            } else {
+                size = new Sk.builtin.tuple(argsArray);
+            }
+            return Sk.misceval.callsim(randInstance.random_sample, randInstance, size);
+        }
+        // Якщо аргументів немає, повертаємо одне випадкове число
+        return Sk.misceval.callsim(randInstance.random_sample, randInstance);
+    };
+
+    mod.randn = function() {
+        // Аналогічно до rand(), але використовуємо standard_normal
+        var argsArray = Array.prototype.slice.call(arguments);
+        if (argsArray.length > 0) {
+            var size;
+            if (argsArray.length === 1) {
+                size = argsArray[0];
+            } else {
+                size = new Sk.builtin.tuple(argsArray);
+            }
+            return Sk.misceval.callsim(randInstance.standard_normal, randInstance, size);
+        }
+        return Sk.misceval.callsim(randInstance.standard_normal, randInstance);
+    };
+
+    // Додаємо інші методи, які потрібно експортувати
+    mod.bytes = function(length) {
+        return Sk.misceval.callsim(randInstance.bytes, randInstance, length);
+    };
+
+    mod.choice = function(a, size, replace, p) {
+        if (size === undefined) size = Sk.builtin.none.none$;
+        if (replace === undefined) replace = Sk.builtin.none.none$;
+        if (p === undefined) p = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.choice, randInstance, a, size, replace, p);
+    };
+
+
+    // Додаємо метод shuffle до модуля numpy.random
+    mod.shuffle = function(x) {
+        return Sk.misceval.callsim(randInstance.shuffle, randInstance, x);
+    };
+    mod.permutation = function(x) {
+        return Sk.misceval.callsim(randInstance.permutation, randInstance, x);
+    };
+    mod.uniform = function(low, high, size) {
+        if (size === undefined) size = Sk.builtin.none.none$;
+        return Sk.misceval.callsim(randInstance.uniform, randInstance, low, high, size);
+    };
 
     return mod;
 };

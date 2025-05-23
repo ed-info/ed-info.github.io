@@ -442,6 +442,24 @@ mod.show = new Sk.builtin.func(function() {
 		xAxis = false;
 	}
 	$indexAxis="x";
+    var xbz = { 			 display:xAxis,
+							 beginAtZero: false,
+							 title: {
+									display: xLabelView,
+									text: xLabel,
+									font: { size: 16 } 
+									},
+							grid: 	{
+									display: gridXview,
+									drawOnChartArea: true,
+									drawTicks: true,
+									}			
+							}
+    var bAzero = false;
+    if (charts_type==="hist"){
+        bAzero = true;
+        charts_type="bar"
+    }
 	if (charts_type==="horizontalBar"){
 		$indexAxis="y";
 		charts_type="bar";
@@ -469,7 +487,7 @@ mod.show = new Sk.builtin.func(function() {
 			scales: {
 						y: {
 							 display:yAxis,
-							 beginAtZero: false,
+							 beginAtZero: bAzero,
 							 title: {
 									display: yLabelView,
 									text: yLabel,
@@ -483,7 +501,7 @@ mod.show = new Sk.builtin.func(function() {
 							},
 						x: {
 							 display:xAxis,
-							 beginAtZero: true,
+							 beginAtZero: false,
 							 title: {
 									display: xLabelView,
 									text: xLabel,
@@ -962,10 +980,87 @@ mod.grid = new Sk.builtin.func(grid);
     throw new Sk.builtin.NotImplementedError(
       "hexbin is not yet implemented");
   });
+  //
+  // hist **********************************************
+var hist = function(kwa) {
+    Sk.builtin.pyCheckArgs("hist", arguments, 1, Infinity, true, false);
+    args = Array.prototype.slice.call(arguments, 1);
+
+    // Отримуємо дані (тільки y, бо це гістограма)
+    GetParam(kwa, args);
+    console.log("hist input ydata =", ydata[chartsNum]);
+
+    var data = ydata[chartsNum];
+    
+    // Параметри гістограми: bins (кількість відер)
+    let kwargs = Sk.ffi.remapToJs(new Sk.builtins.dict(kwa));
+    let bins = kwargs.bins || 10; // за замовчуванням 10
+    if (typeof bins !== 'number') {
+        bins = Sk.ffi.remapToJs(bins);
+    }
+
+    // Обчислення гістограми
+    let min = Math.min(...data);
+    let max = Math.max(...data);
+    let binSize = (max - min) / bins;
+
+    let binEdges = [];
+    let counts = new Array(bins).fill(0);
+
+    for (let i = 0; i <= bins; i++) {
+        binEdges.push(min + i * binSize);
+    }
+
+    data.forEach(val => {
+        let index = Math.floor((val - min) / binSize);
+        if (index === bins) index = bins - 1; // включаємо max у останній бін
+        counts[index]++;
+    });
+
+    // Підготовка даних
+    let binLabels = [];
+    for (let i = 0; i < bins; i++) {
+        let left = binEdges[i].toFixed(2);
+        let right = binEdges[i + 1].toFixed(2);
+        binLabels.push(`${left}–${right}`);
+    }
+
+    xdata[chartsNum] = binLabels;
+    ydata[chartsNum] = counts;
+
+    charts_type = "hist";
+    chart$ = new $chart();
+    chart$.label = "Histogram";
+    // Уникаємо невидимих стовпців
+    let visibleCounts = counts.map(c => (c === 0 ? 0.5 : c));
+    chart$.data = visibleCounts;    
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+
+    chart$.barPercentage = 1.0;
+    chart$.categoryPercentage = 1.0;
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
+
+    var result = [];
+    return new Sk.builtins.tuple(result);
+};
+hist.co_kwargs = true;
+mod.hist = new Sk.builtin.func(hist);
+
+  /*
   mod.hist = new Sk.builtin.func(function() {
     throw new Sk.builtin.NotImplementedError(
       "hist is not yet implemented");
   });
+  */
   mod.hist2d = new Sk.builtin.func(function() {
     throw new Sk.builtin.NotImplementedError(
       "hist2d is not yet implemented");

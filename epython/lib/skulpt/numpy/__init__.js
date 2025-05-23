@@ -239,20 +239,39 @@ var $builtinmodule = function (name) {
     var numpy = function () {
         this.math = Math; // set math object
     };
-
-    numpy.prototype.arange = function (start, stop, step) {
-      if (step === undefined)
-        step = 1.0;
-
+    numpy.prototype.arange = function (a, b, c) {
+      
+      let start = 0;
+      let stop = 0;
+      let step = 0;  
+      if (arguments.length==1) {
+                start = 0;
+                stop = a;
+                step = 1;
+             }
+      
+      if (arguments.length==2) {
+                start = a;
+                stop = b;
+                step = 1;
+            }
+      if (arguments.length==3) {
+                start = a;
+                stop = b;
+                step = c;
+            }
+                
+/*
       start *= 1.0;
       stop *= 1.0;
       step *= 1.0;
-
+      */ 
+      
       var res = [];
       for (var i = start; i < stop; i += step) {
         res.push(i);
       }
-
+     
       return res;
     };
 
@@ -446,6 +465,7 @@ var $builtinmodule = function (name) {
     // easy and functional impl. for our own use cases
     // may not support all cases of the real API
     function PyArray_DESCR(arr) {
+        
         return arr.v.dtype;
     }
 
@@ -458,12 +478,14 @@ var $builtinmodule = function (name) {
       Get scalar-equivalent to a region of memory described by a descriptor.
     */
     function PyArray_Scalar(data, descr, base) {
+        
         // we do not reproduce the real function, we just want to return
         // the first and only element of the internal buffer (we do not have C like memory)
 
         // maybe we can add later on a real impl.
         var tmp = data[0];
-        var ret = descr(tmp);
+        var ret = new descr(tmp);
+        
         return ret;
     }
 
@@ -482,11 +504,14 @@ var $builtinmodule = function (name) {
         if (!PyArray_Check(mp)) {
             return mp;
         }
-
+        
         if (PyArray_NDIM(mp) == 0) {
-            var ret = PyArray_ToScalar(PyArray_DATA(mp), mp);
+           
+            var ret = PyArray_ToScalar(PyArray_DATA(mp), mp).v;
+            
             return ret; // return the only element
         } else {
+            
             return mp;
         }
     }
@@ -594,6 +619,7 @@ var $builtinmodule = function (name) {
 
     function PyArray_DATA(arr) {
         if (PyArray_Check(arr)) {
+            
             return arr.v.buffer;
         } else {
             throw new Error('Internal API-Call Error occured in PyArray_DATA.', arr);
@@ -789,6 +815,7 @@ var $builtinmodule = function (name) {
         return tmp;
     }
 
+
     // vdot function for python basic numeric types
     // https://github.com/numpy/numpy/blob/467d4e16d77a2e7c131aac53c639e82b754578c7/numpy/core/src/multiarray/vdot.c
     /*
@@ -801,6 +828,58 @@ var $builtinmodule = function (name) {
      *  ignore: not used anymore, however still existing for old api calls
      *
      */
+function OBJECT_vdot(ip1, is1, ip2, is2, op, n, ignore) {
+    function tryConjugate(pyObj) {
+        const conjAttr = pyObj.tp$getattr("conjugate");
+        if (conjAttr) {
+            return Sk.misceval.callsim(pyObj["conjugate"], pyObj);
+        } else {
+            return pyObj;
+        }
+    }
+
+    let tmp = null;
+
+    let ip1_i = 0;
+    let ip2_i = 0;
+
+    for (let i = 0; i < n; i++, ip1_i += is1, ip2_i += is2) {
+        const a = ip1[ip1_i];
+        const b = ip2[ip2_i];
+
+        if (a == null || b == null) {
+            console.log(`Element ${i}: a or b is null`);
+            continue;
+        }
+
+        const a_conj = tryConjugate(a);
+        const prod = Sk.abstr.numberBinOp(a_conj, b, 'Mult');
+        if (prod == null) {
+            console.log(`Element ${i}: product failed`);
+            continue;
+        }
+
+        if (i === 0) {
+            tmp = prod;
+        } else {
+            const sum = Sk.abstr.numberBinOp(tmp, prod, 'Add');
+            if (sum == null) {
+                console.log(`Element ${i}: sum failed`);
+                return;
+            }
+            tmp = sum;            
+        }
+    }
+
+    if (tmp != null) {
+        op[0] = tmp;        
+    } else {
+        console.log("No result to assign.");
+    }
+}
+
+
+/*
     function OBJECT_vdot(ip1, is1, ip2, is2, op, n, ignore){
         function tryConjugate(pyObj) {
             var f = pyObj.tp$getattr("conjugate");
@@ -855,7 +934,7 @@ var $builtinmodule = function (name) {
         tmp2 = tmp3;
         op[0] = tmp;
     }
-
+*/
     /**
      *  Basic dummy impl. The real numpy implementation is about 600 LoC and relies
      *  on the complete data type impl.
@@ -991,6 +1070,7 @@ var $builtinmodule = function (name) {
      *  represents the minimum type acceptable, and op represents the object that will be converted to an array.
      *  The return value is the enumerated typenumber that represents the data-type that op should have.
      */
+/*
     function PyArray_ObjectType(op, minimum_type) {
         // http://docs.scipy.org/doc/numpy/reference/c-api.array.html#c.PyArray_ResultType
         // this is only and approximate implementation and is not even close to
@@ -1017,6 +1097,47 @@ var $builtinmodule = function (name) {
             return NPY_DEFAULT_TYPE;
         }
     }
+*/
+function PyArray_ObjectType(op, minimum_type) {
+    let typecode = minimum_type;
+
+    function update_typecode(val) {        
+        if (val instanceof Sk.builtin.complex) {
+            typecode = Math.max(typecode, 3); // complex
+        } else if (val instanceof Sk.builtin.float_) {
+            typecode = Math.max(typecode, 2); // float64
+        } else if (val instanceof Sk.builtin.int_) {
+            typecode = Math.max(typecode, 1); // int32
+        } else if (val instanceof Sk.builtin.bool) {
+            typecode = Math.max(typecode, 0); // bool
+        } else if (typeof val === "number") {
+            // JavaScript number — double by default
+            typecode = Math.max(typecode, 2);
+        } else if (typeof val === "boolean") {
+            typecode = Math.max(typecode, 0);
+        } else {
+            // unknown or object
+            typecode = Math.max(typecode, 4);
+        }
+
+    }
+    var control_value = null;
+    if (Array.isArray(op)) {
+        for (let i = 0; i < op.length; ++i) {            
+            update_typecode(op[i]);
+        }
+    } else {       
+            if (op.v.buffer) {
+                control_value = op.v.buffer[0];                          
+            } else  { 
+                control_value = op.v[0];              
+            }
+            update_typecode(Sk.ffi.remapToJs(control_value));           
+        
+    }
+
+    return typecode;
+}
 
     /*
      *  A synonym for PyArray_DIMS, named to be consistent with the ‘shape’ usage within Python.
@@ -1343,12 +1464,13 @@ var $builtinmodule = function (name) {
         var _shape = new Sk.builtin.tuple(state.shape.map(function (x) {
             return new Sk.builtin.int_(x);
         }));
-
+        
         var _buffer = new Sk.builtin.list(elements);
         // create new ndarray instance
         return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, dtype,
           _buffer);
     }
+
 
     function convert_shape_to_string(n, vals, ending) {
         var i;
@@ -1580,6 +1702,7 @@ var $builtinmodule = function (name) {
         return ret;
     }
 
+
     function PyTypeNum_ISFLEXIBLE(type) {
         // ToDo: uncomment this, when we've added all types from ndarraytypes.h
         return false; //(((type) >= NPY_STRING) && ((type) <= NPY_VOID));
@@ -1696,6 +1819,7 @@ var $builtinmodule = function (name) {
         Unpacks in any form fo nested Lists,
         We need to support sequences and ndarrays here!
    **/
+ 
   function unpack(py_obj, buffer, state) {
     if (PyArray_Check(py_obj)) {
         // unpack array, easiest but slow version is to convert the array to a list
@@ -1720,6 +1844,7 @@ var $builtinmodule = function (name) {
     }
   }
 
+//
   /**
    Computes the strides for columns and rows
   **/
@@ -2213,41 +2338,80 @@ var $builtinmodule = function (name) {
     /**
       Creates left hand side operations for given binary operator
     **/
-    function makeNumericBinaryOpLhs(operation) {
-      return function (self, other) {
-        var lhs;
-        var rhs;
-        var buffer; // external
-        var _buffer; // internal use
-        var shape; // new shape of returned ndarray
-        var i;
+    
+
+const opmap = {
+    "Add": (a, b) => a.nb$add(b),
+    "Sub": (a, b) => a.nb$subtract(b),
+    "Mult": (a, b) => a.nb$multiply(b),
+    "Div":  (a, b) => {
+    // якщо об'єкти Skulpt, спробуємо nb$true_divide, інакше просто JS-ділення
+    if (a.nb$true_divide) {
+        return a.nb$true_divide(b);
+    } else {
+        // Повертаємо Python-об'єкт float_ від результату ділення чисел
+        let va = (typeof a === 'number') ? a : a.v;  // a.v — внутрішнє число в Skulpt
+        let vb = (typeof b === 'number') ? b : b.v;
+        return new Sk.builtin.float_(va / vb);
+    }
+},
+    "FloorDiv": (a, b) => a.nb$floor_divide(b),
+    "Mod": (a, b) => a.nb$remainder(b),
+    "Pow": (a, b) => a.nb$power(b),  
+    "BitXor": (a, b) => a.nb$xor(b),
+    "BitAnd": (a, b) => a.nb$and(b),
+    "BitOr": (a, b) => a.nb$or(b),
+    "LShift": (a, b) => a.nb$lshift(b),
+    "RShift": (a, b) => a.nb$rshift(b)
+};
+
+function wrapPrimitiveToSkObj(x) {
+    if (typeof x === 'number') {
+        // Конвертація в float_ (можна змінити на int_, якщо потрібно)
+        return new Sk.builtin.float_(x);
+    }
+    // Якщо вже Python-об’єкт, повертаємо як є
+    return x;
+}
+
+const makeNumericBinaryOpLhs = (opname) => {
+    const opfunc = opmap[opname];
+    return function (self, other) {
+        const lhs = PyArray_DATA(self);
+        const _buffer = [];
 
         if (PyArray_Check(other)) {
-          lhs = PyArray_DATA(self);
-          rhs = PyArray_DATA(other);
-          _buffer = [];
-          for (i = 0, len = lhs.length; i < len; i++) {
-            //_buffer[i] = operation(lhs[i], rhs[i]);
-            _buffer[i] = Sk.abstr.binary_op_(lhs[i], rhs[i], operation);
-          }
+            const rhs = PyArray_DATA(other);
+            for (let i = 0; i < lhs.length; i++) {
+                const a = wrapPrimitiveToSkObj(lhs[i]);
+                const b = wrapPrimitiveToSkObj(rhs[i]);
+                _buffer[i] = opfunc(a, b);
+            }
         } else {
-          lhs = PyArray_DATA(self);
-          _buffer = [];
-          for (i = 0, len = lhs.length; i < len; i++) {
-            _buffer[i] = Sk.abstr.numberBinOp(lhs[i], other, operation);
-          }
+            const b = wrapPrimitiveToSkObj(other);
+            for (let i = 0; i < lhs.length; i++) {
+                const a = wrapPrimitiveToSkObj(lhs[i]);
+                _buffer[i] = opfunc(a, b);
+            }
         }
 
-        // create return ndarray
-        shape = new Sk.builtin.tuple(PyArray_DIMS(self).map(function (x) {
-          return new Sk.builtin.int_(x);
-        }));
-        buffer = new Sk.builtin.list(_buffer);
-        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, PyArray_DESCR(self),
-          buffer);
-      };
-    }
+        // Оформлюємо результат
+        const shape = new Sk.builtin.tuple(PyArray_DIMS(self).map(x => new Sk.builtin.int_(x)));
+        const buffer = new Sk.builtin.list(_buffer);
 
+        // Визначаємо тип
+        let resultType = PyArray_DESCR(self);
+        for (let item of _buffer) {
+            if (item instanceof Sk.builtin.float_) {
+                resultType = Sk.builtin.float_;
+                break;
+            }
+        }
+
+        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, resultType, buffer);
+    };
+};
+    
     function makeNumericBinaryOpInplace(operation) {
         return function (self, other) {
             var lhs;
@@ -2258,7 +2422,7 @@ var $builtinmodule = function (name) {
               lhs = PyArray_DATA(self);
               rhs = PyArray_DATA(other);
               for (i = 0, len = lhs.length; i < len; i++) {
-                lhs[i] = Sk.abstr.binary_op_(lhs[i], rhs[i], operation);
+                lhs[i] = Sk.abstr.numberBinOp(lhs[i], rhs[i], operation);
               }
             } else {
               lhs = PyArray_DATA(self);
@@ -2314,8 +2478,9 @@ var $builtinmodule = function (name) {
     $loc.__mul__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Mult"));
     $loc.__rmul__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Mult"));
     $loc.__imul__ = new Sk.builtin.func(makeNumericBinaryOpInplace("Mult"));
+    $loc.__truediv__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Div"));
 
-    $loc.__div__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Div"));
+    //$loc.__div__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Div"));
     $loc.__rdiv__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Div"));
     $loc.__idiv__ = new Sk.builtin.func(makeNumericBinaryOpInplace("Div"));
 
@@ -2343,29 +2508,68 @@ var $builtinmodule = function (name) {
     $loc.__neg__ = new Sk.builtin.func(makeUnaryOp("USub"));
 
     // logical compare functions
-    $loc.__eq__ = new Sk.builtin.func(function (self, other) {
+    /*
+    $loc.__eq__ = new Sk.builtin.func(function (self, other) {        
         return Sk.misceval.callsim(mod.equal, self, other);
     });
+*/
+function allTrueFromNdarray(ndarr) {
+    var data = PyArray_DATA(ndarr);
+    for (var i = 0; i < data.length; i++) {
+        if (!Sk.misceval.isTrue(data[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 
-    $loc.__ne__ = new Sk.builtin.func(function (self, other) {
-        return Sk.misceval.callsim(mod.not_equal, self, other);
-    });
+$loc.__eq__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.equal, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
 
-    $loc.__lt__ = new Sk.builtin.func(function (self, other) {
-        return Sk.misceval.callsim(mod.less, self, other);
-    });
+$loc.__ne__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.not_equal, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
 
-    $loc.__le__ = new Sk.builtin.func(function (self, other) {
-        return Sk.misceval.callsim(mod.less_equal, self, other);
-    });
+$loc.__lt__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.less, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
 
-    $loc.__gt__ = new Sk.builtin.func(function (self, other) {
-        return Sk.misceval.callsim(mod.greater, self, other);
-    });
+$loc.__le__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.less_equal, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
 
-    $loc.__ge__ = new Sk.builtin.func(function (self, other) {
-        return Sk.misceval.callsim(mod.greater_equal, self, other);
-    });
+$loc.__gt__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.greater, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
+
+$loc.__ge__ = new Sk.builtin.func(function (self, other) {
+    var res = Sk.misceval.callsim(mod.greater_equal, self, other);
+    if (PyArray_Check(res)) {
+        return new Sk.builtin.bool(allTrueFromNdarray(res));
+    }
+    return new Sk.builtin.bool(Sk.misceval.isTrue(res));
+});
 
     /**
      Simple pow implementation that faciliates the pow builtin
@@ -2390,18 +2594,32 @@ var $builtinmodule = function (name) {
     });
 
     $loc.__abs__ = new Sk.builtin.func(function (self) {
-        Sk.builtin.pyCheckArgs("__abs__", arguments, 1, 1);
-        var _buffer = PyArray_DATA(self).map(function (value) {
-            return Sk.builtin.abs(value);
-        });
+    Sk.builtin.pyCheckArgs("__abs__", arguments, 1, 1);
 
-        var shape = new Sk.builtin.tuple(PyArray_DIMS(self).map(function (x) {
-            return new Sk.builtin.int_(x);
-        }));
+    // 🔁 Якщо передано список, перетвори на ndarray
+    if (Sk.builtin.list === self.constructor) {
+        self = Sk.misceval.callsim(mod.array, self);  // np.array([...])
+    }
 
-        buffer = new Sk.builtin.list(_buffer);
-        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, PyArray_DESCR(self), buffer);
+    // 🔒 Перевір, що self тепер дійсно ndarray
+    if (!Sk.ffi.isInstance(self, mod[CLASS_NDARRAY])) {
+        throw new Sk.builtin.TypeError("bad operand type for abs(): '" + Sk.abstr.typeName(self) + "'");
+    }
+
+    // ➗ Обчисли модуль кожного елемента
+    var _buffer = PyArray_DATA(self).map(function (value) {
+        return Sk.builtin.abs(value);
     });
+
+    var shape = new Sk.builtin.tuple(PyArray_DIMS(self).map(function (x) {
+        return new Sk.builtin.int_(x);
+    }));
+
+    var buffer = new Sk.builtin.list(_buffer);
+
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, PyArray_DESCR(self), buffer);
+});
+
 
     // reference: https://github.com/numpy/numpy/blob/41afcc3681d250f231aea9d9f428a9e197a47f6e/numpy/core/src/multiarray/shape.c#L692
     $loc.transpose = new Sk.builtin.func(function (self, args) {
@@ -2460,8 +2678,8 @@ var $builtinmodule = function (name) {
   /**
    Trigonometric functions, all element wise
   **/
-  mod.pi = Sk.builtin.float_(np.math ? np.math.PI : Math.PI);
-  mod.e = Sk.builtin.float_(np.math ? np.math.E : Math.E);
+  mod.pi = new Sk.builtin.float_(np.math ? np.math.PI : Math.PI);
+  mod.e = new Sk.builtin.float_(np.math ? np.math.E : Math.E);
   /**
   Trigonometric sine, element-wise.
   **/
@@ -2638,6 +2856,8 @@ var $builtinmodule = function (name) {
     start_num = Sk.builtin.asnum$(start) * 1.0;
     stop_num = Sk.builtin.asnum$(stop) * 1.0;
 
+
+
     if (num_num <= 0) {
       samples = [];
     } else {
@@ -2647,7 +2867,8 @@ var $builtinmodule = function (name) {
         if (num_num == 1) {
           samples = [start_num];
         } else {
-          step = (stop_num - start_num) / (num_num - 1);
+          step = (stop_num - start_num) / (num_num-1 );
+         
           samples_array = np.arange(0, num_num);
           samples = samples_array.map(function (v) {
             return v * step + start_num;
@@ -2655,7 +2876,8 @@ var $builtinmodule = function (name) {
           samples[samples.length - 1] = stop_num;
         }
       } else {
-        step = (stop_num - start_num) / num_num;
+        step = (stop_num - start_num) / (num_num-1);
+       
         samples_array = np.arange(0, num_num);
         samples = samples_array.map(function (v) {
           return v * step + start_num;
@@ -2665,11 +2887,27 @@ var $builtinmodule = function (name) {
 
     //return as ndarray! dtype:float
     var dtype = Sk.builtin.float_;
+    
+   /*
     for (i = 0; i < samples.length; i++) {
       samples[i] = Sk.misceval.callsim(dtype, samples[i]);
     }
+    */
+for (var i = 0; i < samples.length; i++) {
+    let val = samples[i];
 
-    var buffer = Sk.builtin.list(samples);
+    // Якщо val — це Sk.builtin.int_ або Sk.builtin.float_, витягни .v
+    if (val instanceof Sk.builtin.int_ || val instanceof Sk.builtin.float_) {
+        val = val.v;
+    }
+
+    // Потім створюй float_ із чистого числа
+    samples[i] = Sk.misceval.callsim(dtype, new Sk.builtin.float_(val));
+}
+
+
+//
+    var buffer = new Sk.builtin.list(samples);
     var shape = new Sk.builtin.tuple([samples.length]);
     var ndarray = Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype,
       buffer);
@@ -2685,20 +2923,66 @@ var $builtinmodule = function (name) {
     'retstep'
   ];
   linspace_f.$defaults = [0, 0, 50, true, false];
-  mod.linspace =
-    new Sk.builtin.func(linspace_f);
+  mod.linspace = new Sk.builtin.func(linspace_f);
+//
+	function unpackKWA(kwa) {
+		result = {};
+
+		for (var i = 0; i < kwa.length; i += 2) {
+			var key = Sk.ffi.remapToJs(kwa[i]);
+			var val = kwa[i + 1];
+			result[key] = val;
+		}
+		return result;
+	}
+    function parseArgs(args) {
+        var pos_args = [];
+        var kwargs = new Sk.builtin.dict();
+        for (var i = 0; i < args.length; i++) {
+            if (Array.isArray(args[i])) {                
+                kwargs = args[i];
+            } else {
+                pos_args.push(args[i]);
+            }
+        }
+      
+        var props = unpackKWA(kwargs);
+        return [pos_args,props];
+    
+    }
+//
 
   /* Simple reimplementation of the arange function
    * http://docs.scipy.org/doc/numpy/reference/generated/numpy.arange.html#numpy.arange
    */
-  var arange_f = function (start, stop, step, dtype) {
-    Sk.builtin.pyCheckArgs("arange", arguments, 1, 4);
+  var arange_f = function () { // start, stop, step, dtype
+    var args = Array.prototype.slice.call(arguments);
+    let p_args = parseArgs(args);
+    var pos_args = p_args[0]; 
+    var props = p_args[1]; 
+    var start = 0;
+    var stop  = 0;
+    var step  = 1; 
+   
+    if (pos_args.length==1) {
+          start = 0; 
+          stop = Sk.ffi.remapToJs(pos_args[0]);          
+        }
+    if (pos_args.length==2) {
+          start = Sk.ffi.remapToJs(pos_args[0]);
+          stop  = Sk.ffi.remapToJs(pos_args[1]);
+        }
+    if (pos_args.length==3) {
+          start = Sk.ffi.remapToJs(pos_args[0]);
+          stop  = Sk.ffi.remapToJs(pos_args[1]);
+          step  = Sk.ffi.remapToJs(pos_args[2]);
+        }    
     Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(
       start));
     var start_num;
     var stop_num;
     var step_num;
-
+    var dtype = Sk.builtin.int_;
     if (stop === undefined && step === undefined) {
       start_num = Sk.builtin.asnum$(0);
       stop_num = Sk.builtin.asnum$(start);
@@ -2712,7 +2996,9 @@ var $builtinmodule = function (name) {
       stop_num = Sk.builtin.asnum$(stop);
       step_num = Sk.builtin.asnum$(step);
     }
-
+    if (props.dtype){
+        dtype = props.dtype;
+    }
     // set to float
     if (!dtype || dtype == Sk.builtin.none.none$) {
       if (Sk.builtin.checkInt(start))
@@ -2721,26 +3007,29 @@ var $builtinmodule = function (name) {
         dtype = Sk.builtin.float_;
     }
 
-    // return ndarray
-    var arange_buffer = np.arange(start_num, stop_num, step_num);
-    // apply dtype casting function, if it has been provided
-    if (dtype && Sk.builtin.checkClass(dtype)) {
-      for (i = 0; i < arange_buffer.length; i++) {
-        arange_buffer[i] = Sk.misceval.callsim(dtype, arange_buffer[i]);
-      }
-    }
+    // припускаємо, що np.arange — це просто функція, яка повертає JS-масив чисел
+    var js_array = np.arange(start_num, stop_num, step_num);
 
-    buffer = Sk.builtin.list(arange_buffer);
-    var shape = new Sk.builtin.tuple([arange_buffer.length]);
-    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype,
-      buffer);
-  };
+    // Перетворити кожен елемент у об'єкт Skulpt
+    var arange_buffer = js_array.map(function(x) {
+        if (dtype === Sk.builtin.int_) {
+            return new Sk.builtin.int_(x);
+        } else {
+            return new Sk.builtin.float_(x);
+        }
+    });
 
-  arange_f.co_varnames = ['start', 'stop', 'step', 'dtype'];
-  arange_f
-    .$defaults = [0, 1, 1, Sk.builtin.none.none$];
-  mod.arange = new Sk.builtin
-    .func(arange_f);
+    // Створюємо список
+    var buffer = new Sk.builtin.list(arange_buffer);
+    var shape = new Sk.builtin.tuple([new Sk.builtin.int_(arange_buffer.length)]);
+
+    // Повертаємо ndarray
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype, buffer);   
+    };
+
+  arange_f.co_kwargs = true;
+  arange_f.$defaults = [0, 1, 1, Sk.builtin.none.none$];
+  mod.arange = new Sk.builtin.func(arange_f);
 
   /* implementation for numpy.array
     ------------------------------------------------------------------------------------------------
@@ -2785,10 +3074,9 @@ var $builtinmodule = function (name) {
     // check for ndmin param
     if (ndmin != null && Sk.builtin.checkInt(ndmin) === false) {
       throw new Sk.builtin.TypeError('Parameter "ndmin" must be of type "int"');
-    }
-
+    }    
     var py_ndarray = PyArray_FromAny(object, dtype, ndmin);
-
+  
     return py_ndarray;
   };
 
@@ -2904,8 +3192,36 @@ var $builtinmodule = function (name) {
 
     return ret;
   };
+//
+mod.abs = new Sk.builtin.func(function (x) {
+    Sk.builtin.pyCheckArgs("abs", arguments, 1, 1);
 
-  mod.abs = new Sk.builtin.func(abs_f);
+    // 🔁 Якщо передано список — перетвори на ndarray
+    if (x.constructor === Sk.builtin.list) {
+        x = Sk.misceval.callsim(mod.array, x);  // np.array([...])
+    }
+
+    // 🔒 Перевір, що x — це ndarray
+    if (!x || x.tp$name !== CLASS_NDARRAY) {
+        throw new Sk.builtin.TypeError("bad operand type for np.abs(): '" + Sk.abstr.typeName(x) + "'");
+    }
+
+    // ➗ Обчисли abs для кожного значення
+    var _buffer = PyArray_DATA(x).map(function (value) {
+        return Sk.builtin.abs(value);
+    });
+
+    var shape = new Sk.builtin.tuple(PyArray_DIMS(x).map(function (dim) {
+        return new Sk.builtin.int_(dim);
+    }));
+
+    var buffer = new Sk.builtin.list(_buffer);
+
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, PyArray_DESCR(x), buffer);
+});
+
+
+  //mod.abs = new Sk.builtin.func(abs_f);
   mod.absolute = mod.abs;
 
  var mean_f = function (x, axis, dtype, out, keepdims) {
@@ -3118,8 +3434,8 @@ var $builtinmodule = function (name) {
     }
 
     ret = MatrixProdcut2(a, b, o);
-
-    return PyArray_Return(ret);
+    
+    return PyArray_Return(ret.v.buffer[0].v);
   };
   dot_f.co_varnames = ['a', 'b', 'out'];
   dot_f.$defaults = [Sk.builtin.none.none$,
@@ -3146,7 +3462,9 @@ var $builtinmodule = function (name) {
         var vdot;
 
         typenum = PyArray_ObjectType(op1, 0);
+
         typenum = PyArray_ObjectType(op2, typenum);
+
 
         type = PyArray_DescrFromType(typenum);
 
@@ -3205,9 +3523,9 @@ var $builtinmodule = function (name) {
 
         // call vdot function with vectors
         vdot.call(null, ip1, stride1, ip2, stride2, op, n, null);
-
+      
         // return resulting ndarray
-        return PyArray_Return(ret);
+        return PyArray_Return(ret.v.buffer[0].v);
   }
   mod.vdot = new Sk.builtin.func(vdot_f);
 
@@ -3228,7 +3546,7 @@ var $builtinmodule = function (name) {
 
     // iterate over all items and compare
     for (i = 0; i < data.length; i++) {
-        b = Sk.builtin.bool(data[i]);
+        b = new Sk.builtin.bool(data[i]);
         if (b == Sk.builtin.bool.true$) {
             return Sk.builtin.bool.true$;
         }
@@ -3259,7 +3577,7 @@ var $builtinmodule = function (name) {
 
     // iterate over all items and compare
     for (i = 0; i < data.length; i++) {
-        b = Sk.builtin.bool(data[i]);
+        b = new Sk.builtin.bool(data[i]);
         if (b == Sk.builtin.bool.false$) {
             return Sk.builtin.bool.false$;
         }
@@ -3273,7 +3591,7 @@ var $builtinmodule = function (name) {
   ];
   mod.all = new Sk.builtin.func(all_f);
 
-  function compareLogical(binOp, x1, x2, out) {
+ function compareLogical(binOp, x1, x2, out) {
     var a1 = PyArray_FromAny(x1);
     var a2 = PyArray_FromAny(x2);
     var data1 = PyArray_DATA(a1);
@@ -3281,64 +3599,59 @@ var $builtinmodule = function (name) {
     var buf = [];
     var ret;
     var shape;
-    
-    // hack due to the absence of iter and array broadcasting here
-    if (!PyArray_Check(x1) && !Sk.builtin.checkSequence(x1) && !PyArray_Check(x2) && !Sk.builtin.checkSequence(x2)) {
-        return Sk.builtin.bool(Sk.misceval.richCompareBool(x1, x2, binOp))
+
+    // Якщо обидва аргументи не є масивами, повертаємо скалярний bool
+    if (!PyArray_Check(x1) && !Sk.builtin.checkSequence(x1) && 
+        !PyArray_Check(x2) && !Sk.builtin.checkSequence(x2)) {
+        return new Sk.builtin.bool(Sk.misceval.richCompareBool(x1, x2, binOp));
     }
 
-    // check shape
+    // Перевіряємо, чи можна виконати broadcasting
     if (PyArray_SIZE(a1) !== PyArray_SIZE(a2)) {
-        // try to make arrays bigger
         if (PyArray_SIZE(a1) === 1) {
-            // fill a1 to match a2
+            // Розширюємо a1 до розміру a2
             var val = data1[0];
-            var i;
-            for (i = 1; i < PyArray_SIZE(a2); i++) {
-                data1.push(val);
-            }
+            data1 = new Array(PyArray_SIZE(a2)).fill(val);
             shape = PyArray_DIMS(a2);
         } else if (PyArray_SIZE(a2) === 1) {
-            // fill a1 to match a2
+            // Розширюємо a2 до розміру a1
             var val = data2[0];
-            var i;
-            for (i = 1; i < PyArray_SIZE(a1); i++) {
-                data2.push(val);
-            }
+            data2 = new Array(PyArray_SIZE(a1)).fill(val);
             shape = PyArray_DIMS(a1);
         } else {
             throw new Sk.builtin.ValueError("operands could not be broadcast together with shapes");
         }
     } else {
-        // same shape prod size
-        // return shape of first elem
         shape = PyArray_DIMS(a1);
     }
+//
+if (out != undefined && !Sk.builtin.checkNone(out)) {
+  // Для тесту просто ігнорувати
+  // throw new ValueError('"out" parameter not supported');
+  out = null;
+}
 
-    if (out != undefined  && !Sk.builtin.checkNone(out)) {
-        throw new ValueError('"out" parameter not supported');
+/*
+    if (out !== undefined && !Sk.builtin.checkNone(out)) {
+        throw new Sk.builtin.ValueError('"out" parameter not supported');
+    }
+*/
+    // Порівнюємо елементи
+    for (var i = 0; i < data1.length; i++) {
+        buf.push(new Sk.builtin.bool(Sk.misceval.richCompareBool(data1[i], data2[i], binOp)));
     }
 
-    // iterate over all items and compare
-    for (i = 0; i < data1.length; i++) {
-        // TODO!
-        // should use iterators!
-        // but for iterators we would need to have shape broadcasting!
-        buf.push(Sk.builtin.bool(Sk.misceval.richCompareBool(data1[i], data2[i], binOp)));
-    }
-
-    // ToDo: pass in correct shape or set it afterwards
+    // Створюємо масив з результатами
     ret = PyArray_FromAny(new Sk.builtin.list(buf));
-    ret = PyArray_NewShape(ret, shape, null); // reshape to match the broadcasting behavior
+    ret = PyArray_NewShape(ret, shape, null);
 
     return PyArray_Return(ret);
-  }
-
+}
   /**
    * Basic impl. of the comparison function due to the lack of real shape broadcasting
    */
   var less_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("less", arguments, 2, 3, false);
+    Sk.builtin.pyCheckArgs("less", arguments, 2, 4, false);
     return compareLogical('Lt', x1, x2, out);
   };
   less_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3348,7 +3661,7 @@ var $builtinmodule = function (name) {
   mod.less = new Sk.builtin.func(less_f);
 
   var less_equal_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("less_equal", arguments, 2, 3, false);
+    Sk.builtin.pyCheckArgs("less_equal", arguments, 2, 4, false);
     return compareLogical('LtE', x1, x2, out);
   };
   less_equal_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3358,7 +3671,7 @@ var $builtinmodule = function (name) {
   mod.less_equal = new Sk.builtin.func(less_equal_f);
 
   var greater_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("greater", arguments, 2, 3, false);
+    Sk.builtin.pyCheckArgs("greater", arguments, 2, 4, false);
     return compareLogical('Gt', x1, x2, out);
   };
   greater_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3368,7 +3681,7 @@ var $builtinmodule = function (name) {
   mod.greater = new Sk.builtin.func(greater_f);
 
   var greater_equal_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("greater_equal", arguments, 2, 3, false);
+    Sk.builtin.pyCheckArgs("greater_equal", arguments, 2, 4, false);
     return compareLogical('GtE', x1, x2, out);
   };
   greater_equal_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3378,7 +3691,9 @@ var $builtinmodule = function (name) {
   mod.greater_equal = new Sk.builtin.func(greater_equal_f);
 
   var equal_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("equal", arguments, 2, 3, false);
+    
+    Sk.builtin.pyCheckArgs("equal", arguments, 2, 4, false);
+  
     return compareLogical('Eq', x1, x2, out);
   };
   equal_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3388,7 +3703,7 @@ var $builtinmodule = function (name) {
   mod.equal = new Sk.builtin.func(equal_f);
 
   var not_equal_f = function(x1, x2, out) {
-    Sk.builtin.pyCheckArgs("not_equal", arguments, 2, 3, false);
+    Sk.builtin.pyCheckArgs("not_equal", arguments, 2, 4, false);
     return compareLogical('NotEq', x1, x2, out);
   };
   not_equal_f.co_varnames = ['a', 'axis', 'out', 'keepdims'];
@@ -3418,7 +3733,13 @@ var $builtinmodule = function (name) {
     var i;
     var j;
     var length = Sk.ffi.remapToJs(n);
-    var value = PyArray_DESCR(b)(1);
+    
+    var dtype = b.dtype;
+    if (dtype === Sk.builtin.none.none$ || dtype === undefined) {
+        dtype = Sk.builtin.float_;
+    }
+    //var value = PyArray_DESCR(b)(1);
+    var value = Sk.misceval.callsim(dtype, new Sk.builtin.float_(1.0));
     for (i = 0, j = 0; i < length; i++, j++) {
         PyArray_DATA(b)[computeOffset(PyArray_STRIDES(b), [i, j])] = value;
     }
@@ -3449,5 +3770,8 @@ var $builtinmodule = function (name) {
       "arctan2 is not yet implemented");
   });
   mod.asarray = new Sk.builtin.func(array_f);
+  
+  
+  //mod.random = Sk.importModule("numpy.random", false).$d;
   return mod;
 };

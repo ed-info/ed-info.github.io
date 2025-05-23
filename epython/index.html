@@ -60,7 +60,10 @@
     <script src="./lib/skulpt/deps/chart.js"></script>
     <script src="./lib/skulpt/deps/p5.js"></script>
     <script src="./lib/extlibs.js"></script>
-    <script src="./lib/jsfs.js"></script>
+    <script src="./lib/jsfs.js"></script>    
+    <script src="./lib/mml-emitter.js"></script>
+  
+
     
     <!--<script src="./lib/filedialog.js"></script>-->
     <script>
@@ -86,10 +89,12 @@
     </div>
     <div id="myfilename.txt"></div>
     <script>
+
         var assets = {};
         var viewEmbed = false;
         var codeFromParam = '';
         var loadFromURL = '';
+        window.mml_stored = null;
     
         if (window.location.search !== '') {
             const params = new URL(window.location).searchParams;
@@ -99,6 +104,8 @@
             var codeParam = params.get("code");
             if (codeParam) {
                 codeParam = codeParam.replace(/\s/g, "+");
+                console.log("code:",codeParam)
+                
                 try {
                     codeFromParam = decodeURIComponent(escape(window.atob(codeParam)));
                 } catch (e) {
@@ -163,7 +170,7 @@
 
    
     </script>
-    
+
     
     <div id="hintBar" data-i18n="hint_bar"></div>
     
@@ -293,5 +300,6 @@
        
     <script src="./lib/addfuncs.js"></script> 
     <script src="./lib/main.js"></script>
+
 </body>
 </html>
