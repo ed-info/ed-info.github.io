@@ -2622,6 +2622,13 @@
 
 
         Message("Базу даних успішно імпортовано з .dta файлу.");
+        
+        updateQuickAccessPanel(
+                  getCurrentTableNames(),
+                  getCurrentQueryNames(),
+                  getCurrentReportNames(),
+                  getCurrentFormNames()
+                );
     }
 
     //
@@ -4156,11 +4163,40 @@
  function updateQuickAccessPanel(tables, qqueries, reports, forms) {
       const panel = document.getElementById("quickAccessPanel");
       const sections = [
-        { id: "quickTables", iconsId: "quickTablesIcons", items: tables, icon: "📄", openFunc: openTableByName },
-        { id: "quickQueries", iconsId: "quickQueriesIcons", items: qqueries, icon: "🔍", openFunc: editQueryByName },
-        { id: "quickReports", iconsId: "quickReportsIcons", items: reports, icon: "📝", openFunc: editReportByName },
-        { id: "quickForms", iconsId: "quickFormsIcons", items: forms, icon: "📑", openFunc: editFormByName },
-      ];
+          {
+            id: "quickTables",
+            iconsId: "quickTablesIcons",
+            items: tables,
+            icon: "📄",
+            image: "img/table-icon.png",
+            openFunc: openTableByName
+          },
+          {
+            id: "quickQueries",
+            iconsId: "quickQueriesIcons",
+            items: qqueries,
+            icon: "🔍",
+            image: "img/query-icon.png",
+            openFunc: editQueryByName
+          },
+          {
+            id: "quickReports",
+            iconsId: "quickReportsIcons",
+            items: reports,
+            icon: "📝",
+            image: "img/report-icon.png",
+            openFunc: editReportByName
+          },
+          {
+            id: "quickForms",
+            iconsId: "quickFormsIcons",
+            items: forms,
+            icon: "📑",
+            image: "img/form-icon.png",
+            openFunc: editFormByName
+          }
+        ];
+        
     
       let hasAny = false;
     
@@ -4173,7 +4209,7 @@
           container.style.display = "block";
           hasAny = true;
           section.items.forEach(name => {
-            console.log("quik=",section.id,name)
+            
             if (section.id==="quickTables") {
                 name = database.tables[name].name
             }
@@ -4182,7 +4218,11 @@
             }       
             const el = document.createElement("div");
             el.className = "quick-icon";
-            el.innerHTML = `<div class='icon'>${section.icon}</div><div>${name}</div>`;
+            el.innerHTML = `
+            <div class='icon'>
+            <img src="${section.image}" alt="icon" />
+            </div>
+            <div>${name}</div>`;
             el.onclick = () => section.openFunc(name);
             iconsContainer.appendChild(el);
           });
