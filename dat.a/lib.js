@@ -2,7 +2,7 @@
     let db = null;
     let dbToDelete = null;
     let selectedReportName = null;
-
+    closeAllModals();
     // Завантаження SQL.js
     initSqlJs({
         locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
@@ -4236,4 +4236,64 @@
       document.getElementById("startPrompt").style.display = "none";
       document.getElementById("logo-image").style.display = "none";
       document.getElementById("title-image").style.display = "block"; 
-    }   
+    }
+    
+    function openMainMenu() {
+      document.getElementById("mainMenuModal").style.display = "flex";
+    }
+    
+    function closeMainMenu() {
+      document.getElementById("mainMenuModal").style.display = "none";
+    }
+    
+    function closeAllModals() {
+      document.querySelectorAll(".modal").forEach(modal => {
+        modal.style.display = "none";
+      });
+    }
+    
+    function filesMenu() {
+      closeAllModals();
+      document.getElementById("files_Modal").style.display = "flex";
+    }
+    
+    function createMenu() {
+      closeAllModals();
+      document.getElementById("create_Modal").style.display = "flex";
+    }
+    
+    function dataMenu() {
+      closeAllModals();
+      document.getElementById("data_Modal").style.display = "flex";
+    }
+    
+    function tablesMenu() {
+      closeAllModals();
+      document.getElementById("tables_Modal").style.display = "flex";
+    }
+    
+    function queriesMenu() {
+      closeAllModals();
+      document.getElementById("queries_Modal").style.display = "flex";
+    }
+    
+    function reportsMenu() {
+      closeAllModals();
+      document.getElementById("reports_Modal").style.display = "flex";
+    }
+    
+    function formsMenu() {
+      closeAllModals();
+      document.getElementById("forms_Modal").style.display = "flex";
+    }
+    
+    function helpMenu() {
+      closeAllModals();
+      document.getElementById("help_Modal").style.display = "flex";
+    }
+    
+window.addEventListener("click", function(event) {
+  if (event.target.classList.contains("modal")) {
+    event.target.style.display = "none";
+  }
+});

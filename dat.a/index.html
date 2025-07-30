@@ -101,11 +101,11 @@
       <div class="quick-icons" id="quickFormsIcons"></div>
     </div>
   </div>
-  <div id="logo-image" class="center-image">
+  <div id="logo-image" class="center-image" onclick="openMainMenu()" style="cursor: pointer;">
     <img src="logo.png" alt="logo">
   </div>
   <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:800px; border-radius:10px;">
       <h2 id="makeTable">Створення таблиці</h2>
       <label for="tableName">Назва таблиці:</label>
@@ -129,7 +129,7 @@
     </div>
   </div>
   <div id="dbModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:500px; border-radius:10px;">
       <h2>Створення нового файлу бази даних</h2>
       <label for="dbName">Ім’я файлу (без розширення):</label>
@@ -142,7 +142,7 @@
     </div>
   </div>
   <div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px;">
       <h2 id="editTitle">Редагування таблиці</h2>
       <div style="overflow-x:auto; max-height:500px; overflow-y:auto;">
@@ -172,7 +172,7 @@
     </div>
   </div>
   <div id="storageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+      background-color: rgba(0,0,0,0.5); z-index:1002; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
       <h3>Сховище баз даних</h3>
       <ul id="storageList" style="list-style:none; padding:0;">
@@ -194,7 +194,7 @@
     </div>
   </div>
   <div id="queryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px;">
       <h2>Створення запиту</h2>
       <label for="queryName">Назва запиту:</label>
@@ -260,7 +260,7 @@
     </div>
   </div>
   <div id="savedQueriesModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
       <h3>Створені запити</h3>
       <ul id="savedQueriesList" style="list-style:none; padding:0;">
@@ -274,7 +274,7 @@
     </div>
   </div>
   <div id="savedTablesModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
       <h3>Створені таблиці</h3>
       <ul id="savedTablesList" style="list-style:none; padding:0;">
@@ -297,7 +297,7 @@
     </div>
   </div>
   <div id="reportCreatorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:90%; max-width:1200px; height:90%; border-radius:10px; display:flex; flex-direction:column;">
       <h2 id="reportTitle">Створення звіту</h2>
       <div style="margin-bottom: 15px;">
@@ -392,7 +392,7 @@
   </div>
   <!--- -->
   <div id="formCreatorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">    
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">    
     <div id="formCreatorModalContent" style="background:#fff; padding:20px; width:90%; max-width:1200px; height:90%; border-radius:10px; display:flex; flex-direction:column;">
       <h2>Конструктор форми</h2>
       <div style="margin-bottom: 15px;">
@@ -478,7 +478,7 @@
   </div>
   <!-- 🔽 Вікно перегляду створених звітів -->
   <div id="reportListModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
       <h3>Створені звіти</h3>
       <ul id="reportList" style="list-style:none; padding:0;">
@@ -493,7 +493,7 @@
   </div>
   <!-- 🔽 Вікно перегляду створених форм -->
   <div id="savedFormsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
       <h3>Створені форми</h3>
       <ul id="savedFormsList" style="list-style:none; padding:0;">
@@ -544,7 +544,184 @@
         </div>
       </div>
     </div>
-    
+<!-- Модальне вікно головного меню -->
+<div id="mainMenuModal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+">
+  <div style="
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+  ">
+    <h2 style="text-align: center; margin-bottom: 20px;">Головне меню</h2>
+    <div style="
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+    ">
+      <!-- Кнопка -->
+      <div class="menu-icon" onclick="filesMenu()">
+        <img src="img/files-menu.png" alt="Файли">
+        <div>Файли</div>
+      </div>
+
+      <div class="menu-icon" onclick="createMenu()">
+        <img src="img/create-menu.png" alt="Створити">
+        <div>Створити</div>
+      </div>
+
+      <div class="menu-icon" onclick="dataMenu()">
+        <img src="img/data-menu.png" alt="Дані">
+        <div>Дані</div>
+      </div>
+
+      <div class="menu-icon" onclick="tablesMenu()">
+        <img src="img/tables-menu.png" alt="Таблиці">
+        <div>Таблиці</div>
+      </div>
+
+      <div class="menu-icon" onclick="queriesMenu()">
+        <img src="img/queries-menu.png" alt="Запити">
+        <div>Запити</div>
+      </div>
+
+      <div class="menu-icon" onclick="reportsMenu()">
+        <img src="img/reports-menu.png" alt="Звіти">
+        <div>Звіти</div>
+      </div>
+
+      <div class="menu-icon" onclick="formsMenu()">
+        <img src="img/forms-menu.png" alt="Форми">
+        <div>Форми</div>
+      </div>
+
+      <div class="menu-icon" onclick="helpMenu()">
+        <img src="img/help-menu.png" alt="Допомога">
+        <div>Допомога</div>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 30px;">
+      <button onclick="closeMainMenu()" style="padding: 10px 20px;">Закрити</button>
+    </div>
+  </div>
+</div>    
+
+
+<!-- Файли -->
+<div id="files_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Файли</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createDbFile()"><div class="icon">🚀</div><div class="label">Нова база</div></div>
+      <div class="modal-icon" onclick="showStorageDialog()"><div class="icon">💼</div><div class="label">Сховище</div></div>
+      <div class="modal-icon" onclick="exportDTA()"><div class="icon">📦</div><div class="label">Зберегти .DTA</div></div>
+      <div class="modal-icon" onclick="document.getElementById('dtaFileInput').click()"><div class="icon">📂</div><div class="label">Відкрити .DTA</div></div>
+      <input type="file" id="dtaFileInput" style="display:none;" accept=".dta" onchange="importDTA(this.files[0])">
+      <div class="modal-icon" onclick="document.getElementById('sqliteFileInput').click()"><div class="icon">📥</div><div class="label">Імпорт sqlite</div></div>
+      <input type="file" id="sqliteFileInput" accept=".db,.sqlite" style="display:none;" onchange="importSQLiteDb(this.files[0])">
+      <div class="modal-icon" onclick="exportSQLiteDb()"><div class="icon">📤</div><div class="label">Експорт sqlite</div></div>
+      <div class="modal-icon" onclick="showCsvImportDialog()"><div class="icon">📑</div><div class="label">Імпорт CSV</div></div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCsvFile(this.files[0])">
+      <div class="modal-icon" onclick="showDatabaseInfo()"><div class="icon">ℹ️</div><div class="label">Відомості</div></div>
+      <div class="modal-icon" onclick="closeDatabase()"><div class="icon">❌</div><div class="label">Закрити БД</div></div>
+      <div class="modal-icon" onclick="exitApplication()"><div class="icon">🚪</div><div class="label">Вихід</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Створити -->
+<div id="create_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Створити</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createDbFile()"><div class="icon">🚀</div><div class="label">База даних</div></div>
+      <div class="modal-icon" onclick="createTable()"><div class="icon">📄</div><div class="label">Таблиця</div></div>
+      <div class="modal-icon" onclick="createQuery()"><div class="icon">🔍</div><div class="label">Запит</div></div>
+      <div class="modal-icon" onclick="createReport()"><div class="icon">📝</div><div class="label">Звіт</div></div>
+      <div class="modal-icon" onclick="createForm()"><div class="icon">📑</div><div class="label">Форма</div></div>
+      <div class="modal-icon" onclick="createOwnSQL()"><div class="icon">✍️</div><div class="label">SQL-запит</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Дані -->
+<div id="data_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Дані</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="showSavedTablesDialog()"><div class="icon">📚</div><div class="label">Дані таблиць</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Таблиці -->
+<div id="tables_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Таблиці</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createTable()"><div class="icon">𝄜</div><div class="label">Створити</div></div>
+      <div class="modal-icon" onclick="showSavedTablesDialog()"><div class="icon">📚</div><div class="label">Створені</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Запити -->
+<div id="queries_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Запити</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createQuery()"><div class="icon">🔍</div><div class="label">Створити</div></div>
+      <div class="modal-icon" onclick="showSavedQueriesDialog()"><div class="icon">📚</div><div class="label">Створені</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Звіти -->
+<div id="reports_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Звіти</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createReport()"><div class="icon">📝</div><div class="label">Створити</div></div>
+      <div class="modal-icon" onclick="showReportsList()"><div class="icon">📚</div><div class="label">Створені</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Форми -->
+<div id="forms_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Форми</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="createForm()"><div class="icon">📑</div><div class="label">Створити</div></div>
+      <div class="modal-icon" onclick="showSavedFormsDialog()"><div class="icon">📚</div><div class="label">Створені</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Допомога -->
+<div id="help_Modal" style="display:none;" class  ="modal">
+  <div class="modal-content">
+    <h2>Допомога</h2>
+    <div class="modal-icons">
+      <div class="modal-icon" onclick="window.open('help.html', '_blank')"><div class="icon">❓</div><div class="label">Підказка</div></div>
+      <div class="modal-icon" onclick="showAboutModal()"><div class="icon">😉</div><div class="label">Про програму</div></div>
+    </div>
+  </div>
+</div>
+
+
+
+
 
 </body>
 

@@ -113,7 +113,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: 1001;
     }
 
     .modal-content {
@@ -399,3 +399,47 @@
     .quick-icon .icon {
       font-size: 24px;
     }
+    
+  .menu-icon {
+    width: 96px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .menu-icon img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+  }
+
+  .menu-icon div {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  
+  .modal-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.modal-icon {
+  width: 96px;
+  height: 120px;
+  text-align: center;
+  cursor: pointer;
+  font-family: sans-serif;
+}
+
+.modal-icon .icon {
+  font-size: 48px;
+  line-height: 96px;
+}
+
+.modal-icon .label {
+  font-size: 14px;
+  margin-top: 6px;
+}
+
