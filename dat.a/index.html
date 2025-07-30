@@ -71,12 +71,37 @@
       </div>
     </div>
   </div>
-  <div class="title-bar" id="mainTitle"> Оберіть або створіть базу даних </div>
-  <div style="padding: 20px;">
+  <div class="title-bar" >
+    <div id="mainTitle">
+        <span>Виберіть або створіть базу даних</span>
+    </div>    
+    <img id="title-image" src="logo.png" alt="лого" class="title-image" />
+  </div>
+  <div id="startPrompt" style="padding: 20px;">
     <p>Вітаємо у вебзастосунку dat.A!</p>
     <p>Оберіть команду з меню для початку роботи.</p>
   </div>
-  <div class="center-image">
+  <!-- Панель швидкого доступу -->
+  <div id="quickAccessPanel" style="display:none; padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+    <!-- Області: будуть показані лише якщо є відповідні об'єкти -->
+    <div id="quickTables" class="quick-section" style="display: none;">
+      <h3>📄 Таблиці</h3>
+      <div class="quick-icons" id="quickTablesIcons"></div>
+    </div>
+    <div id="quickQueries" class="quick-section" style="display: none;">
+      <h3>🔍 Запити</h3>
+      <div class="quick-icons" id="quickQueriesIcons"></div>
+    </div>
+    <div id="quickReports" class="quick-section" style="display: none;">
+      <h3>📝 Звіти</h3>
+      <div class="quick-icons" id="quickReportsIcons"></div>
+    </div>
+    <div id="quickForms" class="quick-section" style="display: none;">
+      <h3>📑 Форми</h3>
+      <div class="quick-icons" id="quickFormsIcons"></div>
+    </div>
+  </div>
+  <div id="logo-image" class="center-image">
     <img src="logo.png" alt="logo">
   </div>
   <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 

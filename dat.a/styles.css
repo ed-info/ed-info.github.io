@@ -54,8 +54,20 @@
       padding: 20px;
       font-size: 24px;
       border-bottom: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
     }
-
+    
+    #title-image {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      margin-right: 20px;
+      display: none;
+    }
+    
     #editTable td,
     #editTable th {
       min-width: 100px;
@@ -358,4 +370,34 @@
       bottom: -5px;
       right: -5px;
       cursor: nwse-resize;
+    }
+
+  .quick-section h3 {
+      margin-bottom: 10px;
+    }
+    .quick-icons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .quick-icon {
+      width: 80px;
+      height: 80px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 5px;
+    }
+    .quick-icon:hover {
+      background-color: #e0e0e0;
+    }
+    .quick-icon .icon {
+      font-size: 24px;
     }

@@ -10,7 +10,8 @@
         SQL = SQLLib;
         //loadDatabase();
     });
-
+    
+    
     // Завантаження БД з localStorage або створення нової
     function loadDatabase() {
         const name = database.fileName || "my_database";
@@ -71,6 +72,13 @@
 
         queries.results = []; // Завжди очищати результати
         updateMainTitle();
+        updateQuickAccessPanel(
+                  getCurrentTableNames(),
+                  getCurrentQueryNames(),
+                  getCurrentReportNames(),
+                  getCurrentFormNames()
+                );                
+                    
     }
 
 
@@ -93,9 +101,28 @@
         localStorage.setItem(database.fileName + ".forms-data", JSON.stringify(database.forms || []));
 
         console.log("База даних збережена у localStorage");
+        updateQuickAccessPanel(
+                  getCurrentTableNames(),
+                  getCurrentQueryNames(),
+                  getCurrentReportNames(),
+                  getCurrentFormNames()
+                );                
+                    
     }
-
-
+    //
+    function getCurrentTableNames() {
+      return Object.keys(database.tables || {});
+    }
+    function getCurrentQueryNames() {
+      console.log("Queries=",queries.definitions)
+      return Object.keys(queries.definitions || {});
+    }
+    function getCurrentReportNames() {
+      return (database.reports || []).map(r => r.name);
+    }
+    function getCurrentFormNames() {
+      return (database.forms || []).map(f => f.name);
+    }
 
 
     // Структура бази даних
@@ -2667,7 +2694,58 @@
         saveDatabase();
         Message(`Форму "${formName}" збережено.`);
     }
+//
+//
+    function deleteSelectedForm() {
+        if (!selectedFormName) {
+            Message("Будь ласка, виберіть форму для видалення.");
+            return;
+        }
+        const formIndex = database.forms.findIndex(q => q.name === selectedFormName);
+        if (formIndex !== -1) {
+            const deletedFormName = database.forms[formIndex].name;
+            database.forms.splice(formIndex, 1); // Remove 
+            saveDatabase(); // Save updated
 
+            const dataMenu = document.getElementById("data-menu");
+
+            Message(`Форму "${deletedFormName}" видалено.`);
+            showSavedFormsDialog(); // Refresh the list
+        } else {
+            Message("Вибрану форму  не знайдено.");
+        }
+    }
+    //
+        function deleteSelectedQuery() {
+        if (!selectedQueryName) {
+            Message("Будь ласка, оберіть запит для видалення.");
+            return;
+        }
+        const queryIndex = queries.definitions.findIndex(q => q.name === selectedQueryName);
+        if (queryIndex !== -1) {
+            const deletedQueryName = queries.definitions[queryIndex].name;
+            queries.definitions.splice(queryIndex, 1); // Remove from definitions
+            saveDatabase(); // Save updated definitions
+
+            // Also remove any corresponding query results from `queries.results` and from the `data-menu`
+            const menuDisplayName = `*запит "${deletedQueryName}"`; // Construct the display name for the result
+            const resultIndex = queries.results.findIndex(r => r.name === `запит "${deletedQuery_name}"`); // Find the result by its internal name
+            if (resultIndex !== -1) {
+                queries.results.splice(resultIndex, 1); // Remove from results
+            }
+
+            const dataMenu = document.getElementById("data-menu");
+            const existingMenuItem = Array.from(dataMenu.children).find(item => item.textContent === menuDisplayName);
+            if (existingMenuItem) {
+                existingMenuItem.remove(); // Remove from menu
+            }
+
+            Message(`Запит "${deletedQueryName}" видалено.`);
+            showSavedQueriesDialog(); // Refresh the list
+        } else {
+            Message("Вибраний запит не знайдено.");
+        }
+    }
     //
     function editSelectedForm() {
         if (!selectedFormName) {
@@ -3737,6 +3815,7 @@
 
         updateMainTitle(); // Змінити заголовок на "Оберіть або створіть базу даних"
         Message("Базу даних закрито.");
+        updateQuickAccessPanel([], [], [], []);
     }
 
     // Вихід з програми
@@ -4050,4 +4129,71 @@
     
         printWindow.document.close();
     }
+ //
+ function openTableByName(name) {
+     console.log("edit=",database.tables[name])
+     selectedTableNameForEdit = name
+     openSelectedTable()
+     }
+ //
+ function editQueryByName(name) { 
+    console.log("edit=",name);
+    selectedQueryName = name;
+    editSelectedQuery()
+ }
+ function editReportByName(name) { 
+    console.log("edit=",name);
+    selectedReportName = name;
+    editSelectedReport()
+ }
+ function editFormByName(name) { 
+    console.log("edit=",name);
+    selectedFormName = name;
+    editSelectedForm()
+ }
+
+ // Панель швидкого доступу
+ function updateQuickAccessPanel(tables, qqueries, reports, forms) {
+      const panel = document.getElementById("quickAccessPanel");
+      const sections = [
+        { id: "quickTables", iconsId: "quickTablesIcons", items: tables, icon: "📄", openFunc: openTableByName },
+        { id: "quickQueries", iconsId: "quickQueriesIcons", items: qqueries, icon: "🔍", openFunc: editQueryByName },
+        { id: "quickReports", iconsId: "quickReportsIcons", items: reports, icon: "📝", openFunc: editReportByName },
+        { id: "quickForms", iconsId: "quickFormsIcons", items: forms, icon: "📑", openFunc: editFormByName },
+      ];
     
+      let hasAny = false;
+    
+      sections.forEach(section => {
+        const container = document.getElementById(section.id);
+        const iconsContainer = document.getElementById(section.iconsId);
+        iconsContainer.innerHTML = "";
+    
+        if (section.items && section.items.length) {
+          container.style.display = "block";
+          hasAny = true;
+          section.items.forEach(name => {
+            console.log("quik=",section.id,name)
+            if (section.id==="quickTables") {
+                name = database.tables[name].name
+            }
+            if (section.id==="quickQueries") {
+                name = queries.definitions[name].name
+            }       
+            const el = document.createElement("div");
+            el.className = "quick-icon";
+            el.innerHTML = `<div class='icon'>${section.icon}</div><div>${name}</div>`;
+            el.onclick = () => section.openFunc(name);
+            iconsContainer.appendChild(el);
+          });
+        } else {
+          container.style.display = "none";
+        }
+       
+      });
+    
+      panel.style.display = hasAny ? "flex" : "none";
+      document.getElementById("startPrompt").style.display = "none";
+      document.getElementById("logo-image").style.display = "none";
+      document.getElementById("title-image").style.display = "block"; 
+    }   
