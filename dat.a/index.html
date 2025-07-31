@@ -72,15 +72,16 @@
     </div>
   </div>
   <div class="title-bar" >
-    <div id="mainTitle">
+    <div id="mainTitle" >
         <span>Виберіть або створіть базу даних</span>
     </div>    
     <img id="title-image" src="logo.png" alt="лого" class="title-image" />
   </div>
   <div id="startPrompt" style="padding: 20px;">
-    <p>Вітаємо у вебзастосунку dat.A!</p>
-    <p>Оберіть команду з меню для початку роботи.</p>
+    <p>Вітаємо у вебзастосунку dat.A!</p>    
   </div>
+   <img src="img/launcher-icon.png" alt="Альтернативне меню"  onclick="openMainMenu()" style="cursor: pointer;width:32px;height:32px; padding: 20px; position:fixed; bottom:0;left:0;">
+    <!-- Області: будуть показані лише якщо є відповідні об'єкти" />
   <!-- Панель швидкого доступу -->
   <div id="quickAccessPanel" style="display:none; padding: 20px; display: flex; flex-direction: column; gap: 20px;">
     <!-- Області: будуть показані лише якщо є відповідні об'єкти -->
@@ -101,33 +102,59 @@
       <div class="quick-icons" id="quickFormsIcons"></div>
     </div>
   </div>
-  <div id="logo-image" class="center-image" onclick="openMainMenu()" style="cursor: pointer;">
+  <div id="logo-image" class="center-image">
     <img src="logo.png" alt="logo">
   </div>
-  <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; width:800px; border-radius:10px;">
-      <h2 id="makeTable">Створення таблиці</h2>
+<!-- Вікно створення структури таблиці-->  
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+     background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh; overflow:hidden;">
+    <!-- Лівий контейнер: назва та таблиця -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+      <h2 id="makeTable" style="margin:0;">Створення таблиці</h2>
       <label for="tableName">Назва таблиці:</label>
-      <input type="text" id="tableName" value="Неназвана таблиця" style="width:100%; padding:8px; margin-bottom:15px; font-size:16px;">
+      <input type="text" id="tableName" value="Неназвана таблиця" style="width:100%; padding:8px; font-size:16px;">
+
       <table id="schemaTable" border="1" cellpadding="5" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr>
-            <th style="width:5%;">ID</th>
+            <th style="width:5%;">🔑</th>
             <th>Назва поля</th>
             <th>Тип даних</th>
+            <th>📌</th>
+            <th id="refTableHeader" style="display:none;">Таблиця 📌</th>
+            <th id="refFieldHeader" style="display:none;">Поле 📌</th>
             <th>Коментар</th>
           </tr>
         </thead>
         <tbody id="schemaBody">
         </tbody>
       </table>
-      <br>
-      <button onclick="addSchemaRow()">Додати поле</button>
-      <button onclick="saveSchema()">Зберегти</button>
-      <button onclick="closeModal()">Закрити</button>
     </div>
+
+    <!-- Правий контейнер: кнопки вертикально -->
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:80px; align-items:center;">
+
+      <button onclick="addSchemaRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:24px;">➕</div>
+        <div>Додати<br>поле</div>
+      </button>
+
+      <button onclick="saveSchema()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:20px;">💾</div>
+        <div>Зберегти</div>
+      </button>
+
+      <button onclick="closeModal()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:20px;">❌</div>
+        <div>Закрити</div>
+      </button>
+
+    </div>
+
   </div>
+</div>
+
   <div id="dbModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
          background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:500px; border-radius:10px;">
@@ -141,11 +168,15 @@
       </div>
     </div>
   </div>
-  <div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px;">
-      <h2 id="editTitle">Редагування таблиці</h2>
-      <div style="overflow-x:auto; max-height:500px; overflow-y:auto;">
+<!-- Вікно редагування даних  таблиці-->  
+<div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+       background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh;">
+    
+    <!-- Перший контейнер: заголовок і таблиця -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+      <h2 id="editTitle" style="margin:0;">Редагування таблиці</h2>
+      <div style="overflow-x:auto; flex-grow:1;">
         <table id="editTable" border="1" cellpadding="5" style="width:100%; border-collapse:collapse; table-layout:fixed;">
           <thead id="editHead" style="background-color:#eee;">
           </thead>
@@ -153,39 +184,76 @@
           </tbody>
         </table>
       </div>
-      <br>
-      <button id="addDataRowBtn" onclick="addDataRow()">+ Додати рядок</button>
-      <button id="deleteSelectedRowBtn" onclick="deleteSelectedRow()">🗑 Видалити рядок</button>
-      <button id="saveTableDataBtn" onclick="saveTableData()">💾 Зберегти зміни</button>
-      <button onclick="closeEditModal()">❌ Закрити</button>
     </div>
+    
+    <!-- Другий контейнер: кнопки вертикально -->
+    <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start; width:64px;">
+      <button id="addDataRowBtn" class="square-btn" onclick="addDataRow()" style="width:100%;">
+        <div class="icon">+</div>
+        <div class="label">Додати рядок</div>
+      </button>
+      <button id="deleteSelectedRowBtn" class="square-btn" onclick="deleteSelectedRow()" style="width:100%;">
+        <div class="icon">🗑</div>
+        <div class="label">Видалити</div>
+      </button>
+      <button id="saveTableDataBtn" class="square-btn" onclick="saveTableData()" style="width:100%;">
+        <div class="icon">💾</div>
+        <div class="label">Зберегти</div>
+      </button>
+      <button class="square-btn" onclick="closeEditModal()" style="width:100%;">
+        <div class="icon">❌</div>
+        <div class="label">Закрити</div>
+      </button>
+    </div>
+
   </div>
+</div>
+
   <div id="messageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
          background-color: rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:400px; border-radius:10px; box-shadow: 0 0 10px #000;">
       <h3>Повідомлення</h3>
       <div id="messageContent" style="margin: 15px 0; white-space: pre-wrap; word-wrap: break-word;">
       </div>
-      <div style="text-align:right;">
-        <button onclick="closeMessage()">Закрити</button>
+      <div class="button-group" style="margin-top: 20px; text-align: right;">
+       <button onclick="closeMessage()" style="width:48px; height:48px; font-size:24px;">❌</button>    
       </div>
     </div>
   </div>
-  <div id="storageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background-color: rgba(0,0,0,0.5); z-index:1002; justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">
+  
+<div id="storageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background-color: rgba(0,0,0,0.5); z-index:1002; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:700px; height:500px; border-radius:10px; display:flex; gap:20px;">
+
+    <!-- Ліва частина: список -->
+    <div style="flex-grow:1; overflow-y:auto;">
       <h3>Сховище баз даних</h3>
-      <ul id="storageList" style="list-style:none; padding:0;">
+      <ul id="storageList" style="list-style:none; padding:0; margin:0;">
+        <!-- Динамічні елементи -->
       </ul>
-      <div style="text-align:right; margin-top:15px;">
-        <button onclick="loadSelectedDb()">Відкрити</button>
-        <button onclick="closeStorageDialog()">Скасувати</button>
-        <button onclick="confirmDeleteDb()">Видалити</button>
-      </div>
     </div>
+
+    <!-- Права частина: кнопки -->
+    <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+      <button onclick="loadSelectedDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div>📂</div>
+        <div style="font-size:12px;">Відкрити</div>
+      </button>
+      <button onclick="confirmDeleteDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div>🗑️</div>
+        <div style="font-size:12px;">Видалити</div>
+      </button>
+      <button onclick="closeStorageDialog()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div>❌</div>
+        <div style="font-size:12px;">Скасувати</div>
+      </button>
+    </div>
+
   </div>
-  <div id="deleteModal" class="modal" style="display: none; z-index: 1000;">
-    <div class="modal-content">
+</div>
+  
+  <div id="deleteModal" class="modal" style="display: none; z-index: 10001;">
+    <div class="alert-modal-content">
       <p id="deleteConfirmText">Ви дійсно хочете видалити файл?</p>
       <div style="margin-top: 1em; text-align: right;">
         <button onclick="doDeleteDb()">Видалити</button>
@@ -193,12 +261,17 @@
       </div>
     </div>
   </div>
-  <div id="queryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px;">
-      <h2>Створення запиту</h2>
+  
+<!-- Вікно створення запиту-->  
+<div id="queryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+       background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh; overflow:hidden;">
+    <!-- Лівий контейнер: вміст -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+      <h2 style="margin:0;">Створення запиту</h2>
       <label for="queryName">Назва запиту:</label>
-      <input type="text" id="queryName" value="Новий запит" style="width:100%; padding:8px; margin-bottom:15px; font-size:16px;">
+      <input type="text" id="queryName" value="Новий запит" style="width:100%; padding:8px; font-size:16px;">
+
       <table class="query-table" border="1" cellpadding="5" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr>
@@ -207,18 +280,12 @@
             <th>Видиме</th>
             <th>Упорядкування</th>
             <th>Критерій</th>
-            <th>
-            </th>
+            <th></th>
           </tr>
         </thead>
-        <tbody id="queryBody">
-        </tbody>
+        <tbody id="queryBody"></tbody>
       </table>
-      <!-- Кнопка "Додати рядок" -->
-      <div style="text-align: right; margin-top: 10px;">
-        <button onclick="addQueryRow()">Додати рядок</button>
-      </div>
-      <!-- Таблиця зв'язків -->
+
       <table id="joinBody" class="query-table" style="width: 100%; margin-top: 10px; display: none;">
         <thead>
           <tr>
@@ -226,27 +293,47 @@
             <th>Поле A</th>
             <th>Таблиця B</th>
             <th>Поле B</th>
-            <th>
-            </th>
+            <th></th>
           </tr>
         </thead>
-        <tbody>
-        </tbody>
+        <tbody></tbody>
       </table>
-      <!-- Кнопка "Додати зв'язок" -->
-      <div style="text-align: right; margin-top: 5px;">
-        <button onclick="addJoinRow()">Додати зв'язок</button>
-      </div>
-      <!-- Кнопки Зберегти / Скасувати -->
-      <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-        <button onclick="openRelationFromQuery()">Візуальний конструктор зв'язків</button>
-        <div>
-          <button onclick="generateSqlQuery()">Зберегти</button>
-          <button onclick="closeQueryModal()">Скасувати</button>
-        </div>
-      </div>
     </div>
+
+    <!-- Правий контейнер: всі кнопки вертикально, квадратні -->
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:80px; align-items:center;">
+
+      <button onclick="addQueryRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:24px; line-height:1;">+</div>
+        <div>Додати<br>рядок</div>
+      </button>
+
+      <button onclick="addJoinRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:24px; line-height:1;">🔗</div>
+        <div>Додати<br>зв'язок</div>
+      </button>
+
+      <button onclick="openRelationFromQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:20px; line-height:1;">🧩</div>
+        <div style="font-size:10px;">Конструктор<br>зв'язків</div>
+      </button>
+
+      <button onclick="generateSqlQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:20px; line-height:1;">💾</div>
+        <div>Зберегти</div>
+      </button>
+
+      <button onclick="closeQueryModal()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:20px; line-height:1;">❌</div>
+        <div>Скасувати</div>
+      </button>
+
+    </div>
+
   </div>
+</div>
+
+
   <div id="sqlModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
          background-color: rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
     <div style="background:#fff; padding:20px; width:600px; border-radius:10px; box-shadow: 0 0 10px #000;">
@@ -287,7 +374,7 @@
       </div>
     </div>
   </div>
-  <div id="deleteTableConfirmModal" class="modal" style="display: none; z-index: 1000;">
+  <div id="deleteTableConfirmModal" class="modal" style="display: none; z-index: 10005;">
     <div class="modal-content">
       <p id="deleteTableConfirmText">Ви дійсно хочете видалити таблицю?</p>
       <div style="margin-top: 1em; text-align: right;">
@@ -296,50 +383,107 @@
       </div>
     </div>
   </div>
-  <div id="reportCreatorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-         background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; width:90%; max-width:1200px; height:90%; border-radius:10px; display:flex; flex-direction:column;">
-      <h2 id="reportTitle">Створення звіту</h2>
+  
+<div id="reportCreatorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+     background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:90%; max-width:1200px; height:90%; border-radius:10px; display:flex; gap:20px; overflow:hidden;">
+
+    <!-- Лівий контейнер: вміст звіту -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow:hidden;">
+      <h2 id="reportTitle" style="margin:0;">Створення звіту</h2>
+
       <div style="margin-bottom: 15px;">
         <label for="reportNameInput">Назва звіту:</label>
         <input type="text" id="reportNameInput" value="Новий звіт" style="width:calc(100% - 100px); padding:8px; font-size:16px;">
       </div>
-      <div style="margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between;">
-        <!-- Ліва частина з кнопками + селектори -->
-        <div style="display: flex; align-items: center; gap: 10px;height:30px;">
-          <button onclick="addReportLabel()">Напис</button>
-          <button onclick="addReportField()">Поле</button>
-          <button onclick="addReportGrid()">Сітка</button>
-          <button onclick="openTextOptions()">Текст</button>
-          <div id="fieldSelectionPanel" style="display:none; width:auto; height:30px;">
-            <div style="display: flex; gap: 5px; height:30px;">
-              <select id="fieldPanelTableSelect" style="padding:5px;">
-              </select>
-              <select id="fieldPanelFieldSelect" style="padding:5px;">
-              </select>
-            </div>
-          </div>
-        </div>
-        <!-- Права частина: Кнопка "Видалити" -->
-        <div>
-          <button onclick="deleteActiveElement()" style="color: #900;">🗑️ Видалити</button>
+
+      <!-- Панель вибору поля -->
+      <div id="fieldSelectionPanel" style="display:none;">
+        <div style="display:flex; gap:5px;">
+          <select id="fieldPanelTableSelect" style="padding:5px;"></select>
+          <select id="fieldPanelFieldSelect" style="padding:5px;"></select>
         </div>
       </div>
+
+      <!-- Полотно звіту -->
       <div id="reportCanvas" style="flex-grow:1; border:1px solid #ccc; background-color:#f9f9f9; position:relative; overflow:auto;">
       </div>
-      <div style="text-align: right; margin-top: 20px;">
-        <button onclick="previewReport()">Переглянути</button>
-        <button onclick="saveReport()">Зберегти</button>
-        <button onclick="closeReportCreatorModal()">Закрити</button>
-      </div>
+    </div>
+
+    <!-- Правий контейнер: кнопки вертикально -->
+    <div style="display:flex; flex-direction:column; gap:10px; min-width:80px; align-items:center;">
+
+      <button onclick="addReportLabel()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">🔤</div>
+        <div>Напис</div>
+      </button>
+
+      <button onclick="addReportField()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">🔲</div>
+        <div>Поле</div>
+      </button>
+
+      <button onclick="addReportGrid()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">📐</div>
+        <div>Сітка</div>
+      </button>
+
+      <button onclick="openTextOptions()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">📝</div>
+        <div>Текст</div>
+      </button>
+
+      <button onclick="deleteActiveElement()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#900;">
+        <div style="font-size:20px;">🗑️</div>
+        <div>Видалити</div>
+      </button>
+
+      <button onclick="previewReport()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">👁️</div>
+        <div>Перегляд</div>
+      </button>
+
+      <button onclick="saveReport()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">💾</div>
+        <div>Зберегти</div>
+      </button>
+
+      <button onclick="closeReportCreatorModal()" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:20px;">❌</div>
+        <div>Закрити</div>
+      </button>
+
     </div>
   </div>
-  <div id="fieldSelectionPopup" style="display:none; position:absolute; z-index:10001; background-color:#ffffe0; border:1px solid #ccc; padding:8px 12px; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; text-align:center;"> Вибір поля даних </div>
-  <div id="textOptionsModal" class="modal" style="display: none;">
-    <div class="modal-content">
+</div>
+
+<div id="fieldSelectionPopup"
+     style="display:none; position:absolute; z-index:10001; background-color:#ffffe0;
+            border:1px solid #ccc; padding:8px 12px; border-radius:5px; 
+            box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; text-align:center;">
+  Вибір поля даних
+</div>
+
+<div id="textOptionsModal" class="modal" style="display: none;z-index:1006;">
+  <div class="modal-content" style="
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 20px;
+      max-width: 600px;
+      margin: 5% auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    ">
+    
+    <!-- Ліва частина -->
+    <div style="flex: 1;">
       <h3>Налаштування тексту</h3>
-      <label for="fontFamilySelect">Шрифт:</label>
-      <select id="fontFamilySelect">
+
+      <label for="fontFamilySelect">Шрифт:</label><br>
+      <select id="fontFamilySelect" style="width: 100%; margin-bottom: 10px;">
         <option value="Arial">Arial</option>
         <option value="Verdana">Verdana</option>
         <option value="Times New Roman">Times New Roman</option>
@@ -347,25 +491,41 @@
         <option value="Georgia">Georgia</option>
         <option value="Palatino Linotype">Palatino Linotype</option>
       </select>
-      <label for="fontSizeInput">Розмір (px):</label>
-      <input type="number" id="fontSizeInput" value="16" min="8" max="72">
-      <label for="fontColorInput">Колір:</label>
-      <input type="color" id="fontColorInput" value="#000000">
-      <div class="checkbox-group">
-        <label>
-          <input type="checkbox" id="fontWeightToggle"> Жирний </label>
-        <label>
-          <input type="checkbox" id="fontStyleToggle"> Курсив </label>
-        <label>
-          <input type="checkbox" id="textDecorationUnderline"> Підкреслений </label>
-        <label>
-          <input type="checkbox" id="textDecorationStrikethrough"> Закреслений </label>
+
+      <label for="fontSizeInput">Розмір (px):</label><br>
+      <input type="number" id="fontSizeInput" value="16" min="8" max="72" style="width: 100%; margin-bottom: 10px;">
+
+      <label for="fontColorInput">Колір:</label><br>
+      <input type="color" id="fontColorInput" value="#000000" style="width: 100%;">
+    </div>
+
+    <!-- Права частина -->
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="checkbox-group" style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="fontWeightToggle" style="transform: scale(2);"> Жирний
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="fontStyleToggle" style="transform: scale(2);"> Курсив
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="textDecorationUnderline" style="transform: scale(2);"> Підкреслений
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="textDecorationStrikethrough" style="transform: scale(2);"> Закреслений
+        </label>
       </div>
-      <div class="button-group">
-        <button onclick="closeTextOptionsModal()">Закрити</button>
+
+      <div class="button-group" style="margin-top: 20px; text-align: right;">
+       <button onclick="closeTextOptionsModal()" style="width:64px; height:64px; font-size:24px;">❌</button>    
       </div>
     </div>
   </div>
+</div>
+
+
+
+
   <!-- Вікно перегляду створеного звіту -->
   <div id="reportPreviewModal" class="modal" style="display:none; z-index: 20000;">
     <div class="modal-content" style="background: white; width: 90%; max-width: 1000px; position: relative;">
@@ -452,7 +612,7 @@
   <!-- 🔽 Вибір таблиці, в яку буде зроблено імпорт -->
   <div id="csvImportModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h3>Оберіть таблицю для імпорту CSV</h3>
+      <h3>Виберіть таблицю для імпорту CSV</h3>
       <select id="csvTargetTable" style="width:100%; padding:10px; font-size:16px;">
       </select>
       <div style="text-align:right; margin-top:15px;">
@@ -559,9 +719,22 @@
     background: white;
     padding: 30px;
     border-radius: 12px;
-    max-width: 800px;
+    max-width: 900px;
     width: 90%;
+    position: relative; /* для позиціонування хрестика */
   ">
+
+    <!-- Хрестик у правому верхньому куті -->
+    <div onclick="closeMainMenu()" style="
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 48px;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+    " title="Закрити">×</div>
+
     <h2 style="text-align: center; margin-bottom: 20px;">Головне меню</h2>
     <div style="
       display: flex;
@@ -610,11 +783,9 @@
         <div>Допомога</div>
       </div>
     </div>
-    <div style="text-align: center; margin-top: 30px;">
-      <button onclick="closeMainMenu()" style="padding: 10px 20px;">Закрити</button>
-    </div>
   </div>
-</div>    
+</div>
+
 
 
 <!-- Файли -->
@@ -659,7 +830,7 @@
   <div class="modal-content">
     <h2>Дані</h2>
     <div class="modal-icons">
-      <div class="modal-icon" onclick="showSavedTablesDialog()"><div class="icon">📚</div><div class="label">Дані таблиць</div></div>
+      <div class="modal-icon" onclick="showData()"><div class="icon">📚</div><div class="label">Дані таблиць</div></div>
     </div>
   </div>
 </div>
@@ -718,9 +889,16 @@
     </div>
   </div>
 </div>
-
-
-
+<!-- Вікно показу даних -->
+<div id="dataModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background-color: rgba(0,0,0,0.5); z-index:1002; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; width:400px; border-radius:10px; max-height:80%; overflow-y:auto;">  
+    <h3>Оберіть таблицю</h3>
+    <ul id="tableListInModal"></ul>
+    <button onclick="confirmOpenSelectedTable()">Відкрити</button>
+    <button onclick="document.getElementById('dataModal').style.display='none'">Скасувати</button>
+  </div>
+</div>
 
 
 </body>

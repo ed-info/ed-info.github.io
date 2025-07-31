@@ -117,6 +117,14 @@
     }
 
     .modal-content {
+      background: Aqua;
+      padding: 1.5em;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      min-width: 280px;
+      max-width: 800px;
+    }
+    .alert-modal-content {
       background: Tomato;
       padding: 1.5em;
       border-radius: 8px;
@@ -124,7 +132,6 @@
       min-width: 280px;
       max-width: 400px;
     }
-
     /* Styles for query modal */
     #queryModal .query-table th,
     #queryModal .query-table td {
@@ -442,4 +449,43 @@
   font-size: 14px;
   margin-top: 6px;
 }
+
+select {
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-family: sans-serif;
+  border-radius: 5px; /* Закруглення кутів */
+}
+ .square-btn {
+    width: 64px;
+    height: 64px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: sans-serif;
+    text-align: center;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .square-btn:hover {
+    background-color: #e0e0e0;
+  }
+
+  .square-btn .icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .square-btn .label {
+    font-size: 10px;
+    margin-top: 2px;
+  }
 
