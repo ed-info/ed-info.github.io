@@ -242,7 +242,7 @@
                         else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
                         else if (type === "ТЕКСТ") type = "TEXT";
                         else if (type === "ТАК/НІ") type = "BOOLEAN";
-                        else if (type === "ДАТА/ЧАС") type = "TEXT";
+                        else if (type === "ДАТА") type = "TEXT";
         
                         let def = `"${field.title}" ${type}`;
                         if (field.primaryKey) def += " PRIMARY KEY";
@@ -335,7 +335,7 @@
                         else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
                         else if (type === "ТЕКСТ") type = "TEXT";
                         else if (type === "ТАК/НІ") type = "BOOLEAN";
-                        else if (type === "ДАТА/ЧАС") type = "TEXT";
+                        else if (type === "ДАТА") type = "TEXT";
             
                         let def = `"${field.title}" ${type}`;
                         if (field.primaryKey) def += " PRIMARY KEY";
@@ -700,7 +700,7 @@
                 <option>Ціле число</option>
                 <option>Дробове число</option>
                 <option>Так/Ні</option>
-                <option>Дата/Час</option>
+                <option>Дата</option>
               </select>
             </td>
             <td style="text-align:center;">
@@ -913,7 +913,7 @@
                 else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
                 else if (type === "ТЕКСТ") type = "TEXT";
                 else if (type === "ТАК/НІ") type = "BOOLEAN";
-                else if (type === "ДАТА/ЧАС") type = "TEXT";
+                else if (type === "ДАТА") type = "TEXT";
             
                 let fieldDef = `"${field.title}" ${type}`;
                 if (field.primaryKey) fieldDef += " PRIMARY KEY";
@@ -926,7 +926,11 @@
             
             const fullFieldsSQL = [...fieldsSQL, ...foreignKeys].join(", ");
             const createSQL = `CREATE TABLE "${tableName}" (${fullFieldsSQL});`;
-            
+            try {
+                    db.run(createSQL);
+                    } catch (e) {
+                        console.warn("Не вдалося створити таблицю:", e, createSQL);
+                    }
         
             // 4. Вставлення спільних даних назад (за збігом імен полів)
             let newFieldNames = schema.map(f => f.title);
@@ -3995,7 +3999,7 @@
                 "Дробове число": val => /^-?\d+(\.\d+)?$/.test(val),
                 "Так/Ні": val => /^(true|false|1|0)$/i.test(val),
                 "Текст": val => true,
-                "Дата/Час": val => true // можна ускладнити перевірку
+                "Дата": val => true // можна ускладнити перевірку
             };
 
             for (let i = 0; i < rows.length; i++) {
@@ -4364,7 +4368,7 @@
                     <option ${selectedType === "Ціле число" ? "selected" : ""}>Ціле число</option>
                     <option ${selectedType === "Дробове число" ? "selected" : ""}>Дробове число</option>
                     <option ${selectedType === "Так/Ні" ? "selected" : ""}>Так/Ні</option>
-                    <option ${selectedType === "Дата/Час" ? "selected" : ""}>Дата/Час</option>
+                    <option ${selectedType === "Дата" ? "selected" : ""}>Дата</option>
                   </select>
                 </td>
                 <td style="text-align:center;">
