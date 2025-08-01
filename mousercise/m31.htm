@@ -1,0 +1,77 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="content-language" content="en-us">
+    <meta name="Author" content="Chris Rippel">
+    <title>Мишоловки</title>
+    <link rel="StyleSheet" href="m31_files/mousing.css" type="text/css">
+	<script language="JavaScript" type="text/javascript" src="images/sniffer.js"></script>
+<script language="JavaScript" type="text/javascript"> 
+<!--
+function doAlert(){
+if (confirm('Бажаєте перейти до наступної сторінки?'))
+{
+if (ns4)window.location="m33.htm";
+else window.location="m32.htm"
+}
+}
+//-->
+</script>
+<script type="text/javascript" language="JavaScript"> 
+<!--
+ 
+var mess2 = new Image(425,160);
+mess2.src="images/alertmessage.gif"
+ 
+function changePic(whichpic,theSource){
+document[whichpic].src="images/"+theSource;
+}
+ 
+function flashMessage(theimage){
+changePic("mess1","alertmessage.gif");
+setTimeout("changePic('mess1',theimage)", 15000);
+}
+ 
+// --> 
+</script>
+  </head>
+  <body>
+	   <img src="Mousercise_files/mouse.png" align="right">
+		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
+			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
+		</div>
+		<div class="mborder">
+<table width="100%">
+<tbody><tr align="left">
+<td><script language="JavaScript" type="text/javascript"> 
+<!--
+var theimage="";
+if (winvista){ theimage="alertvista.gif"}
+else if (winxp) {theimage="alertxp.gif"}
+else if (lin){theimage="alertlinux.gif"}
+else if (mac){theimage="alertosx.gif"}
+else {theimage="alert.gif"}
+ 
+var thecode='<img src="images/' + theimage + '" width="425" height="160" align="right" alt="sample alert box" name="mess1" onClick="flashMessage(theimage)" />';
+document.write(thecode);
+-->
+</script>
+Вікна сповіщень – це невеликі повідомлення, які комп’ютер розміщує на екрані
+щоб повідомити вас про важливу інформацію або поставити вам запитання щодо
+виконання завдання. Зразок зображення вікна сповіщень показано на праворуч
+ 
+<p>Коли з’явиться вікно сповіщення, ви повинні прочитати повідомлення або запитання, та відповісти, натиснувши відповідну кнопку.</p>  
+ 
+<p>Натисніть посилання нижче, щоб відкрити спливаюче вікно сповіщення, потім прочитайте повідомлення
+і натисніть відповідну кнопку у вікні сповіщення, щоб перейти до
+наступної сторінки.</p>
+<a href="javascript:doAlert()">Натисніть, щоб відкрити вікно сповіщень</a>
+</td>
+</tr>
+</tbody></table>
+  
+ 
+
+
+</body></html>

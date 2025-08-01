@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type"
+    content="text/html; charset=Utf-8" />
+    <meta http-equiv="content-language" content="en-us" />
+    <meta name="Author"
+    content="Chris Rippel" />
+    <title>Мишоловки: Сертифікат</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css" />
+
+    <script type="text/javascript" language="Javascript">
+    //<![CDATA[
+<!--
+function GetParam(name)
+{
+  var start=location.search.indexOf("?"+name+"=");
+  if (start<0) start=location.search.indexOf("&"+name+"=");
+  if (start<0) return '';
+  start += name.length+2;
+  var end=location.search.indexOf("&",start)-1;
+  if (end<0) end=location.search.length;
+  var result=location.search.substring(start,end);
+  var result='';
+  for(var i=start;i<=end;i++) {
+    var c=location.search.charAt(i);
+    result=result+(c=='+'?' ':c);
+  }
+  return unescape(result);
+}
+    //-->
+    //]]>
+    </script>
+
+  </head>
+
+  <body>
+<div class="cert1">
+<img src="images/certificate900.jpg" width="900" height="650" border="0" alt="certificate of completion" />
+</div>
+<div class="student">
+<script type="text/javascript" language="javascript">
+    //<![CDATA[
+<!--
+var theName = GetParam('fname') + '<br/> ' + GetParam('lname');
+if (theName==' ') theName="Неназвана особа";
+document.write(theName)
+    //-->
+    //]]>
+              </script>
+</div>
+</body>
+
+</html>

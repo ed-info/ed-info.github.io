@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type"
+    content="text/html; charset=utf-8" />
+    <meta http-equiv="content-language" content="en-us" />
+    <meta name="Author"
+   content="Chris Rippel">
+    <title>Мишоловки</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css" />
+
+    <script type="text/javascript" language="Javascript">
+    //<![CDATA[
+<!--
+function GetParam(name)
+{
+  var start=location.search.indexOf("?"+name+"=");
+  if (start<0) start=location.search.indexOf("&"+name+"=");
+  if (start<0) return '';
+  start += name.length+2;
+  var end=location.search.indexOf("&",start)-1;
+  if (end<0) end=location.search.length;
+  var result=location.search.substring(start,end);
+  var result='';
+  for(var i=start;i<=end;i++) {
+    var c=location.search.charAt(i);
+    result=result+(c=='+'?' ':c);
+  }
+  return unescape(result);
+}
+    //-->
+    //]]>
+    </script>
+
+  </head>
+
+<body>
+	 <img src="Mousercise_files/mouse.png" align="right">
+		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
+			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
+		</div>
+		<div class="mborder">
+
+<table width="100%" border ="0" cellspacing="0" cellpadding="10">
+<tr>
+<td valign="top" align="center"><span class="emph1">Це надзвичайний успіх!</span>  Ви пройшли всі "мишоловки". Це було не складно, чи не так?<br /><img src="images/musclemouse.gif" height="128" width="128" alt="This mouse is pumped up!"  /></td>
+<td>
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td><img src="images/certificate1.jpg" width="429" height="126" border="0" alt="certificate of completion" /></td>
+</tr>
+<tr>
+<td align="center" valign="middle" class="cert" background="images/certificate2.jpg" width="429" height="83"><script type="text/javascript" language="javascript">
+    //<![CDATA[
+<!--
+var theName = GetParam('fname') + ' ' + GetParam('lname');
+if (theName==' ') theName="Неназвана особа";
+document.write(theName)
+    //-->
+    //]]>
+              </script></td>
+</tr>
+<tr>
+<td><img src="images/certificate3.jpg" width="429" height="107" border="0" alt="certificate of completion" /></td>
+</tr>
+<tr>
+<td align="right" class="smaller">
+<script type="text/javascript" language="javascript">
+    //<![CDATA[
+<!--
+var theName2 = "<a target='cert' href='certificate.htm" +window.location.search + "'>версія для друку</a>";
+document.write(theName2)
+
+    //-->
+    //]]>
+              </script>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+<table align="center" cellpadding="10">
+<tr>
+<td align="center" colspan="2">
+Тепер ви можете закінчити роботу або повернутись на початок.</td>
+</tr>
+<tr>
+<td align="center">
+<form action="Mousercise.html">
+<input type="submit" value="Повернутись на початок" />
+</form></td>
+</tr>
+</table>
+
+  <script type="text/javascript">
+</body>
+
+</html>

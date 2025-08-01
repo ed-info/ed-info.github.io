@@ -1,0 +1,77 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="content-language" content="en-us">
+    <meta name="Author" content="Chris Rippel">
+    <title>Мишоловки</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css">
+ 
+<script type="text/javascript" language="JavaScript">
+    //<![CDATA[
+<!--
+var numChecked=0;
+var cont = new Image(132,24);
+cont.src="images/continue.gif";
+ 
+var but = new Array(10);
+but[0] = false;
+but[1] = false;
+but[2] = false;
+but[3] = false;
+but[4] = false;
+but[5] = false;
+but[6] = false;
+but[7] = false;
+but[8] = false;
+but[9] = false;
+ 
+ 
+ 
+ 
+function setCheck(theImage){
+if (but[theImage]==false){
+but[theImage] = true;
+numChecked++;
+if (numChecked==9) document.advance.src="images/continue.gif"
+}
+}
+ 
+function testChecks(){
+if (numChecked==9)
+window.location="m34.htm";
+}
+function changePic(whichpic,theSource){
+document[whichpic].src="images/"+theSource;
+}
+   //-->
+    //]]>
+        </script>
+ 
+  </head>
+ <body>
+	 <img src="Mousercise_files/mouse.png" align="right">
+		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
+			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
+		</div>
+		<div class="mborder">
+В кожному маленькому квадратику потрібно поставити позначку(checkbox). Клацніть у кожному з них, щоб продовжити.
+<br>
+<br>
+<form>
+<input type="checkbox" name="sample" onclick="setCheck(1)">Перший<br>
+<input type="checkbox" name="sample" onclick="setCheck(2)">Другий<br>
+<input type="checkbox" name="sample" onclick="setCheck(3)">Третій<br>
+<input type="checkbox" name="sample" onclick="setCheck(4)">Четвертий<br>
+<input type="checkbox" name="sample" onclick="setCheck(5)">П'ятий<br>
+<input type="checkbox" name="sample" onclick="setCheck(6)">Шостий<br>
+<input type="checkbox" name="sample" onclick="setCheck(7)">Сьомий<br>
+<input type="checkbox" name="sample" onclick="setCheck(8)">Восьмий<br>
+<input type="checkbox" name="sample" onclick="setCheck(9)">Дев'ятий<br>
+</form>
+<p><a href="javascript:testChecks()"><img src="images/spacer.gif" name="advance" alt="" width="132" height="24" border="0"></a></p>
+  
+ 
+
+
+</body></html>

@@ -1,0 +1,74 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="content-language" content="en-us">
+    <meta name="Author" content="Chris Rippel">
+    <title>Мишоловки</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css">
+<script type="text/javascript" language="JavaScript">
+    //<![CDATA[
+<!--
+var numChecked=0;
+var cont = new Image(132,24);
+cont.src="images/continue.gif";
+ 
+function setImage(numChecked){
+if (numChecked==5)
+ document.advance.src="images/continue.gif"
+else document.advance.src="images/blank.gif"
+ 
+}
+ 
+function testChecks(numChecked){
+if (numChecked==5) 
+window.location="m40.htm";
+ 
+}
+ 
+   //-->
+    //]]>
+        </script>
+  </head>
+  <body>
+	 <img src="Mousercise_files/mouse.png" align="right">
+		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
+			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
+		</div>
+		<div class="mborder">
+<table width="100%">
+<tbody><tr>
+<td>Нижче — вікно меню зі смугою прокручування. Використовуйте смугу прокручування
+у правій частині меню, щоб переглянути всі доступні параметри. Відшукайте
+  опцію «Шостий» і натисніть її для продовження.<br>
+<br>
+</td>
+</tr>
+<tr>
+<td>
+<form name="numberlist">
+Оберіть потрібне:<br>
+<select name="theChoices" onchange="setImage(this.selectedIndex)" size="4">
+<option>Перший</option>
+<option>Другий</option>
+<option>Третій</option>
+<option>Четвертий</option>
+<option>П'ятий</option>
+<option>Шостий</option>
+<option>Сьомий</option>
+<option>Восьмий</option>
+<option>Дев'ятий</option>
+</select>
+<br>
+<p><a href="javascript:testChecks(document.numberlist.theChoices.selectedIndex)"><img src="images/spacer.gif" name="advance" alt="" width="132" height="24" border="0"></a></p>
+ 
+</form>
+</td>
+</tr>
+</tbody></table>
+ 
+ 
+ 
+
+
+</body></html>

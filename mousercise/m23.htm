@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type"
+    content="text/html; charset=utf-8" />
+    <meta http-equiv="content-language" content="en-us" />
+    <meta name="Author"
+    content="Chris Rippel">
+    <title>Mousing Around: Mousercise</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css" />
+	<script language="JavaScript" type="text/javascript" src="sniffer.js"> 
+</script>
+<script type="text/javascript" language="JavaScript">
+    //<![CDATA[
+<!--
+var numChecked=0;
+var check = new Image(64,64);
+var cont = new Image(132,24);
+var button6 = new Image(128,25);
+var button7 = new Image(147,47);
+ 
+var but = new Array(8);
+but[1] = false;
+but[2] = false;
+but[3] = false;
+but[4] = false;
+but[5] = false;
+but[6] = false;
+but[7] = false;
+ 
+check.src="images/checkmark.gif";
+cont.src="images/continue.gif";
+button6.src="images/but6b.gif";
+button7.src="images/but7b.gif";
+ 
+function setCheck(theImage){
+if (but[theImage]==false){
+but[theImage] = true;
+var target = eval("document.but" + theImage);
+target.src="images/checkmark.gif";
+numChecked++;
+if (numChecked==7) document.advance.src="images/continue.gif"
+}
+}
+ 
+function testChecks(){
+if (numChecked==7)
+window.location="m24.htm";
+}
+function changePic(whichpic,theSource){
+document[whichpic].src="images/"+theSource;
+}
+   //-->
+    //]]>
+        </script>
+  </head>
+  <body>
+<div align="center">
+<table width="90%">
+<tr>
+<td colspan="4" align="center">
+Натисніть кожну з кнопок нижче, щоб перейти до наступної сторінки.<br /><br /></td>
+</tr>
+<tr>
+<td align="right" valign="middle">
+<form>
+<input type="button" value="Тисни тут!" onClick="setCheck(1)" />
+</form></td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but1" /></td>
+<td align="right" valign="middle">
+<form>
+<input type="button" value="Наступна" onClick="setCheck(2)" />
+</form></td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but2" /></td>
+</tr>
+<tr>
+<td align="right" valign="middle">
+<form>
+<input type="button" value="І тут теж!" onClick="setCheck(3)" />
+</form></td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but3" /></td>
+<td align="right" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0)\" onClick=\"setCheck(4)\"><img src=\"images/but4.gif\" width=\"60\" height=\"40\" alt=\"arrow\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/but4.gif\" width=\"60\" height=\"40\" alt=\"arrow\" onClick=\"setCheck(4)\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but4" /></td>
+</tr>
+<tr>
+<td align="right" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0)\" onClick=\"setCheck(5)\"\"><img src=\"images/but5.gif\" width=\"64\" height=\"64\" alt=\"start button\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/but5.gif\" width=\"64\" height=\"64\" alt=\"start button\" onClick=\"setCheck(5)\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but5" /></td>
+<td align="right" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0)\" onClick=\"setCheck(6)\" onMouseOver=\"changePic(\'metal\',\'but6b.gif\')\" ' + 'onMouseOut=\"changePic(\'metal\',\'but6.gif\')\"><img src=\"images/but6.gif\" width=\"128\" height=\"25\" alt=\"home\"  name=\"metal\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/but6.gif\" width=\"128\" height=\"25\" alt=\"home\" onClick=\"setCheck(6)\" onMouseOver=\"changePic(\'metal\',\'but6b.gif\')\" onMouseOut=\"changePic(\'metal\',\'but6.gif\')\" name=\"metal\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but6" /></td>
+</tr>
+<tr>
+<td align="right" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(7)\" onMouseDown=\"changePic(\'alien\',\'but7b.gif\')\" onMouseUp=\"changePic(\'alien\',\'but7.gif\')\" ' + 'onMouseOut=\"changePic(\'alien\',\'but7.gif\')\" ><img src=\"images/but7.gif\" width=\"147\" height=\"47\" alt=\"open\" name=\"alien\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/but7.gif\" width=\"147\" height=\"47\" alt=\"open\" name=\"alien\" onClick=\"setCheck(7)\" onMouseDown=\"changePic(\'alien\',\'but7b.gif\')\" ' + 'onMouseUp=\"changePic(\'alien\',\'but7.gif\')\" onMouseOut=\"changePic(\'alien\',\'but7.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle">
+<img src="images/spacer.gif" width="64" height="64" alt="" name="but7" /></td>
+<td align="center" valign="bottom" colspan="2">
+<a href="javascript:testChecks()"><img src="images/spacer.gif" width="132" height="24" name="advance" alt="" border="0" /></a></td>
+</tr>
+</table>
+</div>
+  </body>
+ 
+</html>
+
