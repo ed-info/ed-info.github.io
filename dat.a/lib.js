@@ -10,7 +10,7 @@
         SQL = SQLLib;
         //loadDatabase();
     });
-    
+   
     
     // Завантаження БД з localStorage або створення нової
     function loadDatabase() {
@@ -57,6 +57,14 @@
             } else {
                 database.forms = [];
             }
+            
+            const savedRelations = localStorage.getItem(name + ".relations-data");
+            if (savedRelations) {
+                database.relations = JSON.parse(savedRelations);
+                console.log("Зв'язки завантажено з localStorage");
+            } else {
+                database.relations = [];
+            }
 
         } else {
             db = new SQL.Database(); // створюємо нову БД, але без запитів
@@ -101,7 +109,10 @@
         console.log("Report: ",database.reports)
         // Зберігаємо форми
         localStorage.setItem(database.fileName + ".forms-data", JSON.stringify(database.forms || []));
-
+        // Зберігаємо зв'язки
+        console.log("Зберігаємо зв'язки=",database.relations)
+        localStorage.setItem(database.fileName + ".relations-data", JSON.stringify(database.relations || []));
+        
         console.log("База даних збережена у localStorage");
         updateQuickAccessPanel(
                   getCurrentTableNames(),
@@ -260,6 +271,23 @@
         // Load queries definitions
         loadDatabase() 
 
+        // 🔄 Автоматично додати зв’язки з foreign key
+        database.relations = [];
+        
+        database.tables.forEach(table => {
+            table.schema.forEach(field => {
+                if (field.foreignKey && field.refTable && field.refField) {
+                    database.relations.push({
+                        fromTable: table.name,
+                        fromField: field.title,
+                        toTable: field.refTable,
+                        toField: field.refField,
+                        readonly: true, // 👈 Це можна використовувати для стилізації як "червоний і незмінний"
+                    });
+                }
+            });
+        });
+        console.log("database.relations=",database.relations)
 
         console.log("database.tables=", database.tables)
         database.tables.forEach(t => addTableToMenu(t.name)); // 🔧 Оновити меню "Дані"
@@ -1031,7 +1059,7 @@
                 </select>
             </td>
             <td><input type="text" class="query-criteria-input"></td>
-            <td><button onclick="deleteQueryRow(this)">Видалити</button></td>
+            <td><button onclick="deleteQueryRow(this)">❌</button></td>
         `;
         tbody.appendChild(row);
         populateTableDropdownsForRow(row); // Populate table dropdown for the new row
@@ -1381,7 +1409,7 @@
                     </select>
                 </td>
                 <td><input type="text" class="query-criteria-input"></td>
-                <td><button onclick="deleteQueryRow(this)">Видалити</button></td>
+                <td><button onclick="deleteQueryRow(this)">❌</button></td>
             `;
             queryBody.appendChild(row);
 
@@ -1414,7 +1442,7 @@
                     <td><select class="join-field-a"></select></td>
                     <td><select class="join-table-b" onchange="populateJoinFields(this, false)"></select></td>
                     <td><select class="join-field-b"></select></td>
-                    <td><button onclick="this.closest('tr').remove()">✕</button></td>
+                    <td><button onclick="this.closest('tr').remove()">❌</button></td>
                 `;
                 tbody.appendChild(row);
 
@@ -1493,7 +1521,7 @@
             <td><select class="join-field-a"></select></td>
             <td><select class="join-table-b" onchange="populateJoinFields(this, false)"></select></td>
             <td><select class="join-field-b"></select></td>
-            <td><button onclick="this.closest('tr').remove()">✕</button></td>
+            <td><button onclick="this.closest('tr').remove()">❌</button></td>
         `;
         tbody.appendChild(row);
 
@@ -1711,6 +1739,7 @@
 
         reportCreatorModal.style.display = "flex";
     }
+    
     function populateFieldPanelTableSelect() {
             fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю або запит</option>";
             console.log("queries.results=",queries.results)
@@ -1783,10 +1812,9 @@
         el.style.cursor = "grab";
 
         el.onmousedown = function(e) {
-            const reportCanvas = document.getElementById("reportCanvas");
-            const fieldSelectionPanel = document.getElementById("fieldSelectionPanel");
-            const fieldSelectionPopup = document.getElementById("fieldSelectionPopup");
-
+            const reportCanvas = document.getElementById("reportCanvas");                     
+            const fieldSelectionModal = document.getElementById("fieldSelectionModal");
+            
             const handle = e.target.closest(".resize-handle");
             activeElement = el;
             document.querySelectorAll(".report-element").forEach(el => {
@@ -1795,9 +1823,7 @@
             });
             document.querySelectorAll(".report-element.selected").forEach(el => el.classList.remove("selected"));
             el.classList.add("selected");
-            addResizeHandles(el);
-            fieldSelectionPanel.style.display = "none";
-            fieldSelectionPopup.style.display = "none";
+            addResizeHandles(el);                     
             closeTextOptionsModal();
 
             const rect = el.getBoundingClientRect();
@@ -1833,11 +1859,11 @@
                     }
                 } else if (el.classList.contains("report-field")) {
                     if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                        document.getElementById("fieldSelectionPanel").style.display = "block";
+                        document.getElementById("fieldSelectionModal").style.display = "flex";
                         populateFieldSelectionPanel();
                         isDragging = false;
                     } else {
-                        fieldSelectionPanel.style.display = "none";
+                        fieldSelectionModal.style.display = "none";
                     }
                 }
             }
@@ -1849,13 +1875,11 @@
     }
 
     //*******************
-
+    function cancelFieldSelection() {
+        document.getElementById("fieldSelectionModal").style.display = "none";
+    }
     function closeReportCreatorModal() {
-        document.getElementById("reportCreatorModal").style.display = "none";
-        // Ensure the field selection panel is hidden when closing the modal
-        document.getElementById("fieldSelectionPanel").style.display = "none";
-        // Ensure the popup message is hidden when closing the modal
-        document.getElementById("fieldSelectionPopup").style.display = "none";
+        document.getElementById("reportCreatorModal").style.display = "none";                
         // Ensure grid is off when closing report creator
         document.getElementById("reportCanvas").classList.remove('grid-visible');
         isGridVisible = false;
@@ -1871,11 +1895,10 @@
     // Ensure DOM is loaded before attempting to access reportCanvas
     document.addEventListener('DOMContentLoaded', () => {
         const reportCanvas = document.getElementById("reportCanvas");
-        const fieldSelectionPanel = document.getElementById("fieldSelectionPanel");
+        const fieldSelectionModal = document.getElementById("fieldSelectionModal");        
         const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
         const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
-        const fieldSelectionPopup = document.getElementById("fieldSelectionPopup");
-
+        
 
         reportCanvas.addEventListener("mousedown", (e) => {
             // Check if the click is on an element or a resize handle
@@ -1886,8 +1909,6 @@
             document.querySelectorAll(".report-element.selected").forEach(el => {
                 el.classList.remove("selected");
             });
-            fieldSelectionPanel.style.display = "none"; // Hide panel on canvas click or new element selection
-            fieldSelectionPopup.style.display = "none"; // Hide popup on any new click
             closeTextOptionsModal(); // Close text options modal on canvas click or new element selection
 
 
@@ -1934,13 +1955,14 @@
                         }
                     } else if (activeElement.classList.contains("report-field")) {
                         if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                            // Click is inside and not near a border, show panel
-                            fieldSelectionPanel.style.display = "block";
+                            // Click is inside and not near a border, show panel                           
+                            
                             populateFieldSelectionPanel();
+                            fieldSelectionModal.style.display = "flex";
                             isDragging = false; // Prevent dragging when panel is shown for field selection
                         } else {
-                            // Click is near border, allow dragging (isDragging remains true)
-                            fieldSelectionPanel.style.display = "none"; // Ensure panel is hidden
+                            // Click is near border, allow dragging (isDragging remains true)       
+                            fieldSelectionModal.style.display = "none"; // Ensure panel is hidden
                         }
                     }
                 }
@@ -2027,7 +2049,7 @@
             }
 
             // ⛔ НЕ скидати fieldName автоматично — лише при явній зміні таблиці
-            if (activeElement && activeElement.classList.contains("report-field")) {
+            if ((activeElement && activeElement.classList.contains("report-field"))||(activeElement && activeElement.classList.contains("form-field"))) {
                 const fieldTextDiv = activeElement.querySelector('.field-text');
                 if (fieldTextDiv) {
                     // Якщо поле вже є — залишаємо, інакше оновлюємо тільки table
@@ -2043,14 +2065,14 @@
         fieldPanelFieldSelect.addEventListener("change", () => {
             const selectedTableName = fieldPanelTableSelect.value;
             const selectedFieldName = fieldPanelFieldSelect.value;
-            if (activeElement && activeElement.classList.contains("report-field") && selectedTableName && selectedFieldName) {
+            if ((activeElement && activeElement.classList.contains("report-field") && selectedTableName && selectedFieldName)||(activeElement && activeElement.classList.contains("form-field") && selectedTableName && selectedFieldName)) {
                 const fieldTextDiv = activeElement.querySelector('.field-text');
                 if (fieldTextDiv) {
                     fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
                 }
                 activeElement.dataset.tableName = selectedTableName;
                 activeElement.dataset.fieldName = selectedFieldName;
-            } else if (activeElement && activeElement.classList.contains("report-field")) {
+            } else if ((activeElement && activeElement.classList.contains("report-field"))||(activeElement && activeElement.classList.contains("report-field"))) {
                 const fieldTextDiv = activeElement.querySelector('.field-text');
                 if (fieldTextDiv) {
                     fieldTextDiv.innerText = fieldPanelTableSelect.value ? `${fieldPanelTableSelect.value}.` : "Поле даних";
@@ -2087,10 +2109,9 @@
 
     // Helper to populate the field selection panel when a report-field is selected
     function populateFieldSelectionPanel() {
-
+        const fieldSelectionModal = document.getElementById("fieldSelectionModal");
         const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
-        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
-        const fieldSelectionPopup = document.getElementById("fieldSelectionPopup");
+        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");        
         const reportCanvas = document.getElementById("reportCanvas");
 
         fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю</option>";
@@ -2126,19 +2147,7 @@
         }
 
         // Show popup message
-        if (activeElement) {
-            const activeRect = activeElement.getBoundingClientRect();
-            const canvasRect = reportCanvas.getBoundingClientRect();
 
-            // Position the popup relative to the canvas
-            fieldSelectionPopup.style.left = `${activeRect.left - canvasRect.left + activeRect.width / 2 - fieldSelectionPopup.offsetWidth / 2}px`;
-            fieldSelectionPopup.style.top = `${activeRect.top - canvasRect.top - fieldSelectionPopup.offsetHeight - 10}px`;
-            fieldSelectionPopup.style.display = "block";
-
-            setTimeout(() => {
-                fieldSelectionPopup.style.display = "none";
-            }, 3000); // Hide after 3 seconds
-        }
     }
 
 
@@ -2427,16 +2436,28 @@
         const modal = document.getElementById("relationModal");
         const canvas = document.getElementById("relationCanvas");
         canvas.innerHTML = ""; // очистити
-
+        console.log(">database.relations=",database.relations)
         relationLines = [];
         selectedFieldEl = null;
-        // зберігаємо callback
         onRelationModalClose = callback;
-
-        // створити блоки таблиць
-        const offsetX = 50,
-            offsetY = 50;         
-         
+        database.tables.forEach(table => {
+            table.schema.forEach(field => {
+                if (field.foreignKey && field.refTable && field.refField) {
+                    database.relations.push({
+                        fromTable: table.name,
+                        fromField: field.title,
+                        toTable: field.refTable,
+                        toField: field.refField,
+                        readonly: true, // 👈 Це можна використовувати для стилізації як "червоний і незмінний"
+                    });
+                }
+            });
+        });
+        console.log(">>database.relations=",database.relations)
+    
+        const offsetX = 50, offsetY = 50;
+    
+        // Створити блоки таблиць
         database.tables.forEach((table, i) => {
             const block = document.createElement("div");
             block.className = "relation-table";
@@ -2451,7 +2472,9 @@
             block.style.cursor = "move";
             block.style.padding = "0px";
             block.dataset.tableName = table.name;
-            let pkField = table.schema.find(col => col.primaryKey)?.title;   
+    
+            const pkField = table.schema.find(col => col.primaryKey)?.title;
+    
             const title = document.createElement("div");
             title.innerText = table.name;
             title.style.fontWeight = "bold";
@@ -2461,89 +2484,93 @@
             title.style.borderTopLeftRadius = "4px";
             title.style.borderTopRightRadius = "4px";
             block.appendChild(title);
-
-
+    
             const tableList = document.createElement("table");
             table.schema.forEach(field => {
                 const row = document.createElement("tr");
                 const cell = document.createElement("td");
-                // Додаємо символ ключа, якщо це первинний ключ
-                console.log("PK=",pkField ,field.title)
-                cell.innerText =  field.title+(field.title === pkField ? " 🔑 " : "");
-                
+                cell.innerText = field.title + (field.title === pkField ? " 🔑 " : "");
+    
                 cell.style.padding = "0px";
                 cell.style.border = "1px solid #ddd";
                 cell.style.cursor = "pointer";
                 cell.style.width = "178px";
                 cell.dataset.table = table.name;
                 cell.dataset.field = field.title;
-
+    
                 cell.addEventListener("click", () => handleFieldClick(cell));
-                
                 cell.addEventListener("dblclick", () => {
-                // Знайти зв’язок, у якому це поле є або from або to
-                const index = relationLines.findIndex(rel =>
-                    rel.from === cell || rel.to === cell
-                );
-                if (index !== -1) {
-                    relationLines.splice(index, 1); // видаляємо зі списку
-                    // Оновити збереження у database.relations
-                    database.relations = relationLines.map(line => ({
-                        fromTable: line.from.dataset.table,
-                        fromField: line.from.dataset.field,
-                        toTable: line.to.dataset.table,
-                        toField: line.to.dataset.field
-                    }));
-                    saveDatabase();
-                    redrawLines();
+                    const index = relationLines.findIndex(rel =>
+                        (rel.from === cell || rel.to === cell)
+                    );
+                    if (index !== -1) {
+                        const rel = relationLines[index];
+                        if (rel.readonly) {
+                            Message("Цей зв’язок є системним і не може бути видалений.");
+                            return;
+                        }
+                        relationLines.splice(index, 1);
+    
+                        // 💾 Оновити database.relations лише для ручних зв’язків
+                        const userRelations = relationLines
+                            .filter(line => !line.readonly)
+                            .map(line => ({
+                                fromTable: line.from.dataset.table,
+                                fromField: line.from.dataset.field,
+                                toTable: line.to.dataset.table,
+                                toField: line.to.dataset.field,
+                                color: line.color,
+                                readonly: false
+                            }));
+                        
+                        const readonlyRelations = database.relations.filter(rel => rel.readonly);
+                        database.relations = [...readonlyRelations, ...userRelations];
+    
+                        saveDatabase();
+                        redrawLines();
                     }
                 });
-            
-                
-                
+    
                 row.appendChild(cell);
                 tableList.appendChild(row);
             });
-
+    
             block.appendChild(tableList);
             makeDraggable(block);
             canvas.appendChild(block);
-
         });
-
-
-        // 🔁 Завантажити збережені зв'язки
+    
+        // 🔁 Відтворити збережені зв’язки
         relationLines = [];
+        console.log(">>>database.relations=",database.relations)
         if (Array.isArray(database.relations)) {
             database.relations.forEach(rel => {
                 const fromCell = [...canvas.querySelectorAll("td")]
                     .find(td => td.dataset.table === rel.fromTable && td.dataset.field === rel.fromField);
                 const toCell = [...canvas.querySelectorAll("td")]
                     .find(td => td.dataset.table === rel.toTable && td.dataset.field === rel.toField);
-
+    
                 if (fromCell && toCell) {
                     relationLines.push({
                         from: fromCell,
-                        to: toCell
+                        to: toCell,
+                        readonly: rel.readonly || false,
+                        color: rel.color || "red"
                     });
                 }
             });
         }
-        // ✅ Після того як DOM промалює таблиці
-        requestAnimationFrame(redrawLines);
-
-
-
-
+    
+        requestAnimationFrame(redrawLines); // 🖍 малюємо лінії після DOM
+    
         modal.style.display = "flex";
-
-        // обробник закриття, щоб callback виконався після збереження
+    
         modal.querySelector(".close-btn").onclick = () => {
             modal.style.display = "none";
             if (typeof callback === "function") callback();
-        }
-
+        };
     }
+    
 
     function handleFieldClick(cell) {
         if (cell.classList.contains("selected")) {
@@ -2699,7 +2726,8 @@
             const points = [p1, p2, p3, p4, p5].map(p => `${p.x},${p.y}`).join(" ");
             path.setAttribute("points", points);
             path.setAttribute("fill", "none");
-            path.setAttribute("stroke", "#3498db");
+            //path.setAttribute("stroke", "#3498db");
+            path.setAttribute("stroke", line.color || "#3498db");
             path.setAttribute("stroke-width", "2");
 
             svgEl.appendChild(path);
@@ -2892,8 +2920,7 @@
         document.getElementById("formCreatorModal").style.display = "flex";
         document.getElementById("formNameInput").value = "Нова форма";
         document.getElementById("formCanvas").innerHTML = "";
-        document.getElementById("fieldSelectionPanel1").style.display = "none";
-        document.getElementById("fieldSelectionPopup").style.display = "none";
+        document.getElementById("fieldSelectionModal").style.display = "none";        
         document.getElementById("formCanvas").classList.remove('grid-visible');
         isGridVisible = false;
 
@@ -2904,9 +2931,7 @@
     function closeFormModal() {
         document.getElementById("formCreatorModal").style.display = "none";
         // Ensure the field selection panel is hidden when closing the modal
-        document.getElementById("fieldSelectionPanel1").style.display = "none";
-        // Ensure the popup message is hidden when closing the modal
-        document.getElementById("fieldSelectionPopup").style.display = "none";
+        document.getElementById("fieldSelectionModal").style.display = "none";        
         // Ensure grid is off when closing report creator
         document.getElementById("formCanvas").classList.remove('grid-visible');
         isGridVisible = false;
@@ -3496,11 +3521,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const formCanvas = document.getElementById("formCanvas");
-        const fieldSelectionPanel = document.getElementById("fieldSelectionPanel1");
-        const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect1");
-        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect1");
-        const fieldSelectionPopup = document.getElementById("fieldSelectionPopup");
-
+        const fieldSelectionModal = document.getElementById("fieldSelectionModal");
+        const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
+        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
+        
         formCanvas.addEventListener("mousedown", (e) => {
             const element = e.target.closest(".form-element");
             const handle = e.target.closest(".resize-handle");
@@ -3509,8 +3533,7 @@
 
 
             document.querySelectorAll(".form-element.selected").forEach(el => el.classList.remove("selected"));
-            fieldSelectionPanel.style.display = "none";
-            fieldSelectionPopup.style.display = "none";
+            fieldSelectionModal.style.display = "none";
             closeTextOptionsModal();
 
             if (element) {
@@ -3551,12 +3574,12 @@
                         }
                     } else if (activeElement.classList.contains("form-field")) {
                         if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                            fieldSelectionPanel.style.display = "block";
-                            populateFieldSelectionPanel1();
-                            console.log("Ppp")
+                            fieldSelectionModal.style.display = "flex";
+                            populateFieldSelectionPanel();
+                            
                             isDragging = false;
                         } else {
-                            fieldSelectionPanel.style.display = "none";
+                            fieldSelectionModal.style.display = "none";
                         }
                     }
                 }
@@ -3689,61 +3712,6 @@
     });
 
 
-    // Helper to populate the field selection panel when a report-field is selected
-    function populateFieldSelectionPanel1() {
-        const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect1");
-        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect1");
-        const fieldSelectionPopup = document.getElementById("fieldSelectionPopup");
-        const formCanvas = document.getElementById("formCanvas");
-
-        // ⛔ Видаляємо всі опції окрім першої
-        fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю</option>";
-
-        // ✅ Додаємо лише якщо таблиці існують і мають правильну структуру
-        if (Array.isArray(database.tables)) {
-            database.tables.forEach((table, index) => {
-                const tableName = table?.name ?? table;
-
-                const option = document.createElement("option");
-                option.value = tableName;
-                option.textContent = tableName;
-
-                fieldPanelTableSelect.appendChild(option);
-            });
-        } else {
-            console.warn("⚠️ database.tables не є масивом");
-        }
-
-        // 📌 Встановлюємо вибране значення, якщо вже є
-        if (activeElement?.dataset.tableName) {
-            fieldPanelTableSelect.value = activeElement.dataset.tableName;
-            fieldPanelTableSelect.dispatchEvent(new Event("change")); // завантажити поля
-        } else {
-            fieldPanelTableSelect.value = "";
-        }
-
-        if (activeElement?.dataset.fieldName) {
-            fieldPanelFieldSelect.value = activeElement.dataset.fieldName;
-        } else {
-            fieldPanelFieldSelect.value = "";
-        }
-
-        // Виводимо підказку
-        if (activeElement) {
-            const activeRect = activeElement.getBoundingClientRect();
-            const canvasRect = formCanvas.getBoundingClientRect();
-
-            fieldSelectionPopup.style.left = `${activeRect.left - canvasRect.left + activeRect.width / 2 - fieldSelectionPopup.offsetWidth / 2}px`;
-            fieldSelectionPopup.style.top = `${activeRect.top - canvasRect.top - fieldSelectionPopup.offsetHeight - 10}px`;
-            fieldSelectionPopup.style.display = "block";
-
-            setTimeout(() => {
-                fieldSelectionPopup.style.display = "none";
-            }, 3000);
-        }
-    }
-
-
     document.addEventListener("click", (e) => {
         const el = e.target.closest(".form-element");
         if (el) {
@@ -3811,45 +3779,61 @@
             Message("Файл не вибрано.");
             return;
         }
-
+    
         const reader = new FileReader();
-
+    
         reader.onload = function(event) {
             const arrayBuffer = event.target.result;
             const uIntArray = new Uint8Array(arrayBuffer);
-
+    
             try {
                 const importedDb = new SQL.Database(uIntArray);
-
+    
                 const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
                 const fileName = nameWithoutExt;
-
+    
                 // Зберігаємо файл в localStorage
                 const base64 = btoa(String.fromCharCode(...uIntArray));
                 localStorage.setItem(fileName + ".db-data", base64);
-
+    
                 // Очищаємо поточну пам’ять
                 database.fileName = fileName;
                 database.tables = [];
+                database.relations = []; // 🆕
                 queries.definitions = [];
                 queries.results = [];
+                database.forms = [];
+                database.reports = [];
                 db = importedDb;
-
+    
                 const dataMenu = document.getElementById("data-menu");
                 dataMenu.innerHTML = "";
-
+    
                 const res = db.exec("SELECT name, sql FROM sqlite_master WHERE type='table';");
                 if (res.length > 0) {
                     const tableRows = res[0].values;
                     tableRows.forEach(([name]) => {
                         if (name.startsWith("sqlite_")) return;
-                    
+    
                         const pragmaRes = db.exec(`PRAGMA table_info("${name}")`);
                         if (!pragmaRes.length) return;
-                    
+                        
                         const columns = pragmaRes[0].values;
-                    
+                        
+                        // 🆕 Зчитуємо зовнішні ключі
+                        const fkRes = db.exec(`PRAGMA foreign_key_list("${name}")`);
+                        const foreignKeys = fkRes.length ? fkRes[0].values.map(([id, seq, refTable, fromCol, toCol]) => ({
+                            fromCol, refTable, toCol
+                        })) : [];
+                        
+                        // Формуємо схему
                         const schema = columns.map(([cid, title, type, notnull, dflt_value, pk]) => {
+                           
+                            const fk = foreignKeys.find(f => f.fromCol === title);
+                            if (!(fk ===undefined)) {
+                                console.log("FK import=", title,foreignKeys)
+                                console.log("fk.refTable import=", fk.refTable)
+                                console.log("fk.toCol import=", fk.toCol) }
                             return {
                                 title,
                                 type: type.toUpperCase() === "INTEGER" ? "Ціле число"
@@ -3858,44 +3842,73 @@
                                     : type.toUpperCase().includes("BOOL") ? "Так/Ні"
                                     : type,
                                 primaryKey: pk === 1,
-                                comment: pk === 1 ? "Первинний ключ" : ""
+                                comment: pk === 1 ? "Первинний ключ" : "",
+                                foreignKey: !!fk,
+                                refTable: fk ? fk.refTable : null,
+                                refField: fk ? fk.toCol : null
                             };
                         });
-                    
+    
                         const selectRes = db.exec(`SELECT * FROM "${name}"`);
                         const dataRows = selectRes.length ? selectRes[0].values : [];
-                    
+                        console.log("Schema=",schema)
                         database.tables.push({
                             name: name,
                             schema: schema,
                             data: dataRows
                         });
                     });
-                    
                 }
-
-                // Збереження без запитів, але для консистентності
-                localStorage.setItem(fileName + ".queries-data", JSON.stringify([]));
-                database.relations = [];
-                database.forms = [];
-                database.reports = [];
-
+    
+                // 🆕 Додати зовнішні ключі до database.relations
+                const fkTables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                if (fkTables.length > 0) {
+                    fkTables[0].values.forEach(([tableName]) => {
+                        const fkRes = db.exec(`PRAGMA foreign_key_list("${tableName}")`);
+                        if (!fkRes.length) return;
+    
+                        fkRes[0].values.forEach(fk => {
+                            const [, , refTable, fromCol, toCol] = fk;
+    
+                            // Уникаємо дублювання
+                            const exists = database.relations.some(r =>
+                                r.fromTable === tableName &&
+                                r.fromField === fromCol &&
+                                r.toTable === refTable &&
+                                r.toField === toCol
+                            );
+    
+                            if (!exists) {
+                                database.relations.push({
+                                    fromTable: tableName,
+                                    fromField: fromCol,
+                                    toTable: refTable,
+                                    toField: toCol,
+                                    color: "red",
+                                    readonly: true
+                                });
+                            }
+                        });
+                    });
+                }
+    
                 database.tables.forEach(t => addTableToMenu(t.name));
                 updateMainTitle();
                 Message("Базу даних імпортовано та збережено як '" + fileName + "'.");
                 updateQuickAccessPanel(
-                          getCurrentTableNames(),
-                          getCurrentQueryNames(),
-                          getCurrentReportNames(),
-                          getCurrentFormNames()
-                        ); 
+                    getCurrentTableNames(),
+                    getCurrentQueryNames(),
+                    getCurrentReportNames(),
+                    getCurrentFormNames()
+                );
             } catch (e) {
                 Message("Помилка при імпорті: " + e.message);
             }
         };
-
+    
         reader.readAsArrayBuffer(file);
     }
+    
     // експорт в базу даних SQLite
     function exportSQLiteDb() {
         if (!db) {
@@ -4196,7 +4209,7 @@
         activeElement = null;
 
         // Закрити додаткові панелі
-        document.getElementById("fieldSelectionPanel").style.display = "none";
+        document.getElementById("fieldSelectionModal").style.display = "none";
         closeTextOptionsModal();
     }
     // Ручне створення SQL-запиту
@@ -4305,7 +4318,8 @@
         const tbody = document.getElementById("schemaBody");
         tbody.innerHTML = "";
         document.getElementById("tableName").value = tableToEdit.name;
-    
+        tableList = database.tables.map(t => t.name); // <-- важливо
+        console.log("**1tableList=",tableList)
         // створити список таблиць (для FK)
         const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
     
@@ -4315,10 +4329,11 @@
             const isPrimary = field.primaryKey ? 'checked' : '';
             const isForeign = field.foreignKey ? 'checked' : '';
             const selectedType = field.type || "Текст";
-            const fkTable = field.fkTable || "";
-            const fkField = field.fkField || "";
+            const fkTable = field.refTable || "";
+            const fkField = field.refField || "";
             const comment = field.comment || "";
-    
+            console.log("**1FK=",fkTable,fkField)
+            console.log("**1tableOptions=",tableOptions)
             // підготовка селектора таблиць FK
             const tableSelectHtml = `
               <select onchange="updateFieldOptions(this)" ${isForeign ? "" : "disabled"}>
@@ -4326,7 +4341,7 @@
                 ${tableOptions.replace(`value="${fkTable}"`, `value="${fkTable}" selected`)}
               </select>
             `;
-    
+            console.log("**tableSelectHtml=",tableSelectHtml)
             // підготовка селектора полів FK
             const fkFieldOptions = getFieldsForTable(fkTable).map(f =>
                 `<option value="${f}" ${f === fkField ? "selected" : ""}>${f}</option>`).join("");
@@ -4528,7 +4543,7 @@
     function openMainMenu() {
       document.getElementById("mainMenuModal").style.display = "flex";
     }
-    
+
     function closeMainMenu() {
       document.getElementById("mainMenuModal").style.display = "none";
     }
@@ -4635,3 +4650,21 @@ function showData() {
         openSelectedTable(); // Твоя функція для відкриття
     }
     
+function showLogoImage() {
+  const logo = document.createElement("div");
+  logo.id = "logo-image";
+  logo.style.position = "absolute";
+  logo.style.left = "50%";
+  logo.style.top = "50%";
+  logo.style.transform = "translate(-50%, -50%)";
+  logo.style.zIndex = "1"; // щоб було поверх іншого
+
+  const img = document.createElement("img");
+  img.src = "logo.png";
+  img.alt = "logo";
+  img.style.width = "280px"; //  бажаний розмір
+
+  logo.appendChild(img);
+  document.body.appendChild(logo);
+}
+
