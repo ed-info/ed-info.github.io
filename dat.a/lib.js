@@ -452,10 +452,51 @@
                 select.addEventListener("change", () => {
                     rowData[index] = select.value;
                 });
+            } else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
+                const select = document.createElement("select");
+            
+                const optionYes = document.createElement("option");
+                optionYes.value = "1";
+                optionYes.textContent = "Так";
+                select.appendChild(optionYes);
+            
+                const optionNo = document.createElement("option");
+                optionNo.value = "0";
+                optionNo.textContent = "Ні";
+                select.appendChild(optionNo);
+            
+                select.value = cellData == 1 ? "1" : "0"; // встановити початкове значення
+            
+                select.disabled = isQueryTable;
+                td.appendChild(select);
+            
+                // Зберігаємо зміну в масиві даних
+                select.addEventListener("change", () => {
+                    rowData[index] = Number(select.value);
+                });
+            } else if (col.type === "Дата") {
+                const input = document.createElement("input");
+                input.type = "date";
+            
+                // Якщо в комірці вже є дата — використовуємо її, інакше — поточну
+                console.log("cellData =",cellData )
+                let value = typeof cellData === "string" && cellData.match(/^\d{4}-\d{2}-\d{2}$/)
+                    ? cellData
+                    : new Date().toISOString().split("T")[0];
+            
+                input.value = value;
+                input.disabled = isQueryTable;
+                td.appendChild(input);
+            
+                // Зберігаємо зміну у rowData
+                input.addEventListener("change", () => {
+                    rowData[index] = input.value;
+                });
+            
+                // Встановлюємо початкове значення
+                rowData[index] = input.value;
             }
-            
-            
-                else {
+            else {
                     td.innerText = cellData ?? "";
                     td.contentEditable = !isQueryTable && !isPrimaryKey;
                     if (!isQueryTable && isPrimaryKey) td.classList.add("pk");
@@ -529,10 +570,36 @@
     
                 td.appendChild(select);
             }
-            else {
+            else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
+                const select = document.createElement("select");
+            
+                const optionYes = document.createElement("option");
+                optionYes.value = "1";
+                optionYes.textContent = "Так";
+                select.appendChild(optionYes);
+            
+                const optionNo = document.createElement("option");
+                optionNo.value = "0";
+                optionNo.textContent = "Ні";
+                select.appendChild(optionNo);
+            
+                td.appendChild(select);
+            } else if (col.type === "Дата") {
+                const input = document.createElement("input");
+                input.type = "date";
+            
+                // Значення за замовчуванням — сьогоднішня дата
+                const today = new Date().toISOString().split("T")[0];
+                input.value = today;
+            
+                td.appendChild(input);           
+
+            }
+             else {
                 td.contentEditable = "true";
                 td.innerText = "";
             }
+            
     
             td.addEventListener("click", () => {
                 selectedCell = td;
@@ -589,11 +656,20 @@
                 const cell = cells[index];
                 let val = "";
     
+                // 1. Якщо є <select> — беремо значення з нього
                 const select = cell.querySelector("select");
                 if (select) {
-                    val = select.value; // якщо є <select>, беремо його значення (FK)
-                } else {
-                    val = cell.innerText.trim(); // інакше — звичайний текст
+                    val = select.value;
+                }
+                // 2. Якщо є <input type="date"> — беремо його значення
+                else {
+                    const input = cell.querySelector("input[type='date']");
+                    if (input) {
+                        val = input.value;
+                    } else {
+                        // 3. Інакше беремо звичайний текст
+                        val = cell.innerText.trim();
+                    }
                 }
     
                 if (val !== "") allEmpty = false;
@@ -617,6 +693,7 @@
         Message("Дані збережено.");
         closeEditModal();
     }
+    
     
 
 
@@ -4654,21 +4731,5 @@ function showData() {
         openSelectedTable(); // Твоя функція для відкриття
     }
     
-function showLogoImage() {
-  const logo = document.createElement("div");
-  logo.id = "logo-image";
-  logo.style.position = "absolute";
-  logo.style.left = "50%";
-  logo.style.top = "50%";
-  logo.style.transform = "translate(-50%, -50%)";
-  logo.style.zIndex = "1"; // щоб було поверх іншого
 
-  const img = document.createElement("img");
-  img.src = "logo.png";
-  img.alt = "logo";
-  img.style.width = "280px"; //  бажаний розмір
-
-  logo.appendChild(img);
-  document.body.appendChild(logo);
-}
 
