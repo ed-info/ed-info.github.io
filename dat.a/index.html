@@ -5,6 +5,7 @@
 	<meta charset="UTF-8">
 	<title>dat.A: the power of data</title>
 	<link rel="stylesheet" href="styles.css"> </head>
+   
 <script>
 window.mobileCheck = function() {
   let check = false;
@@ -86,7 +87,13 @@ if (!isMobile){
             showLogoImage(); // додаємо логотип у центр
         }, 3000);
     };
- }   
+ } else {
+     window.onload = () => {
+         parts.forEach(part => {
+                document.getElementById(part.id).style.display = "none";
+            });
+      }
+     }  
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js">
 </script>
@@ -429,7 +436,7 @@ if (!isMobile){
 	</div>
 	<div id="savedTablesModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
          background-color: rgba(0,0,0,0.5); z-index:10005; justify-content:center; align-items:center;">
-		<div style="background:#fff; padding:20px; border-radius:10px; max-height:80%; display: flex; flex-direction: row; gap: 30px;">
+		<div style="background:#fff; padding:20px; border-radius:10px; max-height:50%; display: flex; flex-direction: row; gap: 30px;">
 			<!-- Ліва частина — текст + список -->
 			<div style="display: flex; flex-direction: column; max-height: 60vh; overflow-y: auto;">
 				<h3 style="margin-top: 0;">Збережені таблиці</h3>
