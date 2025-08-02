@@ -97,7 +97,9 @@
       background-color: #f0f0f0;
       font-weight: bold;
     }
-
+    #editBody td {
+        font-weight: normal;
+    }
     .center-image {
       text-align: center;
       margin-top: 5%;

@@ -432,17 +432,37 @@
                     const refIdIndex = refTableObj.schema.findIndex(f => f.primaryKey); // де id
                     const refTextIndex = refTableObj.schema.findIndex(f => f.title === refFieldName); // де name
                     //console.log("refId=",refIdIndex, refRow[refIdIndex],refRow[refTextIndex])
-                    if (refIdIndex !== -1 && refTextIndex !== -1) {
-                        refTableObj.data.forEach(refRow => {
-                            const option = document.createElement("option");
-                            option.value = refRow[refIdIndex]; // буде зберігатись у полі phones.name
-                            option.textContent = refRow[refTextIndex]; // показується в списку
-                            select.appendChild(option);
-                        });
-            
-                        // Встановлюємо обране значення з таблиці (наприклад, 2 → "Іван")
-                        select.value = cellData;
+                    
+                    if (refTableObj) {
+                        const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
+                        const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
+                        
+                        let refTextIndex = -1;
+                        if (refFieldObj) {
+                            if (refFieldObj.type === "Текст") {
+                                // показуємо значення самого refField
+                                refTextIndex = refIdIndex;
+                            } else if (refFieldObj.type === "Ціле число") {
+                                // шукаємо поле з таким самим title, як у поточної колонки
+                                refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
+                            }
+                        }
+                    
+                        if (refIdIndex !== -1 && refTextIndex !== -1) {
+                            refTableObj.data.forEach(refRow => {
+                                const option = document.createElement("option");
+                                option.value = refRow[refIdIndex];         // буде зберігатися як FK
+                                option.textContent = refRow[refTextIndex]; // відображається в списку
+                                select.appendChild(option);
+                            });
+                    
+                            // Встановлюємо поточне значення
+                            select.value = cellData;
+                        }
                     }
+                    
+                
+                
                 }
             
                 td.appendChild(select);
@@ -528,8 +548,9 @@
     
         currentEditTable.schema.forEach((col, index) => {
             const td = document.createElement("td");
+            console.log("Add data row, col=",col)
     
-            if (col.primaryKey) {
+            if ((col.primaryKey)&&(col.type=="Ціле число")) {
                 // Знайти найбільше значення PK у колонці
                 let max = 0;
                 const rows = tbody.querySelectorAll("tr");
@@ -541,35 +562,39 @@
                 td.contentEditable = "false";
             }
             else if (col.foreignKey && col.refTable && col.refField) {
-                // Створити <select> із варіантами зі зв’язаної таблиці
                 const select = document.createElement("select");
-    
-                // Знайти таблицю-джерело для FK
+            
                 const refTableObj = database.tables.find(t => t.name === col.refTable);
                 if (refTableObj) {
-                    // Зібрати всі значення refField зі зв’язаної таблиці
-                    // Звернемо увагу, що у FK в таблиці зберігається індекс (PK),
-                    // але для додавання нового рядка поки виводимо текстові значення для вибору
-                    const refFieldName = col.title; // поле поточної таблиці (наприклад: "name")
-                    const refIdIndex = refTableObj.schema.findIndex(f => f.primaryKey); // де id
-                    const refTextIndex = refTableObj.schema.findIndex(f => f.title === refFieldName); 
-                    console.log("**refId=",refFieldName, refIdIndex,refTextIndex,refTableObj)
-                    const refFieldIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-    
+                    const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
+                    const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
+            
+                    let refTextIndex = -1;
+            
+                    if (refFieldObj) {
+                        if (refFieldObj.type === "Текст") {
+                            // Показуємо значення самого refField
+                            refTextIndex = refIdIndex;
+                        } else if (refFieldObj.type === "Ціле число") {
+                            // Шукаємо інше поле з таким самим title, як поле у головній таблиці
+                            refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
+                        }
+                    }
+            
                     if (refIdIndex !== -1 && refTextIndex !== -1) {
                         refTableObj.data.forEach(refRow => {
                             const option = document.createElement("option");
-                            option.value = refRow[refIdIndex]; // буде зберігатись у полі phones.name
-                            option.textContent = refRow[refTextIndex]; // показується в списку
+                            option.value = refRow[refIdIndex];     // id, що зберігається
+                            option.textContent = refRow[refTextIndex]; // відображуваний текст
                             select.appendChild(option);
                         });
-                        // Встановлюємо обране значення з таблиці (наприклад, 2 → "Іван")
-                        //select.value = col;
                     }
                 }
-    
+            
                 td.appendChild(select);
             }
+            
+            
             else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
                 const select = document.createElement("select");
             
@@ -900,57 +925,64 @@
 
 
     function saveSchema() {
-            let tableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
-            const rows = document.querySelectorAll("#schemaBody tr");
+        let tableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
+        const rows = document.querySelectorAll("#schemaBody tr");
+    
+        const schema = [];
+        const fieldNames = new Set();
+        let hasDuplicate = false;
+        let hasPrimaryKey = false; // ← додано
+    
+        for (let row of rows) {
+            const isPrimaryKey = row.cells[0].querySelector("input").checked;
+            let title = row.cells[1].innerText.trim();
+            const type = row.cells[2].querySelector("select").value;
+            const comment = row.cells[3].innerText.trim();
+    
+            if (!title) continue; // пропускаємо порожні поля
+    
+            const lowerTitle = title.toLowerCase();
+            if (fieldNames.has(lowerTitle)) {
+                hasDuplicate = true;
+                break; // достатньо одного
+            }
+    
+            fieldNames.add(lowerTitle);
+            const isForeignKey = row.cells[3].querySelector("input").checked;
+            const refTable = row.cells[4].querySelector("select").value || null;
+            const refField = row.cells[5].querySelector("select").value || null;
+    
+            if (isPrimaryKey) hasPrimaryKey = true; // ← позначаємо, що є первинний ключ
+    
+            schema.push({
+                primaryKey: isPrimaryKey,
+                title: title,
+                type: type,
+                comment: comment,
+                foreignKey: isForeignKey,
+                refTable: isForeignKey ? refTable : null,
+                refField: isForeignKey ? refField : null
+            });
+        }
+    
+        if (hasDuplicate) {
+            Message("Назви полів мають бути унікальними.");
+            return;
+        }
+    
+        if (schema.length === 0) {
+            Message("Структура таблиці не може бути порожньою.");
+            return;
+        }
+    
+        if (!hasPrimaryKey) {
+            Message("Не вказано жодного первинного ключа. Таблиця не буде збережена.");
+            return;
+        }                     
+           
+       console.log("Schema=", schema)
         
-            const schema = [];
-            const fieldNames = new Set();
-            let hasDuplicate = false;
-            
-            for (let row of rows) {
-                const isPrimaryKey = row.cells[0].querySelector("input").checked;
-                let title = row.cells[1].innerText.trim();
-                const type = row.cells[2].querySelector("select").value;
-                const comment = row.cells[3].innerText.trim();
-            
-                if (!title) continue; // пропускаємо порожні поля
-            
-                const lowerTitle = title.toLowerCase();
-                if (fieldNames.has(lowerTitle)) {
-                    hasDuplicate = true;
-                    break; // достатньо одного
-                }
-            
-                fieldNames.add(lowerTitle);
-                const isForeignKey = row.cells[3].querySelector("input").checked;
-                const refTable = row.cells[4].querySelector("select").value || null;
-                const refField = row.cells[5].querySelector("select").value || null;
-                
-                schema.push({
-                    primaryKey: isPrimaryKey,
-                    title: title,
-                    type: type,
-                    comment: comment,
-                    foreignKey: isForeignKey,
-                    refTable: isForeignKey ? refTable : null,
-                    refField: isForeignKey ? refField : null
-                });
-                
-            }
-            
-            if (hasDuplicate) {
-                Message("Назви полів мають бути унікальними.");
-                return;
-            }
-            
-            if (schema.length === 0) {
-                Message("Структура таблиці не може бути порожньою.");
-                return;
-            }
-                        
-            console.log("Schema=", schema)
-        
-            // Створення структури об'єкта таблиці
+        // Створення структури об'єкта таблиці
             const table = {
                 name: tableName,
                 schema: schema,
@@ -1393,6 +1425,65 @@
     }
     
 
+    function validateSqlQuery(sql) {
+        try {
+            const errors = [];
+    
+            // 1. Прибрати розриви рядків (у лапкованих назвах це може зламати аналіз)
+            sql = sql.replace(/\s+/g, ' ').trim();
+    
+            // 2. Побудова map таблиць -> полів
+            const tableMap = new Map();
+            database.tables.forEach(table => {
+                const fieldTitles = table.schema.map(col => col.title);
+                tableMap.set(table.name, fieldTitles);
+            });
+    
+            // 3. Отримати назву таблиці з FROM
+            const fromMatch = sql.match(/FROM\s+["'`](.*?)["'`]/i);
+            if (!fromMatch) {
+                Message("Не вказано таблицю в запиті.");
+                return false;
+            }
+    
+            const tableName = fromMatch[1].trim();
+            if (!tableMap.has(tableName)) {
+                Message(`Таблиця "${tableName}" не існує.`);
+                return false;
+            }
+    
+            const currentFields = tableMap.get(tableName);
+    
+            // 4. Витягнути всі лапковані поля, крім назви таблиці з FROM
+            const allMatches = [...sql.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+    
+            // Видалити назву таблиці, бо вона теж лапкована, але не є полем
+            const fieldNames = allMatches.filter(name => name !== tableName);
+    
+            // 5. Уникнути дублювання полів (може бути одне й те саме поле в SELECT та WHERE)
+            const uniqueFieldNames = [...new Set(fieldNames)];
+    
+            for (const field of uniqueFieldNames) {
+                if (!currentFields.includes(field)) {
+                    errors.push(`Поле "${field}" не існує в таблиці "${tableName}".`);
+                }
+            }
+    
+            if (errors.length > 0) {
+                Message("Помилка в запиті:\n" + errors.join("\n"));
+                return false;
+            }
+    
+            return true;
+        } catch (err) {
+            Message("Неможливо проаналізувати запит: " + err.message);
+            return false;
+        }
+    }
+    
+    
+    
+
     function executeSqlQuery() {
         const sqlQuery = document.getElementById("generatedSql").innerText;
         const queryName = document.getElementById("queryName").value.trim();
@@ -1417,7 +1508,10 @@
         const menuDisplayName = `*${internalQueryName}`;
     
         try {
-            const res = db.exec(pendingQueryText);
+            if (validateSqlQuery(pendingQueryText)) {
+                const res = db.exec(pendingQueryText);  
+            } else return;
+            
             if (res.length > 0) {
                 const columns = res[0].columns;
                 const dataRows = res[0].values;
@@ -4430,8 +4524,11 @@
             return;
         }
     
-        try {
-            const res = db.exec(sqlQuery);
+        try { 
+            
+            if (validateSqlQuery(sqlQuery)) {
+                const res = db.exec(sqlQuery);
+            } else return;    
     
             if (res.length > 0) {
                 // --- Виведення таблиці результату ---
