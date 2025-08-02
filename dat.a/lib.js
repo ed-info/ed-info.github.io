@@ -1127,7 +1127,7 @@
     function addQueryRow() {
         const tbody = document.getElementById("queryBody");
         const row = document.createElement("tr");
-
+    
         row.innerHTML = `
             <td><select class="query-table-select" onchange="populateFieldDropdown(this)"></select></td>
             <td><select class="query-field-select"></select></td>
@@ -1139,12 +1139,29 @@
                     <option value="DESC">За спаданням</option>
                 </select>
             </td>
-            <td><input type="text" class="query-criteria-input"></td>
+            <td>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <select class="query-operator-select" style="width: 60px;">
+                        <option value="==">==</option>
+                        <option value="<">&lt;</option>
+                        <option value="<=">&lt;=</option>
+                        <option value=">">&gt;</option>
+                        <option value=">=">&gt;=</option>
+                        <option value="!=">!=</option>
+                        <option value="IN">IN</option>
+                        <option value="NOT IN">NOT IN</option>
+                    </select>
+                    <input type="text" class="query-criteria-input" style="flex: 1;">
+                </div>
+            </td>
             <td><button onclick="deleteQueryRow(this)">❌</button></td>
         `;
+    
         tbody.appendChild(row);
-        populateTableDropdownsForRow(row); // Populate table dropdown for the new row
+        populateTableDropdownsForRow(row);
     }
+    
+        
 
     function deleteQueryRow(button) {
         const row = button.closest("tr");
@@ -1192,66 +1209,106 @@
             });
         }
     }
-
+    
+    function getFieldType(tableName, fieldName) {
+        console.log("getFieldType=",database)
+        const table = database.tables.find(t => t.name === tableName);
+        if (!table) return "";
+        const field = table.schema.find(f => f.title === fieldName);
+        console.log("getFieldType Field=",field)
+        return field?.type || "";
+    }
+    
     function generateSqlQuery() {
         const queryName = document.getElementById("queryName").value.trim();
         const rows = document.querySelectorAll("#queryBody tr");
-
+    
         let selectFields = [];
         let baseTable = null;
         let joins = [];
         let whereClauses = [];
         let orderByClauses = [];
         const queryConfig = [];
-
-        // Зчитуємо рядки конструктора
+    
         rows.forEach(row => {
             const tableSelect = row.querySelector(".query-table-select");
             const fieldSelect = row.querySelector(".query-field-select");
             const visibleCheckbox = row.querySelector(".query-visible-checkbox");
             const sortSelect = row.querySelector(".query-sort-select");
+            const operatorSelect = row.querySelector(".query-operator-select");
             const criteriaInput = row.querySelector(".query-criteria-input");
-
+    
             const tableName = tableSelect.value;
             const fieldName = fieldSelect.value;
             const isVisible = visibleCheckbox.checked;
             const sortBy = sortSelect.value;
-            const criteria = criteriaInput.value.trim();
-
+            const operator = operatorSelect.value.trim();
+            let criteria = criteriaInput.value.trim();
+    
             if (tableName && fieldName) {
                 if (!baseTable) baseTable = tableName;
                 if (isVisible) {
                     selectFields.push(`"${tableName}"."${fieldName}"`);
                 }
-                if (criteria.length > 0) {
-                    whereClauses.push(`"${tableName}"."${fieldName}" ${criteria}`);
+    
+                if (criteria.length > 0 && operator.length > 0) {
+                    const fieldType = getFieldType(tableName, fieldName);
+                    let processedCriteria = criteria;
+    
+                    if (fieldType === "Так/Ні") {
+                        let value = processedCriteria.toLowerCase();
+                        if (["так", "true", "1"].includes(value)) {
+                            value = "1";
+                        } else if (["ні", "false", "0"].includes(value)) {
+                            value = "0";
+                        }
+                        processedCriteria = `${operator} ${value}`;
+                    } else if (fieldType === "Дата") {
+                        const match = processedCriteria.match(/^([0-9]{2})[.\-\/]([0-9]{2})[.\-\/]([0-9]{4})$/);
+                        if (match) {
+                            const dd = match[1];
+                            const mm = match[2];
+                            const yyyy = match[3];
+                            const isoDate = `${yyyy}-${mm}-${dd}`;
+                            processedCriteria = `${operator} '${isoDate}'`;
+                        } else {
+                            processedCriteria = `${operator} '${processedCriteria}'`;
+                        }
+                    } else {
+                        // Текстове або числове поле
+                        if (isNaN(processedCriteria)) {
+                            processedCriteria = `${operator} '${processedCriteria}'`;
+                        } else {
+                            processedCriteria = `${operator} ${processedCriteria}`;
+                        }
+                    }
+    
+                    whereClauses.push(`"${tableName}"."${fieldName}" ${processedCriteria}`);
                 }
+    
                 if (sortBy) {
                     orderByClauses.push(`"${tableName}"."${fieldName}" ${sortBy}`);
                 }
+    
                 queryConfig.push({
                     tableName,
                     fieldName,
                     isVisible,
                     sortBy,
+                    operator,
                     criteria
                 });
             }
         });
-        console.log(" selectFields=", selectFields)
-        console.log(" whereClauses=",whereClauses)
-        console.log(" orderByClauses=",orderByClauses)
-
-        // Зчитуємо JOIN-зв’язки
+    
+        // JOIN-зв’язки
         const joinRows = document.querySelectorAll("#joinBody tbody tr");
         joinRows.forEach(row => {
             const tableA = row.querySelector(".join-table-a").value;
             const fieldA = row.querySelector(".join-field-a").value;
             const tableB = row.querySelector(".join-table-b").value;
             const fieldB = row.querySelector(".join-field-b").value;
-            console.log("tableA,fieldA,tableB,fieldB=",tableA,fieldA,tableB,fieldB)
             if (tableA && fieldA && tableB && fieldB) {
-                // Додаємо тільки якщо tableB ще не додана
                 joins.push({
                     table: tableA,
                     condition: `"${tableA}"."${fieldA}" = "${tableB}"."${fieldB}"`
@@ -1259,37 +1316,31 @@
                 if (!baseTable) baseTable = tableA;
             }
         });
-        console.log(" joins=",joins)
-
+    
         if (selectFields.length === 0) {
             Message("Будь ласка, оберіть хоча б одне видиме поле для запиту.");
             return;
         }
-
-        // Побудова SQL
+    
         let sql = `SELECT ${selectFields.join(", ")}`;
         sql += `\nFROM "${baseTable}"`;
-
         joins.forEach(join => {
             sql += `\nJOIN "${join.table}" ON ${join.condition}`;
         });
-
         if (whereClauses.length > 0) {
             sql += `\nWHERE ${whereClauses.join(" AND ")}`;
         }
-
         if (orderByClauses.length > 0) {
             sql += `\nORDER BY ${orderByClauses.join(", ")}`;
         }
-
-        // Зберігаємо запит
+    
         const queryDefinition = {
             name: queryName,
             config: queryConfig,
             joins: joins,
             sql: sql
         };
-
+    
         const existingQueryIndex = queries.definitions.findIndex(q => q.name === queryName);
         if (existingQueryIndex !== -1) {
             queries.definitions[existingQueryIndex] = queryDefinition;
@@ -1297,10 +1348,11 @@
             queries.definitions.push(queryDefinition);
         }
         saveDatabase();
-
+    
         document.getElementById("generatedSql").innerText = sql;
         document.getElementById("sqlModal").style.display = "flex";
     }
+    
 
 
     function closeSqlModal() {
@@ -1437,20 +1489,30 @@
         selectedQueryName = null;
     }
 
+    
     function editSelectedQuery() {
         if (!selectedQueryName) {
             Message("Будь ласка, оберіть запит для редагування.");
             return;
         }
+    
         const queryToEdit = queries.definitions.find(q => q.name === selectedQueryName);
+        console.log("Edit query=",selectedQueryName, queryToEdit )
         if (queryToEdit) {
-            populateQueryModal(queryToEdit);
+            if (queryToEdit.config === null && queryToEdit.joins === null) {
+                // Власний SQL-запит
+                editOwnQuery(queryToEdit);
+            } else {
+                // Згенерований конструктором запит
+                populateQueryModal(queryToEdit);
+            }
             closeSavedQueriesDialog();
         } else {
             Message("Вибраний запит не знайдено.");
         }
     }
-
+    
+    
     function executeSelectedQuery() {
         if (!selectedQueryName) {
             Message("Будь ласка, оберіть запит для виконання.");
@@ -1474,7 +1536,7 @@
         const queryBody = document.getElementById("queryBody");
         queryBody.innerHTML = ""; // Очистити рядки полів
         document.getElementById("joinBody").querySelector("tbody").innerHTML = ""; // Очистити зв’язки
-
+    
         // Відновлення рядків полів
         queryDefinition.config.forEach(item => {
             const row = document.createElement("tr");
@@ -1489,11 +1551,25 @@
                         <option value="DESC">За спаданням</option>
                     </select>
                 </td>
-                <td><input type="text" class="query-criteria-input"></td>
+                <td>
+                    <div style="display: flex; gap: 4px;">
+                        <select class="query-operator-select">
+                            <option value="==">==</option>
+                            <option value="<"><</option>
+                            <option value="<="><=</option>
+                            <option value=">">></option>
+                            <option value=">=">>=</option>
+                            <option value="!=">!=</option>
+                            <option value="IN">IN</option>
+                            <option value="NOT IN">NOT IN</option>
+                        </select>
+                        <input type="text" class="query-criteria-input">
+                    </div>
+                </td>
                 <td><button onclick="deleteQueryRow(this)">❌</button></td>
             `;
             queryBody.appendChild(row);
-
+    
             // Заповнити випадаючі списки
             populateTableDropdownsForRow(row);
             row.querySelector(".query-table-select").value = item.tableName;
@@ -1501,22 +1577,34 @@
             row.querySelector(".query-field-select").value = item.fieldName;
             row.querySelector(".query-visible-checkbox").checked = item.isVisible;
             row.querySelector(".query-sort-select").value = item.sortBy;
-            row.querySelector(".query-criteria-input").value = item.criteria;
+    
+            const operatorSelect = row.querySelector(".query-operator-select");
+            const criteriaInput = row.querySelector(".query-criteria-input");
+    
+            // Визначаємо оператор і критерій з item.criteria
+            const opMatch = item.criteria?.match(/^(\!\=|\>\=|\<\=|\=\=|\<|\>|\bIN\b|\bNOT IN\b)?\s*(.*)$/i);
+            if (opMatch) {
+                const [, operator = "==", value = ""] = opMatch;
+                operatorSelect.value = operator.trim();
+                criteriaInput.value = value.trim();
+            } else {
+                operatorSelect.value = "==";
+                criteriaInput.value = item.criteria;
+            }
         });
-
+    
         // Відновлення JOIN-зв’язків
         if (queryDefinition.joins && queryDefinition.joins.length > 0) {
             const joinTable = document.getElementById("joinBody");
             const tbody = joinTable.querySelector("tbody");
             joinTable.style.display = "table";
-
+    
             queryDefinition.joins.forEach(join => {
-                // Парсимо з умови: `"TableA"."FieldA" = "TableB"."FieldB"`
                 const match = join.condition.match(/"([^"]+)"\."([^"]+)" = "([^"]+)"\."([^"]+)"/);
                 if (!match) return;
-
+    
                 const [, tableA, fieldA, tableB, fieldB] = match;
-
+    
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td><select class="join-table-a" onchange="populateJoinFields(this, true)"></select></td>
@@ -1526,13 +1614,12 @@
                     <td><button onclick="this.closest('tr').remove()">❌</button></td>
                 `;
                 tbody.appendChild(row);
-
-                // Заповнюємо таблиці
+    
                 const tableSelectA = row.querySelector(".join-table-a");
                 const tableSelectB = row.querySelector(".join-table-b");
                 const fieldSelectA = row.querySelector(".join-field-a");
                 const fieldSelectB = row.querySelector(".join-field-b");
-
+    
                 [tableSelectA, tableSelectB].forEach(select => {
                     select.innerHTML = "<option value=''>Виберіть таблицю</option>";
                     database.tables.forEach(t => {
@@ -1542,20 +1629,21 @@
                         select.appendChild(opt);
                     });
                 });
-
+    
                 tableSelectA.value = tableA;
                 tableSelectB.value = tableB;
-
+    
                 populateJoinFields(tableSelectA, true);
                 populateJoinFields(tableSelectB, false);
-
+    
                 fieldSelectA.value = fieldA;
                 fieldSelectB.value = fieldB;
             });
         }
-
+    
         document.getElementById("queryModal").style.display = "flex";
     }
+    
 
 
     function deleteSelectedQuery() {
@@ -4301,6 +4389,23 @@
         document.getElementById("ownSqlResults").innerHTML = ""; // Очистити результати попередніх запитів
         document.getElementById("ownSqlModal").style.display = "flex";
     }
+    //
+    
+    function editOwnQuery(query) {
+        // Відкриваємо модальне вікно власного SQL
+        const modal = document.getElementById("ownSqlModal");
+        if (modal) modal.style.display = "flex";
+    
+        // Вставляємо назву запиту
+        const nameInput = document.getElementById("ownSQLName");
+        if (nameInput) nameInput.value = query.name || "";
+    
+        // Вставляємо текст SQL-запиту
+        const sqlTextarea = document.getElementById("ownSqlInput");
+        if (sqlTextarea) sqlTextarea.value = query.sql || "";
+        
+        document.getElementById("ownSqlResults").innerHTML = ""; // Очистити результати попередніх запитів
+    }
     
     // Закриває модальне вікно ручного введення SQL-запитів.
     
@@ -4311,6 +4416,7 @@
     // Виконує SQL-запит, введений користувачем, та відображає результати.
     function executeOwnSQL() {
         const sqlQuery = document.getElementById("ownSqlInput").value.trim();
+        const queryName = document.getElementById("ownSQLName").value.trim();
         const resultsDiv = document.getElementById("ownSqlResults");
         resultsDiv.innerHTML = ""; // Очистити попередні результати
     
@@ -4328,12 +4434,12 @@
             const res = db.exec(sqlQuery);
     
             if (res.length > 0) {
+                // --- Виведення таблиці результату ---
                 const table = document.createElement("table");
                 table.style.width = "100%";
                 table.style.borderCollapse = "collapse";
                 table.style.marginTop = "10px";
     
-                // Заголовки таблиці
                 const thead = document.createElement("thead");
                 const headerRow = document.createElement("tr");
                 res[0].columns.forEach(col => {
@@ -4348,13 +4454,12 @@
                 thead.appendChild(headerRow);
                 table.appendChild(thead);
     
-                // Тіло таблиці з даними
                 const tbody = document.createElement("tbody");
                 res[0].values.forEach(rowData => {
                     const tr = document.createElement("tr");
                     rowData.forEach(cellData => {
                         const td = document.createElement("td");
-                        td.textContent = cellData ?? ""; // Показувати порожній рядок для null
+                        td.textContent = cellData ?? "";
                         td.style.border = "1px solid #ddd";
                         td.style.padding = "8px";
                         td.style.textAlign = "left";
@@ -4364,6 +4469,38 @@
                 });
                 table.appendChild(tbody);
                 resultsDiv.appendChild(table);
+    
+                // --- Збереження результатів у таблицю ---
+                const internalQueryName = `запит "${queryName}"`;
+                const menuDisplayName = `*${internalQueryName}`;
+    
+                const columns = res[0].columns;
+                const dataRows = res[0].values;
+    
+                const schema = columns.map(col => ({
+                    title: col,
+                    type: "Текст",
+                    primaryKey: false,
+                    comment: ""
+                }));
+    
+                const queryResultTable = {
+                    name: internalQueryName,
+                    schema: schema,
+                    data: dataRows
+                };
+    
+                const existingIndex = queries.results.findIndex(t => t.name === internalQueryName);
+                if (existingIndex !== -1) {
+                    queries.results[existingIndex] = queryResultTable;
+                    const dataMenu = document.getElementById("data-menu");
+                    const existingItem = Array.from(dataMenu.children).find(item => item.textContent === menuDisplayName);
+                    if (existingItem) existingItem.remove();
+                } else {
+                    queries.results.push(queryResultTable);
+                }
+    
+                addTableToMenu(menuDisplayName);
             } else {
                 resultsDiv.innerHTML = "<p style='color: green;'>Запит виконано успішно, але результат порожній або не повертає даних (наприклад, INSERT, UPDATE, DELETE).</p>";
             }
@@ -4371,6 +4508,44 @@
             resultsDiv.innerHTML = `<p style='color: red;'>Помилка виконання запиту: ${e.message}</p>`;
         }
     }
+    
+    
+    function saveOwnSQL() {
+        const sql = document.getElementById("ownSqlInput").value.trim();
+        const name = document.getElementById("ownSQLName")?.value.trim();
+    
+        if (!sql) {
+            Message("SQL-запит порожній.");
+            return;
+        }
+    
+        if (!name) {
+            Message("Введіть ім’я запиту у поле «Назва запиту».");
+            return;
+        }
+    
+        // Формуємо об'єкт запиту
+        const query = {
+            name: name,
+            sql: sql,
+            config: null,
+            joins: null
+        };
+    
+        // Шукаємо, чи існує вже такий запит
+        const existingIndex = queries.definitions.findIndex(q => q.name === name);
+    
+        if (existingIndex !== -1) {
+            if (!confirm("Запит з таким ім’ям вже існує. Перезаписати?")) return;
+            queries.definitions[existingIndex] = query;
+        } else {
+            queries.definitions.push(query);
+        }
+    
+        saveDatabase();
+        Message("Запит збережено.");
+    }
+    
 
     function showAboutModal() {
         const modal = document.getElementById("aboutModal");
