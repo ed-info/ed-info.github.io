@@ -1445,7 +1445,7 @@
                 Message("Не вказано таблицю в запиті.");
                 return false;
             }
-    
+            
             const tableName = fromMatch[1].trim();
             if (!tableMap.has(tableName)) {
                 Message(`Таблиця "${tableName}" не існує.`);
@@ -1508,9 +1508,8 @@
         const menuDisplayName = `*${internalQueryName}`;
     
         try {
-            if (validateSqlQuery(pendingQueryText)) {
-                const res = db.exec(pendingQueryText);  
-            } else return;
+            if (!validateSqlQuery(pendingQueryText)) return;
+            const res = db.exec(pendingQueryText); 
             
             if (res.length > 0) {
                 const columns = res[0].columns;
@@ -4526,9 +4525,8 @@
     
         try { 
             
-            if (validateSqlQuery(sqlQuery)) {
-                const res = db.exec(sqlQuery);
-            } else return;    
+            if (!validateSqlQuery(sqlQuery)) return;
+            const res = db.exec(sqlQuery);                
     
             if (res.length > 0) {
                 // --- Виведення таблиці результату ---
