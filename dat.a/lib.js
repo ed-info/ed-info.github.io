@@ -60,7 +60,7 @@
             const uIntArray = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
             db = new SQL.Database(uIntArray);
             console.log("База даних завантажена з localStorage");
-
+            console.log("db =",db )
             // Завантажити запити тільки якщо є база
             const savedQueries = localStorage.getItem(name + ".queries-data");
             if (savedQueries) {
@@ -220,7 +220,7 @@
 
         // Завантажити дані з локального сховища
         const fullDatabase = JSON.parse(localStorage.getItem(selectedDbFile + ".tables-data"));
-       
+        console.log("fullDatabase=",fullDatabase)
         if (fullDatabase) {
             database.tables = fullDatabase;
         
@@ -519,8 +519,106 @@ function editData(tableName) {
     document.getElementById("saveTableDataBtn").style.display = isReadOnly ? 'none' : 'inline-block';
     document.getElementById("editModal").style.display = "flex";
 }
-
+/*
+ * Додаємо рядок даних
+ */
+ 
+ function addDataRow() {
+        if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
+        const tbody = document.getElementById("editBody");
+        const tr = document.createElement("tr");
     
+        currentEditTable.schema.forEach((col, index) => {
+            const td = document.createElement("td");
+            console.log("Add data row, col=",col)
+    
+            if ((col.primaryKey)&&(col.type=="Ціле число")) {
+                // Знайти найбільше значення PK у колонці
+                let max = 0;
+                const rows = tbody.querySelectorAll("tr");
+                rows.forEach(row => {
+                    const val = parseInt(row.children[index].innerText);
+                    if (!isNaN(val)) max = Math.max(max, val);
+                });
+                td.innerText = max + 1;
+                td.contentEditable = "false";
+            }
+            else if (col.foreignKey && col.refTable && col.refField) {
+                const select = document.createElement("select");
+            
+                const refTableObj = database.tables.find(t => t.name === col.refTable);
+                if (refTableObj) {
+                    const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
+                    const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
+            
+                    let refTextIndex = -1;
+            
+                    if (refFieldObj) {
+                        if (refFieldObj.type === "Текст") {
+                            // Показуємо значення самого refField
+                            refTextIndex = refIdIndex;
+                        } else if (refFieldObj.type === "Ціле число") {
+                            // Шукаємо інше поле з таким самим title, як поле у головній таблиці
+                            refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
+                        }
+                    }
+            
+                    if (refIdIndex !== -1 && refTextIndex !== -1) {
+                        refTableObj.data.forEach(refRow => {
+                            const option = document.createElement("option");
+                            option.value = refRow[refIdIndex];     // id, що зберігається
+                            option.textContent = refRow[refTextIndex]; // відображуваний текст
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            
+                td.appendChild(select);
+            }
+            
+            
+            else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
+                const select = document.createElement("select");
+            
+                const optionYes = document.createElement("option");
+                optionYes.value = "1";
+                optionYes.textContent = "Так";
+                select.appendChild(optionYes);
+            
+                const optionNo = document.createElement("option");
+                optionNo.value = "0";
+                optionNo.textContent = "Ні";
+                select.appendChild(optionNo);
+            
+                td.appendChild(select);
+            } else if (col.type === "Дата") {
+                const input = document.createElement("input");
+                input.type = "date";
+            
+                // Значення за замовчуванням — сьогоднішня дата
+                const today = new Date().toISOString().split("T")[0];
+                input.value = today;
+            
+                td.appendChild(input);           
+
+            }
+             else {
+                td.contentEditable = "true";
+                td.innerText = "";
+            }
+            
+    
+            td.addEventListener("click", () => {
+                selectedCell = td;
+            });
+    
+            tr.appendChild(td);
+        });
+    
+        tbody.appendChild(tr);
+    }
+    
+   
 
 /*
 Функція deleteSelectedRow()
