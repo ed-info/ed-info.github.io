@@ -227,15 +227,15 @@
 			<div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
 				<button onclick="loadSelectedDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div>📂</div>
-					<div style="font-size:12px;">Відкрити</div>
+					<div style="font-size:10px;">Відкрити</div>
 				</button>
 				<button onclick="confirmDeleteDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div>🗑️</div>
-					<div style="font-size:12px;">Видалити</div>
+					<div style="font-size:10px;">Видалити</div>
 				</button>
 				<button onclick="closeStorageDialog()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div>❌</div>
-					<div style="font-size:12px;">Скасувати</div>
+					<div style="font-size:10px;">Скасувати</div>
 				</button>
 			</div>
 		</div>
@@ -360,13 +360,13 @@
 			<!-- Права частина: вертикальні кнопки -->
 			<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 12px;">
 				<button onclick="executeSelectedQuery()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ▶️ 
-                <span style="font-size: 12px;">Виконати</span> </button>
+                <span style="font-size: 10px;">Виконати</span> </button>
 				<button onclick="editSelectedQuery()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ✏️ 
-                <span style="font-size: 12px;">Змінити</span> </button>
+                <span style="font-size: 10px;">Змінити</span> </button>
 				<button onclick="deleteSelectedQuery()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🗑️ 
-                <span style="font-size: 12px;">Видалити</span> </button>
+                <span style="font-size: 10px;">Видалити</span> </button>
 				<button onclick="closeSavedQueriesDialog()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ❌ 
-                <span style="font-size: 12px;">Закрити</span> </button>
+                <span style="font-size: 10px;">Закрити</span> </button>
 			</div>
 		</div>
 	</div>
@@ -381,15 +381,17 @@
 				</ul>
 			</div>
 			<!-- Права частина — вертикальні кнопки -->
-			<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 12px;">
+			<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 4px;">
 				<button onclick="openSelectedTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📂 
-                <span style="font-size: 12px;">Відкрити</span> </button>
+                <span style="font-size: 10px;">Відкрити</span> </button>
 				<button onclick="editSelectedTableSchema()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🛠️ 
-                <span style="font-size: 12px;">Змінити</span> </button>
+                <span style="font-size: 10px;">Змінити</span> </button>
 				<button onclick="confirmDeleteTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🗑️ 
-                <span style="font-size: 12px;">Видалити</span> </button>
+                <span style="font-size: 10px;">Видалити</span> </button>
+                <button onclick="exportTableToCSV()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📤
+                <span style="font-size: 10px;">Експорт в CSV</span> </button>
 				<button onclick="closeSavedTablesDialog()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ❌ 
-                <span style="font-size: 12px;">Закрити</span> </button>
+                <span style="font-size: 10px;">Закрити</span> </button>
 			</div>
 		</div>
 	</div>
@@ -644,9 +646,13 @@
 		<div class="modal-content" style="max-width: 500px; background:#fff;">
 			<h3>Відомості про базу даних</h3>
 			<div id="dbInfoContent" style="white-space: pre-wrap; margin-top: 10px;"> </div>
-			<div style="text-align: right; margin-top: 20px;">
-				<button onclick="closeDbInfoModal()">Закрити</button>
-			</div>
+			<div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button onclick="closeDbInfoModal()" 
+                    style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				❌
+                    <span style="font-size: 12px;">Закрити</span>
+                </button>
+            </div>
 		</div>
 	</div>
 	<!-- 🔽 Вікно виходу з програми -->

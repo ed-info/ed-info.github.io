@@ -1,8 +1,33 @@
+
+    // Структура бази даних
+    let database = {
+        fileName: "",
+        tables: [], // Кожна таблиця — об'єкт з name та schema
+        reports: [], // 🆕 Масив для збереження звітів
+        relations: [], // 🆕масив для збереження зв'язків
+        forms: [] // ⬅️ масив для збереження форм
+
+    };
+
+    // New structure for query definitions and results
+    let queries = {
+        definitions: [], // Stores query configurations
+        results: [] // Stores query result tables (virtual tables)
+    };
+
     let SQL = null;
     let db = null;
     let dbToDelete = null;
     let selectedReportName = null;
+    let currentEditTable = null;
+    let selectedCell = null;
+    let selectedQueryName = null; // To keep track of the selected query in the saved queries dialog
+    let selectedTableNameForEdit = null; // To keep track of the selected table in the saved tables dialog for opening
+    let selectedTableNameForDelete = null; // To keep track of the selected table in the saved tables dialog for deletion
+    let selectedDbFile = null;
+    
     closeAllModals();
+    
     // Завантаження SQL.js
     initSqlJs({
         locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
@@ -11,7 +36,20 @@
         //loadDatabase();
     });
    
-    
+     function getCurrentTableNames() {
+      return Object.keys(database.tables || {});
+    }
+    function getCurrentQueryNames() {
+      console.log("Queries=",queries.definitions)
+      return Object.keys(queries.definitions || {});
+    }
+    function getCurrentReportNames() {
+      return (database.reports || []).map(r => r.name);
+    }
+    function getCurrentFormNames() {
+      return (database.forms || []).map(f => f.name);
+    }
+       
     // Завантаження БД з localStorage або створення нової
     function loadDatabase() {
         const name = database.fileName || "my_database";
@@ -74,10 +112,6 @@
             console.log("Нова база даних створена");
         }
 
-
-
-
-
         queries.results = []; // Завжди очищати результати
         updateMainTitle();
         updateQuickAccessPanel(
@@ -123,45 +157,6 @@
                     
     }
     //
-    function getCurrentTableNames() {
-      return Object.keys(database.tables || {});
-    }
-    function getCurrentQueryNames() {
-      console.log("Queries=",queries.definitions)
-      return Object.keys(queries.definitions || {});
-    }
-    function getCurrentReportNames() {
-      return (database.reports || []).map(r => r.name);
-    }
-    function getCurrentFormNames() {
-      return (database.forms || []).map(f => f.name);
-    }
-
-
-    // Структура бази даних
-    let database = {
-        fileName: "",
-        tables: [], // Кожна таблиця — об'єкт з name та schema
-        reports: [], // 🆕 Масив для збереження звітів
-        relations: [], // 🆕масив для збереження зв'язків
-        forms: [] // ⬅️ масив для збереження форм
-
-    };
-
-    // New structure for query definitions and results
-    let queries = {
-        definitions: [], // Stores query configurations
-        results: [] // Stores query result tables (virtual tables)
-    };
-
-
-    let currentEditTable = null;
-    let selectedCell = null;
-    let selectedQueryName = null; // To keep track of the selected query in the saved queries dialog
-    let selectedTableNameForEdit = null; // To keep track of the selected table in the saved tables dialog for opening
-    let selectedTableNameForDelete = null; // To keep track of the selected table in the saved tables dialog for deletion
-
-    let selectedDbFile = null;
 
     function showStorageDialog() {
         const listEl = document.getElementById("storageList");
@@ -300,956 +295,1039 @@
 
     // -------------
 
-    function editData(tableName) {
-        let table = null;
-        let isReadOnly = false;
-        let columns = [];
-        let rows = [];
-    
-        const isQueryTable = tableName.startsWith('*');
-        console.log("Edit=",tableName)
-        if (isQueryTable) {
-            const originalQueryName = tableName.substring(1);
-            table = queries.results.find(t => t.name === originalQueryName);
-            isReadOnly = true;
-            if (table) {
-                columns = table.schema.map(col => col.title);
-                rows = table.data;
-            }
-        } else {
-            table = database.tables.find(t => t.name === tableName);
-            isReadOnly = false;
-            if (table) {
+/*
+ * Функція editData
+ * ------------------
+ * Призначення: Відображає інтерфейс редагування таблиці або перегляду запиту у модальному вікні.
+ * Параметри: tableName — назва таблиці або запиту (з * на початку).
+ * Результат: Відкриває модальне вікно з даними для редагування або перегляду.
+ * Робота:
+ * - Завантажує дані таблиці або результатів запиту з SQLite або об'єкта database.
+ * - Якщо таблиці не існує — створює її, базуючись на схемі.
+ * - Відображає дані у вигляді таблиці з можливістю редагування.
+ */
+function editData(tableName) {
+    let table = null; // Поточна таблиця або результат запиту
+    let isReadOnly = false; // Чи є таблиця доступною лише для читання
+    let columns = []; // Список назв колонок
+    let rows = [];    // Масив рядків таблиці
+
+    const isQueryTable = tableName.startsWith('*'); // Чи є це результатом запиту
+    console.log("Edit=", tableName);
+
+    if (isQueryTable) {
+        // Якщо це результат запиту
+        const originalQueryName = tableName.substring(1);
+        table = queries.results.find(t => t.name === originalQueryName);
+        isReadOnly = true;
+        if (table) {
+            columns = table.schema.map(col => col.title);
+            rows = table.data;
+        }
+    } else {
+        // Знайти таблицю у базі
+        table = database.tables.find(t => t.name === tableName);
+        isReadOnly = false;
+
+        if (table) {
+            try {
+                // Спроба отримати дані з таблиці
+                const res = db.exec(`SELECT * FROM "${tableName}"`);
+                rows = res.length ? res[0].values : [];
+                columns = res.length ? res[0].columns : table.schema.map(col => col.title);
+            } catch (e) {
+                // Таблиця не існує — створити її вручну
+                console.warn(`Таблиця "${tableName}" не існує в SQLite. Створюємо...`);
+
+                const fields = table.schema.map(field => {
+                    let type = field.type.toUpperCase();
+                    if (type === "ЦІЛЕ ЧИСЛО") type = "INTEGER";
+                    else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
+                    else if (type === "ТЕКСТ") type = "TEXT";
+                    else if (type === "ТАК/НІ") type = "BOOLEAN";
+                    else if (type === "ДАТА") type = "TEXT";
+
+                    let def = `"${field.title}" ${type}`;
+                    if (field.primaryKey) def += " PRIMARY KEY";
+                    return def;
+                });
+
+                // Додати зв'язки (foreign keys)
+                const foreignKeys = table.schema
+                    .filter(f => f.foreignKey && f.refTable && f.refField)
+                    .map(f => `FOREIGN KEY (\"${f.title}\") REFERENCES \"${f.refTable}\"(\"${f.refField}\")`);
+
+                const createSQL = `CREATE TABLE \"${tableName}\" (${[...fields, ...foreignKeys].join(", ")});`;
                 try {
-                    // Спроба SELECT
-                    const res = db.exec(`SELECT * FROM "${tableName}"`);
-                    rows = res.length ? res[0].values : [];
-                    columns = res.length ? res[0].columns : table.schema.map(col => col.title);
-                } catch (e) {
-                    // Якщо таблиця відсутня — створимо її
-                    console.warn(`Таблиця "${tableName}" не існує в SQLite. Створюємо...`);
-            
-                    const fields = table.schema.map(field => {
-                        let type = field.type.toUpperCase();
-                        if (type === "ЦІЛЕ ЧИСЛО") type = "INTEGER";
-                        else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
-                        else if (type === "ТЕКСТ") type = "TEXT";
-                        else if (type === "ТАК/НІ") type = "BOOLEAN";
-                        else if (type === "ДАТА") type = "TEXT";
-            
-                        let def = `"${field.title}" ${type}`;
-                        if (field.primaryKey) def += " PRIMARY KEY";
-                        return def;
-                    });
-            
-                    const foreignKeys = table.schema
-                        .filter(f => f.foreignKey && f.refTable && f.refField)
-                        .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
-            
-                    const createSQL = `CREATE TABLE "${tableName}" (${[...fields, ...foreignKeys].join(", ")});`;
+                    db.run("PRAGMA foreign_keys = ON;");
+                    db.run(createSQL);
+                    console.log("Таблицю створено:", createSQL);
+                } catch (err) {
+                    console.error("Не вдалося створити таблицю:", err);
+                    Message(`Помилка створення таблиці \"${tableName}\"`);
+                    return;
+                }
+
+                // Заповнити таблицю початковими даними, якщо є
+                table.data = table.data || [];
+                table.data.forEach(record => {
+                    const columns = table.schema.map(f => `\"${f.title}\"`);
+                    const values = record.map(v => v === null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
+                    const insertSQL = `INSERT INTO \"${tableName}\" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
                     try {
-                        db.run("PRAGMA foreign_keys = ON;");
-                        db.run(createSQL);
-                        console.log("Таблицю створено:", createSQL);
-                    } catch (err) {
-                        console.error("Не вдалося створити таблицю:", err);
-                        Message(`Помилка створення таблиці "${tableName}"`);
-                        return;
+                        db.run(insertSQL);
+                    } catch (e) {
+                        console.warn("Не вдалося вставити дані:", insertSQL, e);
                     }
-            
-                    // Вставляємо дані, якщо вони були в описі
-                    table.data = table.data || [];
-                    table.data.forEach(record => {
-                        const columns = table.schema.map(f => `"${f.title}"`);
-                        const values = record.map(v => v === null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
-                        const insertSQL = `INSERT INTO "${tableName}" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
-                        try {
-                            db.run(insertSQL);
-                        } catch (e) {
-                            console.warn("Не вдалося вставити дані:", insertSQL, e);
-                        }
-                    });
-            
-                    // Повторне завантаження
-                    const res = db.exec(`SELECT * FROM "${tableName}"`);
-                    rows = res.length ? res[0].values : [];
-                    columns = res.length ? res[0].columns : table.schema.map(col => col.title);
-                }
-            
-                table.data = rows;
-                console.log("table.data=", table.data);
+                });
+
+                // Повторно завантажити дані
+                const res = db.exec(`SELECT * FROM \"${tableName}\"`);
+                rows = res.length ? res[0].values : [];
+                columns = res.length ? res[0].columns : table.schema.map(col => col.title);
             }
-            
+
+            table.data = rows; // Оновлюємо дані таблиці
+            console.log("table.data=", table.data);
         }
-    
-        if (!table) {
-            Message("Таблицю/Запит не знайдено");
-            return;
-        }
-    
-        currentEditTable = table;
-        document.getElementById("editTitle").innerText = isReadOnly
-            ? `Перегляд результатів запиту "${table.name}"`
-            : `Редагування таблиці "${table.name}"`;
-    
-        const head = document.getElementById("editHead");
-        const body = document.getElementById("editBody");
-        head.innerHTML = "";
-        body.innerHTML = "";
-        selectedCell = null;
-    
-        const headerRow = document.createElement("tr");
-        columns.forEach((colTitle, i) => {
-            const th = document.createElement("th");
-            th.textContent = colTitle;
-            th.style.backgroundColor = "#eee";
-            if (!isReadOnly && table.schema[i] && table.schema[i].primaryKey) th.classList.add("pk");
-            headerRow.appendChild(th);
-        });
-        head.appendChild(headerRow);
-    
-        dataRows = rows || [];
-        console.log("dataRows=",dataRows)
-        // ДАНІ
-        dataRows.forEach(rowData => {
-            const tr = document.createElement("tr");
-            rowData.forEach((cellData, index) => {
-                const td = document.createElement("td");
-                
-                const col = table.schema[index];
-                console.log("Col=",col)
-                const isPrimaryKey = !isQueryTable && col && col.primaryKey;
-                const isForeignKey = !isQueryTable && col && col.foreignKey && col.refTable && col.refField;
-        
-                if (isForeignKey) {
-                const select = document.createElement("select");
-            
-                // Отримаємо таблицю та поле, на яке посилаємось
-                const refTableObj = database.tables.find(t => t.name === col.refTable);
-                console.log("refTable=",refTableObj)
-                if (refTableObj) {
-                    const refFieldName = col.title; // поле поточної таблиці (наприклад: "name")
-                    const refIdIndex = refTableObj.schema.findIndex(f => f.primaryKey); // де id
-                    const refTextIndex = refTableObj.schema.findIndex(f => f.title === refFieldName); // де name
-                    //console.log("refId=",refIdIndex, refRow[refIdIndex],refRow[refTextIndex])
-                    
-                    if (refTableObj) {
-                        const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
-                        const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-                        
-                        let refTextIndex = -1;
-                        if (refFieldObj) {
-                            if (refFieldObj.type === "Текст") {
-                                // показуємо значення самого refField
-                                refTextIndex = refIdIndex;
-                            } else if (refFieldObj.type === "Ціле число") {
-                                // шукаємо поле з таким самим title, як у поточної колонки
-                                refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
-                            }
-                        }
-                    
-                        if (refIdIndex !== -1 && refTextIndex !== -1) {
-                            refTableObj.data.forEach(refRow => {
-                                const option = document.createElement("option");
-                                option.value = refRow[refIdIndex];         // буде зберігатися як FK
-                                option.textContent = refRow[refTextIndex]; // відображається в списку
-                                select.appendChild(option);
-                            });
-                    
-                            // Встановлюємо поточне значення
-                            select.value = cellData;
-                        }
-                    }
-                    
-                
-                
-                }
-            
-                td.appendChild(select);
-                select.disabled = isQueryTable;
-            
-                // Зберегти зміну при виборі
-                select.addEventListener("change", () => {
-                    rowData[index] = select.value;
-                });
-            } else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
-                const select = document.createElement("select");
-            
-                const optionYes = document.createElement("option");
-                optionYes.value = "1";
-                optionYes.textContent = "Так";
-                select.appendChild(optionYes);
-            
-                const optionNo = document.createElement("option");
-                optionNo.value = "0";
-                optionNo.textContent = "Ні";
-                select.appendChild(optionNo);
-            
-                select.value = cellData == 1 ? "1" : "0"; // встановити початкове значення
-            
-                select.disabled = isQueryTable;
-                td.appendChild(select);
-            
-                // Зберігаємо зміну в масиві даних
-                select.addEventListener("change", () => {
-                    rowData[index] = Number(select.value);
-                });
-            } else if (col.type === "Дата") {
-                const input = document.createElement("input");
-                input.type = "date";
-            
-                // Якщо в комірці вже є дата — використовуємо її, інакше — поточну
-                console.log("cellData =",cellData )
-                let value = typeof cellData === "string" && cellData.match(/^\d{4}-\d{2}-\d{2}$/)
-                    ? cellData
-                    : new Date().toISOString().split("T")[0];
-            
-                input.value = value;
-                input.disabled = isQueryTable;
-                td.appendChild(input);
-            
-                // Зберігаємо зміну у rowData
-                input.addEventListener("change", () => {
-                    rowData[index] = input.value;
-                });
-            
-                // Встановлюємо початкове значення
-                rowData[index] = input.value;
-            }
-            else {
-                    td.innerText = cellData ?? "";
-                    td.contentEditable = !isQueryTable && !isPrimaryKey;
-                    if (!isQueryTable && isPrimaryKey) td.classList.add("pk");
-                }
-        
-                td.addEventListener("click", () => {
-                    selectedCell = td;
-                });
-        
-                tr.appendChild(td);
-            });
-            body.appendChild(tr);
-        });
-        
-    
-        document.getElementById("addDataRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
-        document.getElementById("deleteSelectedRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
-        document.getElementById("saveTableDataBtn").style.display = isReadOnly ? 'none' : 'inline-block';
-    
-        document.getElementById("editModal").style.display = "flex";
     }
-    
 
+    if (!table) {
+        Message("Таблицю/Запит не знайдено");
+        return;
+    }
 
-    function addDataRow() {
-        if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
-        const tbody = document.getElementById("editBody");
+    currentEditTable = table; // Встановити поточну таблицю
+    document.getElementById("editTitle").innerText = isReadOnly
+        ? `Перегляд результатів запиту \"${table.name}\"`
+        : `Редагування таблиці \"${table.name}\"`;
+
+    const head = document.getElementById("editHead"); // Заголовок таблиці
+    const body = document.getElementById("editBody"); // Тіло таблиці
+    head.innerHTML = "";
+    body.innerHTML = "";
+    selectedCell = null; // Скинути вибрану комірку
+
+    // Створити заголовки колонок
+    const headerRow = document.createElement("tr");
+    columns.forEach((colTitle, i) => {
+        const th = document.createElement("th");
+        th.textContent = colTitle;
+        th.style.backgroundColor = "#eee";
+        if (!isReadOnly && table.schema[i] && table.schema[i].primaryKey) th.classList.add("pk");
+        headerRow.appendChild(th);
+    });
+    head.appendChild(headerRow);
+
+    dataRows = rows || []; // Встановити масив рядків для відображення
+    console.log("dataRows=", dataRows);
+
+    // Додати кожен рядок таблиці
+    dataRows.forEach(rowData => {
         const tr = document.createElement("tr");
-    
-        currentEditTable.schema.forEach((col, index) => {
+        rowData.forEach((cellData, index) => {
             const td = document.createElement("td");
-            console.log("Add data row, col=",col)
-    
-            if ((col.primaryKey)&&(col.type=="Ціле число")) {
-                // Знайти найбільше значення PK у колонці
-                let max = 0;
-                const rows = tbody.querySelectorAll("tr");
-                rows.forEach(row => {
-                    const val = parseInt(row.children[index].innerText);
-                    if (!isNaN(val)) max = Math.max(max, val);
-                });
-                td.innerText = max + 1;
-                td.contentEditable = "false";
-            }
-            else if (col.foreignKey && col.refTable && col.refField) {
+            const col = table.schema[index];
+
+            const isPrimaryKey = !isQueryTable && col && col.primaryKey;
+            const isForeignKey = !isQueryTable && col && col.foreignKey && col.refTable && col.refField;
+
+            if (isForeignKey) {
+                // Комірка для зовнішнього ключа
                 const select = document.createElement("select");
-            
                 const refTableObj = database.tables.find(t => t.name === col.refTable);
                 if (refTableObj) {
                     const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
                     const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-            
+
                     let refTextIndex = -1;
-            
                     if (refFieldObj) {
                         if (refFieldObj.type === "Текст") {
-                            // Показуємо значення самого refField
                             refTextIndex = refIdIndex;
                         } else if (refFieldObj.type === "Ціле число") {
-                            // Шукаємо інше поле з таким самим title, як поле у головній таблиці
                             refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
                         }
                     }
-            
+
                     if (refIdIndex !== -1 && refTextIndex !== -1) {
                         refTableObj.data.forEach(refRow => {
                             const option = document.createElement("option");
-                            option.value = refRow[refIdIndex];     // id, що зберігається
-                            option.textContent = refRow[refTextIndex]; // відображуваний текст
+                            option.value = refRow[refIdIndex];
+                            option.textContent = refRow[refTextIndex];
                             select.appendChild(option);
                         });
+                        select.value = cellData;
                     }
                 }
-            
                 td.appendChild(select);
-            }
-            
-            
-            else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
+                select.disabled = isQueryTable;
+                select.addEventListener("change", () => {
+                    rowData[index] = select.value;
+                });
+            } else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
+                // Комірка з boolean (Так/Ні)
                 const select = document.createElement("select");
-            
                 const optionYes = document.createElement("option");
                 optionYes.value = "1";
                 optionYes.textContent = "Так";
                 select.appendChild(optionYes);
-            
+
                 const optionNo = document.createElement("option");
                 optionNo.value = "0";
                 optionNo.textContent = "Ні";
                 select.appendChild(optionNo);
-            
+
+                select.value = cellData == 1 ? "1" : "0";
+                select.disabled = isQueryTable;
                 td.appendChild(select);
+                select.addEventListener("change", () => {
+                    rowData[index] = Number(select.value);
+                });
             } else if (col.type === "Дата") {
+                // Комірка з датою
                 const input = document.createElement("input");
                 input.type = "date";
-            
-                // Значення за замовчуванням — сьогоднішня дата
-                const today = new Date().toISOString().split("T")[0];
-                input.value = today;
-            
-                td.appendChild(input);           
+                let value = typeof cellData === "string" && cellData.match(/^\d{4}-\d{2}-\d{2}$/)
+                    ? cellData
+                    : new Date().toISOString().split("T")[0];
+                input.value = value;
+                input.disabled = isQueryTable;
+                td.appendChild(input);
+                input.addEventListener("change", () => {
+                    rowData[index] = input.value;
+                });
+                rowData[index] = input.value;
+            } else {
+                // Звичайна текстова комірка
+                td.innerText = cellData ?? "";
+                td.contentEditable = !isQueryTable && !isPrimaryKey;
+                if (!isQueryTable && isPrimaryKey) td.classList.add("pk");
+            }
 
-            }
-             else {
-                td.contentEditable = "true";
-                td.innerText = "";
-            }
-            
-    
             td.addEventListener("click", () => {
                 selectedCell = td;
             });
-    
+
             tr.appendChild(td);
         });
+        body.appendChild(tr);
+    });
+
+    // Кнопки керування
+    document.getElementById("addDataRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
+    document.getElementById("deleteSelectedRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
+    document.getElementById("saveTableDataBtn").style.display = isReadOnly ? 'none' : 'inline-block';
+    document.getElementById("editModal").style.display = "flex";
+}
+
     
-        tbody.appendChild(tr);
+
+/*
+Функція deleteSelectedRow()
+---------------------------
+Призначення: Видаляє вибраний рядок із таблиці редагування, якщо вона не є запитом і має первинний ключ.
+Параметри: Відсутні (використовує глобальні selectedCell та currentEditTable).
+Результат: Видаляє рядок з DOM і з бази даних, викликає збереження.
+Спосіб роботи:
+- Перевіряє, чи клітинка вибрана та чи таблиця не є запитом;
+- Знаходить індекс стовпця з первинним ключем;
+- Формує SQL-запит DELETE і виконує його;
+- Видаляє рядок із таблиці і зберігає БД.
+*/
+function deleteSelectedRow() {
+    if (!selectedCell || currentEditTable.name.startsWith('*')) { // Запобігає видаленню з запиту або без вибору клітинки
+        Message("Спочатку клацніть у комірку рядка, який хочете видалити, або це вікно не є редагованим.");
+        return;
     }
-    
 
+    const row = selectedCell.parentElement; // Отримуємо HTML-елемент рядка
+    const cells = row.querySelectorAll("td"); // Всі клітинки рядка
 
-    function deleteSelectedRow() {
-        if (!selectedCell || currentEditTable.name.startsWith('*')) { // Prevent deleting rows from query results
-            Message("Спочатку клацніть у комірку рядка, який хочете видалити, або це вікно не є редагованим.");
-            return;
-        }
-
-        const row = selectedCell.parentElement;
-        const cells = row.querySelectorAll("td");
-
-        const pkColIndex = currentEditTable.schema.findIndex(col => col.primaryKey);
-        if (pkColIndex === -1) {
-            Message("У таблиці немає первинного ключа, тому неможливо видалити запис з бази.");
-            return;
-        }
-
-        const pkValue = cells[pkColIndex].innerText.trim();
-        const sql = `DELETE FROM "${currentEditTable.name}" WHERE "${currentEditTable.schema[pkColIndex].title}" = '${pkValue}';`;
-        db.run(sql);
-        row.remove();
-        saveDatabase();
-
-
+    const pkColIndex = currentEditTable.schema.findIndex(col => col.primaryKey); // Знаходимо індекс первинного ключа
+    if (pkColIndex === -1) {
+        Message("У таблиці немає первинного ключа, тому неможливо видалити запис з бази.");
+        return;
     }
 
-    function saveTableData() {
-        if (!currentEditTable || currentEditTable.name.startsWith('*')) {
-            Message("Ця таблиця не підлягає редагуванню.");
-            return;
-        }
-    
-        const rows = document.querySelectorAll("#editBody tr");
-        const newData = [];
-    
-        rows.forEach(row => {
-            const cells = row.querySelectorAll("td");
-            const values = [];
-            const rowData = {};
-            let allEmpty = true;
-    
-            currentEditTable.schema.forEach((col, index) => {
-                const cell = cells[index];
-                let val = "";
-    
-                // 1. Якщо є <select> — беремо значення з нього
-                const select = cell.querySelector("select");
-                if (select) {
-                    val = select.value;
+    const pkValue = cells[pkColIndex].innerText.trim(); // Значення первинного ключа
+    const sql = `DELETE FROM "${currentEditTable.name}" WHERE "${currentEditTable.schema[pkColIndex].title}" = '${pkValue}';`; // Формування SQL-запиту
+    db.run(sql); // Виконання запиту
+    row.remove(); // Видалення рядка з DOM
+    saveDatabase(); // Збереження БД
+}
+
+/*
+Функція saveTableData()
+------------------------
+Призначення: Зберігає всі дані з таблиці редагування у базу даних, враховуючи різні типи елементів (select, input).
+Параметри: Відсутні (використовує DOM та currentEditTable).
+Результат: Дані записуються у БД, таблиця оновлюється.
+Спосіб роботи:
+- Проходить усі рядки таблиці;
+- Для кожної клітинки бере значення з select / input / тексту;
+- Якщо рядок не порожній — формує INSERT OR REPLACE SQL;
+- Зберігає базу та оновлює currentEditTable.data.
+*/
+function saveTableData() {
+    if (!currentEditTable || currentEditTable.name.startsWith('*')) {
+        Message("Ця таблиця не підлягає редагуванню.");
+        return;
+    }
+
+    const rows = document.querySelectorAll("#editBody tr"); // Всі редаговані рядки
+    const newData = []; // Масив для нових даних таблиці
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll("td"); // Клітинки поточного рядка
+        const values = []; // Масив значень для SQL-запиту
+        const rowData = {}; // Об'єкт даних для збереження в currentEditTable
+        let allEmpty = true; // Прапорець порожнього рядка
+
+        currentEditTable.schema.forEach((col, index) => {
+            const cell = cells[index];
+            let val = "";
+
+            // 1. Якщо є <select> — беремо значення з нього
+            const select = cell.querySelector("select");
+            if (select) {
+                val = select.value;
+            }
+            // 2. Якщо є <input type="date"> — беремо його значення
+            else {
+                const input = cell.querySelector("input[type='date']");
+                if (input) {
+                    val = input.value;
+                } else {
+                    // 3. Інакше беремо звичайний текст
+                    val = cell.innerText.trim();
                 }
-                // 2. Якщо є <input type="date"> — беремо його значення
-                else {
-                    const input = cell.querySelector("input[type='date']");
-                    if (input) {
-                        val = input.value;
-                    } else {
-                        // 3. Інакше беремо звичайний текст
-                        val = cell.innerText.trim();
-                    }
-                }
-    
-                if (val !== "") allEmpty = false;
-    
-                const escaped = val.replace(/'/g, "''");
-                values.push(`'${escaped}'`);
-                rowData[col.title] = val;
-            });
-    
-            if (allEmpty) return;
-    
-            newData.push(rowData);
-    
-            const columns = currentEditTable.schema.map(col => `"${col.title}"`);
-            const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
-            db.run(sql);
+            }
+
+            if (val !== "") allEmpty = false; // Якщо хоч одне поле не порожнє — зберігаємо рядок
+
+            const escaped = val.replace(/'/g, "''"); // Екранування лапок у SQL
+            values.push(`'${escaped}'`); // Додаємо значення до масиву
+            rowData[col.title] = val; // Додаємо у внутрішній об'єкт
         });
+
+        if (allEmpty) return; // Пропускаємо порожній рядок
+
+        newData.push(rowData); // Додаємо об'єкт до нових даних
+
+        const columns = currentEditTable.schema.map(col => `"${col.title}"`); // Масив назв стовпців
+        const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`; // SQL-запит
+        db.run(sql); // Виконання запиту
+    });
+
+    saveDatabase(); // Збереження змін
+    currentEditTable.data = newData; // Оновлюємо копію даних у змінній
+    Message("Дані збережено."); // Повідомлення користувачу
+    closeEditModal(); // Закриваємо вікно редагування
+}
+
+/*
+Функція closeEditModal()
+-------------------------
+Призначення: Закриває вікно редагування таблиці, скидаючи вибрані значення.
+Параметри: Відсутні.
+Результат: Модальне вікно зникає, змінні очищуються.
+*/
+function closeEditModal() {
+    document.getElementById("editModal").style.display = "none"; // Ховаємо вікно
+    currentEditTable = null; // Скидаємо редаговану таблицю
+    selectedCell = null; // Скидаємо вибрану клітинку
+}
+
+/* 
+Функція createDbFile()
+Призначення: Відкриває модальне вікно для створення нового файлу бази даних.
+Параметри: відсутні.
+Результат: Показ модального вікна з полем для введення назви бази.
+*/
+function createDbFile() {
+    document.getElementById("dbName").value = "my_database"; // встановлюємо значення за замовчуванням
+    document.getElementById("dbModal").style.display = "flex"; // відкриваємо модальне вікно
+}
+
+/* 
+Функція closeDbModal()
+Призначення: Закриває модальне вікно створення бази даних.
+Параметри: відсутні.
+Результат: Сховує вікно з вибором назви БД.
+*/
+function closeDbModal() {
+    document.getElementById("dbModal").style.display = "none";
+}
+
+/* 
+Функція saveDb()
+Призначення: Створює новий файл бази даних у памʼяті та зберігає його.
+Параметри: відсутні.
+Результат: Створення SQLite бази, очищення попередніх даних, збереження у localStorage.
+*/
+function saveDb() {
+    const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням
+    database.fileName = name; // збереження назви у структурі database
+    database.tables = []; // очищення списку таблиць
+    queries.definitions = []; // очищення визначень запитів
+    queries.results = []; // очищення результатів запитів
+    const dataMenu = document.getElementById("data-menu"); // посилання на меню таблиць
+    dataMenu.innerHTML = ""; // очищення меню
+    db = new SQL.Database(); // створення нової порожньої SQLite бази
+    saveDatabase(); // збереження бази у localStorage
+    console.log("Файл бази даних створено:", database);
+    Message("Базу даних збережено."); // повідомлення користувачу
+    closeDbModal(); // закриваємо модальне вікно
+    updateMainTitle(); // оновлюємо заголовок
+}
+
+/* 
+Функція saveDbAndCreateTable()
+Призначення: Створює базу даних та одразу відкриває інтерфейс для створення таблиці.
+Параметри: відсутні.
+Результат: Створення бази та перехід до створення структури таблиці.
+*/
+function saveDbAndCreateTable() {
+    saveDb(); // зберігаємо базу
+    closeDbModal(); // закриваємо модальне вікно
+    createTable(); // відкриваємо створення таблиці
+}
+
+// Обʼєкт для збереження тимчасової інформації про створювану таблицю
+let table = {
+    name: "Неназвана таблиця", // назва таблиці за замовчуванням
+    schema: [] // структура таблиці
+};
+
+// Список усіх таблиць бази, використовується для перевірок у редакторі
+let tableList = [];
+
+/* 
+Функція createTable()
+Призначення: Відкриває модальне вікно для створення нової таблиці та ініціалізує її структуру.
+Параметри: відсутні.
+Результат: Очищення попередньої структури, додавання першого рядка полів таблиці.
+*/
+function createTable() {
+    table.schema = []; // очищення схеми
+    document.getElementById("schemaBody").innerHTML = ""; // очищення HTML
+    document.getElementById("tableName").value = "Неназвана таблиця"; // встановлення імені
+    tableList = database.tables.map(t => t.name); // оновлення списку таблиць (для звʼязків)
+    addSchemaRow(); // Додати перший рядок
+    document.getElementById("makeTable").innerText = `Створення структури таблиці`; // заголовок
+    document.getElementById("modal").style.display = "flex"; // показ модального вікна
+}
+
+/* 
+Функція closeModal()
+Призначення: Закриває модальне вікно створення таблиці.
+Параметри: відсутні.
+Результат: Сховує вікно.
+*/
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+/* 
+Функція deleteSchemaRow(button)
+Призначення: Видаляє один рядок зі структури створюваної таблиці.
+Параметри: button — кнопка "❌", натиснута користувачем.
+Результат: Видалення відповідного рядка з DOM.
+*/
+function deleteSchemaRow(button) {
+    const row = button.closest("tr"); // знаходження батьківського рядка
+    if (row) row.remove(); // видалення з DOM
+}
+
+/* 
+Функція addSchemaRow()
+Призначення: Додає новий рядок до структури таблиці, що створюється.
+Параметри: відсутні.
+Результат: Вставка HTML-елементів до тіла таблиці зі всіма полями для нового стовпця.
+*/
+function addSchemaRow() {
+    const tbody = document.getElementById("schemaBody"); // тіло таблиці
+    const row = document.createElement("tr"); // новий рядок
+
+    // Підготовка опцій для списку таблиць (для зовнішнього ключа)
+    const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
+
+    // HTML-структура одного поля (рядка таблиці)
+    row.innerHTML = `
+        <td style="text-align:center;">
+          <input type="checkbox" onchange="handlePrimaryKey(this)">
+        </td>
+        <td contenteditable="true"></td>
+        <td>
+          <select>
+            <option>Текст</option>
+            <option>Ціле число</option>
+            <option>Дробове число</option>
+            <option>Так/Ні</option>
+            <option>Дата</option>
+          </select>
+        </td>
+        <td style="text-align:center;">
+          <input type="checkbox" onchange="handleForeignKey(this)">
+        </td>
+        <td>
+          <select onchange="updateFieldOptions(this)">
+            <option value="">(таблиця)</option>
+            ${tableOptions}
+          </select>
+        </td>
+        <td>
+          <select>
+            <option value="">(поле)</option>
+          </select>
+        </td>
+        <td contenteditable="true"></td>
+        <td style="text-align:center;">
+          <button onclick="deleteSchemaRow(this)">❌</button>
+        </td>
+    `;
+
+    tbody.appendChild(row); // вставка нового рядка
+
+    // Приховуємо або показуємо стовпці 4-5 згідно з поточним станом (зовнішній ключ)
+    const anyChecked = Array.from(document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)')).some(cb => cb.checked);
+    if (!anyChecked) {
+        row.cells[4].style.display = "none";
+        row.cells[5].style.display = "none";
+    }
+}
+
     
-        saveDatabase();
-        currentEditTable.data = newData;
-        Message("Дані збережено.");
-        closeEditModal();
+ /*
+Функція getFieldsForTable(tableName)
+Призначення: Повертає список назв полів для заданої таблиці.
+Параметри:
+ - tableName (string): назва таблиці.
+Результат: Масив назв полів або порожній масив, якщо таблиця не знайдена.
+*/
+function getFieldsForTable(tableName) {
+    const table = database.tables.find(t => t.name === tableName);
+    if (!table) return [];
+    return table.schema.map(field => field.title);
+}
+
+/*
+Функція handlePrimaryKey(checkbox)
+Призначення: Обробляє встановлення або зняття первинного ключа для поля таблиці.
+Параметри:
+ - checkbox (HTMLInputElement): прапорець первинного ключа.
+Результат: Оновлює тип поля та коментар до нього.
+*/
+function handlePrimaryKey(checkbox) {
+    const row = checkbox.closest("tr");
+
+    // Структура рядка:
+    // 0 - чекбокс PK
+    // 1 - назва поля
+    // 2 - тип
+    // 3 - чекбокс FK
+    // 4 - таблиця FK
+    // 5 - поле FK
+    // 6 - коментар
+    // 7 - видалення
+
+    const commentCell = row.cells[6]; 
+    const typeSelect = row.cells[2].querySelector("select");
+
+    if (checkbox.checked) {
+        if (!commentCell.innerText.includes("Первинний ключ")) {
+            commentCell.innerText = "Первинний ключ";
+        }
+        if (typeSelect) {
+            typeSelect.value = "Ціле число";
+        }
+    } else {
+        if (commentCell.innerText === "Первинний ключ") {
+            commentCell.innerText = "";
+        }
     }
-    
-    
+}
 
+/*
+Функція handleForeignKey(checkbox)
+Призначення: Обробляє встановлення або зняття зовнішнього ключа для поля.
+Параметри:
+ - checkbox (HTMLInputElement): прапорець зовнішнього ключа.
+Результат: Увімкнення/вимкнення селекторів таблиці/поля для FK.
+*/
+function handleForeignKey(checkbox) {
+    const row = checkbox.closest("tr");
+    const tableSelect = row.cells[4].querySelector("select");
+    const fieldSelect = row.cells[5].querySelector("select");
 
-    function closeEditModal() {
-        document.getElementById("editModal").style.display = "none";
-        currentEditTable = null;
-        selectedCell = null;
+    const allCheckboxes = document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)');
+    const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+
+    // Керування доступністю селекторів
+    tableSelect.disabled = !checkbox.checked;
+    fieldSelect.disabled = !checkbox.checked;
+
+    if (!checkbox.checked) {
+        tableSelect.value = "";
+        fieldSelect.innerHTML = `<option value="">(поле)</option>`;
     }
 
+    // Оновлення видимості стовпців для всіх рядків
+    const rows = document.querySelectorAll("#schemaBody tr");
+    rows.forEach(r => {
+        if (r.cells[4]) r.cells[4].style.display = anyChecked ? "" : "none";
+        if (r.cells[5]) r.cells[5].style.display = anyChecked ? "" : "none";
+    });
 
-    function createDbFile() {
-        document.getElementById("dbName").value = "my_database";
-        document.getElementById("dbModal").style.display = "flex";
+    // Заголовки стовпців
+    document.getElementById("refTableHeader").style.display = anyChecked ? "" : "none";
+    document.getElementById("refFieldHeader").style.display = anyChecked ? "" : "none";
+}
+
+/*
+Функція updateFieldOptions(tableSelect)
+Призначення: Оновлює список доступних полів при виборі таблиці у зовнішньому ключі.
+Параметри:
+ - tableSelect (HTMLSelectElement): селектор таблиці.
+Результат: Оновлення списку полів у відповідному селекторі.
+*/
+function updateFieldOptions(tableSelect) {
+    const row = tableSelect.closest("tr");
+    const fieldSelect = row.cells[5].querySelector("select");
+    const selectedTable = tableSelect.value;
+
+    fieldSelect.innerHTML = `<option value="">Завантаження...</option>`;
+
+    const fields = getFieldsForTable(selectedTable);
+    fieldSelect.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join("");
+}
+
+/*
+Функція saveSchema()
+Призначення: Зберігає структуру таблиці, створює відповідну таблицю в SQLite, вставляє дані, оновлює UI та базу.
+Параметри: відсутні.
+Результат: Створена або оновлена таблиця з новою схемою в БД.
+*/
+function saveSchema() {
+    let tableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
+    const rows = document.querySelectorAll("#schemaBody tr");
+
+    const schema = [];
+    const fieldNames = new Set();
+    let hasDuplicate = false;
+    let hasPrimaryKey = false;
+
+    for (let row of rows) {
+        const isPrimaryKey = row.cells[0].querySelector("input").checked;
+        let title = row.cells[1].innerText.trim();
+        const type = row.cells[2].querySelector("select").value;
+        const comment = row.cells[3].innerText.trim();
+
+        if (!title) continue;
+
+        const lowerTitle = title.toLowerCase();
+        if (fieldNames.has(lowerTitle)) {
+            hasDuplicate = true;
+            break;
+        }
+
+        fieldNames.add(lowerTitle);
+        const isForeignKey = row.cells[3].querySelector("input").checked;
+        const refTable = row.cells[4].querySelector("select").value || null;
+        const refField = row.cells[5].querySelector("select").value || null;
+
+        if (isPrimaryKey) hasPrimaryKey = true;
+
+        schema.push({
+            primaryKey: isPrimaryKey,
+            title: title,
+            type: type,
+            comment: comment,
+            foreignKey: isForeignKey,
+            refTable: isForeignKey ? refTable : null,
+            refField: isForeignKey ? refField : null
+        });
     }
 
-    function closeDbModal() {
-        document.getElementById("dbModal").style.display = "none";
+    if (hasDuplicate) {
+        Message("Назви полів мають бути унікальними.");
+        return;
     }
 
-    function saveDb() {
-        const name = document.getElementById("dbName").value.trim() || "my_database";
-        database.fileName = name;
-        database.tables = [];
-        queries.definitions = []; // Clear query definitions on new DB creation
-        queries.results = []; // Clear query results on new DB creation
-        const dataMenu = document.getElementById("data-menu"); // Clear menu
-        dataMenu.innerHTML = "";
-        db = new SQL.Database(); // Create a new empty SQLite DB
-        saveDatabase(); // Save the empty DB to localStorage
-        console.log("Файл бази даних створено:", database);
-        Message("Базу даних збережено.");
-        closeDbModal();
-        updateMainTitle();
+    if (schema.length === 0) {
+        Message("Структура таблиці не може бути порожньою.");
+        return;
     }
 
-    function saveDbAndCreateTable() {
-        saveDb(); // зберігаємо базу
-        closeDbModal(); // закриваємо модальне вікно
-        createTable(); // відкриваємо створення таблиці
+    if (!hasPrimaryKey) {
+        Message("Не вказано жодного первинного ключа. Таблиця не буде збережена.");
+        return;
     }
 
+    console.log("Schema=", schema);
 
-    let table = {
-        name: "Неназвана таблиця",
-        schema: []
+    const table = {
+        name: tableName,
+        schema: schema,
+        data: []
     };
-    let tableList = [];
-    function createTable() {
-        table.schema = [];
-        document.getElementById("schemaBody").innerHTML = "";
-        document.getElementById("tableName").value = "Неназвана таблиця";
-        tableList = database.tables.map(t => t.name); // <-- важливо
-        addSchemaRow(); // Додати перший рядок
-        document.getElementById("makeTable").innerText = `Створення структури таблиці`;
-        document.getElementById("modal").style.display = "flex";
-    }
 
-    function closeModal() {
-        document.getElementById("modal").style.display = "none";
-    }
-
-    function deleteSchemaRow(button) {
-        const row = button.closest("tr");
-        if (row) row.remove();
-    }
-       
-    function addSchemaRow() {
-        const tbody = document.getElementById("schemaBody");
-        const row = document.createElement("tr");
-    
-        const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
-    
-        row.innerHTML = `
-            <td style="text-align:center;">
-              <input type="checkbox" onchange="handlePrimaryKey(this)">
-            </td>
-            <td contenteditable="true"></td>
-            <td>
-              <select>
-                <option>Текст</option>
-                <option>Ціле число</option>
-                <option>Дробове число</option>
-                <option>Так/Ні</option>
-                <option>Дата</option>
-              </select>
-            </td>
-            <td style="text-align:center;">
-              <input type="checkbox" onchange="handleForeignKey(this)">
-            </td>
-            <td>
-              <select onchange="updateFieldOptions(this)">
-                <option value="">(таблиця)</option>
-                ${tableOptions}
-              </select>
-            </td>
-            <td>
-              <select>
-                <option value="">(поле)</option>
-              </select>
-            </td>
-            <td contenteditable="true"></td>
-            <td style="text-align:center;">
-              <button onclick="deleteSchemaRow(this)">❌</button>
-            </td>
-        `;
-    
-        tbody.appendChild(row);
-    
-        // 💡 Приховуємо або показуємо стовпці 4-5 згідно з поточним станом
-        const anyChecked = Array.from(document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)')).some(cb => cb.checked);
-        if (!anyChecked) {
-            row.cells[4].style.display = "none";
-            row.cells[5].style.display = "none";
+    // Зчитування старих даних
+    let oldData = [];
+    let oldSchema = [];
+    const existingIndex = database.tables.findIndex(t => t.name === tableName);
+    if (existingIndex !== -1) {
+        try {
+            const stmt = db.prepare(`SELECT * FROM "${tableName}"`);
+            while (stmt.step()) {
+                oldData.push(stmt.getAsObject());
+            }
+            stmt.free();
+        } catch (e) {
+            console.warn("Не вдалося зчитати старі дані таблиці:", e);
         }
+        oldSchema = database.tables[existingIndex].schema || [];
     }
-    
-    
-    
-    function getFieldsForTable(tableName) {
-        const table = database.tables.find(t => t.name === tableName);
-        if (!table) return [];
-        
-        return table.schema.map(field => field.title);
-    }
-       
 
-    function handlePrimaryKey(checkbox) {
-        const row = checkbox.closest("tr");
-    
-        // Нова структура:
-        // 0 - чекбокс PK
-        // 1 - назва поля
-        // 2 - тип
-        // 3 - чекбокс FK
-        // 4 - таблиця FK
-        // 5 - поле FK
-        // 6 - КОМЕНТАР
-        // 7 - ❌
-    
-        const commentCell = row.cells[6]; 
-        const typeSelect = row.cells[2].querySelector("select");
-    
-        if (checkbox.checked) {
-            if (!commentCell.innerText.includes("Первинний ключ")) {
-                commentCell.innerText = "Первинний ключ";
-            }
-            if (typeSelect) {
-                typeSelect.value = "Ціле число";
-            }
-        } else {
-            if (commentCell.innerText === "Первинний ключ") {
-                commentCell.innerText = "";
+    // Видалення старої таблиці
+    try {
+        db.run(`DROP TABLE IF EXISTS "${tableName}"`);
+    } catch (e) {
+        console.error("Не вдалося видалити стару таблицю:", e);
+    }
+
+    // Побудова SQL для нової таблиці
+    db.run("PRAGMA foreign_keys = ON;");
+
+    let fieldsSQL = schema.map(field => {
+        let type = field.type.toUpperCase();
+        if (type === "ЦІЛЕ ЧИСЛО") type = "INTEGER";
+        else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
+        else if (type === "ТЕКСТ") type = "TEXT";
+        else if (type === "ТАК/НІ") type = "BOOLEAN";
+        else if (type === "ДАТА") type = "TEXT";
+
+        let fieldDef = `"${field.title}" ${type}`;
+        if (field.primaryKey) fieldDef += " PRIMARY KEY";
+        return fieldDef;
+    });
+
+    const foreignKeys = schema
+      .filter(f => f.foreignKey && f.refTable && f.refField)
+      .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
+
+    const fullFieldsSQL = [...fieldsSQL, ...foreignKeys].join(", ");
+    const createSQL = `CREATE TABLE "${tableName}" (${fullFieldsSQL});`;
+    try {
+        db.run(createSQL);
+    } catch (e) {
+        console.warn("Не вдалося створити таблицю:", e, createSQL);
+    }
+
+    // Вставлення даних назад (за спільними назвами полів)
+    let newFieldNames = schema.map(f => f.title);
+    oldData.forEach(record => {
+        let insertFields = [];
+        let insertValues = [];
+        for (let key of newFieldNames) {
+            if (key in record) {
+                insertFields.push(`"${key}"`);
+                insertValues.push(JSON.stringify(record[key]));
             }
         }
-    }
-    
-
-    function handleForeignKey(checkbox) {
-        const row = checkbox.closest("tr");
-        const tableSelect = row.cells[4].querySelector("select");
-        const fieldSelect = row.cells[5].querySelector("select");
-    
-        const allCheckboxes = document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)');
-        const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
-    
-        // Увімкнення/вимкнення селекторів у поточному рядку
-        tableSelect.disabled = !checkbox.checked;
-        fieldSelect.disabled = !checkbox.checked;
-    
-        if (!checkbox.checked) {
-            tableSelect.value = "";
-            fieldSelect.innerHTML = `<option value="">(поле)</option>`;
-        }
-    
-        // 🔁 Усі рядки — однакова видимість стовпців 4 і 5
-        const rows = document.querySelectorAll("#schemaBody tr");
-        rows.forEach(r => {
-            if (r.cells[4]) r.cells[4].style.display = anyChecked ? "" : "none";
-            if (r.cells[5]) r.cells[5].style.display = anyChecked ? "" : "none";
-        });
-    
-        // Заголовки
-        document.getElementById("refTableHeader").style.display = anyChecked ? "" : "none";
-        document.getElementById("refFieldHeader").style.display = anyChecked ? "" : "none";
-    }
-    
-    
-    
-    
-    function updateFieldOptions(tableSelect) {
-        const row = tableSelect.closest("tr");
-        const fieldSelect = row.cells[5].querySelector("select");
-        const selectedTable = tableSelect.value;
-    
-        fieldSelect.innerHTML = `<option value="">Завантаження...</option>`;
-    
-        // Потрібен механізм для отримання полів таблиці selectedTable
-        const fields = getFieldsForTable(selectedTable); // повертає масив назв полів
-        
-        fieldSelect.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join("");
-    }
-    
-
-
-
-    function saveSchema() {
-        let tableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
-        const rows = document.querySelectorAll("#schemaBody tr");
-    
-        const schema = [];
-        const fieldNames = new Set();
-        let hasDuplicate = false;
-        let hasPrimaryKey = false; // ← додано
-    
-        for (let row of rows) {
-            const isPrimaryKey = row.cells[0].querySelector("input").checked;
-            let title = row.cells[1].innerText.trim();
-            const type = row.cells[2].querySelector("select").value;
-            const comment = row.cells[3].innerText.trim();
-    
-            if (!title) continue; // пропускаємо порожні поля
-    
-            const lowerTitle = title.toLowerCase();
-            if (fieldNames.has(lowerTitle)) {
-                hasDuplicate = true;
-                break; // достатньо одного
-            }
-    
-            fieldNames.add(lowerTitle);
-            const isForeignKey = row.cells[3].querySelector("input").checked;
-            const refTable = row.cells[4].querySelector("select").value || null;
-            const refField = row.cells[5].querySelector("select").value || null;
-    
-            if (isPrimaryKey) hasPrimaryKey = true; // ← позначаємо, що є первинний ключ
-    
-            schema.push({
-                primaryKey: isPrimaryKey,
-                title: title,
-                type: type,
-                comment: comment,
-                foreignKey: isForeignKey,
-                refTable: isForeignKey ? refTable : null,
-                refField: isForeignKey ? refField : null
-            });
-        }
-    
-        if (hasDuplicate) {
-            Message("Назви полів мають бути унікальними.");
-            return;
-        }
-    
-        if (schema.length === 0) {
-            Message("Структура таблиці не може бути порожньою.");
-            return;
-        }
-    
-        if (!hasPrimaryKey) {
-            Message("Не вказано жодного первинного ключа. Таблиця не буде збережена.");
-            return;
-        }                     
-           
-       console.log("Schema=", schema)
-        
-        // Створення структури об'єкта таблиці
-            const table = {
-                name: tableName,
-                schema: schema,
-                data: [] // заповнимо нижче, якщо буде можливість
-            };
-        
-            // 1. Отримати дані зі старої таблиці (якщо існує)
-            let oldData = [];
-            let oldSchema = [];
-            const existingIndex = database.tables.findIndex(t => t.name === tableName);
-            if (existingIndex !== -1) {
-                try {
-                    const stmt = db.prepare(`SELECT * FROM "${tableName}"`);
-                    while (stmt.step()) {
-                        oldData.push(stmt.getAsObject());
-                    }
-                    stmt.free();
-                } catch (e) {
-                    console.warn("Не вдалося зчитати старі дані таблиці:", e);
-                }
-                oldSchema = database.tables[existingIndex].schema || [];
-            }
-        
-            // 2. Видалити стару таблицю
+        if (insertFields.length > 0) {
+            let insertSQL = `INSERT INTO "${tableName}" (${insertFields.join(", ")}) VALUES (${insertValues.join(", ")});`;
             try {
-                db.run(`DROP TABLE IF EXISTS "${tableName}"`);
+                db.run(insertSQL);
             } catch (e) {
-                console.error("Не вдалося видалити стару таблицю:", e);
+                console.warn("Не вдалося вставити запис:", e, insertSQL);
             }
-        
-            // 3. Побудова SQL для нової таблиці
-            db.run("PRAGMA foreign_keys = ON;"); // Увімкнути підтримку
-            
-            let fieldsSQL = schema.map(field => {
-                let type = field.type.toUpperCase();
-                if (type === "ЦІЛЕ ЧИСЛО") type = "INTEGER";
-                else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
-                else if (type === "ТЕКСТ") type = "TEXT";
-                else if (type === "ТАК/НІ") type = "BOOLEAN";
-                else if (type === "ДАТА") type = "TEXT";
-            
-                let fieldDef = `"${field.title}" ${type}`;
-                if (field.primaryKey) fieldDef += " PRIMARY KEY";
-                return fieldDef;
-            });
-            
-            const foreignKeys = schema
-              .filter(f => f.foreignKey && f.refTable && f.refField)
-              .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
-            
-            const fullFieldsSQL = [...fieldsSQL, ...foreignKeys].join(", ");
-            const createSQL = `CREATE TABLE "${tableName}" (${fullFieldsSQL});`;
-            try {
-                    db.run(createSQL);
-                    } catch (e) {
-                        console.warn("Не вдалося створити таблицю:", e, createSQL);
-                    }
-        
-            // 4. Вставлення спільних даних назад (за збігом імен полів)
-            let newFieldNames = schema.map(f => f.title);
-            oldData.forEach(record => {
-                let insertFields = [];
-                let insertValues = [];
-                for (let key of newFieldNames) {
-                    if (key in record) {
-                        insertFields.push(`"${key}"`);
-                        insertValues.push(JSON.stringify(record[key]));
-                    }
-                }
-                if (insertFields.length > 0) {
-                    let insertSQL = `INSERT INTO "${tableName}" (${insertFields.join(", ")}) VALUES (${insertValues.join(", ")});`;
-                    try {
-                        db.run(insertSQL);
-                    } catch (e) {
-                        console.warn("Не вдалося вставити запис:", e, insertSQL);
-                    }
-                }
-            });
-        
-            // 5. Оновити дані в database.tables
-            if (existingIndex !== -1) {
-                database.tables[existingIndex] = table;
-            } else {
-                database.tables.push(table);
-            }
-        
-            // 6. Додати таблицю в меню, якщо її не було
-            addTableToMenu(tableName);
-        
-            // 7. Зберегти БД у localStorage або IndexedDB
-            saveDatabase();
-        
-            // 8. Повідомлення користувачу
-            Message("Структуру таблиці збережено.");
-            closeModal();
-            console.log("Table.schema=", table.schema)
         }
-        
+    });
 
-    function addTableToMenu(tableName) {
-        const dataMenu = document.getElementById("data-menu");
+    // Оновлення або додавання таблиці до списку
+    if (existingIndex !== -1) {
+        database.tables[existingIndex] = table;
+    } else {
+        database.tables.push(table);
+    }
 
-        // Remove existing item if it's being updated (important for queries)
-        const existingItem = Array.from(dataMenu.children).find(item => item.textContent === tableName);
-        if (existingItem) {
-            existingItem.remove();
+    addTableToMenu(tableName);
+    saveDatabase();
+    Message("Структуру таблиці збережено.");
+    closeModal();
+    console.log("Table.schema=", table.schema);
+}
+
+/*
+Функція addTableToMenu(tableName)
+Призначення: Додає назву таблиці до списку таблиць у меню.
+Параметри:
+ - tableName (string): назва таблиці.
+Результат: Елемент меню для редагування цієї таблиці додається до DOM.
+*/
+function addTableToMenu(tableName) {
+    const dataMenu = document.getElementById("data-menu");
+
+    // Якщо вже є — видаляємо стару версію (для оновлень)
+    const existingItem = Array.from(dataMenu.children).find(item => item.textContent === tableName);
+    if (existingItem) {
+        existingItem.remove();
+    }
+
+    const item = document.createElement("a");
+    item.href = "#";
+    item.textContent = tableName;
+    item.onclick = () => editData(tableName);
+
+    dataMenu.appendChild(item);
+}
+
+/* 
+ * Відображає модальне вікно з повідомленням
+ * Параметри:
+ *   msg — текст повідомлення, яке потрібно показати
+ * Результат: показує вікно з заданим текстом
+ */
+function Message(msg) {
+    const modal = document.getElementById("messageModal"); // Отримати елемент модального вікна
+    const content = document.getElementById("messageContent"); // Отримати блок для тексту
+
+    content.innerText = msg; // Встановити текст повідомлення
+    modal.style.display = "flex"; // Показати вікно
+}
+
+/* 
+ * Приховує модальне вікно повідомлення 
+ */
+function closeMessage() {
+    document.getElementById("messageModal").style.display = "none"; // Сховати вікно
+}
+
+/* 
+ * Запит на підтвердження видалення обраної бази даних
+ * Показує модальне вікно підтвердження
+ */
+function confirmDeleteDb() {
+    if (!selectedDbFile) {
+        Message("Виберіть файл для видалення."); // Якщо файл не вибрано — повідомлення
+        return;
+    }
+
+    dbToDelete = selectedDbFile; // Зберегти ім’я БД для видалення
+    document.getElementById("deleteConfirmText").innerHTML =
+        `Ви дійсно хочете видалити базу даних <b>"${dbToDelete}"</b>?`; // Вивести підтвердження
+
+    document.getElementById("deleteModal").style.display = "flex"; // Показати вікно підтвердження
+}
+
+/* 
+ * Видаляє базу даних із localStorage
+ * Після видалення оновлює список
+ */
+function doDeleteDb() {
+    if (dbToDelete) {
+        // Видалити дані бази та запити
+        localStorage.removeItem(dbToDelete + ".db-data");
+        localStorage.removeItem(dbToDelete + ".queries-data");
+
+        Message(`Файл "${dbToDelete}" видалено.`); // Показати повідомлення
+
+        closeDeleteModal();     // Закрити підтвердження
+        closeStorageDialog();   // Закрити список
+        showStorageDialog();    // Оновити список
+    }
+}
+
+function doDeleteDb() {
+    if (dbToDelete) {
+        // Якщо видаляється поточна база даних — спочатку її закриваємо
+        if (dbToDelete === database.fileName) {
+                    // Очистити поточну базу, обнулити структуру, UI тощо           
+                    // Автоматично зберегти перед закриттям
+                    saveDatabase();
+            
+                    // Очистити всі змінні
+                    db = null;
+                    database.fileName = "";
+                    database.tables = [];
+                    database.reports = [];
+                    database.relations = [];
+                    database.forms = [];
+            
+                    queries.definitions = [];
+                    queries.results = [];
+            
+                    const dataMenu = document.getElementById("data-menu");
+                    dataMenu.innerHTML = "";
+            
+                    updateMainTitle(); // Змінити заголовок на "Виберіть або створіть базу даних"                    
+                    updateQuickAccessPanel([], [], [], []);            
         }
 
-        const item = document.createElement("a");
-        item.href = "#";
-        item.textContent = tableName;
-        item.onclick = () => editData(tableName); // Pass the full table name (with * prefix if query)
+        // Видалити дані бази та запити з localStorage
+        localStorage.removeItem(dbToDelete + ".db-data");
+        localStorage.removeItem(dbToDelete + ".queries-data");
 
-        dataMenu.appendChild(item);
+        Message(`Файл "${dbToDelete}" видалено.`); // Показати повідомлення
+
+        closeDeleteModal();     // Закрити підтвердження
+        closeStorageDialog();   // Закрити список
+        showStorageDialog();    // Оновити список
     }
-    // Повідомлення
+}
 
-    function Message(msg) {
-        const modal = document.getElementById("messageModal");
-        const content = document.getElementById("messageContent");
+/* 
+ * Приховує модальне вікно підтвердження видалення 
+ */
+function closeDeleteModal() {
+    document.getElementById("deleteModal").style.display = "none"; // Сховати
+    dbToDelete = null; // Очистити значення
+}
 
-        content.innerText = msg;
-        modal.style.display = "flex";
-    }
+/* 
+ * Ініціалізує створення нового SQL-запиту 
+ * Показує модальне вікно конструктора запиту
+ */
+function createQuery() {
+    document.getElementById("queryName").value = "Новий запит"; // Назва за замовчуванням
+    document.getElementById("queryBody").innerHTML = ""; // Очистити старі рядки
+    addQueryRow(); // Додати перший рядок
+    document.getElementById("queryModal").style.display = "flex"; // Показати вікно
+    populateTableDropdowns(); // Заповнити випадаючі списки таблиць
+}
 
-    function closeMessage() {
-        document.getElementById("messageModal").style.display = "none";
-    }
+/* 
+ * Приховує модальне вікно конструктора запиту
+ */
+function closeQueryModal() {
+    document.getElementById("queryModal").style.display = "none";
+}
 
-    function confirmDeleteDb() {
-        if (!selectedDbFile) {
-            Message("Виберіть файл для видалення.");
-            return;
-        }
+/* 
+ * Додає новий рядок до конструктора запиту
+ * Рядок містить вибір таблиці, поля, видимість, сортування, фільтр
+ */
+function addQueryRow() {
+    const tbody = document.getElementById("queryBody"); // Отримати тіло таблиці
+    const row = document.createElement("tr"); // Створити новий рядок
 
-        dbToDelete = selectedDbFile;
-        document.getElementById("deleteConfirmText").innerHTML =
-            `Ви дійсно хочете видалити базу даних <b>"${dbToDelete}"</b>?`;
-
-        document.getElementById("deleteModal").style.display = "flex";
-    }
-
-
-    function doDeleteDb() {
-        if (dbToDelete) {
-            localStorage.removeItem(dbToDelete + ".db-data");
-            localStorage.removeItem(dbToDelete + ".queries-data"); // Delete associated queries data
-            Message(`Файл "${dbToDelete}" видалено.`);
-
-            closeDeleteModal();
-            closeStorageDialog();
-            showStorageDialog(); // 🔄 Оновити список
-        }
-    }
-
-    function closeDeleteModal() {
-        document.getElementById("deleteModal").style.display = "none";
-        dbToDelete = null;
-    }
-
-    // Функції для створення запиту
-    function createQuery() {
-        document.getElementById("queryName").value = "Новий запит";
-        document.getElementById("queryBody").innerHTML = ""; // Clear existing rows
-        addQueryRow(); // Add first row for query
-        document.getElementById("queryModal").style.display = "flex";
-        populateTableDropdowns();
-    }
-
-    function closeQueryModal() {
-        document.getElementById("queryModal").style.display = "none";
-    }
-
-    function addQueryRow() {
-        const tbody = document.getElementById("queryBody");
-        const row = document.createElement("tr");
-    
-        row.innerHTML = `
-            <td><select class="query-table-select" onchange="populateFieldDropdown(this)"></select></td>
-            <td><select class="query-field-select"></select></td>
-            <td><input type="checkbox" checked class="query-visible-checkbox"></td>
-            <td>
-                <select class="query-sort-select">
-                    <option value="">Невпорядковано</option>
-                    <option value="ASC">За зростанням</option>
-                    <option value="DESC">За спаданням</option>
+    // Заповнити HTML структуру рядка з елементами управління
+    row.innerHTML = `
+        <td><select class="query-table-select" onchange="populateFieldDropdown(this)"></select></td>
+        <td><select class="query-field-select"></select></td>
+        <td><input type="checkbox" checked class="query-visible-checkbox"></td>
+        <td>
+            <select class="query-sort-select">
+                <option value="">Невпорядковано</option>
+                <option value="ASC">За зростанням</option>
+                <option value="DESC">За спаданням</option>
+            </select>
+        </td>
+        <td>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <select class="query-operator-select" style="width: 60px;">
+                    <option value="==">==</option>
+                    <option value="<">&lt;</option>
+                    <option value="<=">&lt;=</option>
+                    <option value=">">&gt;</option>
+                    <option value=">=">&gt;=</option>
+                    <option value="!=">!=</option>
+                    <option value="IN">IN</option>
+                    <option value="NOT IN">NOT IN</option>
                 </select>
-            </td>
-            <td>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                    <select class="query-operator-select" style="width: 60px;">
-                        <option value="==">==</option>
-                        <option value="<">&lt;</option>
-                        <option value="<=">&lt;=</option>
-                        <option value=">">&gt;</option>
-                        <option value=">=">&gt;=</option>
-                        <option value="!=">!=</option>
-                        <option value="IN">IN</option>
-                        <option value="NOT IN">NOT IN</option>
-                    </select>
-                    <input type="text" class="query-criteria-input" style="flex: 1;">
-                </div>
-            </td>
-            <td><button onclick="deleteQueryRow(this)">❌</button></td>
-        `;
-    
-        tbody.appendChild(row);
-        populateTableDropdownsForRow(row);
-    }
-    
-        
+                <input type="text" class="query-criteria-input" style="flex: 1;">
+            </div>
+        </td>
+        <td><button onclick="deleteQueryRow(this)">❌</button></td>
+    `;
 
-    function deleteQueryRow(button) {
-        const row = button.closest("tr");
-        row.remove();
-    }
+    tbody.appendChild(row); // Додати рядок до таблиці
+    populateTableDropdownsForRow(row); // Заповнити випадаючий список таблиць у цьому рядку
+}
 
-    function populateTableDropdowns() {
-        const tableSelects = document.querySelectorAll(".query-table-select");
-        tableSelects.forEach(select => {
-            select.innerHTML = "<option value=''>Виберіть таблицю</option>";
-            database.tables.forEach(table => {
-                const option = document.createElement("option");
-                option.value = table.name;
-                option.textContent = table.name;
-                select.appendChild(option);
-            });
-        });
-    }
+/* 
+ * Видаляє рядок з конструктора запиту
+ * Параметр:
+ *   button — кнопка ❌, яка викликала подію
+ */
+function deleteQueryRow(button) {
+    const row = button.closest("tr"); // Знайти відповідний рядок
+    row.remove(); // Видалити рядок
+}
 
-    function populateTableDropdownsForRow(row) {
-        const select = row.querySelector(".query-table-select");
-        select.innerHTML = "<option value=''>Виберіть таблицю</option>";
+/* 
+ * Заповнює всі випадаючі списки таблиць у конструкторі запиту
+ */
+function populateTableDropdowns() {
+    const tableSelects = document.querySelectorAll(".query-table-select"); // Всі селекти таблиць
+    tableSelects.forEach(select => {
+        select.innerHTML = "<option value=''>Виберіть таблицю</option>"; // Початковий варіант
         database.tables.forEach(table => {
             const option = document.createElement("option");
             option.value = table.name;
             option.textContent = table.name;
-            select.appendChild(option);
+            select.appendChild(option); // Додати назву таблиці
+        });
+    });
+}
+
+/* 
+ * Заповнює список таблиць у конкретному рядку конструктора запиту
+ * Параметр:
+ *   row — рядок, у якому потрібно заповнити список
+ */
+function populateTableDropdownsForRow(row) {
+    const select = row.querySelector(".query-table-select"); // Знайти select у рядку
+    select.innerHTML = "<option value=''>Виберіть таблицю</option>";
+    database.tables.forEach(table => {
+        const option = document.createElement("option");
+        option.value = table.name;
+        option.textContent = table.name;
+        select.appendChild(option);
+    });
+}
+
+/* 
+ * Заповнює список полів таблиці на основі вибраної таблиці
+ * Параметр:
+ *   tableSelect — select-елемент з вибраною таблицею
+ */
+function populateFieldDropdown(tableSelect) {
+    const row = tableSelect.closest("tr"); // Знайти відповідний рядок
+    const fieldSelect = row.querySelector(".query-field-select"); // Select полів
+    fieldSelect.innerHTML = "<option value=''>Виберіть поле</option>"; // Очистити
+
+    const selectedTableName = tableSelect.value; // Вибрана таблиця
+    const selectedTable = database.tables.find(t => t.name === selectedTableName); // Знайти таблицю
+
+    if (selectedTable) {
+        selectedTable.schema.forEach(field => {
+            const option = document.createElement("option");
+            option.value = field.title;
+            option.textContent = field.title;
+            fieldSelect.appendChild(option); // Додати кожне поле
         });
     }
+}
 
-    function populateFieldDropdown(tableSelect) {
-        const row = tableSelect.closest("tr");
-        const fieldSelect = row.querySelector(".query-field-select");
-        fieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
+/* 
+ * Повертає тип поля у вказаній таблиці
+ * Параметри:
+ *   tableName — назва таблиці
+ *   fieldName — назва поля
+ * Повертає: тип поля або порожній рядок
+ */
+function getFieldType(tableName, fieldName) {
+    console.log("getFieldType=", database); // Діагностика
+    const table = database.tables.find(t => t.name === tableName); // Знайти таблицю
+    if (!table) return ""; // Якщо не знайдено — повернути ""
+    const field = table.schema.find(f => f.title === fieldName); // Знайти поле
+    console.log("getFieldType Field=", field); // Діагностика
+    return field?.type || ""; // Повернути тип або "" якщо нема
+}
 
-        const selectedTableName = tableSelect.value;
-        const selectedTable = database.tables.find(t => t.name === selectedTableName);
-
-        if (selectedTable) {
-            selectedTable.schema.forEach(field => {
-                const option = document.createElement("option");
-                option.value = field.title;
-                option.textContent = field.title;
-                fieldSelect.appendChild(option);
-            });
-        }
-    }
-    
-    function getFieldType(tableName, fieldName) {
-        console.log("getFieldType=",database)
-        const table = database.tables.find(t => t.name === tableName);
-        if (!table) return "";
-        const field = table.schema.find(f => f.title === fieldName);
-        console.log("getFieldType Field=",field)
-        return field?.type || "";
-    }
+//**************************************************************************
     
     function generateSqlQuery() {
         const queryName = document.getElementById("queryName").value.trim();
@@ -3103,7 +3181,7 @@
         const zip = await JSZip.loadAsync(file);
         const dbFile = await zip.file("database.sqlite").async("uint8array");
         db = new SQL.Database(dbFile);
-
+        database.fileName = file.name.split('.')[0];
         // Відновити запити
         const queriesText = await zip.file("queries.json").async("string");
         queries.definitions = JSON.parse(queriesText);
@@ -3160,9 +3238,9 @@
                 addTableToMenu(`*${q.name}`);
         });
 
-
+        saveDatabase();
         Message("Базу даних успішно імпортовано з .dta файлу.");
-        
+        updateMainTitle();
         updateQuickAccessPanel(
                   getCurrentTableNames(),
                   getCurrentQueryNames(),
@@ -4153,7 +4231,7 @@
                         });
                     });
                 }
-    
+                saveDatabase()
                 database.tables.forEach(t => addTableToMenu(t.name));
                 updateMainTitle();
                 Message("Базу даних імпортовано та збережено як '" + fileName + "'.");
@@ -4811,6 +4889,68 @@
     selectedFormName = name;
     editSelectedForm()
  }
+//
+/**
+ * Експортує вміст таблиці у CSV-файл із назвою "<назва таблиці>.csv".
+ * 
+ * Структура таблиці:
+ * {
+ *   name: "Teachers",            // Назва таблиці
+ *   schema: [...],              // Масив полів (із назвою, типом, тощо)
+ *   data: [[1, "Ім'я"], ...]    // Масив рядків даних
+ * }
+ *
+ * CSV-файл матиме перший рядок — заголовки, далі — значення через роздільник ";"
+ * Усі текстові значення будуть обгорнуті в лапки.
+ */
+function exportTableToCSV() {
+    const tableName = selectedTableNameForEdit;
+    console.log("CSV name=",tableName);   
+    const table = database.tables.find(t => t.name === tableName);
+    console.log("CSV table=",table)
+    if (!table || !table.name || !table.schema || !table.data) {
+        console.error("Неправильна структура таблиці для експорту.");
+        return;
+    }
+
+    // Отримати назви полів зі схеми
+    const headers = table.schema.map(field => field.title);
+
+    // Створити масив рядків CSV, починаючи з заголовків
+    const csvRows = [];
+    csvRows.push(headers.join(";")); // перший рядок — заголовки
+
+    // Додати дані
+    for (const row of table.data) {
+        const csvRow = row.map(value => {
+            // Якщо значення містить роздільник або лапки — обгорнути в лапки і екранувати лапки
+            if (typeof value === "string") {
+                const escaped = value.replace(/"/g, '""');
+                return `"${escaped}"`;
+            }
+            return value;
+        });
+        csvRows.push(csvRow.join(";"));
+    }
+
+    // Об’єднати рядки в текст
+    const csvContent = csvRows.join("\n");
+
+    // Створити blob і зберегти файл
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const fileName = `${table.name}.csv`;
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+
 
  // Панель швидкого доступу
  function updateQuickAccessPanel(tables, qqueries, reports, forms) {
