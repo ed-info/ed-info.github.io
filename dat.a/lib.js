@@ -311,12 +311,12 @@ function editData(tableName) {
     let isReadOnly = false; // Чи є таблиця доступною лише для читання
     let columns = []; // Список назв колонок
     let rows = [];    // Масив рядків таблиці
-
+    document.getElementById("savedTablesModal").style.display = "none";
+   
     const isQueryTable = tableName.startsWith('*'); // Чи є це результатом запиту
     console.log("Edit=", tableName);
 
     if (isQueryTable) {
-        // Якщо це результат запиту
         const originalQueryName = tableName.substring(1);
         table = queries.results.find(t => t.name === originalQueryName);
         isReadOnly = true;
@@ -325,18 +325,15 @@ function editData(tableName) {
             rows = table.data;
         }
     } else {
-        // Знайти таблицю у базі
         table = database.tables.find(t => t.name === tableName);
         isReadOnly = false;
 
         if (table) {
             try {
-                // Спроба отримати дані з таблиці
                 const res = db.exec(`SELECT * FROM "${tableName}"`);
                 rows = res.length ? res[0].values : [];
                 columns = res.length ? res[0].columns : table.schema.map(col => col.title);
             } catch (e) {
-                // Таблиця не існує — створити її вручну
                 console.warn(`Таблиця "${tableName}" не існує в SQLite. Створюємо...`);
 
                 const fields = table.schema.map(field => {
@@ -352,7 +349,6 @@ function editData(tableName) {
                     return def;
                 });
 
-                // Додати зв'язки (foreign keys)
                 const foreignKeys = table.schema
                     .filter(f => f.foreignKey && f.refTable && f.refField)
                     .map(f => `FOREIGN KEY (\"${f.title}\") REFERENCES \"${f.refTable}\"(\"${f.refField}\")`);
@@ -368,7 +364,6 @@ function editData(tableName) {
                     return;
                 }
 
-                // Заповнити таблицю початковими даними, якщо є
                 table.data = table.data || [];
                 table.data.forEach(record => {
                     const columns = table.schema.map(f => `\"${f.title}\"`);
@@ -378,16 +373,16 @@ function editData(tableName) {
                         db.run(insertSQL);
                     } catch (e) {
                         console.warn("Не вдалося вставити дані:", insertSQL, e);
+                        Message(`Не вдалося вставити запис: ${e.message}`);
                     }
                 });
 
-                // Повторно завантажити дані
                 const res = db.exec(`SELECT * FROM \"${tableName}\"`);
                 rows = res.length ? res[0].values : [];
                 columns = res.length ? res[0].columns : table.schema.map(col => col.title);
             }
 
-            table.data = rows; // Оновлюємо дані таблиці
+            table.data = rows;
             console.log("table.data=", table.data);
         }
     }
@@ -397,18 +392,17 @@ function editData(tableName) {
         return;
     }
 
-    currentEditTable = table; // Встановити поточну таблицю
+    currentEditTable = table;
     document.getElementById("editTitle").innerText = isReadOnly
         ? `Перегляд результатів запиту \"${table.name}\"`
         : `Редагування таблиці \"${table.name}\"`;
 
-    const head = document.getElementById("editHead"); // Заголовок таблиці
-    const body = document.getElementById("editBody"); // Тіло таблиці
+    const head = document.getElementById("editHead");
+    const body = document.getElementById("editBody");
     head.innerHTML = "";
     body.innerHTML = "";
-    selectedCell = null; // Скинути вибрану комірку
+    selectedCell = null;
 
-    // Створити заголовки колонок
     const headerRow = document.createElement("tr");
     columns.forEach((colTitle, i) => {
         const th = document.createElement("th");
@@ -419,10 +413,9 @@ function editData(tableName) {
     });
     head.appendChild(headerRow);
 
-    dataRows = rows || []; // Встановити масив рядків для відображення
+    dataRows = rows || [];
     console.log("dataRows=", dataRows);
 
-    // Додати кожен рядок таблиці
     dataRows.forEach(rowData => {
         const tr = document.createElement("tr");
         rowData.forEach((cellData, index) => {
@@ -433,39 +426,36 @@ function editData(tableName) {
             const isForeignKey = !isQueryTable && col && col.foreignKey && col.refTable && col.refField;
 
             if (isForeignKey) {
-                // Комірка для зовнішнього ключа
                 const select = document.createElement("select");
+
+                const emptyOption = document.createElement("option");
+                emptyOption.value = "empty";
+                emptyOption.textContent = "(пусто)";
+                select.appendChild(emptyOption);
+
                 const refTableObj = database.tables.find(t => t.name === col.refTable);
                 if (refTableObj) {
-                    const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
                     const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
+                    const refTextIndex = refTableObj.schema.findIndex(f => f.title.toLowerCase().includes("name") || f.title !== col.refField);
 
-                    let refTextIndex = -1;
-                    if (refFieldObj) {
-                        if (refFieldObj.type === "Текст") {
-                            refTextIndex = refIdIndex;
-                        } else if (refFieldObj.type === "Ціле число") {
-                            refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
-                        }
-                    }
-
-                    if (refIdIndex !== -1 && refTextIndex !== -1) {
+                    if (refIdIndex !== -1) {
+                        console.log("refTableObj=",refTableObj)
                         refTableObj.data.forEach(refRow => {
+                            console.log("refTextIndex,refRow[refIdIndex]=",refTextIndex,refRow[refIdIndex])
                             const option = document.createElement("option");
                             option.value = refRow[refIdIndex];
-                            option.textContent = refRow[refTextIndex];
+                            option.textContent = refTextIndex !== -1 ? refRow[refTextIndex] : refRow[refIdIndex];
                             select.appendChild(option);
                         });
-                        select.value = cellData;
+                        select.value = cellData ?? "empty";
                     }
                 }
                 td.appendChild(select);
                 select.disabled = isQueryTable;
                 select.addEventListener("change", () => {
-                    rowData[index] = select.value;
+                    rowData[index] = select.value === "empty" ? null : select.value;
                 });
             } else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
-                // Комірка з boolean (Так/Ні)
                 const select = document.createElement("select");
                 const optionYes = document.createElement("option");
                 optionYes.value = "1";
@@ -484,7 +474,6 @@ function editData(tableName) {
                     rowData[index] = Number(select.value);
                 });
             } else if (col.type === "Дата") {
-                // Комірка з датою
                 const input = document.createElement("input");
                 input.type = "date";
                 let value = typeof cellData === "string" && cellData.match(/^\d{4}-\d{2}-\d{2}$/)
@@ -498,7 +487,6 @@ function editData(tableName) {
                 });
                 rowData[index] = input.value;
             } else {
-                // Звичайна текстова комірка
                 td.innerText = cellData ?? "";
                 td.contentEditable = !isQueryTable && !isPrimaryKey;
                 if (!isQueryTable && isPrimaryKey) td.classList.add("pk");
@@ -513,12 +501,12 @@ function editData(tableName) {
         body.appendChild(tr);
     });
 
-    // Кнопки керування
     document.getElementById("addDataRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
     document.getElementById("deleteSelectedRowBtn").style.display = isReadOnly ? 'none' : 'inline-block';
     document.getElementById("saveTableDataBtn").style.display = isReadOnly ? 'none' : 'inline-block';
     document.getElementById("editModal").style.display = "flex";
 }
+
 /*
  * Додаємо рядок даних
  */
@@ -844,13 +832,15 @@ function deleteSchemaRow(button) {
 Результат: Вставка HTML-елементів до тіла таблиці зі всіма полями для нового стовпця.
 */
 function addSchemaRow() {
-    const tbody = document.getElementById("schemaBody"); // тіло таблиці
-    const row = document.createElement("tr"); // новий рядок
+    const tbody = document.getElementById("schemaBody");
+    const row = document.createElement("tr");
 
-    // Підготовка опцій для списку таблиць (для зовнішнього ключа)
     const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
 
-    // HTML-структура одного поля (рядка таблиці)
+    // Перевірка: чи хоч один чекбокс "Зовн. ключ" активний?
+    const anyChecked = Array.from(document.querySelectorAll('#schemaBody tr input[type="checkbox"]'))
+        .some(cb => cb.closest('td')?.cellIndex === 3 && cb.checked);
+    console.log("anyChecked=",anyChecked)
     row.innerHTML = `
         <td style="text-align:center;">
           <input type="checkbox" onchange="handlePrimaryKey(this)">
@@ -868,6 +858,7 @@ function addSchemaRow() {
         <td style="text-align:center;">
           <input type="checkbox" onchange="handleForeignKey(this)">
         </td>
+        ${anyChecked ? `
         <td>
           <select onchange="updateFieldOptions(this)">
             <option value="">(таблиця)</option>
@@ -878,22 +869,16 @@ function addSchemaRow() {
           <select>
             <option value="">(поле)</option>
           </select>
-        </td>
+        </td>` : ''}
         <td contenteditable="true"></td>
         <td style="text-align:center;">
           <button onclick="deleteSchemaRow(this)">❌</button>
         </td>
     `;
 
-    tbody.appendChild(row); // вставка нового рядка
-
-    // Приховуємо або показуємо стовпці 4-5 згідно з поточним станом (зовнішній ключ)
-    const anyChecked = Array.from(document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)')).some(cb => cb.checked);
-    if (!anyChecked) {
-        row.cells[4].style.display = "none";
-        row.cells[5].style.display = "none";
-    }
+    tbody.appendChild(row);
 }
+
 
     
  /*
@@ -954,33 +939,44 @@ function handlePrimaryKey(checkbox) {
 Результат: Увімкнення/вимкнення селекторів таблиці/поля для FK.
 */
 function handleForeignKey(checkbox) {
-    const row = checkbox.closest("tr");
-    const tableSelect = row.cells[4].querySelector("select");
-    const fieldSelect = row.cells[5].querySelector("select");
+    const tbody = document.getElementById("schemaBody");
+    const rows = tbody.querySelectorAll("tr");
 
-    const allCheckboxes = document.querySelectorAll('#schemaBody tr input[type="checkbox"]:nth-child(1)');
-    const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
-
-    // Керування доступністю селекторів
-    tableSelect.disabled = !checkbox.checked;
-    fieldSelect.disabled = !checkbox.checked;
-
-    if (!checkbox.checked) {
-        tableSelect.value = "";
-        fieldSelect.innerHTML = `<option value="">(поле)</option>`;
-    }
-
-    // Оновлення видимості стовпців для всіх рядків
-    const rows = document.querySelectorAll("#schemaBody tr");
-    rows.forEach(r => {
-        if (r.cells[4]) r.cells[4].style.display = anyChecked ? "" : "none";
-        if (r.cells[5]) r.cells[5].style.display = anyChecked ? "" : "none";
+    const anyChecked = Array.from(rows).some(row => {
+        const cb = row.cells[3]?.querySelector('input[type="checkbox"]');
+        return cb?.checked;
     });
 
-    // Заголовки стовпців
-    document.getElementById("refTableHeader").style.display = anyChecked ? "" : "none";
-    document.getElementById("refFieldHeader").style.display = anyChecked ? "" : "none";
+    rows.forEach(row => {
+        // Перевіряємо кількість комірок у рядку
+        const hasForeignKeyColumns = row.cells.length > 6;
+
+        if (anyChecked && !hasForeignKeyColumns) {
+            // Додаємо 2 комірки: Таблиця ЗК і Поле ЗК
+            const tableSelect = document.createElement("td");
+            const fieldSelect = document.createElement("td");
+
+            const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
+
+            tableSelect.innerHTML = `<select onchange="updateFieldOptions(this)">
+                <option value="">(таблиця)</option>
+                ${tableOptions}
+            </select>`;
+            fieldSelect.innerHTML = `<select><option value="">(поле)</option></select>`;
+
+            // Вставити перед коментарем і кнопкою видалення
+            row.insertBefore(tableSelect, row.cells[6]);
+            row.insertBefore(fieldSelect, row.cells[7]);
+        }
+
+        if (!anyChecked && hasForeignKeyColumns) {
+            // Видаляємо 2 зайві комірки
+            row.deleteCell(5); // поле ЗК
+            row.deleteCell(4); // таблиця ЗК
+        }
+    });
 }
+
 
 /*
 Функція updateFieldOptions(tableSelect)
@@ -4827,90 +4823,113 @@ function getFieldType(tableName, fieldName) {
         modal.style.display = "none";
     }
 //
+    function updateSchemaTableHeader(hasForeign) {
+        const thead = document.getElementById("schemaHead");
+        thead.innerHTML = ""; // очистити
+
+        const headerRow = document.createElement("tr");
+        headerRow.innerHTML = `
+        <th>🔑</th>
+        <th>Назва поля</th>
+        <th>Тип</th>
+        <th>📌</th>
+        ${hasForeign ? "<th>Таблиця 📌</th><th>Поле 📌</th>" : ""}
+        <th>Коментар</th>
+        <th>✂</th>
+        `;
+        thead.appendChild(headerRow);
+    }
+
+
+
+
   function editSelectedTableSchema() {
-        if (!selectedTableNameForEdit) {
-            Message("Будь ласка, оберіть таблицю для редагування.");
-            return;
-        }
+    if (!selectedTableNameForEdit) {
+        Message("Будь ласка, оберіть таблицю для редагування.");
+        return;
+    }
     
-        const tableToEdit = database.tables.find(t => t.name === selectedTableNameForEdit);
-    
-        if (!tableToEdit) {
-            Message("Вибрану таблицю не знайдено.");
-            return;
-        }
-    
-        table.schema = tableToEdit.schema || [];
-    
-        const tbody = document.getElementById("schemaBody");
-        tbody.innerHTML = "";
-        document.getElementById("tableName").value = tableToEdit.name;
-        tableList = database.tables.map(t => t.name); // <-- важливо
-        console.log("**1tableList=",tableList)
-        // створити список таблиць (для FK)
-        const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
-    
-        table.schema.forEach(field => {
-            const row = document.createElement("tr");
-    
-            const isPrimary = field.primaryKey ? 'checked' : '';
-            const isForeign = field.foreignKey ? 'checked' : '';
-            const selectedType = field.type || "Текст";
-            const fkTable = field.refTable || "";
-            const fkField = field.refField || "";
-            const comment = field.comment || "";
-            console.log("**1FK=",fkTable,fkField)
-            console.log("**1tableOptions=",tableOptions)
-            // підготовка селектора таблиць FK
-            const tableSelectHtml = `
-              <select onchange="updateFieldOptions(this)" ${isForeign ? "" : "disabled"}>
+    const tableToEdit = database.tables.find(t => t.name === selectedTableNameForEdit);
+    if (!tableToEdit) {
+        Message("Вибрану таблицю не знайдено.");
+        return;
+    }
+    console.log("Edit schema=", selectedTableNameForEdit)
+    table.schema = tableToEdit.schema || [];
+
+    const tbody = document.getElementById("schemaBody");
+    tbody.innerHTML = "";
+    document.getElementById("tableName").value = tableToEdit.name;
+    tableList = database.tables.map(t => t.name); // для FK
+    const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
+
+    // Створюємо всі рядки одразу
+    let rows = [];
+
+    let hasForeign = table.schema.some(f => f.foreignKey);
+    console.log("hasForeign=", hasForeign)
+    updateSchemaTableHeader(hasForeign);
+    table.schema.forEach(field => {
+        const row = document.createElement("tr");
+
+        const isPrimary = field.primaryKey ? 'checked' : '';
+        const isForeign = field.foreignKey ? 'checked' : '';
+        const selectedType = field.type || "Текст";
+        const fkTable = field.refTable || "";
+        const fkField = field.refField || "";
+        const comment = field.comment || "";
+
+        const tableSelectHtml = `
+            <select onchange="updateFieldOptions(this)" ${isForeign ? "" : "disabled"}>
                 <option value="">(таблиця)</option>
                 ${tableOptions.replace(`value="${fkTable}"`, `value="${fkTable}" selected`)}
-              </select>
-            `;
-            console.log("**tableSelectHtml=",tableSelectHtml)
-            // підготовка селектора полів FK
-            const fkFieldOptions = getFieldsForTable(fkTable).map(f =>
-                `<option value="${f}" ${f === fkField ? "selected" : ""}>${f}</option>`).join("");
-    
-            const fieldSelectHtml = `
-              <select ${isForeign ? "" : "disabled"}>
+            </select>
+        `;
+
+        const fkFieldOptions = getFieldsForTable(fkTable).map(f =>
+            `<option value="${f}" ${f === fkField ? "selected" : ""}>${f}</option>`).join("");
+
+        const fieldSelectHtml = `
+            <select ${isForeign ? "" : "disabled"}>
                 <option value="">(поле)</option>
                 ${fkFieldOptions}
-              </select>
-            `;
-    
-            row.innerHTML = `
-                <td style="text-align:center;">
-                  <input type="checkbox" onchange="handlePrimaryKey(this)" ${isPrimary}>
-                </td>
-                <td contenteditable="true">${field.title}</td>
-                <td>
-                  <select>
-                    <option ${selectedType === "Текст" ? "selected" : ""}>Текст</option>
-                    <option ${selectedType === "Ціле число" ? "selected" : ""}>Ціле число</option>
-                    <option ${selectedType === "Дробове число" ? "selected" : ""}>Дробове число</option>
-                    <option ${selectedType === "Так/Ні" ? "selected" : ""}>Так/Ні</option>
-                    <option ${selectedType === "Дата" ? "selected" : ""}>Дата</option>
-                  </select>
-                </td>
-                <td style="text-align:center;">
-                  <input type="checkbox" onchange="handleForeignKey(this)" ${isForeign}>
-                </td>
-                <td>${tableSelectHtml}</td>
-                <td>${fieldSelectHtml}</td>
-                <td contenteditable="true">${comment}</td>
-                <td style="text-align:center;">
-                  <button onclick="deleteSchemaRow(this)">❌</button>
-                </td>
-            `;
-    
-            tbody.appendChild(row);
-        });
-    
-        document.getElementById("makeTable").innerText = `Редагування структури таблиці`;
-        document.getElementById("modal").style.display = "flex";
-    }
+            </select>
+        `;
+
+        // Збір усіх комірок
+        const cells = [
+            `<td style="text-align:center;"><input type="checkbox" onchange="handlePrimaryKey(this)" ${isPrimary}></td>`,
+            `<td contenteditable="true">${field.title}</td>`,
+            `<td><select>
+                <option ${selectedType === "Текст" ? "selected" : ""}>Текст</option>
+                <option ${selectedType === "Ціле число" ? "selected" : ""}>Ціле число</option>
+                <option ${selectedType === "Дробове число" ? "selected" : ""}>Дробове число</option>
+                <option ${selectedType === "Так/Ні" ? "selected" : ""}>Так/Ні</option>
+                <option ${selectedType === "Дата" ? "selected" : ""}>Дата</option>
+            </select></td>`,
+            `<td style="text-align:center;"><input type="checkbox" onchange="handleForeignKey(this)" ${isForeign}></td>`,
+        ];
+
+        // FK стовпці
+        if (hasForeign) {
+            cells.push(`<td>${tableSelectHtml}</td>`);
+            cells.push(`<td>${fieldSelectHtml}</td>`);
+        }
+
+        cells.push(`<td contenteditable="true">${comment}</td>`);
+        cells.push(`<td style="text-align:center;"><button onclick="deleteSchemaRow(this)">❌</button></td>`);
+
+        row.innerHTML = cells.join("");
+        rows.push(row);
+    });
+
+    // Виводимо всі зібрані рядки
+    rows.forEach(r => tbody.appendChild(r));
+
+    document.getElementById("makeTable").innerText = `Редагування структури таблиці`;
+    document.getElementById("modal").style.display = "flex";
+}
+
     
 
     
