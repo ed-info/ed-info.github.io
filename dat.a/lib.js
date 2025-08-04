@@ -1026,9 +1026,39 @@ function saveSchema() {
         }
 
         fieldNames.add(lowerTitle);
-        const isForeignKey = row.cells[3].querySelector("input").checked;
-        const refTable = row.cells[4].querySelector("select").value || null;
-        const refField = row.cells[5].querySelector("select").value || null;
+
+        // Перевірка на наявність checkbox для зовнішнього ключа (у клітинці 3)
+        let isForeignKey = false;
+        const foreignKeyCell = row.cells[3];
+        if (foreignKeyCell) {
+            const fkCheckbox = foreignKeyCell.querySelector("input[type=checkbox]");
+            if (fkCheckbox) {
+                isForeignKey = fkCheckbox.checked;
+            }
+        }
+
+        // Безпечний доступ до клітинок 4 і 5 та їх select-елементів
+        let refTable = null;
+        let refField = null;
+
+        if (isForeignKey) {
+            const refTableCell = row.cells[4];
+            const refFieldCell = row.cells[5];
+
+            if (refTableCell) {
+                const refTableSelect = refTableCell.querySelector("select");
+                if (refTableSelect) {
+                    refTable = refTableSelect.value || null;
+                }
+            }
+
+            if (refFieldCell) {
+                const refFieldSelect = refFieldCell.querySelector("select");
+                if (refFieldSelect) {
+                    refField = refFieldSelect.value || null;
+                }
+            }
+        }
 
         if (isPrimaryKey) hasPrimaryKey = true;
 
@@ -1058,6 +1088,7 @@ function saveSchema() {
         return;
     }
 
+    // Далі без змін...
     console.log("Schema=", schema);
 
     const table = {
@@ -1152,6 +1183,7 @@ function saveSchema() {
     closeModal();
     console.log("Table.schema=", table.schema);
 }
+
 
 /*
 Функція addTableToMenu(tableName)
@@ -5030,7 +5062,7 @@ function populateQueryModal(queryDefinition) {
     }
     console.log("Edit schema=", selectedTableNameForEdit)
     table.schema = tableToEdit.schema || [];
-
+    document.getElementById("savedTablesModal").style.display = "none";
     const tbody = document.getElementById("schemaBody");
     tbody.innerHTML = "";
     document.getElementById("tableName").value = tableToEdit.name;
