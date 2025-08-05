@@ -155,7 +155,7 @@
 				<input type="text" id="dbName" value="my_database" style="width:100%; padding:8px; font-size:16px; margin-bottom:15px;"> </div>
 			<!-- Права частина: кнопки -->
 			<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 12px;">
-				<button onclick="saveDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 💾 <span style="font-size: 12px;">Зберегти</span> </button>
+				<button onclick="saveNewDb()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 💾 <span style="font-size: 12px;">Зберегти</span> </button>
 				<button onclick="saveDbAndCreateTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ➕ <span style="font-size: 12px;">Cтворити таблицю</span> </button>
 				<button onclick="closeDbModal()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ❌ <span style="font-size: 12px;">Вийти</span> </button>
 			</div>
@@ -252,6 +252,24 @@
                 <span style="font-size: 12px;">Видалити</span> </button>
 				<button onclick="closeDeleteModal()" style="width: 64px; height: 64px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;"> ❌ 
                 <span style="font-size: 12px;">Скасувати</span> </button>
+			</div>
+		</div>
+	</div>
+    <!-- Вікно створення запиту-->
+    <div id="overwriteModal" class="modal" style="display: none; z-index: 10011;">
+		<div class="alert-modal-content" style="display: flex; flex-direction: row; align-items: flex-start; padding: 1em; gap: 2em;">
+			<!-- Ліворуч: текст -->
+			<div style="flex: 1; font-size: 1.1em; padding: 0.5em;">
+				<p id="overwtiteConfirmText">Файл з назвою  вже існує. Що робити?</p>
+			</div>
+			<!-- Праворуч: вертикальні кнопки -->
+			<div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+				<button onclick="doOverwriteDb()" style="width: 64px; height: 64px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;">✅
+                <span style="font-size: 10px;">Перезапис</span> </button>
+                <button onclick="doNewNameDb()" style="width: 64px; height: 64px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;">✏️️ 
+                <span style="font-size: 10px;">Нова назва</span> </button>
+				<button onclick="doCloseOverwriteConfirm()" style="width: 64px; height: 64px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;">❌ 
+                <span style="font-size: 10px;">Скасувати</span> </button>
 			</div>
 		</div>
 	</div>

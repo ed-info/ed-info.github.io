@@ -25,6 +25,8 @@
     let selectedTableNameForEdit = null; // To keep track of the selected table in the saved tables dialog for opening
     let selectedTableNameForDelete = null; // To keep track of the selected table in the saved tables dialog for deletion
     let selectedDbFile = null;
+    let newDbFile = false; // змінна для фіксації створення нового файлу
+
     
     closeAllModals();
     
@@ -111,7 +113,7 @@
             database.forms = [];
             console.log("Нова база даних створена");
         }
-
+        newDbFile = false;
         queries.results = []; // Завжди очищати результати
         updateMainTitle();
         updateQuickAccessPanel(
@@ -731,6 +733,7 @@ function closeEditModal() {
 Результат: Показ модального вікна з полем для введення назви бази.
 */
 function createDbFile() {
+    newDbFile = true;
     document.getElementById("dbName").value = "my_database"; // встановлюємо значення за замовчуванням
     document.getElementById("dbModal").style.display = "flex"; // відкриваємо модальне вікно
 }
@@ -744,6 +747,45 @@ function createDbFile() {
 function closeDbModal() {
     document.getElementById("dbModal").style.display = "none";
 }
+/*
+ * Перевірка но новий файл
+ */
+function saveNewDb() {
+    console.log("Save new file")
+    newDbFile = true; 
+    const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням
+    console.log("Save new file=",name + ".db-data")
+    // Якщо створюємо новий файл і такий вже існує
+    if (localStorage.getItem(name + ".tables-data")) {
+        console.log("Overwrite!!!")
+        const msg = document.getElementById("overwtiteConfirmText");
+        msg.innerHTML = `<p>Файл з назвою <b>${name}</b> вже існує.</p><p>Що робити?</p>`;
+        showOverwriteConfirm(name);
+    } else newDbFile = false; 
+    saveDb()
+} 
+/*
+ * Вікно підтвердження при перезапису файлу бази даних
+ */ 
+function showOverwriteConfirm(name) {
+     document.getElementById("overwriteModal").style.display = "flex"; // показати вікно вибору
+}
+function doOverwriteDb() {
+    newDbFile = false;
+}
+
+function doNewNameDb() {
+    document.getElementById("overwriteModal").style.display = "none"; // ховаємо вікно вибору     
+    newDbFile = true; 
+}
+
+function doCloseOverwriteConfirm() {
+    document.getElementById("overwriteModal").style.display = "none"; // ховаємо вікно вибору     
+    newDbFile = false;
+    closeDbModal()
+}
+
+
 
 /* 
 Функція saveDb()
@@ -753,6 +795,10 @@ function closeDbModal() {
 */
 function saveDb() {
     const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням
+    
+    // Якщо створюємо файл з назвою що існує
+    if (newDbFile) return;    
+    
     database.fileName = name; // збереження назви у структурі database
     database.tables = []; // очищення списку таблиць
     queries.definitions = []; // очищення визначень запитів
@@ -761,6 +807,7 @@ function saveDb() {
     dataMenu.innerHTML = ""; // очищення меню
     db = new SQL.Database(); // створення нової порожньої SQLite бази
     saveDatabase(); // збереження бази у localStorage
+    newDbFile = false;
     console.log("Файл бази даних створено:", database);
     Message("Базу даних збережено."); // повідомлення користувачу
     closeDbModal(); // закриваємо модальне вікно
