@@ -26,7 +26,7 @@
     let selectedTableNameForDelete = null; // To keep track of the selected table in the saved tables dialog for deletion
     let selectedDbFile = null;
     let newDbFile = false; // змінна для фіксації створення нового файлу
-
+    let editingTableName = null;
     
     closeAllModals();
     
@@ -663,55 +663,55 @@ function saveTableData() {
     }
 
     const rows = document.querySelectorAll("#editBody tr"); // Всі редаговані рядки
-    const newData = []; // Масив для нових даних таблиці
 
     rows.forEach(row => {
-        const cells = row.querySelectorAll("td"); // Клітинки поточного рядка
-        const values = []; // Масив значень для SQL-запиту
-        const rowData = {}; // Об'єкт даних для збереження в currentEditTable
-        let allEmpty = true; // Прапорець порожнього рядка
+        const cells = row.querySelectorAll("td");
+        const values = [];
+        let allEmpty = true;
 
         currentEditTable.schema.forEach((col, index) => {
             const cell = cells[index];
             let val = "";
 
-            // 1. Якщо є <select> — беремо значення з нього
             const select = cell.querySelector("select");
             if (select) {
                 val = select.value;
-            }
-            // 2. Якщо є <input type="date"> — беремо його значення
-            else {
+            } else {
                 const input = cell.querySelector("input[type='date']");
                 if (input) {
                     val = input.value;
                 } else {
-                    // 3. Інакше беремо звичайний текст
                     val = cell.innerText.trim();
                 }
             }
 
-            if (val !== "") allEmpty = false; // Якщо хоч одне поле не порожнє — зберігаємо рядок
+            if (val !== "") allEmpty = false;
 
-            const escaped = val.replace(/'/g, "''"); // Екранування лапок у SQL
-            values.push(`'${escaped}'`); // Додаємо значення до масиву
-            rowData[col.title] = val; // Додаємо у внутрішній об'єкт
+            const escaped = val.replace(/'/g, "''");
+            values.push(`'${escaped}'`);
         });
 
-        if (allEmpty) return; // Пропускаємо порожній рядок
+        if (allEmpty) return;
 
-        newData.push(rowData); // Додаємо об'єкт до нових даних
-
-        const columns = currentEditTable.schema.map(col => `"${col.title}"`); // Масив назв стовпців
-        const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`; // SQL-запит
-        db.run(sql); // Виконання запиту
+        const columns = currentEditTable.schema.map(col => `"${col.title}"`);
+        const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
+        db.run(sql);
     });
 
-    saveDatabase(); // Збереження змін
-    currentEditTable.data = newData; // Оновлюємо копію даних у змінній
-    Message("Дані збережено."); // Повідомлення користувачу
-    closeEditModal(); // Закриваємо вікно редагування
+    // ❗ Після збереження — оновити currentEditTable.data з SQLite
+    try {
+        const res = db.exec(`SELECT * FROM "${currentEditTable.name}"`);
+        currentEditTable.data = res.length ? res[0].values : [];
+    } catch (e) {
+        console.warn("Не вдалося оновити дані після збереження:", e);
+        currentEditTable.data = [];
+    }
+
+    saveDatabase(); // Зберегти БД та структуру
+    Message("Дані збережено.");
+    closeEditModal();
 }
+
 
 /*
 Функція closeEditModal()
@@ -1050,7 +1050,7 @@ function updateFieldOptions(tableSelect) {
 Результат: Створена або оновлена таблиця з новою схемою в БД.
 */
 function saveSchema() {
-    let tableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
+    let newTableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
     const rows = document.querySelectorAll("#schemaBody tr");
 
     const schema = [];
@@ -1074,7 +1074,6 @@ function saveSchema() {
 
         fieldNames.add(lowerTitle);
 
-        // Перевірка на наявність checkbox для зовнішнього ключа (у клітинці 3)
         let isForeignKey = false;
         const foreignKeyCell = row.cells[3];
         if (foreignKeyCell) {
@@ -1084,7 +1083,6 @@ function saveSchema() {
             }
         }
 
-        // Безпечний доступ до клітинок 4 і 5 та їх select-елементів
         let refTable = null;
         let refField = null;
 
@@ -1135,22 +1133,25 @@ function saveSchema() {
         return;
     }
 
-    // Далі без змін...
-    console.log("Schema=", schema);
+    // Отримуємо стару назву таблиці
+    let oldTableName = editingTableName.name;
+    if (oldTableName && typeof oldTableName === 'object') {
+        oldTableName = oldTableName.name;
+    }
+    if (!oldTableName || typeof oldTableName !== 'string') {
+        Message("Помилка: не вдалося визначити стару назву таблиці.");
+        console.error("Invalid oldTableName:", oldTableName);
+        return;
+    }
 
-    const table = {
-        name: tableName,
-        schema: schema,
-        data: []
-    };
+    const nameChanged = oldTableName !== newTableName;
+    const existingIndex = database.tables.findIndex(t => t.name === oldTableName);
 
-    // Зчитування старих даних
+    // Читаємо старі дані
     let oldData = [];
-    let oldSchema = [];
-    const existingIndex = database.tables.findIndex(t => t.name === tableName);
-    if (existingIndex !== -1) {
+    if (nameChanged || !existingIndex !== -1) {
         try {
-            const stmt = db.prepare(`SELECT * FROM "${tableName}"`);
+            const stmt = db.prepare(`SELECT * FROM "${oldTableName}"`);
             while (stmt.step()) {
                 oldData.push(stmt.getAsObject());
             }
@@ -1158,17 +1159,23 @@ function saveSchema() {
         } catch (e) {
             console.warn("Не вдалося зчитати старі дані таблиці:", e);
         }
-        oldSchema = database.tables[existingIndex].schema || [];
     }
 
-    // Видалення старої таблиці
+    // Видаляємо стару таблицю (і нову, якщо вже існує)
     try {
-        db.run(`DROP TABLE IF EXISTS "${tableName}"`);
+        db.run(`DROP TABLE IF EXISTS "${oldTableName}"`);
     } catch (e) {
         console.error("Не вдалося видалити стару таблицю:", e);
     }
+    if (nameChanged) {
+        try {
+            db.run(`DROP TABLE IF EXISTS "${newTableName}"`);
+        } catch (e) {
+            console.error("Не вдалося видалити існуючу нову таблицю:", e);
+        }
+    }
 
-    // Побудова SQL для нової таблиці
+    // Створюємо нову таблицю
     db.run("PRAGMA foreign_keys = ON;");
 
     let fieldsSQL = schema.map(field => {
@@ -1185,30 +1192,33 @@ function saveSchema() {
     });
 
     const foreignKeys = schema
-      .filter(f => f.foreignKey && f.refTable && f.refField)
-      .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
+        .filter(f => f.foreignKey && f.refTable && f.refField)
+        .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
 
     const fullFieldsSQL = [...fieldsSQL, ...foreignKeys].join(", ");
-    const createSQL = `CREATE TABLE "${tableName}" (${fullFieldsSQL});`;
+    const createSQL = `CREATE TABLE "${newTableName}" (${fullFieldsSQL});`;
+
     try {
         db.run(createSQL);
     } catch (e) {
         console.warn("Не вдалося створити таблицю:", e, createSQL);
+        Message("Не вдалося створити таблицю.");
+        return;
     }
 
-    // Вставлення даних назад (за спільними назвами полів)
-    let newFieldNames = schema.map(f => f.title);
+    // Вставляємо дані назад
+    const newFieldNames = schema.map(f => f.title);
     oldData.forEach(record => {
-        let insertFields = [];
-        let insertValues = [];
-        for (let key of newFieldNames) {
+        const insertFields = [];
+        const insertValues = [];
+        for (const key of newFieldNames) {
             if (key in record) {
                 insertFields.push(`"${key}"`);
                 insertValues.push(JSON.stringify(record[key]));
             }
         }
         if (insertFields.length > 0) {
-            let insertSQL = `INSERT INTO "${tableName}" (${insertFields.join(", ")}) VALUES (${insertValues.join(", ")});`;
+            const insertSQL = `INSERT INTO "${newTableName}" (${insertFields.join(", ")}) VALUES (${insertValues.join(", ")});`;
             try {
                 db.run(insertSQL);
             } catch (e) {
@@ -1217,28 +1227,249 @@ function saveSchema() {
         }
     });
 
-    // Оновлення або додавання таблиці до списку
+    // Створюємо новий об'єкт таблиці з даними
+    const table = {
+        name: newTableName,
+        schema: schema,
+        data: []
+    };
+
+    // Читаємо дані з новоствореної таблиці як масиви (у порядку schema)
+    try {
+        const stmt = db.prepare(`SELECT * FROM "${newTableName}"`);
+        const fieldNames = schema.map(f => f.title); // порядок важливий
+
+        while (stmt.step()) {
+            const rowObj = stmt.getAsObject();
+            const rowArray = fieldNames.map(fieldName => rowObj[fieldName] ?? null);
+            table.data.push(rowArray);
+        }
+        stmt.free();
+    } catch (e) {
+        console.warn("Не вдалося зчитати дані для збереження в database.tables:", e);
+    }
+
+    // Оновлюємо database.tables
     if (existingIndex !== -1) {
-        database.tables[existingIndex] = table;
+        database.tables[existingIndex] = table; // замінюємо стару
     } else {
         database.tables.push(table);
     }
 
-    addTableToMenu(tableName);
+    // === Оновлюємо всі посилання ===
+    if (nameChanged) {
+        updateRelationsOnRename(oldTableName, newTableName);
+        updateQueriesOnTableRename(oldTableName, newTableName);
+        updateReportsOnTableRename(oldTableName, newTableName);
+        updateFormsOnTableRename(oldTableName, newTableName);
+
+        removeTableFromMenu(oldTableName);
+    }
+    addTableToMenu(newTableName);
+
+    // Зберігаємо стан
     saveDatabase();
     Message("Структуру таблиці збережено.");
     closeModal();
-    console.log("Table.schema=", table.schema);
 }
 
+// Допоміжна функція: чи змінилася структура
+function isStructureChanged(oldSchema, newSchema) {
+    if (!oldSchema || oldSchema.length !== newSchema.length) return true;
 
-/*
-Функція addTableToMenu(tableName)
-Призначення: Додає назву таблиці до списку таблиць у меню.
-Параметри:
- - tableName (string): назва таблиці.
-Результат: Елемент меню для редагування цієї таблиці додається до DOM.
-*/
+    for (let i = 0; i < oldSchema.length; i++) {
+        const oldField = oldSchema[i];
+        const newField = newSchema[i];
+        if (
+            oldField.title !== newField.title ||
+            oldField.type !== newField.type ||
+            oldField.primaryKey !== newField.primaryKey ||
+            oldField.foreignKey !== newField.foreignKey ||
+            oldField.refTable !== newField.refTable ||
+            oldField.refField !== newField.refField
+        ) {
+            return true;
+        }
+    }
+    return false;    
+}
+
+/**
+ * Функція updateFormsOnTableRename
+ * Призначення: Оновлює форми в database.forms після перейменування таблиці.
+ * Оновлює:
+ *   - element.tableName: якщо дорівнює oldName
+ *   - element.text: якщо містить "oldName.fieldName" (наприклад, "Contacts.phone")
+ * Параметри:
+ *   - oldName (string): стара назва таблиці
+ *   - newName (string): нова назва таблиці
+ */
+function updateFormsOnTableRename(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const oldEscaped = escapeRegex(oldName);
+    const fieldRefPattern = new RegExp(`"${oldEscaped}\\.([a-zA-Z0-9_]+)"`, 'g');
+
+    database.forms.forEach(form => {
+        if (Array.isArray(form.elements)) {
+            form.elements.forEach(element => {
+                // 1. Оновлюємо tableName
+                if (element.tableName === oldName) {
+                    element.tableName = newName;
+                }
+
+                // 2. Оновлюємо text, якщо це посилання на поле: "TableName.FieldName"
+                if (typeof element.text === 'string') {
+                    const isFieldRef = new RegExp(`^"${oldEscaped}\\.[^"]+"$`).test(element.text);
+                    if (isFieldRef) {
+                        element.text = element.text.replace(fieldRefPattern, `"${newName}.$1"`);
+                    } else if (element.text === oldName) {
+                        // Якщо просто назва таблиці
+                        element.text = element.text.replace(oldName, newName);
+                    }
+                }
+            });
+        }
+    });
+
+    console.log(`Оновлено форми: "${oldName}" → "${newName}" (tableName та text)`);
+}
+
+/**
+ * Функція updateReportsOnTableRename
+ * Призначення: Оновлює звіти в database.reports після перейменування таблиці.
+ * Оновлює:
+ *   - element.tableName: якщо співпадає з oldName
+ *   - element.text: якщо містить "oldName.fieldName" → замінює на "newName.fieldName"
+ * Параметри:
+ *   - oldName (string): стара назва таблиці
+ *   - newName (string): нова назва таблиці
+ */
+function updateReportsOnTableRename(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+
+    // Екрануємо назви для регулярних виразів
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const oldEscaped = escapeRegex(oldName);
+
+    // Регулярний вираз для пошуку "tableName.fieldName" у text
+    const fieldRefPattern = new RegExp(`"${oldEscaped}\\.([a-zA-Z0-9_]+)"`, 'g');
+
+    database.reports.forEach(report => {
+        if (Array.isArray(report.elements)) {
+            report.elements.forEach(element => {
+                // 1. Оновлюємо tableName
+                if (element.tableName === oldName) {
+                    element.tableName = newName;
+                }
+
+                // 2. Оновлюємо text, якщо містить "OldTable.field"
+                if (typeof element.text === 'string') {
+                    // Спочатку перевіряємо, чи є посилання на поле: "TableName.FieldName"
+                    const hasFieldRef = new RegExp(`^"${oldEscaped}\\.[^"]+"$`).test(element.text);
+                    if (hasFieldRef) {
+                        // Замінюємо всі входження "OldTable.field" → "NewTable.field"
+                        element.text = element.text.replace(
+                            fieldRefPattern,
+                            `"${newName}.$1"`
+                        );
+                    } else if (element.text === oldName) {
+                        // Якщо просто назва таблиці (наприклад, для заголовків)
+                        element.text = element.text.replace(oldName, newName);
+                    }
+                }
+            });
+        }
+    });
+
+    console.log(`Оновлено звіти: "${oldName}" → "${newName}" (tableName та text)`);
+}
+
+/**
+ * Функція updateQueriesOnTableRename
+ * Призначення: Оновлює SQL та конфігурацію запитів після перейменування таблиці.
+ * Оновлює:
+ *   - sql: текст запиту (наприклад, "OldTable" → "NewTable")
+ *   - config.tableName: у кожному полі
+ *   - joins.fromTable, joins.toTable: якщо використовуються
+ * Параметри:
+ *   - oldName (string): стара назва таблиці
+ *   - newName (string): нова назва таблиці
+ */
+function updateQueriesOnTableRename(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const oldEscaped = escapeRegex(oldName);
+    const pattern = new RegExp(`"(${oldEscaped})"`, 'g');
+
+    queries.definitions.forEach(query => {
+        // 1. Оновлюємо SQL-рядок
+        if (typeof query.sql === 'string') {
+            query.sql = query.sql.replace(pattern, `"${newName}"`);
+        }
+
+        // 2. Оновлюємо config.tableName
+        if (Array.isArray(query.config)) {
+            query.config.forEach(field => {
+                if (field.tableName === oldName) {
+                    field.tableName = newName;
+                }
+            });
+        }
+
+        // 3. Оновлюємо joins (якщо є)
+        if (Array.isArray(query.joins)) {
+            query.joins.forEach(join => {
+                if (join.fromTable === oldName) {
+                    join.fromTable = newName;
+                }
+                if (join.toTable === oldName) {
+                    join.toTable = newName;
+                }
+            });
+        }
+
+        // 4. (Опціонально) Оновлюємо назву запиту, якщо вона містить старе ім'я
+        // if (typeof query.name === 'string' && query.name.includes(oldName)) {
+        //     query.name = query.name.replace(oldName, newName);
+        // }
+    });
+
+    console.log(`Оновлено запити: "${oldName}" → "${newName}" (sql, config, joins)`);
+}
+/**
+ * Функція updateRelationsOnRename
+ * Призначення: Оновлює всі посилання на таблицю в database.relations після її перейменування.
+ * Параметри:
+ *   - oldName (string): стара назва таблиці.
+ *   - newName (string): нова назва таблиці.
+ */
+function updateRelationsOnRename(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+
+    database.relations.forEach(relation => {
+        // Оновлюємо звідки (fromTable)
+        if (relation.fromTable === oldName) {
+            relation.fromTable = newName;
+        }
+        // Оновлюємо куди (toTable)
+        if (relation.toTable === oldName) {
+            relation.toTable = newName;
+        }
+    });
+
+    console.log(`Оновлено зв'язки: "${oldName}" → "${newName}"`);
+}
+
+/**
+* Функція addTableToMenu(tableName)
+* Призначення: Додає назву таблиці до списку таблиць у меню.
+* Параметри:
+* - tableName (string): назва таблиці.
+* Результат: Елемент меню для редагування цієї таблиці додається до DOM.
+**/
 function addTableToMenu(tableName) {
     const dataMenu = document.getElementById("data-menu");
 
@@ -1254,6 +1485,27 @@ function addTableToMenu(tableName) {
     item.onclick = () => editData(tableName);
 
     dataMenu.appendChild(item);
+}
+
+/**
+ * Функція removeTableFromMenu(oldTableName)
+ * Призначення: Видаляє пункт меню для таблиці за її назвою.
+ * Параметри:
+ *  - oldTableName (string): назва таблиці, яку потрібно видалити з меню.
+ * Результат: Відповідний елемент видаляється з DOM (якщо існує).
+ */
+function removeTableFromMenu(oldTableName) {
+    const dataMenu = document.getElementById("data-menu");
+
+    // Знаходимо елемент, у якого текстовий вміст співпадає з oldTableName
+    const itemToRemove = Array.from(dataMenu.children).find(
+        item => item.textContent.trim() === oldTableName.trim()
+    );
+
+    // Якщо знайшли — видаляємо
+    if (itemToRemove) {
+        dataMenu.removeChild(itemToRemove);
+    }
 }
 
 /* 
@@ -5113,6 +5365,7 @@ function executeOwnSQL() {
         Message("Вибрану таблицю не знайдено.");
         return;
     }
+    editingTableName = tableToEdit;
     console.log("Edit schema=", selectedTableNameForEdit)
     table.schema = tableToEdit.schema || [];
     document.getElementById("savedTablesModal").style.display = "none";

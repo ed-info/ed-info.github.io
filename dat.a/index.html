@@ -546,17 +546,31 @@
 			</div>
 		</div>
 	</div>
-	<!-- Вікно перегляду створеного звіту -->
-	<div id="reportPreviewModal" class="modal" style="display:none; z-index: 20000;">
-		<div class="modal-content" style="background: white; width: 90%; max-width: 1000px; position: relative;">
-			<h2 id="reportPreviewTitle" style="margin-top: 0;">Попередній перегляд звіту</h2>
-			<div id="reportPreviewCanvas" style="border: 1px solid #ccc; min-height: 400px; position: relative; background: #fff;"> </div>
-			<div style="text-align: right; margin-top: 20px;">
-				<button onclick="printReportPreview()">Друкувати</button>
-				<button onclick="closeReportPreview()">Закрити</button>
-			</div>
-		</div>
-	</div>
+    <!-- Вікно перегляду створеного звіту -->
+    <div id="reportPreviewModal" class="modal" style="display:none; z-index: 20000;">
+      <div class="modal-content" style="background: white; width: 90%; max-width: 1000px; position: relative; display: flex;">
+        
+        <!-- Основна частина з canvas -->
+        <div style="flex-grow: 1; padding-right: 10px;">
+          <h2 id="reportPreviewTitle" style="margin-top: 0;">Попередній перегляд звіту</h2>
+          <div id="reportPreviewCanvas" style="border: 1px solid #ccc; min-height: 400px; position: relative; background: #fff;"></div>
+        </div>
+    
+        <!-- Панель кнопок -->
+        <div style="display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; align-items: center; padding: 10px;">
+          <button onclick="printReportPreview()" style="width: 64px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px;">
+            <span style="font-size: 24px;">🖨️</span>
+            <span>Друк</span>
+          </button>
+          <button onclick="closeReportPreview()" style="width: 64px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px;">
+            <span style="font-size: 24px;">❌</span>
+            <span>Закрити</span>
+          </button>
+        </div>
+    
+      </div>
+    </div>
+    
 	<!-- Вікно графічного конструктора зв'язків-->
 	<div id="relationModal" class="modal" style="display:none; z-index:15000;">
 		<div class="modal-content" style="width: 98%; height: 90vh; max-width: none; background:white; position:relative;">
@@ -749,7 +763,7 @@
 				<h2 style="margin-top: 0;text-align:center;">Про застосунок <strong>dat.A</strong></h2>
 				<p><strong>dat.A</strong> — це простий вебзастосунок для роботи з базами даних безпосередньо у вашому браузері.</p>
 				<p><strong>Версія:</strong> 0.9 (неофіційна)</p>
-				<p>Розроблено з любов'ю до інформатики та тих, хто її вивчає 💻❤️</p>
+				<p>Розроблено з любов'ю до інформатики та тих, хто її вивчає, і тих, хто їх навчає  💻❤️</p>
 			</div>
 			<!-- Права частина: кнопка закриття -->
 			<div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start;">
