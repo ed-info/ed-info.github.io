@@ -401,15 +401,17 @@
 			</div>
 			<!-- Права частина — вертикальні кнопки -->
 			<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 4px;">
-				<button onclick="openSelectedTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📂 
+				<button onclick="openSelectedTable()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📂 
                 <span style="font-size: 10px;">Відкрити</span> </button>
-				<button onclick="editSelectedTableSchema()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🛠️ 
+				<button onclick="editSelectedTableSchema()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🛠️ 
                 <span style="font-size: 10px;">Змінити</span> </button>
-				<button onclick="confirmDeleteTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🗑️ 
+                <button onclick="copySelectedTable()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+  📄            <span style="font-size: 10px;">Копіювати</span> </button>
+				<button onclick="confirmDeleteTable()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 🗑️ 
                 <span style="font-size: 10px;">Видалити</span> </button>
-                <button onclick="exportTableToCSV()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📤
+                <button onclick="exportTableToCSV()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 📤
                 <span style="font-size: 10px;">Експорт в CSV</span> </button>
-				<button onclick="closeSavedTablesDialog()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ❌ 
+				<button onclick="closeSavedTablesDialog()" style="width:64px; height:56px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;"> ❌ 
                 <span style="font-size: 10px;">Закрити</span> </button>
 			</div>
 		</div>
@@ -663,17 +665,53 @@
 			</div>
 		</div>
 	</div>
-	<!-- 🔽 Вибір таблиці, в яку буде зроблено імпорт -->
-	<div id="csvImportModal" class="modal" style="display:none;">
-		<div class="modal-content">
-			<h3>Виберіть таблицю для імпорту CSV</h3>
-			<select id="csvTargetTable" style="width:100%; padding:10px; font-size:16px;"> </select>
-			<div style="text-align:right; margin-top:15px;">
-				<button onclick="proceedCsvImport()">Продовжити</button>
-				<button onclick="closeCsvImportDialog()">Скасувати</button>
-			</div>
-		</div>
-	</div>
+    <!-- 🔽 Вибір таблиці, в яку буде зроблено імпорт -->
+    <div id="csvImportModal" class="modal" style="display:none;">
+      <div class="modal-content" style="display: flex; flex-direction: row; gap: 20px;">
+        <div style="flex: 1;">
+          <h3>Виберіть таблицю для імпорту CSV</h3>
+          <select id="csvTargetTable" style="width:100%; padding:10px; font-size:16px;"></select>
+        </div>
+    
+        <!-- Контейнер для кнопок -->
+        <div style="
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: flex-end;
+          gap: 10px;
+        ">
+          <button onclick="proceedCsvImport()" style="
+            width: 64px;
+            height: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+          ">
+            ✅<br><span style="font-size: 12px;">ОК</span>
+          </button>
+    
+          <button onclick="closeCsvImportDialog()" style="
+            width: 64px;
+            height: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+          ">
+            ❌<br><span style="font-size: 12px;">Назад</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
 	<!-- 🔽 Відомості про базу даних -->
 	<div id="dbInfoModal" class="modal" style="display:none;">
 		<div class="modal-content" style="max-width: 500px; background:#fff;">

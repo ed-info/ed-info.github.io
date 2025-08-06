@@ -849,6 +849,7 @@ function createTable() {
     addSchemaRow(); // Додати перший рядок
     document.getElementById("makeTable").innerText = `Створення структури таблиці`; // заголовок
     document.getElementById("modal").style.display = "flex"; // показ модального вікна
+    toggleForeignKeyHeaders();
 }
 
 /* 
@@ -870,60 +871,86 @@ function closeModal() {
 function deleteSchemaRow(button) {
     const row = button.closest("tr"); // знаходження батьківського рядка
     if (row) row.remove(); // видалення з DOM
+    toggleForeignKeyHeaders();
 }
 
-/* 
+/**
+Функція toggleForeignKeyHeaders()
+Призначення: Показує або приховує заголовки "Таблиця 📌" та "Поле 📌"
+             залежно від того, чи є хоча б один увімкнений чекбокс зовнішнього ключа.
+*/
+function toggleForeignKeyHeaders() {
+    const rows = document.querySelectorAll("#schemaBody tr");
+    const anyChecked = Array.from(rows).some(row => {
+        const checkbox = row.cells[3]?.querySelector('input[type="checkbox"]');
+        return checkbox?.checked;
+    });
+
+    const refTableHeader = document.getElementById("refTableHeader");
+    const refFieldHeader = document.getElementById("refFieldHeader");
+
+    if (anyChecked) {
+        refTableHeader.style.display = "";
+        refFieldHeader.style.display = "";
+    } else {
+        refTableHeader.style.display = "none";
+        refFieldHeader.style.display = "none";
+    }
+}
+
+
+
+/** 
 Функція addSchemaRow()
 Призначення: Додає новий рядок до структури таблиці, що створюється.
 Параметри: відсутні.
 Результат: Вставка HTML-елементів до тіла таблиці зі всіма полями для нового стовпця.
-*/
+**/
 function addSchemaRow() {
     const tbody = document.getElementById("schemaBody");
     const row = document.createElement("tr");
 
     const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
 
-    // Перевірка: чи хоч один чекбокс "Зовн. ключ" активний?
     const anyChecked = Array.from(document.querySelectorAll('#schemaBody tr input[type="checkbox"]'))
         .some(cb => cb.closest('td')?.cellIndex === 3 && cb.checked);
-    console.log("anyChecked=",anyChecked)
+
     row.innerHTML = `
         <td style="text-align:center;">
-          <input type="checkbox" onchange="handlePrimaryKey(this)">
+            <input type="checkbox" onchange="handlePrimaryKey(this)">
         </td>
         <td contenteditable="true"></td>
         <td>
-          <select>
-            <option>Текст</option>
-            <option>Ціле число</option>
-            <option>Дробове число</option>
-            <option>Так/Ні</option>
-            <option>Дата</option>
-          </select>
+            <select>
+                <option>Текст</option>
+                <option>Ціле число</option>
+                <option>Дробове число</option>
+                <option>Так/Ні</option>
+                <option>Дата</option>
+            </select>
         </td>
         <td style="text-align:center;">
-          <input type="checkbox" onchange="handleForeignKey(this)">
+            <input type="checkbox" onchange="handleForeignKey(this)">
         </td>
         ${anyChecked ? `
-        <td>
-          <select onchange="updateFieldOptions(this)">
-            <option value="">(таблиця)</option>
-            ${tableOptions}
-          </select>
-        </td>
-        <td>
-          <select>
-            <option value="">(поле)</option>
-          </select>
-        </td>` : ''}
+            <td>
+                <select onchange="updateFieldOptions(this)">
+                    <option value="">(таблиця)</option>
+                    ${tableOptions}
+                </select>
+            </td>
+            <td>
+                <select><option value="">(поле)</option></select>
+            </td>
+        ` : ''}
         <td contenteditable="true"></td>
         <td style="text-align:center;">
-          <button onclick="deleteSchemaRow(this)">❌</button>
+            <button onclick="deleteSchemaRow(this)">❌</button>
         </td>
     `;
 
     tbody.appendChild(row);
+    toggleForeignKeyHeaders(); // гарантуємо правильний стан заголовків
 }
 
 
@@ -941,34 +968,19 @@ function getFieldsForTable(tableName) {
     return table.schema.map(field => field.title);
 }
 
-/*
+/**
 Функція handlePrimaryKey(checkbox)
 Призначення: Обробляє встановлення або зняття первинного ключа для поля таблиці.
 Параметри:
  - checkbox (HTMLInputElement): прапорець первинного ключа.
 Результат: Оновлює тип поля та коментар до нього.
-*/
+**/
 function handlePrimaryKey(checkbox) {
     const row = checkbox.closest("tr");
+    const cells = row.cells;
 
-    // Структура рядка:
-    // 0 - чекбокс PK
-    // 1 - назва поля
-    // 2 - тип
-    // 3 - чекбокс FK
-    // 4 - таблиця FK
-    // 5 - поле FK
-    // 6 - коментар
-    // 7 - видалення
-    const tbody = document.getElementById("schemaBody");
-    const rows = tbody.querySelectorAll("tr");
-    const anyChecked = Array.from(rows).some(row => {
-        const cb = row.cells[3]?.querySelector('input[type="checkbox"]');
-        return cb?.checked;
-    });
-    let comment_pos = 4;
-    if (anyChecked) comment_pos = 6;
-    const commentCell = row.cells[comment_pos]; 
+    // Комірка коментаря — завжди передостання
+    const commentCell = cells[cells.length - 2];
     const typeSelect = row.cells[2].querySelector("select");
 
     if (checkbox.checked) {
@@ -985,13 +997,13 @@ function handlePrimaryKey(checkbox) {
     }
 }
 
-/*
+/**
 Функція handleForeignKey(checkbox)
 Призначення: Обробляє встановлення або зняття зовнішнього ключа для поля.
 Параметри:
  - checkbox (HTMLInputElement): прапорець зовнішнього ключа.
 Результат: Увімкнення/вимкнення селекторів таблиці/поля для FK.
-*/
+**/
 function handleForeignKey(checkbox) {
     const tbody = document.getElementById("schemaBody");
     const rows = tbody.querySelectorAll("tr");
@@ -1002,33 +1014,37 @@ function handleForeignKey(checkbox) {
     });
 
     rows.forEach(row => {
-        // Перевіряємо кількість комірок у рядку
-        const hasForeignKeyColumns = row.cells.length > 6;
+        const cells = row.cells;
+        const hasForeignKeyColumns = cells.length > 6; // якщо > 6 — значить є стовпчики ЗК
 
         if (anyChecked && !hasForeignKeyColumns) {
-            // Додаємо 2 комірки: Таблиця ЗК і Поле ЗК
+            // Додаємо стовпчики ЗК перед останніми двома (коментар + кнопка)
+            const commentCell = cells[cells.length - 2];
+            const deleteCell = cells[cells.length - 1];
+
             const tableSelect = document.createElement("td");
             const fieldSelect = document.createElement("td");
 
             const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
 
-            tableSelect.innerHTML = `<select onchange="updateFieldOptions(this)">
-                <option value="">(таблиця)</option>
-                ${tableOptions}
-            </select>`;
+            tableSelect.innerHTML = `
+                <select onchange="updateFieldOptions(this)">
+                    <option value="">(таблиця)</option>
+                    ${tableOptions}
+                </select>`;
             fieldSelect.innerHTML = `<select><option value="">(поле)</option></select>`;
 
-            // Вставити перед коментарем і кнопкою видалення
-            row.insertBefore(tableSelect, row.cells[6]);
-            row.insertBefore(fieldSelect, row.cells[7]);
-        }
+            row.insertBefore(tableSelect, commentCell);
+            row.insertBefore(fieldSelect, commentCell);
 
-        if (!anyChecked && hasForeignKeyColumns) {
-            // Видаляємо 2 зайві комірки
-            row.deleteCell(5); // поле ЗК
-            row.deleteCell(4); // таблиця ЗК
+        } else if (!anyChecked && hasForeignKeyColumns) {
+            // Видаляємо останні два стовпчики перед коментарем
+            row.deleteCell(cells.length - 3); // поле ЗК
+            row.deleteCell(cells.length - 3); // таблиця ЗК
         }
     });
+
+    toggleForeignKeyHeaders();
 }
 
 
@@ -4863,98 +4879,142 @@ function populateQueryModal(queryDefinition) {
         URL.revokeObjectURL(a.href);
         a.remove();
     }
+/**
+ * Імпорт з CVS файлу
+ **/ 
+// Показати діалог вибору таблиці для імпорту
+function showCsvImportDialog() {
+    const select = document.getElementById("csvTargetTable");
+    select.innerHTML = "";
+    database.tables.forEach(table => {
+        const option = document.createElement("option");
+        option.value = table.name;
+        option.textContent = table.name;
+        select.appendChild(option);
+    });
+    document.getElementById("csvImportModal").style.display = "flex";
+}
 
-    // імпорт даних з CSV
-    function showCsvImportDialog() {
-        const select = document.getElementById("csvTargetTable");
-        select.innerHTML = "";
-        database.tables.forEach(table => {
-            const option = document.createElement("option");
-            option.value = table.name;
-            option.textContent = table.name;
-            select.appendChild(option);
-        });
-        document.getElementById("csvImportModal").style.display = "flex";
+// Закрити модальне вікно
+function closeCsvImportDialog() {
+    document.getElementById("csvImportModal").style.display = "none";
+}
+
+// Відкрити вибір файлу
+function proceedCsvImport() {
+    closeCsvImportDialog();
+    document.getElementById("csvFileInput").value = ""; // Скинути попередній файл
+    document.getElementById("csvFileInput").click(); // Відкрити діалог вибору файлу
+}
+
+// Обробка вибраного CSV-файлу
+function handleCsvFile(file) {
+    if (!file) {
+        Message("Файл не вибрано.");
+        return;
     }
 
-    function closeCsvImportDialog() {
-        document.getElementById("csvImportModal").style.display = "none";
-    }
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const csvText = event.target.result;
+        const lines = csvText.trim().split("\n");
 
-    function proceedCsvImport() {
-        closeCsvImportDialog();
-        document.getElementById("csvFileInput").value = ""; // Скинути попередній файл
-        document.getElementById("csvFileInput").click(); // Відкрити вибір файлу
-    }
-
-    function handleCsvFile(file) {
-        if (!file) {
-            Message("Файл не вибрано.");
+        if (lines.length === 0) {
+            Message("CSV-файл порожній.");
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const csvText = event.target.result;
-            const rows = csvText.trim().split("\n").map(line => line.split(",").map(val => val.trim()));
+        // Визначення роздільника: вибираємо той, що частіше зустрічається в першому рядку
+        const firstLine = lines[0];
+        const hasSemicolon = (firstLine.split(";").length - 1);
+        const hasComma = (firstLine.split(",").length - 1);
+        const delimiter = hasSemicolon > hasComma ? ";" : ",";
 
-            if (rows.length === 0) {
-                Message("CSV-файл порожній.");
-                return;
-            }
+        // Розбиваємо всі рядки
+        const rows = lines.map(line => {
+            return line.split(delimiter).map(val => val.trim().replace(/^"(.*)"$/, '$1')); // видаляємо лапки, якщо є
+        });
 
-            const tableName = document.getElementById("csvTargetTable").value;
-            const table = database.tables.find(t => t.name === tableName);
-            if (!table) {
-                Message("Таблиця не знайдена.");
-                return;
-            }
+        // Перший рядок — заголовок
+        const headerRow = rows[0];
+        const dataRows = rows.slice(1); // решта — дані
 
-            const expectedCols = table.schema.length;
+        if (dataRows.length === 0) {
+            Message("Файл не містить даних після заголовка.");
+            return;
+        }
 
-            // Перевірка кількості стовпців
-            const invalidRow = rows.find(r => r.length !== expectedCols);
-            if (invalidRow) {
-                Message("Кількість стовпців у CSV не відповідає кількості полів у таблиці.");
-                return;
-            }
+        // Отримуємо цільову таблицю
+        const tableName = document.getElementById("csvTargetTable").value;
+        const table = database.tables.find(t => t.name === tableName);
+        if (!table) {
+            Message("Таблиця не знайдена.");
+            return;
+        }
 
-            // Перевірка типів даних
-            const typeMap = {
-                "Ціле число": val => /^-?\d+$/.test(val),
-                "Дробове число": val => /^-?\d+(\.\d+)?$/.test(val),
-                "Так/Ні": val => /^(true|false|1|0)$/i.test(val),
-                "Текст": val => true,
-                "Дата": val => true // можна ускладнити перевірку
-            };
+        // Перевірка: чи збігаються назви стовпців
+        const expectedHeaders = table.schema.map(col => col.title);
+        if (headerRow.length !== expectedHeaders.length) {
+            Message(`Кількість стовпців у заголовку (${headerRow.length}) не відповідає схемі (${expectedHeaders.length}).`);
+            return;
+        }
 
-            for (let i = 0; i < rows.length; i++) {
-                for (let j = 0; j < expectedCols; j++) {
-                    const val = rows[i][j];
-                    const type = table.schema[j].type;
-                    if (!typeMap[type](val)) {
-                        Message(`Помилка типу в рядку ${i + 1}, поле "${table.schema[j].title}" має бути типу "${type}".`);
-                        return;
-                    }
+        const mismatch = expectedHeaders.some((expected, i) => headerRow[i] !== expected);
+        if (mismatch) {
+            Message("Назви стовпців у CSV не відповідають схемі таблиці.");
+            console.log("Очікувано:", expectedHeaders);
+            console.log("Отримано:", headerRow);
+            return;
+        }
+
+        // Перевірка кількості стовпців у даних
+        const invalidRow = dataRows.find(row => row.length !== expectedHeaders.length);
+        if (invalidRow) {
+            Message(`Рядок містить неправильну кількість стовпців: ${invalidRow.length} (очікується ${expectedHeaders.length}).`);
+            return;
+        }
+
+        // Перевірка типів даних
+        const typeMap = {
+            "Ціле число": val => /^-?\d+$/.test(val),
+            "Дробове число": val => /^-?\d+(\.\d+)?$/.test(val),
+            "Так/Ні": val => /^(true|false|1|0)$/i.test(val),
+            "Текст": val => true,
+            "Дата": val => !isNaN(Date.parse(val)) || /^\d{4}-\d{2}-\d{2}$/.test(val)
+        };
+
+        for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
+            for (let j = 0; j < expectedHeaders.length; j++) {
+                const val = row[j];
+                const type = table.schema[j].type;
+                if (!typeMap[type](val)) {
+                    Message(`Помилка типу в рядку ${i + 1}, поле "${table.schema[j].title}" (${type}): "${val}".`);
+                    return;
                 }
             }
+        }
 
-            // Усе гаразд — вставляємо дані
-            const colNames = table.schema.map(col => `"${col.title}"`).join(", ");
-            db.run("BEGIN TRANSACTION");
-            rows.forEach(row => {
+        // Усе гаразд — вставляємо дані
+        const colNames = table.schema.map(col => `"${col.title}"`).join(", ");
+        db.run("BEGIN TRANSACTION");
+        try {
+            dataRows.forEach(row => {
                 const values = row.map(val => `'${val.replace(/'/g, "''")}'`).join(", ");
                 const sql = `INSERT INTO "${table.name}" (${colNames}) VALUES (${values})`;
                 db.run(sql);
             });
             db.run("COMMIT");
-
-            Message(`Імпортовано ${rows.length} записів у таблицю "${table.name}".`);
+            Message(`Імпортовано ${dataRows.length} записів у таблицю "${table.name}".`);
             saveDatabase();
-        };
+        } catch (e) {
+            db.run("ROLLBACK");
+            Message("Помилка при вставці даних: " + e.message);
+        }
+    };
 
-        reader.readAsText(file);
-    }
+    reader.readAsText(file);
+}
 
     // Перегляд відомостей про базу даних
     function showDatabaseInfo() {
@@ -5324,7 +5384,11 @@ function executeOwnSQL() {
         const modal = document.getElementById("aboutModal");
         modal.style.display = "none";
     }
-//
+/**
+ * Оновлення заголовку таблиці структури 
+ * якщо увімкнено хоча б один зовніщній ключ - додаємо два стовпці
+ * якщо не увікнено жодного зовнішнього ключа - приховуємо 
+ * */
     function updateSchemaTableHeader(hasForeign) {
         const thead = document.getElementById("schemaHead");
         thead.innerHTML = ""; // очистити
@@ -5434,10 +5498,87 @@ function executeOwnSQL() {
     document.getElementById("modal").style.display = "flex";
 }
 
-    
+/**
+ * Копіювання вибраної таблиці зі створенням нового екземпляру
+ */    
+function copySelectedTable() {
+    if (!selectedTableNameForEdit) {
+        Message("Виберіть таблицю для копіювання.");
+        return;
+    }
 
-    
-    function printReportPreview() {
+    const originalTable = database.tables.find(t => t.name === selectedTableNameForEdit);
+    if (!originalTable) {
+        Message("Таблицю не знайдено.");
+        return;
+    }
+
+    // Згенерувати нову унікальну назву
+    let baseName = "Копія_" + selectedTableNameForEdit;
+    let newName = baseName;
+    let counter = 1;
+    while (database.tables.some(t => t.name === newName)) {
+        newName = baseName + "_" + counter++;
+    }
+
+    // Копіюємо структуру таблиці
+    const newTable = {
+        name: newName,
+        schema: JSON.parse(JSON.stringify(originalTable.schema)),
+        data: JSON.parse(JSON.stringify(originalTable.data || []))
+    };
+
+    // Створюємо таблицю в SQLite
+    try {
+        const fields = newTable.schema.map(field => {
+            let type = field.type.toUpperCase();
+            if (type === "ЦІЛЕ ЧИСЛО") type = "INTEGER";
+            else if (type === "ДРОБОВЕ ЧИСЛО") type = "REAL";
+            else if (type === "ТЕКСТ") type = "TEXT";
+            else if (type === "ТАК/НІ") type = "BOOLEAN";
+            else if (type === "ДАТА") type = "TEXT";
+
+            let def = `"${field.title}" ${type}`;
+            if (field.primaryKey) def += " PRIMARY KEY";
+            return def;
+        });
+
+        const foreignKeys = newTable.schema
+            .filter(f => f.foreignKey && f.refTable && f.refField)
+            .map(f => `FOREIGN KEY ("${f.title}") REFERENCES "${f.refTable}"("${f.refField}")`);
+
+        const createSQL = `CREATE TABLE "${newTable.name}" (${[...fields, ...foreignKeys].join(", ")});`;
+        db.run("PRAGMA foreign_keys = OFF;");
+        db.run(createSQL);
+       
+
+
+        // Вставити всі записи
+        newTable.data.forEach(row => {
+            const columns = newTable.schema.map(f => `"${f.title}"`);
+            const values = row.map(v => v === null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
+            const insertSQL = `INSERT INTO "${newTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
+            db.run(insertSQL);
+        });
+        db.run("PRAGMA foreign_keys = ON;");
+        // Додати таблицю в список
+        database.tables.push(newTable);
+        addTableToMenu(newTable.name);
+        saveDatabase();
+
+        Message(`Створено копію таблиці "${newTable.name}".`);
+        showSavedTablesDialog(); // оновити діалог
+
+    } catch (e) {
+        console.error("Помилка при копіюванні таблиці:", e);
+        Message("Не вдалося створити копію таблиці.");
+    }
+}
+
+/**
+ * Перегляд створеного звіту
+ **/
+function printReportPreview() {
         const previewContent = document.getElementById("reportPreviewCanvas");
     
         if (!previewContent) {
