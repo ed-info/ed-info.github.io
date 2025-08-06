@@ -2597,168 +2597,262 @@ function populateQueryModal(queryDefinition) {
 
     // New function for Report Creator
     let isGridVisible = false; // Track grid visibility
-
-    function createReport(report = null) {
-        const modal = document.getElementById("reportBuilderModal");
-        const canvas = document.getElementById("reportCanvas");
-        const nameInput = document.getElementById("reportNameInput");
-        document.getElementById("reportTitle").textContent = "Створення звіту";
-
-        canvas.innerHTML = ""; // Очистити старі елементи
-        populateFieldPanelTableSelect();
-
-        if (report) {
-            nameInput.value = report.name || "Звіт без назви";
-            document.getElementById("reportTitle").textContent = "Редагування звіту";
-
-            report.elements.forEach(el => {
-                const div = document.createElement("div");
-                console.log("el.x,el.y=", el.x, el.y)
-                div.classList.add("report-element");
-
-                if (el.type === "label") {
-                    div.classList.add("report-label");
-                    div.innerText = el.text || "Напис";
-
-                    // Робимо текст редагованим
-                    div.contentEditable = true;
-                    div.style.cursor = "text";
-
-                    // (опціонально) — можна відловлювати Enter і Blur
-                    div.addEventListener("keydown", (e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            div.blur();
-                        }
-                    });
-                } else if (el.type === "field") {
-                    div.classList.add("report-field");
-                    const textDiv = document.createElement("div");
-                    textDiv.classList.add("field-text");
-                    textDiv.innerText = `${el.tableName}.${el.fieldName}`;
-
-                    div.dataset.tableName = el.tableName;
-                    div.dataset.fieldName = el.fieldName;
-
-                    div.appendChild(textDiv);
-                }
-
-                Object.assign(div.style, {
-                    position: "absolute",
-                    left: addPx(el.left),
-                    top: addPx(el.top),
-                    width: addPx(el.width),
-                    height: addPx(el.height),
-                    fontFamily: el.fontFamily,
-                    fontSize: el.fontSize,
-                    fontWeight: el.fontWeight,
-                    fontStyle: el.fontStyle,
-                    textDecoration: el.textDecoration,
-                    color: el.color,
-                    backgroundColor: "transparent",
-                    padding: "5px",
-                    cursor: "move"
+function createReport(report = null) {
+    const modal = document.getElementById("reportBuilderModal");
+    const canvas = document.getElementById("reportCanvas");
+    const nameInput = document.getElementById("reportNameInput");
+    document.getElementById("reportTitle").textContent = "Створення звіту";
+    canvas.innerHTML = ""; // Очистити старі елементи
+    populateFieldPanelTableSelect();
+    if (report) {
+        nameInput.value = report.name || "Звіт без назви";
+        document.getElementById("reportTitle").textContent = "Редагування звіту";
+        report.elements.forEach(el => {
+            const div = document.createElement("div");
+            div.classList.add("report-element");
+            if (el.type === "label") {
+                div.classList.add("report-label");
+                div.innerText = el.text || "Напис";
+                div.contentEditable = true;
+                div.style.cursor = "text";
+                div.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        div.blur();
+                    }
                 });
-                initializeReportElement(div);
-                addResizeHandles(div);
-                canvas.appendChild(div);
+            } else if (el.type === "field") {
+                div.classList.add("report-field");
+                const textDiv = document.createElement("div");
+                textDiv.classList.add("field-text");
+                textDiv.innerText = `${el.tableName}.${el.fieldName}`;
+                div.dataset.tableName = el.tableName;
+                div.dataset.fieldName = el.fieldName;
+                div.appendChild(textDiv);
+            }
+            Object.assign(div.style, {
+                position: "absolute",
+                left: addPx(el.left),
+                top: addPx(el.top),
+                width: addPx(el.width),
+                height: addPx(el.height),
+                fontFamily: el.fontFamily,
+                fontSize: el.fontSize,
+                fontWeight: el.fontWeight,
+                fontStyle: el.fontStyle,
+                textDecoration: el.textDecoration,
+                color: el.color,
+                backgroundColor: "transparent",
+                padding: "5px",
+                cursor: "grab",
+                touchAction: "none" // 🔥 Важливо!
             });
-        } else {
-            nameInput.value = "Новий звіт";
-        }
-
-        reportCreatorModal.style.display = "flex";
-    }
-    
-    function populateFieldPanelTableSelect() {
-            fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю або запит</option>";
-            console.log("queries.results=",queries.results)
-            // Таблиці
-            database.tables.forEach(table => {
-                const option = document.createElement("option");
-                option.value = table.name;
-                option.textContent = table.name;
-                fieldPanelTableSelect.appendChild(option);
-            });
-        
-            // Запити
-            queries.results.forEach(query => {
-                const option = document.createElement("option");
-                option.value = `*${query.name}`;
-                option.textContent = `*${query.name}`; // Наприклад: *запит "Успішність"
-                fieldPanelTableSelect.appendChild(option);
-            });
-        }
-
-    let resizing = false;
-    let resizeElement = null;
-    let startX, startY, startWidth, startHeight;
-    
-    function startResize(e) {
-        e.stopPropagation(); // Щоб не активувався drag
-        e.preventDefault();
-        resizing = true;
-        resizeElement = e.target.parentElement;
-        startX = e.clientX;
-        startY = e.clientY;
-        startWidth = resizeElement.offsetWidth;
-        startHeight = resizeElement.offsetHeight;
-    
-        document.addEventListener("mousemove", doResize);
-        document.addEventListener("mouseup", stopResize);
-    }
-    
-    function doResize(e) {
-        if (!resizing || !resizeElement) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-    
-        // Можна ускладнити для кожного кута, але спростимо:
-        resizeElement.style.width = (startWidth + dx) + "px";
-        resizeElement.style.height = (startHeight + dy) + "px";
-    }
-    
-    function stopResize() {
-        resizing = false;
-        resizeElement = null;
-        document.removeEventListener("mousemove", doResize);
-        document.removeEventListener("mouseup", stopResize);
-    }
-
-    function addResizeHandles(element) {
-        const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
-        positions.forEach(pos => {
-            const handle = document.createElement("div");
-            handle.classList.add("resize-handle", pos);
-            handle.addEventListener("mousedown", startResize); // 👈 ДОДАЙ ЦЕ
-            element.appendChild(handle);
+            initializeReportElement(div);
+            addResizeHandles(div);
+            canvas.appendChild(div);
         });
+    } else {
+        nameInput.value = "Новий звіт";
     }
-    
+    reportCreatorModal.style.display = "flex";
+}
 
-    // ******************
-    function initializeReportElement(el) {
-        el.classList.add("report-element");
-        el.style.cursor = "grab";
+function populateFieldPanelTableSelect() {
+    fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю або запит</option>";
+    database.tables.forEach(table => {
+        const option = document.createElement("option");
+        option.value = table.name;
+        option.textContent = table.name;
+        fieldPanelTableSelect.appendChild(option);
+    });
+    queries.results.forEach(query => {
+        const option = document.createElement("option");
+        option.value = `*${query.name}`;
+        option.textContent = `*${query.name}`;
+        fieldPanelTableSelect.appendChild(option);
+    });
+}
 
-        el.onmousedown = function(e) {
-            const reportCanvas = document.getElementById("reportCanvas");                     
-            const fieldSelectionModal = document.getElementById("fieldSelectionModal");
-            
-            const handle = e.target.closest(".resize-handle");
-            activeElement = el;
-            document.querySelectorAll(".report-element").forEach(el => {
-                el.classList.remove("selected");
-                el.querySelectorAll(".resize-handle").forEach(h => h.remove()); // прибрати маркери
-            });
-            document.querySelectorAll(".report-element.selected").forEach(el => el.classList.remove("selected"));
-            el.classList.add("selected");
-            addResizeHandles(el);                     
-            closeTextOptionsModal();
+let resizing = false;
+let resizeElement = null;
+let startX, startY, startWidth, startHeight;
 
-            const rect = el.getBoundingClientRect();
-            initialLeft = el.offsetLeft;
-            initialTop = el.offsetTop;
+function startResize(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    resizing = true;
+    resizeElement = e.target.parentElement;
+    startX = e.clientX;
+    startY = e.clientY;
+    startWidth = resizeElement.offsetWidth;
+    startHeight = resizeElement.offsetHeight;
+    document.addEventListener("pointermove", doResize);
+    document.addEventListener("pointerup", stopResize);
+    document.addEventListener("pointercancel", stopResize);
+}
+
+function doResize(e) {
+    if (!resizing || !resizeElement) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    let newLeft = resizeElement.offsetLeft;
+    let newTop = resizeElement.offsetTop;
+
+    if (resizeElement.classList.contains("bottom-right")) {
+        newWidth = Math.max(50, startWidth + dx);
+        newHeight = Math.max(30, startHeight + dy);
+    } else if (resizeElement.classList.contains("bottom-left")) {
+        newWidth = Math.max(50, startWidth - dx);
+        newHeight = Math.max(30, startHeight + dy);
+        newLeft = resizeElement.offsetLeft + dx;
+    } else if (resizeElement.classList.contains("top-right")) {
+        newWidth = Math.max(50, startWidth + dx);
+        newHeight = Math.max(30, startHeight - dy);
+        newTop = resizeElement.offsetTop + dy;
+    } else if (resizeElement.classList.contains("top-left")) {
+        newWidth = Math.max(50, startWidth - dx);
+        newHeight = Math.max(30, startHeight - dy);
+        newLeft = resizeElement.offsetLeft + dx;
+        newTop = resizeElement.offsetTop + dy;
+    }
+
+    resizeElement.style.width = `${newWidth}px`;
+    resizeElement.style.height = `${newHeight}px`;
+    resizeElement.style.left = `${newLeft}px`;
+    resizeElement.style.top = `${newTop}px`;
+}
+
+function stopResize() {
+    resizing = false;
+    resizeElement = null;
+    document.removeEventListener("pointermove", doResize);
+    document.removeEventListener("pointerup", stopResize);
+    document.removeEventListener("pointercancel", stopResize);
+}
+
+function addResizeHandles(element) {
+    const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
+    positions.forEach(pos => {
+        const handle = document.createElement("div");
+        handle.classList.add("resize-handle", pos);
+        handle.style.cursor = {
+            "top-left": "nwse-resize",
+            "top-right": "nesw-resize",
+            "bottom-left": "nesw-resize",
+            "bottom-right": "nwse-resize"
+        }[pos];
+        handle.onpointerdown = startResize; // 🔁 Використовуємо pointerdown
+        element.appendChild(handle);
+    });
+}
+
+function initializeReportElement(el) {
+    el.classList.add("report-element");
+    el.style.cursor = "grab";
+    el.style.touchAction = "none"; // 🔥 Критично важливо
+
+    el.onpointerdown = function(e) {
+        const reportCanvas = document.getElementById("reportCanvas");
+        const fieldSelectionModal = document.getElementById("fieldSelectionModal");
+        const handle = e.target.closest(".resize-handle");
+
+        activeElement = el;
+        document.querySelectorAll(".report-element").forEach(el => {
+            el.classList.remove("selected");
+            el.querySelectorAll(".resize-handle").forEach(h => h.remove());
+        });
+        document.querySelectorAll(".report-element.selected").forEach(el => el.classList.remove("selected"));
+        el.classList.add("selected");
+        addResizeHandles(el);
+        closeTextOptionsModal();
+
+        const rect = el.getBoundingClientRect();
+        initialLeft = el.offsetLeft;
+        initialTop = el.offsetTop;
+        initialWidth = rect.width;
+        initialHeight = rect.height;
+        initialX = e.clientX;
+        initialY = e.clientY;
+
+        if (handle) {
+            isResizing = true;
+            resizeHandle = handle;
+            el.style.cursor = handle.style.cursor;
+        } else {
+            isDragging = true;
+            el.style.cursor = "grabbing";
+            const BORDER_TOLERANCE = 10;
+            const elementRect = el.getBoundingClientRect();
+            const relativeClickX = e.clientX - elementRect.left;
+            const relativeClickY = e.clientY - elementRect.top;
+            const nearLeft = relativeClickX < BORDER_TOLERANCE;
+            const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
+            const nearTop = relativeClickY < BORDER_TOLERANCE;
+            const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
+
+            if (el.classList.contains("report-label")) {
+                if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
+                    isDragging = false;
+                    el.focus();
+                }
+            } else if (el.classList.contains("report-field")) {
+                if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
+                    fieldSelectionModal.style.display = "flex";
+                    populateFieldSelectionPanel();
+                    isDragging = false;
+                } else {
+                    fieldSelectionModal.style.display = "none";
+                }
+            }
+        }
+
+        if (isDragging || isResizing || (el.classList.contains("report-label") && !isDragging)) {
+            e.preventDefault();
+        }
+    };
+}
+
+function cancelFieldSelection() {
+    document.getElementById("fieldSelectionModal").style.display = "none";
+}
+
+function closeReportCreatorModal() {
+    document.getElementById("reportCreatorModal").style.display = "none";
+    document.getElementById("reportCanvas").classList.remove('grid-visible');
+    isGridVisible = false;
+}
+
+let activeElement = null;
+let isDragging = false;
+let isResizing = false;
+let resizeHandle = null;
+let initialX, initialY;
+let initialLeft, initialTop, initialWidth, initialHeight;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const reportCanvas = document.getElementById("reportCanvas");
+    const fieldSelectionModal = document.getElementById("fieldSelectionModal");
+    const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
+    const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
+
+    // 🔁 Використовуємо pointer events
+    reportCanvas.onpointerdown = (e) => {
+        const element = e.target.closest(".report-element");
+        const handle = e.target.closest(".resize-handle");
+
+        document.querySelectorAll(".report-element.selected").forEach(el => {
+            el.classList.remove("selected");
+        });
+        closeTextOptionsModal();
+
+        if (element) {
+            activeElement = element;
+            activeElement.classList.add("selected");
+            const rect = activeElement.getBoundingClientRect();
+            initialLeft = activeElement.offsetLeft;
+            initialTop = activeElement.offsetTop;
             initialWidth = rect.width;
             initialHeight = rect.height;
             initialX = e.clientX;
@@ -2767,30 +2861,28 @@ function populateQueryModal(queryDefinition) {
             if (handle) {
                 isResizing = true;
                 resizeHandle = handle;
-                el.style.cursor = handle.style.cursor;
+                element.style.cursor = handle.style.cursor;
             } else {
                 isDragging = true;
-                el.style.cursor = "grabbing";
-
+                element.style.cursor = "grabbing";
                 const BORDER_TOLERANCE = 10;
-                const elementRect = el.getBoundingClientRect();
+                const elementRect = activeElement.getBoundingClientRect();
                 const relativeClickX = e.clientX - elementRect.left;
                 const relativeClickY = e.clientY - elementRect.top;
-
                 const nearLeft = relativeClickX < BORDER_TOLERANCE;
                 const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
                 const nearTop = relativeClickY < BORDER_TOLERANCE;
                 const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
 
-                if (el.classList.contains("report-label")) {
+                if (activeElement.classList.contains("report-label")) {
                     if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
                         isDragging = false;
-                        el.focus();
+                        element.focus();
                     }
-                } else if (el.classList.contains("report-field")) {
+                } else if (activeElement.classList.contains("report-field")) {
                     if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                        document.getElementById("fieldSelectionModal").style.display = "flex";
                         populateFieldSelectionPanel();
+                        fieldSelectionModal.style.display = "flex";
                         isDragging = false;
                     } else {
                         fieldSelectionModal.style.display = "none";
@@ -2798,288 +2890,168 @@ function populateQueryModal(queryDefinition) {
                 }
             }
 
-            if (isDragging || isResizing || (el.classList.contains("report-label") && !isDragging)) {
+            if (isDragging || isResizing || (activeElement.classList.contains("report-label") && !isDragging)) {
                 e.preventDefault();
             }
-        };
-    }
+        } else {
+            activeElement = null;
+        }
+    };
 
-    //*******************
-    function cancelFieldSelection() {
-        document.getElementById("fieldSelectionModal").style.display = "none";
-    }
-    function closeReportCreatorModal() {
-        document.getElementById("reportCreatorModal").style.display = "none";                
-        // Ensure grid is off when closing report creator
-        document.getElementById("reportCanvas").classList.remove('grid-visible');
-        isGridVisible = false;
-    }
+    reportCanvas.onpointermove = (e) => {
+        if (!activeElement) return;
+        if (isDragging) {
+            const dx = e.clientX - initialX;
+            const dy = e.clientY - initialY;
+            activeElement.style.left = `${initialLeft + dx}px`;
+            activeElement.style.top = `${initialTop + dy}px`;
+        } else if (isResizing) {
+            const dx = e.clientX - initialX;
+            const dy = e.clientY - initialY;
+            let newWidth = initialWidth;
+            let newHeight = initialHeight;
+            let newLeft = initialLeft;
+            let newTop = initialTop;
 
-    let activeElement = null; // The element currently being dragged or resized
-    let isDragging = false;
-    let isResizing = false;
-    let resizeHandle = null;
-    let initialX, initialY; // Initial mouse position
-    let initialLeft, initialTop, initialWidth, initialHeight; // Initial element properties
+            if (resizeHandle.classList.contains("bottom-right")) {
+                newWidth = Math.max(50, initialWidth + dx);
+                newHeight = Math.max(30, initialHeight + dy);
+            } else if (resizeHandle.classList.contains("bottom-left")) {
+                newWidth = Math.max(50, initialWidth - dx);
+                newHeight = Math.max(30, initialHeight + dy);
+                newLeft = initialLeft + dx;
+            } else if (resizeHandle.classList.contains("top-right")) {
+                newWidth = Math.max(50, initialWidth + dx);
+                newHeight = Math.max(30, initialHeight - dy);
+                newTop = initialTop + dy;
+            } else if (resizeHandle.classList.contains("top-left")) {
+                newWidth = Math.max(50, initialWidth - dx);
+                newHeight = Math.max(30, initialHeight - dy);
+                newLeft = initialLeft + dx;
+                newTop = initialTop + dy;
+            }
 
-    // Ensure DOM is loaded before attempting to access reportCanvas
-    document.addEventListener('DOMContentLoaded', () => {
-        const reportCanvas = document.getElementById("reportCanvas");
-        const fieldSelectionModal = document.getElementById("fieldSelectionModal");        
-        const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
-        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
-        
+            activeElement.style.width = `${newWidth}px`;
+            activeElement.style.height = `${newHeight}px`;
+            activeElement.style.left = `${newLeft}px`;
+            activeElement.style.top = `${newTop}px`;
+        }
+    };
 
-        reportCanvas.addEventListener("mousedown", (e) => {
-            // Check if the click is on an element or a resize handle
-            const element = e.target.closest(".report-element");
-            const handle = e.target.closest(".resize-handle");
+    reportCanvas.onpointerup = () => {
+        if (activeElement) {
+            activeElement.style.cursor = "grab";
+        }
+        isDragging = false;
+        isResizing = false;
+        resizeHandle = null;
+    };
 
-            // Deselect all elements first and hide field selection panel
-            document.querySelectorAll(".report-element.selected").forEach(el => {
-                el.classList.remove("selected");
+    reportCanvas.onpointerleave = () => {
+        isDragging = false;
+        isResizing = false;
+        if (activeElement) {
+            activeElement.style.cursor = "grab";
+        }
+    };
+
+    // --- Інші обробники (без змін) ---
+    fieldPanelTableSelect.addEventListener("change", () => {
+        const selectedTableName = fieldPanelTableSelect.value;
+        const selectedTable =
+            database.tables.find(t => t.name === selectedTableName) ||
+            queries.results.find(q => `*${q.name}` === selectedTableName);
+        fieldPanelFieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
+        if (selectedTable) {
+            selectedTable.schema.forEach(field => {
+                const option = document.createElement("option");
+                option.value = field.title;
+                option.textContent = field.title;
+                fieldPanelFieldSelect.appendChild(option);
             });
-            closeTextOptionsModal(); // Close text options modal on canvas click or new element selection
-
-
-            if (element) {
-                activeElement = element;
-                activeElement.classList.add("selected");
-                const rect = activeElement.getBoundingClientRect();
-
-                initialLeft = activeElement.offsetLeft;
-                initialTop = activeElement.offsetTop;
-                initialWidth = rect.width;
-                initialHeight = rect.height;
-
-                initialX = e.clientX;
-                initialY = e.clientY;
-
-                if (handle) {
-                    isResizing = true;
-                    resizeHandle = handle;
-                    element.style.cursor = handle.style.cursor; // Set cursor for the element during resize
-                } else { // No handle, so it's a click on the element itself for drag or edit
-                    // Default action for click on element: assume drag
-                    isDragging = true;
-                    element.style.cursor = "grabbing";
-
-                    const BORDER_TOLERANCE = 10;
-                    const elementRect = activeElement.getBoundingClientRect();
-                    const relativeClickX = e.clientX - elementRect.left;
-                    const relativeClickY = e.clientY - elementRect.top;
-
-                    const nearLeft = relativeClickX < BORDER_TOLERANCE;
-                    const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
-                    const nearTop = relativeClickY < BORDER_TOLERANCE;
-                    const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
-
-                    if (activeElement.classList.contains("report-label")) {
-                        if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                            // Click is inside and not near a border, allow editing
-                            isDragging = false; // Prevent dragging
-                            element.focus(); // Focus for editing
-                        } else {
-                            // Click is near border, allow dragging (isDragging remains true)
-                            // No additional action needed, fall through to default drag setup
-                        }
-                    } else if (activeElement.classList.contains("report-field")) {
-                        if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                            // Click is inside and not near a border, show panel                           
-                            
-                            populateFieldSelectionPanel();
-                            fieldSelectionModal.style.display = "flex";
-                            isDragging = false; // Prevent dragging when panel is shown for field selection
-                        } else {
-                            // Click is near border, allow dragging (isDragging remains true)       
-                            fieldSelectionModal.style.display = "none"; // Ensure panel is hidden
-                        }
-                    }
-                }
-                // Prevent default browser drag behavior (e.g., for images or text selection)
-                // if we are actively dragging, resizing, or initiating a custom edit
-                if (isDragging || isResizing || (activeElement.classList.contains("report-label") && !isDragging)) {
-                    e.preventDefault();
-                }
-
-            } else {
-                activeElement = null; // No element selected
-            }
-        });
-
-        reportCanvas.addEventListener("mousemove", (e) => {
-            if (!activeElement) return;
-
-            if (isDragging) {
-                const dx = e.clientX - initialX;
-                const dy = e.clientY - initialY;
-
-                activeElement.style.left = `${initialLeft + dx}px`;
-                activeElement.style.top = `${initialTop + dy}px`;
-            } else if (isResizing) {
-                const dx = e.clientX - initialX;
-                const dy = e.clientY - initialY;
-
-                let newWidth = initialWidth;
-                let newHeight = initialHeight;
-                let newLeft = initialLeft;
-                let newTop = initialTop;
-
-                if (resizeHandle.classList.contains("bottom-right")) {
-                    newWidth = Math.max(50, initialWidth + dx);
-                    newHeight = Math.max(30, initialHeight + dy);
-                } else if (resizeHandle.classList.contains("bottom-left")) {
-                    newWidth = Math.max(50, initialWidth - dx);
-                    newHeight = Math.max(30, initialHeight + dy);
-                    newLeft = initialLeft + dx;
-                } else if (resizeHandle.classList.contains("top-right")) {
-                    newWidth = Math.max(50, initialWidth + dx);
-                    newHeight = Math.max(30, initialHeight - dy);
-                    newTop = initialTop + dy;
-                } else if (resizeHandle.classList.contains("top-left")) {
-                    newWidth = Math.max(50, initialWidth - dx);
-                    newHeight = Math.max(30, initialHeight - dy);
-                    newLeft = initialLeft + dx;
-                    newTop = initialTop + dy;
-                }
-
-                activeElement.style.width = `${newWidth}px`;
-                activeElement.style.height = `${newHeight}px`;
-                activeElement.style.left = `${newLeft}px`;
-                activeElement.style.top = `${newTop}px`;
-            }
-        });
-
-        reportCanvas.addEventListener("mouseup", () => {
-            if (activeElement) {
-                activeElement.style.cursor = "grab"; // Reset cursor
-            }
-            isDragging = false;
-            isResizing = false;
-            resizeHandle = null;
-        });
-
-        // Populate the field selection panel when a table is selected
-        fieldPanelTableSelect.addEventListener("change", () => {
-            const selectedTableName = fieldPanelTableSelect.value;            
-            const selectedTable =
-                    database.tables.find(t => t.name === selectedTableName) ||
-                    queries.results.find(q => `*${q.name}` === selectedTableName);
-
-
-            fieldPanelFieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
-
-            if (selectedTable) {
-                selectedTable.schema.forEach(field => {
-                    const option = document.createElement("option");
-                    option.value = field.title;
-                    option.textContent = field.title;
-                    fieldPanelFieldSelect.appendChild(option);
-                });
-            }
-
-            // ⛔ НЕ скидати fieldName автоматично — лише при явній зміні таблиці
-            if ((activeElement && activeElement.classList.contains("report-field"))||(activeElement && activeElement.classList.contains("form-field"))) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    // Якщо поле вже є — залишаємо, інакше оновлюємо тільки table
-                    const currentField = activeElement.dataset.fieldName || "";
-                    fieldTextDiv.innerText = selectedTableName ? `${selectedTableName}.${currentField}` : "Поле даних";
-                }
-                activeElement.dataset.tableName = selectedTableName;
-            }
-        });
-
-
-        // Update the active element's text when a field is selected
-        fieldPanelFieldSelect.addEventListener("change", () => {
-            const selectedTableName = fieldPanelTableSelect.value;
-            const selectedFieldName = fieldPanelFieldSelect.value;
-            if ((activeElement && activeElement.classList.contains("report-field") && selectedTableName && selectedFieldName)||(activeElement && activeElement.classList.contains("form-field") && selectedTableName && selectedFieldName)) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
-                }
-                activeElement.dataset.tableName = selectedTableName;
-                activeElement.dataset.fieldName = selectedFieldName;
-            } else if ((activeElement && activeElement.classList.contains("report-field"))||(activeElement && activeElement.classList.contains("report-field"))) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    fieldTextDiv.innerText = fieldPanelTableSelect.value ? `${fieldPanelTableSelect.value}.` : "Поле даних";
-                }
-                delete activeElement.dataset.fieldName;
-            }
-        });
-
-       
-
-        // Text options modal listeners
-        document.getElementById("fontFamilySelect").addEventListener("change", (e) => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontFamily = e.target.value;
-        });
-        document.getElementById("fontSizeInput").addEventListener("input", (e) => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontSize = `${e.target.value}px`;
-        });
-        document.getElementById("fontColorInput").addEventListener("input", (e) => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.color = e.target.value;
-        });
-        document.getElementById("fontWeightToggle").addEventListener("change", (e) => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontWeight = e.target.checked ? 'bold' : 'normal';
-        });
-        document.getElementById("fontStyleToggle").addEventListener("change", (e) => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontStyle = e.target.checked ? 'italic' : 'normal';
-        });
-        document.getElementById("textDecorationUnderline").addEventListener("change", (e) => {
-            if (activeElement && isTextElement(activeElement)) updateTextDecoration();
-        });
-        document.getElementById("textDecorationStrikethrough").addEventListener("change", (e) => {
-            if (activeElement && isTextElement(activeElement)) updateTextDecoration();
-        });
-    }); // End DOMContentLoaded
-
-    // Helper to populate the field selection panel when a report-field is selected
-    function populateFieldSelectionPanel() {
-        const fieldSelectionModal = document.getElementById("fieldSelectionModal");
-        const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
-        const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");        
-        const reportCanvas = document.getElementById("reportCanvas");
-
-        fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю</option>";
-        database.tables.forEach(table => {
-            const option = document.createElement("option");
-            option.value = table.name;
-            option.textContent = table.name;
-            fieldPanelTableSelect.appendChild(option);
-            console.log("table=", table.name)
-        });
-        // Запити
-        queries.results.forEach(query => {
-            const option = document.createElement("option");
-            option.value = `*${query.name}`;
-            option.textContent = `*${query.name}`; // Наприклад: *запит "Успішність"
-            fieldPanelTableSelect.appendChild(option);
-        });
-
-        // Set initial values if activeElement has data- attributes
-        if (activeElement && activeElement.dataset.tableName) {
-            fieldPanelTableSelect.value = activeElement.dataset.tableName;
-            // Manually trigger change to populate fieldSelect
-            const event = new Event('change');
-            fieldPanelTableSelect.dispatchEvent(event);
-        } else {
-            fieldPanelTableSelect.value = ""; // Clear selection
         }
-
-        if (activeElement && activeElement.dataset.fieldName) {
-            fieldPanelFieldSelect.value = activeElement.dataset.fieldName;
-        } else {
-            fieldPanelFieldSelect.value = ""; // Clear selection
+        if ((activeElement && activeElement.classList.contains("report-field"))) {
+            const fieldTextDiv = activeElement.querySelector('.field-text');
+            if (fieldTextDiv) {
+                const currentField = activeElement.dataset.fieldName || "";
+                fieldTextDiv.innerText = selectedTableName ? `${selectedTableName}.${currentField}` : "Поле даних";
+            }
+            activeElement.dataset.tableName = selectedTableName;
         }
+    });
 
-        // Show popup message
+    fieldPanelFieldSelect.addEventListener("change", () => {
+        const selectedTableName = fieldPanelTableSelect.value;
+        const selectedFieldName = fieldPanelFieldSelect.value;
+        if (activeElement && activeElement.classList.contains("report-field") && selectedTableName && selectedFieldName) {
+            const fieldTextDiv = activeElement.querySelector('.field-text');
+            if (fieldTextDiv) {
+                fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
+            }
+            activeElement.dataset.tableName = selectedTableName;
+            activeElement.dataset.fieldName = selectedFieldName;
+        } else if (activeElement && activeElement.classList.contains("report-field")) {
+            const fieldTextDiv = activeElement.querySelector('.field-text');
+            if (fieldTextDiv) {
+                fieldTextDiv.innerText = fieldPanelTableSelect.value ? `${fieldPanelTableSelect.value}.` : "Поле даних";
+            }
+            delete activeElement.dataset.fieldName;
+        }
+    });
 
+    // --- Налаштування тексту ---
+    document.getElementById("fontFamilySelect").addEventListener("change", (e) => {
+        if (activeElement && isTextElement(activeElement)) activeElement.style.fontFamily = e.target.value;
+    });
+    document.getElementById("fontSizeInput").addEventListener("input", (e) => {
+        if (activeElement && isTextElement(activeElement)) activeElement.style.fontSize = `${e.target.value}px`;
+    });
+    document.getElementById("fontColorInput").addEventListener("input", (e) => {
+        if (activeElement && isTextElement(activeElement)) activeElement.style.color = e.target.value;
+    });
+    document.getElementById("fontWeightToggle").addEventListener("change", (e) => {
+        if (activeElement && isTextElement(activeElement)) activeElement.style.fontWeight = e.target.checked ? 'bold' : 'normal';
+    });
+    document.getElementById("fontStyleToggle").addEventListener("change", (e) => {
+        if (activeElement && isTextElement(activeElement)) activeElement.style.fontStyle = e.target.checked ? 'italic' : 'normal';
+    });
+    document.getElementById("textDecorationUnderline").addEventListener("change", (e) => {
+        if (activeElement && isTextElement(activeElement)) updateTextDecoration();
+    });
+    document.getElementById("textDecorationStrikethrough").addEventListener("change", (e) => {
+        if (activeElement && isTextElement(activeElement)) updateTextDecoration();
+    });
+});
+
+function populateFieldSelectionPanel() {
+    const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
+    fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю</option>";
+    database.tables.forEach(table => {
+        const option = document.createElement("option");
+        option.value = table.name;
+        option.textContent = table.name;
+        fieldPanelTableSelect.appendChild(option);
+    });
+    queries.results.forEach(query => {
+        const option = document.createElement("option");
+        option.value = `*${query.name}`;
+        option.textContent = `*${query.name}`;
+        fieldPanelTableSelect.appendChild(option);
+    });
+
+    if (activeElement && activeElement.dataset.tableName) {
+        fieldPanelTableSelect.value = activeElement.dataset.tableName;
+        const event = new Event('change');
+        fieldPanelTableSelect.dispatchEvent(event);
+    } else {
+        fieldPanelTableSelect.value = "";
     }
-
+    if (activeElement && activeElement.dataset.fieldName) {
+        document.getElementById("fieldPanelFieldSelect").value = activeElement.dataset.fieldName;
+    } else {
+        document.getElementById("fieldPanelFieldSelect").value = "";
+    }
+}
 
     function addReportLabel() {
         const reportCanvas = document.getElementById("reportCanvas");
