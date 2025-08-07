@@ -60,6 +60,7 @@
         
         if (saved) {
             const uIntArray = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
+            
             db = new SQL.Database(uIntArray);
             console.log("База даних завантажена з localStorage");
             console.log("db =",db )
@@ -713,13 +714,12 @@ function saveTableData() {
 }
 
 
-/*
-Функція closeEditModal()
--------------------------
-Призначення: Закриває вікно редагування таблиці, скидаючи вибрані значення.
-Параметри: Відсутні.
-Результат: Модальне вікно зникає, змінні очищуються.
-*/
+/**
+* Функція closeEditModal()
+* Призначення: Закриває вікно редагування таблиці, скидаючи вибрані значення.
+* Параметри: Відсутні.
+* Результат: Модальне вікно зникає, змінні очищуються.
+**/
 function closeEditModal() {
     document.getElementById("editModal").style.display = "none"; // Ховаємо вікно
     currentEditTable = null; // Скидаємо редаговану таблицю
@@ -728,18 +728,18 @@ function closeEditModal() {
 
 
 
-/* 
-Функція closeDbModal()
-Призначення: Закриває модальне вікно створення бази даних.
-Параметри: відсутні.
-Результат: Сховує вікно з вибором назви БД.
-*/
+/** 
+* Функція closeDbModal()
+* Призначення: Закриває модальне вікно створення бази даних.
+* Параметри: відсутні.
+* Результат: Сховує вікно з вибором назви БД.
+**/
 function closeDbModal() {
     document.getElementById("dbModal").style.display = "none";
 }
-/*
- * Перевірка но новий файл
- */
+/**
+* Перевірка нa новий файл
+**/
 function saveNewDb() {
     console.log("Save new file")
     newDbFile = true; 
@@ -754,9 +754,9 @@ function saveNewDb() {
     } else newDbFile = false; 
     saveDb()
 } 
-/*
+/**
  * Вікно підтвердження при перезапису файлу бази даних
- */ 
+ **/ 
 function showOverwriteConfirm(name) {
      document.getElementById("overwriteModal").style.display = "flex"; // показати вікно вибору
 }
@@ -775,12 +775,12 @@ function doCloseOverwriteConfirm() {
     closeDbModal()
 }
 
-/* 
-Функція createDbFile()
-Призначення: Відкриває модальне вікно для створення нового файлу бази даних.
-Параметри: відсутні.
-Результат: Показ модального вікна з полем для введення назви бази.
-*/
+/** 
+* Функція createDbFile()
+* Призначення: Відкриває модальне вікно для створення нового файлу бази даних.
+* Параметри: відсутні.
+* Результат: Показ модального вікна з полем для введення назви бази.
+**/
 function createDbFile() {
     newDbFile = true;
     editingTableName = null;
@@ -788,38 +788,64 @@ function createDbFile() {
     document.getElementById("dbName").value = "my_database"; // встановлюємо значення за замовчуванням
     document.getElementById("dbModal").style.display = "flex"; // відкриваємо модальне вікно
 }
-
-/* 
-Функція saveDb()
-Призначення: Створює новий файл бази даних у памʼяті та зберігає його.
-Параметри: відсутні.
-Результат: Створення SQLite бази, очищення попередніх даних, збереження у localStorage.
-*/
+/**
+ * Генерується унікальний ідентифікатор бази
+ **/
+function generateDbId() {
+    const now = Date.now();
+    return now & 0x7FFFFFFF; // залишає лише нижчі 31 біти
+}
+/** 
+* Функція saveDb()
+* Призначення: Створює новий файл бази даних у памʼяті та зберігає його.
+* Параметри: відсутні.
+* Результат: Створення SQLite бази, очищення попередніх даних, збереження у localStorage.
+**/
 function saveDb() {
-    const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням   
+    const name = document.getElementById("dbName").value.trim() || "my_database";
 
+    database.fileName = name;
+    database.tables = [];
+    queries.definitions = [];
+    queries.results = [];
+
+    const dataMenu = document.getElementById("data-menu");
+    dataMenu.innerHTML = "";
+
+    db = new SQL.Database();
+
+    // Генеруємо 32-бітовий ідентифікатор
+    const dbId = generateDbId();
+
+    // Зберігаємо в PRAGMA user_version  
+    console.log("dbId=",dbId)
+    console.log("dbId type of:", dbId, typeof dbId);
+    // ✅ Записуємо user_version — після змін, щоб гарантовано зберіглось
     
-    database.fileName = name; // збереження назви у структурі database
-    database.tables = []; // очищення списку таблиць
-    queries.definitions = []; // очищення визначень запитів
-    queries.results = []; // очищення результатів запитів
-    const dataMenu = document.getElementById("data-menu"); // посилання на меню таблиць
-    dataMenu.innerHTML = ""; // очищення меню
-    db = new SQL.Database(); // створення нової порожньої SQLite бази
-    saveDatabase(); // збереження бази у localStorage
-    
+    db.run(`PRAGMA user_version = ${dbId};`);
+
+
+    // Зберігаємо ідентифікатор також у JS-структуру
+    database.id = dbId;
+
+    // Також можна зберегти в об'єкт database, якщо потрібно
+    database.id = dbId;
+
+    saveDatabase();
+
     console.log("Файл бази даних створено:", database);
-    
-    closeDbModal(); // закриваємо модальне вікно
-    updateMainTitle(); // оновлюємо заголовок
+    console.log("Ідентифікатор БД (32-bit):", dbId, `(${toHex4Part(dbId)})`);
+
+    closeDbModal();
+    updateMainTitle();
 }
 
-/* 
-Функція saveDbAndCreateTable()
-Призначення: Створює базу даних та одразу відкриває інтерфейс для створення таблиці.
-Параметри: відсутні.
-Результат: Створення бази та перехід до створення структури таблиці.
-*/
+/** 
+* Функція saveDbAndCreateTable()
+* Призначення: Створює базу даних та одразу відкриває інтерфейс для створення таблиці.
+* Параметри: відсутні.
+* Результат: Створення бази та перехід до створення структури таблиці.
+**/
 function saveDbAndCreateTable() {
     saveDb(); // зберігаємо базу
     closeDbModal(); // закриваємо модальне вікно
@@ -835,11 +861,11 @@ let table = {
 // Список усіх таблиць бази, використовується для перевірок у редакторі
 let tableList = [];
 
-/* 
-Функція createTable()
-Призначення: Відкриває модальне вікно для створення нової таблиці та ініціалізує її структуру.
-Параметри: відсутні.
-Результат: Очищення попередньої структури, додавання першого рядка полів таблиці.
+/** 
+* Функція createTable()
+* Призначення: Відкриває модальне вікно для створення нової таблиці та ініціалізує її структуру.
+* Параметри: відсутні.
+* Результат: Очищення попередньої структури, додавання першого рядка полів таблиці.
 */
 function createTable() {
     table.schema = []; // очищення схеми
@@ -852,21 +878,21 @@ function createTable() {
     toggleForeignKeyHeaders();
 }
 
-/* 
-Функція closeModal()
-Призначення: Закриває модальне вікно створення таблиці.
-Параметри: відсутні.
-Результат: Сховує вікно.
-*/
+/** 
+* Функція closeModal()
+* Призначення: Закриває модальне вікно створення таблиці.
+* Параметри: відсутні.
+* Результат: Сховує вікно.
+**/
 function closeModal() {
     document.getElementById("modal").style.display = "none";
 }
 
-/* 
-Функція deleteSchemaRow(button)
-Призначення: Видаляє один рядок зі структури створюваної таблиці.
-Параметри: button — кнопка "❌", натиснута користувачем.
-Результат: Видалення відповідного рядка з DOM.
+/** 
+* Функція deleteSchemaRow(button)
+* Призначення: Видаляє один рядок зі структури створюваної таблиці.
+* Параметри: button — кнопка "❌", натиснута користувачем.
+* Результат: Видалення відповідного рядка з DOM.
 */
 function deleteSchemaRow(button) {
     const row = button.closest("tr"); // знаходження батьківського рядка
@@ -901,10 +927,10 @@ function toggleForeignKeyHeaders() {
 
 
 /** 
-Функція addSchemaRow()
-Призначення: Додає новий рядок до структури таблиці, що створюється.
-Параметри: відсутні.
-Результат: Вставка HTML-елементів до тіла таблиці зі всіма полями для нового стовпця.
+* Функція addSchemaRow()
+* Призначення: Додає новий рядок до структури таблиці, що створюється.
+* Параметри: відсутні.
+* Результат: Вставка HTML-елементів до тіла таблиці зі всіма полями для нового стовпця.
 **/
 function addSchemaRow() {
     const tbody = document.getElementById("schemaBody");
@@ -955,12 +981,12 @@ function addSchemaRow() {
 
 
     
- /*
-Функція getFieldsForTable(tableName)
-Призначення: Повертає список назв полів для заданої таблиці.
-Параметри:
- - tableName (string): назва таблиці.
-Результат: Масив назв полів або порожній масив, якщо таблиця не знайдена.
+/**
+* Функція getFieldsForTable(tableName)
+* Призначення: Повертає список назв полів для заданої таблиці.
+* Параметри:
+* - tableName (string): назва таблиці.
+* Результат: Масив назв полів або порожній масив, якщо таблиця не знайдена.
 */
 function getFieldsForTable(tableName) {
     const table = database.tables.find(t => t.name === tableName);
@@ -969,11 +995,11 @@ function getFieldsForTable(tableName) {
 }
 
 /**
-Функція handlePrimaryKey(checkbox)
-Призначення: Обробляє встановлення або зняття первинного ключа для поля таблиці.
-Параметри:
- - checkbox (HTMLInputElement): прапорець первинного ключа.
-Результат: Оновлює тип поля та коментар до нього.
+* Функція handlePrimaryKey(checkbox)
+* Призначення: Обробляє встановлення або зняття первинного ключа для поля таблиці.
+* Параметри:
+* - checkbox (HTMLInputElement): прапорець первинного ключа.
+* Результат: Оновлює тип поля та коментар до нього.
 **/
 function handlePrimaryKey(checkbox) {
     const row = checkbox.closest("tr");
@@ -998,11 +1024,11 @@ function handlePrimaryKey(checkbox) {
 }
 
 /**
-Функція handleForeignKey(checkbox)
-Призначення: Обробляє встановлення або зняття зовнішнього ключа для поля.
-Параметри:
- - checkbox (HTMLInputElement): прапорець зовнішнього ключа.
-Результат: Увімкнення/вимкнення селекторів таблиці/поля для FK.
+* Функція handleForeignKey(checkbox)
+* Призначення: Обробляє встановлення або зняття зовнішнього ключа для поля.
+* Параметри:
+*  - checkbox (HTMLInputElement): прапорець зовнішнього ключа.
+* Результат: Увімкнення/вимкнення селекторів таблиці/поля для FK.
 **/
 function handleForeignKey(checkbox) {
     const tbody = document.getElementById("schemaBody");
@@ -1048,12 +1074,12 @@ function handleForeignKey(checkbox) {
 }
 
 
-/*
-Функція updateFieldOptions(tableSelect)
-Призначення: Оновлює список доступних полів при виборі таблиці у зовнішньому ключі.
-Параметри:
- - tableSelect (HTMLSelectElement): селектор таблиці.
-Результат: Оновлення списку полів у відповідному селекторі.
+/**
+* Функція updateFieldOptions(tableSelect)
+* Призначення: Оновлює список доступних полів при виборі таблиці у зовнішньому ключі.
+* Параметри:
+* - tableSelect (HTMLSelectElement): селектор таблиці.
+* Результат: Оновлення списку полів у відповідному селекторі.
 */
 function updateFieldOptions(tableSelect) {
     const row = tableSelect.closest("tr");
@@ -1066,12 +1092,12 @@ function updateFieldOptions(tableSelect) {
     fieldSelect.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join("");
 }
 
-/*
-Функція saveSchema()
-Призначення: Зберігає структуру таблиці, створює відповідну таблицю в SQLite, вставляє дані, оновлює UI та базу.
-Параметри: відсутні.
-Результат: Створена або оновлена таблиця з новою схемою в БД.
-*/
+/**
+* Функція saveSchema()
+* Призначення: Зберігає структуру таблиці, створює відповідну таблицю в SQLite, вставляє дані, оновлює UI та базу.
+* Параметри: відсутні.
+* Результат: Створена або оновлена таблиця з новою схемою в БД.
+**/
 function saveSchema() {
     const newTableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
     const rows = document.querySelectorAll("#schemaBody tr");
@@ -1149,15 +1175,18 @@ function saveSchema() {
     
     if (newDbFile) editingTableName=newTableName;
     console.log("editingTableName=",editingTableName)
-    if (!isNewTable) {
+    // Якщо не нова база, але таблиця створюється вперше
+    if (!isNewTable && editingTableName) {
         if (typeof editingTableName === "string") {
             oldTableName = editingTableName.trim();
-        } else if (editingTableName && typeof editingTableName.name === "string") {
+        } else if (typeof editingTableName.name === "string") {
             oldTableName = editingTableName.name.trim();
-        } else {
-            Message("Помилка: не вдалося визначити стару назву таблиці.");
-            return;
         }
+    }
+
+    // Якщо не вдалось визначити oldTableName, вважаємо, що створюється нова таблиця
+    if (!isNewTable && !oldTableName) {
+        isNewTable = true;
     }
 
     const nameChanged = !isNewTable && oldTableName !== newTableName;
@@ -4987,15 +5016,45 @@ function handleCsvFile(file) {
 
     reader.readAsText(file);
 }
+/**
+ * Перетворюємо на 8-символьний шістнадцятковий рядок 
+ **/
+ function toHex4Part(num) {
+    // Перетворюємо на 8-символьний шістнадцятковий рядок (32 біти = 8 hex)
+    const hex = num.toString(16).padStart(8, '0').toUpperCase();
+    // Розбиваємо на 4 групи по 2 символи
+    return `${hex.slice(0,2)}-${hex.slice(2,4)}-${hex.slice(4,6)}-${hex.slice(6,8)}`;
+}
 
     // Перегляд відомостей про базу даних
-    function showDatabaseInfo() {
+function showDatabaseInfo() {
         if (!db || !database.fileName) {
             Message("База даних не завантажена.");
             return;
         }
 
         let info = `Назва файлу: ${database.fileName}.sqlite\n\n`;
+
+        // Читаємо user_version
+        let dbId = null;
+        try {
+            const res = db.exec("PRAGMA user_version;");
+            console.log("PRAGMA user_version=",res)
+            if (res.length && res[0].values.length) {
+                dbId = res[0].values[0][0]; // це число
+            }
+        } catch (e) {
+            console.error("Помилка читання user_version:", e);
+        }
+
+        if (dbId !== null && dbId > 0) {
+            const hexId = toHex4Part(dbId);
+            info += `Ідентифікатор: ${hexId}\n`;
+        } else {
+            info += `Ідентифікатор: не встановлено\n`;
+        }
+
+        info += "\n";
 
         if (!database.tables.length) {
             info += "База даних не містить таблиць.";
