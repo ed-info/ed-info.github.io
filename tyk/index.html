@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Тиканка</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="tykstyle.css" rel="stylesheet" type="text/css">
+</head>
+<style>
+  #dialogoverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+  #dialogbox {
+    position: fixed;
+    top: 100px; left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 1001;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+  }
+  .pure-material-button-contained {
+    padding: 8px 16px;
+    background: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .active-shift {
+    background-color: #ffeb3b !important; /* Яскраво-жовтий */
+    color: black !important;
+    font-weight: bold;
+  }
+
+
+</style>
+
+<body>
+<noscript><p class="aRed">У вашому браузері JavaScript відключено!</p></noscript>
+
+<div class="upperBox">
+  <div class="box"> 
+    <div class="hmenubar">
+      <a class="button" title="Тут можна обрати потрібну вправу" onclick="lessonSelect()">&nbsp;&nbsp;&nbsp;Вправи&nbsp;&nbsp;&nbsp;</a>
+      <a class="button" title="Тут можна переглянути поступ у виконанні вправи" id="exercise" onclick="showProgress()">&nbsp;&nbsp;&nbsp;Поступ&nbsp;&nbsp;&nbsp;</a>
+      <a class="button" title="Тут можна дізнатися про цю програму" onclick="about()">&nbsp;&nbsp;Про "Тиканку"&nbsp;&nbsp;</a>
+    </div>
+  </div>
+  <div id="taskBox">
+    <div id="leftPart">Щось не так,&nbsp; </div>
+    <div id="rightPart">має бути вправа</div>
+  </div>
+  <div id="progressBar" noshade style="width:0%;"></div>
+</div>
+
+<h1 class="title" id="message">Клавіатурний тренажер 'Тиканка'</h1>
+
+<div class="keyboard">
+  <ul class="row row-0">
+    <li class="pinky" id="tilda">~</li>
+    <li class="pinky" id="1">1</li>
+    <li class="ring" id="2">2</li>
+    <li class="middle" id="3">3</li>
+    <li class="pointer1st" id="4">4</li>
+    <li class="pointer2nd" id="5">5</li>
+    <li class="pointer2nd" id="6">6</li>
+    <li class="pointer1st" id="7">7</li>
+    <li class="middle" id="8">8</li>
+    <li class="ring" id="9">9</li>
+    <li class="pinky" id="0">0</li>
+    <li class="pinky" id="minus">-</li>
+    <li class="pinky" id="plus">+</li>
+    <li class="pinky" id="backspace">←Back</li>
+  </ul>
+  <ul class="row row-1">
+    <li class="pinky" id="tab">Tab ↹</li>
+    <li class="pinky" id="Q">Q</li>
+    <li class="ring" id="W">W</li>
+    <li class="middle" id="E">E</li>
+    <li class="pointer1st" id="R">R</li>
+    <li class="pointer2nd" id="T">T</li>
+    <li class="pointer2nd" id="Y">Y</li>
+    <li class="pointer1st" id="U">U</li>
+    <li class="middle" id="I">I</li>
+    <li class="ring" id="O">O</li>
+    <li class="pinky" id="P">P</li>
+    <li class="pinky" id="lsc">[</li>
+    <li class="pinky" id="rsc">]</li>
+    <li class="pinky" id="bckslash">\</li>
+  </ul>
+  <ul class="row row-2">
+    <li class="pinky" id="capslock">CapsLock</li>
+    <li class="pinky" id="A">A</li>
+    <li class="ring" id="S">S</li>
+    <li class="middle" id="D">D</li>
+    <li class="pointer1st" id="F">F</li>
+    <li class="pointer2nd" id="G">G</li>
+    <li class="pointer2nd" id="H">H</li>
+    <li class="pointer1st" id="J">J</li>
+    <li class="middle" id="K">K</li>
+    <li class="ring" id="L">L</li>
+    <li class="pinky" id="ddot">:</li>
+    <li class="pinky" id="apo">''</li>
+    <li class="pinky" id="enter">Enter↵</li>
+  </ul>
+  <ul class="row row-3">
+    <li class="pinky" id="shiftleft">⇧Shift</li>
+    <li class="pinky" id="Z">Z</li>
+    <li class="ring" id="X">X</li>
+    <li class="middle" id="C">C</li>
+    <li class="pointer1st" id="V">V</li>
+    <li class="pointer2nd" id="B">B</li>
+    <li class="pointer2nd" id="N">N</li>
+    <li class="pointer1st" id="M">M</li>
+    <li class="middle" id="comma">,</li>
+    <li class="ring" id="dot">.</li>
+    <li class="pinky" id="slash">/</li>
+    <li class="pinky" id="shiftright">⇧Shift</li>
+  </ul>
+  <ul class="row row-4">
+    <li class="pinky" id="controlleft">Ctrl</li>
+    <li class="pinky" id="metaleft">⌘</li>
+    <li class="ring" id="altleft">Alt</li>
+    <li class="pointer2nd" id="space"></li>
+    <li class="ring" id="altright">AltGr</li>
+    <li class="pinky" id="metaright">⌘</li>
+    <li class="pinky" id="menu">≣</li>
+    <li class="pinky" id="controlright">Ctrl</li>
+  </ul>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+  var exercises = [  
+    "аааооо ааоао оааоо аоаоа ао оао вввооо ввово оввоо вовов во ввава авваа вавав аавав ав ав вова вова",
+    "лллввв ллвлв вллвв аааллл аалал лаалл алала алла вал лава оолол лоолл ололо лов лола овал алло олово",
+    "дддввв дввдв двдвд ададд адада даада да дав два д лдллд лддлд одоод ододо до лад ода лада вода влада",
+    "іііддд ідіід ідіді дід івівв іівів від ілліл ілііл діл іаіаі іааіа далі іоііо іооіо діло воді доволі",
+    "фффддд ффдфд дффдд фдфдф ддфдф фафаф аафаф даф флффл лфлфл фал лафа фофоф фол фіфіф фвффв ліф філіал",
+    "жжжффф жжфжф фжжфф жфжфж аж жіжжі ііжіж іж жджжд ждджд діжа фіджі жввжв ажажа жалів лжлжж ложа жало",
+    "мммжжж ммдмд момом лммлл мамам мама мода міммі між міла мввмв вам мало фмффм фм міф вім мова вам лом",
+    "мммттт ммтмт тмттм мтмтм ттмтм та фата літа тотто мото лот літо том тоді ліфт та фото флот атом жмот",
+    "иииттт иитит тиитт ти ви аиааи аиаиа жадати жито иимим миими ми ти мимо мило ждати мати жалити живіт",
+    "ьььиии ььиьи ттьть ьттьь жить ловить ммьмь ьмьмь тьма міль фільм вимить оььоь толь виводить молотить",
+    "пппооо ппапа вппвв піпіп ллплп пффпф ппжж мпипм птпьп пола піп пол пиж випав фап падав підвал помити",
+    "пппррр ппрпр рппрр прпрп ррпрп пир пар ріпа риф рило пара пори порт правда прорив рапіра пир пропажа",
+    "кккррр кклкл іккіі рік крик рик вк вік викрик кооко код кілок кіт лікоть аккак макі підковка плакати",
+    "кккггг ккгкг кг гак гол кгккг гкгкг гірко граф вага оггог ргррг гора ворог кіготь кігтик кігті грифа",
+    "еееггг еекек аееае пепеп де вітер реле режим джемпер кекек еппеп лепет перо торпеда тепер же реферат",
+    "еееннн гнгнн рнррн ононо фанера липень жовтень півень перина монети пень примір ремінь на арені поні",
+    "уууннн уооуо вувву фуга кут куток рагу уауау уііуі луллу вугіль утка луг круг дуга джгут гудок група",
+    "ууушшш ошшош лшлшл гшггш шум шуруп куш душ фішка шуміти шумувати шишка шквал кишка шкура укушу грушу",
+    "цццшшш ццвцв цфцфц цііці цілити ціль цдцдд цідити цацца ціна лице цариці цуцуц цукор кцккц цирк цент",
+    "щщщццц щшщшщ щдщдщ щлщщл щщжщж щит щука дощ теща щока щипці жалощі щілина щавель щиглик пищати що це",
+    "йййщщщ йфйфй цой цілити ціль цдцдд цідити цацца ціна лице цариці цуцуц цукор кцккц цирк цент",
+    "йййззз жзжзж щззщз дзддз злий заразний зайка фзффз фазан груздь зигзаг зазор зашити пізніше що за це",
+    "йййххх зхзхх жххжх лшщзх жах хан храм кірха шах халіф хороша хата халупа запахи худий хижак на ногах",
+    "фффєєє жєжжє зєзєз хєєхє джєдє лжєлж теє віє давнє двоє заєць європа житіє геєна єгипет шкодує немає",
+    "сссєєє всвсв лслсс асаас сад вуса маса сосоо іссіс дсдсд фсффс шанс жерсть гасити світлий пісок єсте",
+    "сссббб лблбл оббоб дбддб вбвбб жбжжб бокс собор соболь барс субота батько фабрика щебінь бути робить",
+    "чччббб ічічі фчффч чуб піч бочок бричка чвчвв ддчдч бачить чахнути чари чи часник чорний чєрєз обруч",
+    "чччююю дюдюд жююжю дюна сюжет ключ колючі глючні люллю юббюб брючні брюнет бюджет юрист флюгер мюслі",
+    "юююяяя фяфяф вяявя іяіія чячяя які якщо зайця ящір ящик шухляда яхта бляха сяє хвоя хартія галя юлія",
+    "яяя... ж.ж.ж ю..ю. є.єє. і т. д. і т. п. та ін. мед. муз. і сл. шк. м. англ. грец. лат. укр. фр. яп.",
+    "...,,, я,я,, я, ти, він, вона... раз, два, три, чотири... точка, точка, кома. загалом, все так само.",
+    "Токмак Київ Львів Миргород Нетішин Одеса Полтава Рівне Тернопіль Ужгород Харків Чернігів Шостка Белз",
+    "Джек Лондон. Смок Беллью йшов здовж берега, хитаючись від поривів чужого вітру, що взявши майже ненастанно. У сірому світі шестеро човнів навантажували дорогоцінною поклажею, перенесенню через Чількут... Фаїна, Європа."
+  ];
+
+  var taskString = exercises[0];
+  var totalChars;
+  var lang = "ua";
+  var taskNum = 1;
+  var countChars = 0;
+  var currentKey = '';
+  var keyShift;
+  var capsState = false;
+  var charRight = '';
+  var correctChars = 0;
+  var incorrectChars = 0;
+  var started = false;
+  var strLeft = '';
+  var timeDuration = 0;
+  var timeStart = 0;
+  var timeEnd = 0;
+  var charKey = ' ';
+  let shiftStates = { left: false, right: false };
+
+
+  const keys = ["tilda","1","2","3","4","5","6","7","8","9","0","minus","plus","Q","W","E","R","T","Y","U","I","O","P","lsc","rsc","bckslash","A","S","D","F","G","H","J","K","L","ddot","apo","Z","X","C","V","B","N","M","comma","dot","slash","space"];
+  const cyrUp = ["ʼ","!","\"","№",";","%"," :", "?", "*", "(", ")", "_", "+", "Й", "Ц", "У", "К", "Е", "Н", "Г", "Ш", "Щ", "З", "Х", "Ї", "Ґ", "Ф", "І", "В", "А", "П", "Р", "О", "Л", "Д", "Ж", "Є", "Я", "Ч", "С", "М", "И", "Т", "Ь", "Б", "Ю", ",", " "];
+  const engUp = ["~","!","@","#","$","%","^","&","*","(",")","_","+","Q","W","E","R","T","Y","U","I","O","P","{","}","|","A","S","D","F","G","H","J","K","L",":","\"","Z","X","C","V","B","N","M","<",">","?"," "];
+  const cyrLow = ["'","1","2","3","4","5","6","7","8","9","0","-","=","й","ц","у","к","е","н","г","ш","щ","з","х","ї","ґ","ф","і","в","а","п","р","о","л","д","ж","є","я","ч","с","м","и","т","ь","б","ю","."," "];
+  const engLow = ["`","1","2","3","4","5","6","7","8","9","0","-","=","q","w","e","r","t","y","u","i","o","p","[","]","\\","a","s","d","f","g","h","j","k","l",";","'","z","x","c","v","b","n","m",",",".","/"," "];
+
+  // Функція для налаштування обробників кліків
+  function setupKeyHandlers() {
+    const keyElements = document.querySelectorAll('.keyboard li');
+    keyElements.forEach(key => {
+      key.removeEventListener('click', keyClickHandler);
+      key.removeEventListener('touchstart', keyClickHandler);
+      key.addEventListener('click', keyClickHandler);
+      key.addEventListener('touchstart', keyClickHandler, { passive: true });
+    });
+  }
+
+  function keyClickHandler(e) {
+    e.preventDefault();
+    const keyElement = this;
+    const keyId = keyElement.id;
+
+    // Обробка віртуальних Shift-клавіш
+    if (keyId === "shiftleft" || keyId === "shiftright") {
+      const side = keyId === "shiftleft" ? "left" : "right";
+      shiftStates[side] = !shiftStates[side]; // Тумблер
+
+      if (shiftStates[side]) {
+        keyElement.classList.add("active-shift");
+        keyShiftPressed(); // Увімкнути верхній регістр
+      } else {
+        keyElement.classList.remove("active-shift");
+        keyShiftUnPressed(); // Вимкнути верхній регістр
+      }
+      return;
+    }
+
+  // Інше — звичайне натискання
+  const text = keyId === "space" ? " " : keyElement.textContent;
+  key_Pressed(text, keyId);
+}
+
+
+  // Встановлення розкладки
+  function cyrLayoutLow() {
+    for (let i = 0; i < 47; i++) {
+      document.getElementById(keys[i]).textContent = cyrLow[i];
+    }
+  }
+  function cyrLayoutUp() {
+    for (let i = 0; i < 47; i++) {
+      document.getElementById(keys[i]).textContent = cyrUp[i];
+    }
+  }
+  function engLayoutLow() {
+    for (let i = 0; i < 47; i++) {
+      document.getElementById(keys[i]).textContent = engLow[i];
+    }
+  }
+  function engLayoutUp() {
+    for (let i = 0; i < 47; i++) {
+      document.getElementById(keys[i]).textContent = engUp[i];
+    }
+  }
+
+  function capsLock(state) {
+    if (state) {
+      for (let i = 13; i < 47; i++) {
+        const cU = lang === "eng" ? engUp[i] : cyrUp[i];
+        document.getElementById(keys[i]).textContent = cU;
+      }
+    } else {
+      for (let i = 13; i < 47; i++) {
+        const cL = lang === "eng" ? engLow[i] : cyrLow[i];
+        document.getElementById(keys[i]).textContent = cL;
+      }
+    }
+  }
+
+  function about() {
+    let content = 'Клавіатурний онлайн-тренажер для школярів і не тільки для них.<br>\
+Щира подяка:<br>\
+- Pelle Lundgren (evilpaper) - за Keyboard Hero;<br>\
+- спільноті KDE - за уроки для Ktouch;<br>\
+- Animista.net - за css-анімацію;<br>\
+- спільноті вчителів інформатики "Шкільна інформатика від А до Я" - за натхнення.<br>\
+Автор: Громко Г.Ю.';
+    customAlert.alert(content, 'Про клавіатурний тренажер');
+  }
+
+  function showProgress() {
+    timeEnd = getTimestamp();
+    if (timeStart === 0) timeStart = timeEnd;
+    let taskTime = timeEnd - timeStart;
+    let tMinuts = Math.floor(taskTime / 60);
+    let tSeconds = taskTime % 60;
+    let tTime = tMinuts + " хвилин " + tSeconds + " секунд";
+    let speed = Math.floor(correctChars / taskTime * 60);
+    let correctness = Math.floor(correctChars / countChars * 100);
+    let content = `час виконання: ${tTime}<br>
+                   натикано символів: ${correctChars}<br>
+                   швидкість: ${speed} симв/хв<br>
+                   правильність: ${correctness}%<br>`;
+    customAlert.alert(content, 'Результати виконання вправи');
+  }
+
+  function lessonSelect() {
+    let content = '<select id="taskSelect" size="15">';
+    for (let i = 0; i < exercises.length; i++) {
+      content += `<option value="${i+1}">Вправа ${i+1}</option>`;
+    }
+    content += '</select>';
+
+    customAlert.alert(content, 'Оберіть вправу для виконання');
+
+    const select = document.getElementById("taskSelect");
+    select.addEventListener("change", function () {
+      const index = parseInt(select.value);
+      startTyping(index);
+    });
+  }
+
+  function taskEnd() {
+    showProgress();
+    taskNum++;
+    if (taskNum > exercises.length) taskNum = 1;
+    startTyping(taskNum);
+  }
+
+  function kbdSetup(up) {
+    if (lang === "ua") {
+      up ? cyrLayoutUp() : cyrLayoutLow();
+    } else {
+      up ? engLayoutUp() : engLayoutLow();
+    }
+  }
+
+  function startTyping(n) {
+    const highlightedKey = document.querySelector(".selected");
+    if (highlightedKey) highlightedKey.classList.remove("selected");
+
+    taskNum = n;
+    document.getElementById('exercise').textContent = "Вправа " + taskNum;
+    taskString = exercises[n - 1];
+    totalChars = taskString.length;
+    lang = "ua";
+    started = true;
+    countChars = 0;
+    correctChars = 0;
+    incorrectChars = 0;
+    strLeft = '';
+
+    document.getElementById('leftPart').innerHTML = '&nbsp;';
+    document.getElementById('rightPart').textContent = taskString.substr(0, 16);
+    document.getElementById('progressBar').style.width = progressBar() + '%';
+
+    kbdSetup(false);
+    nextKey();
+    setupKeyHandlers(); // 🔁 Перереєстровуємо обробники
+  }
+
+  function updateAll() {
+    correctChars++;
+    strLeft = strLeft.replace("&nbsp;", " ");
+    if (charRight === " ") charRight = "&nbsp;";
+    strLeft = strLeft.substr(-11) + charRight;
+    document.getElementById('leftPart').innerHTML = strLeft;
+
+    taskString = taskString.slice(1);
+    let nbsp = '';
+    let cst = 0;
+    if (taskString[0] === ' ') { nbsp = "&nbsp;"; cst = 1; }
+    document.getElementById('rightPart').innerHTML = nbsp + taskString.substr(cst, 16);
+    document.getElementById('progressBar').style.width = progressBar() + '%';
+  }
+
+  function getKeyId(kkey) {
+    let kcyr = cyrUp.indexOf(kkey.toUpperCase());
+    if (kcyr === -1) kcyr = cyrLow.indexOf(kkey.toLowerCase());
+    let keng = engUp.indexOf(kkey.toUpperCase());
+    if (keng === -1) keng = engLow.indexOf(kkey.toLowerCase());
+    let keyId = kkey;
+    if (kcyr > -1) keyId = keys[kcyr];
+    if (keng > -1) keyId = keys[keng];
+    return keyId;
+  }
+
+  function keyShiftPressed() {
+    if (capsState) kbdSetup(false);
+    else kbdSetup(true);
+  }
+
+  function keyShiftUnPressed() {
+    if (capsState) kbdSetup(true);
+    else kbdSetup(false);
+  }
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Shift") {
+      keyShiftPressed();
+      const shiftId = event.code === "ShiftLeft" ? "shiftleft" : "shiftright";
+      keyShift = document.getElementById(shiftId);
+      keyShift.classList.add("selected");
+    }
+    if (event.key === "CapsLock") {
+      capsState = !capsState;
+      capsLock(capsState);
+    }
+  });
+
+  function key_Pressed(event_key, key_id) {
+    if (!started) {
+      started = true;
+      timeStart = getTimestamp();
+    }
+
+    currentKey = event_key;
+    if (currentKey === 'GroupNext') return;
+
+    countChars++;
+    let keyPressed = key_id;
+
+    if (event_key === "Shift") {
+      keyShiftUnPressed();
+      keyShift.classList.remove("selected");
+    }
+
+    const validKeys = ["Shift", "Control", "Meta", "Alt", "AltGraph", "Enter", "Tab", "Backspace", "CapsLock"];
+    if (validKeys.includes(keyPressed)) {
+      countChars--;
+      return;
+    }
+
+    const keyElement = document.getElementById(keyPressed);
+    if (keyElement) {
+      keyElement.classList.add("hit");
+      keyElement.addEventListener('animationend', () => {
+        keyElement.classList.remove("hit");
+      }, { once: true });
+    }
+
+    if (currentKey === taskString[0]) {
+      charRight = currentKey;
+      updateAll();
+      const highlightedKey = document.querySelector(".selected");
+      if (highlightedKey) highlightedKey.classList.remove("selected");
+      if (correctChars < exercises[taskNum - 1].length) {
+        nextKey();
+      } else {
+        taskEnd();
+      }
+    } else {
+      if ((currentKey === taskString[0].toUpperCase()) || (currentKey === taskString[0].toLowerCase())) {
+        document.getElementById("message").innerHTML = "Змініть регістр символів!";
+        setTimeout(() => {
+          document.getElementById("message").innerHTML = "";
+        }, 2000);
+      }
+      if (isLetter(currentKey) && currentKey.length === 1) {
+        if ((isEng(currentKey) && isCyr(taskString[0])) || (isEng(taskString[0]) && isCyr(currentKey))) {
+          document.getElementById("message").innerHTML = "Змініть розкладку клавіатури!";
+          setTimeout(() => {
+            document.getElementById("message").innerHTML = "";
+          }, 2000);
+        }
+      }
+    }
+  }
+
+  function isLetter(ckey) {
+    return isEng(ckey) || isCyr(ckey);
+  }
+  function isEng(ckey) {
+    return /[a-zA-Z]/.test(ckey);
+  }
+  function isCyr(ckey) {
+    return /[а-яіїєґА-ЯІЇЄҐ]/.test(ckey);
+  }
+
+  function progressBar() {
+    return (correctChars * 98 / totalChars).toFixed(1);
+  }
+
+  function nextKey() {
+    let ckey = taskString[0];
+    if (isEng(ckey)) lang = "eng";
+    if (isCyr(ckey)) lang = "ua";
+    kbdSetup(false);
+    const key = document.getElementById(getKeyId(ckey));
+    if (key) key.classList.add("selected");
+  }
+
+  function getTimestamp() {
+    return Math.floor(Date.now() / 1000);
+  }
+
+  // CustomAlert: без знищення DOM
+
+  function CustomAlert() {
+    this.alert = function (message, title = "") {
+      // Видаляємо попередній, якщо існує
+      const existingOverlay = document.getElementById('customAlertOverlay');
+      if (existingOverlay) existingOverlay.remove();
+
+      // Створюємо overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'customAlertOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+
+      // Створюємо вікно
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        background: white;
+        padding: 20px;
+        max-width: 90%;
+        max-height: 80vh;
+        overflow: auto;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        font-family: sans-serif;
+      `;
+
+      // Додаємо заголовок
+      if (title) {
+        const titleElem = document.createElement('div');
+        titleElem.style.cssText = "font-weight: bold; font-size: 18px; margin-bottom: 10px;";
+        titleElem.innerHTML = title;
+        dialog.appendChild(titleElem);
+      }
+
+      // Додаємо повідомлення (HTML)
+      const bodyElem = document.createElement('div');
+      bodyElem.innerHTML = message;
+      dialog.appendChild(bodyElem);
+
+      // Кнопка OK
+      const footer = document.createElement('div');
+      footer.style.cssText = "text-align: center; margin-top: 20px;";
+      const okButton = document.createElement('button');
+      okButton.textContent = "OK";
+      okButton.style.cssText = `
+        padding: 8px 16px;
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      `;
+      okButton.onclick = () => {
+        overlay.remove();
+        setupKeyHandlers(); // Відновлюємо обробники клавіш
+      };
+      footer.appendChild(okButton);
+      dialog.appendChild(footer);
+
+      // Вставляємо в DOM
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+    };
+  }
+
+  const customAlert = new CustomAlert();
+
+
+  // Ініціалізація
+  document.addEventListener('DOMContentLoaded', () => {
+    startTyping(taskNum);
+    setupKeyHandlers();
+  });
+</script>
+</body>
+</html>
