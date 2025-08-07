@@ -5,7 +5,7 @@ body {
   padding: 0;
   background: #37466c;
   color: #2b2b2b;
-  min-height: 100vh;
+  min-height: 80vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -15,9 +15,9 @@ body {
 .title {
   color: mintcream;
   text-transform: uppercase;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  font-size: 1em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-size: 0.8em;
   letter-spacing: 0.3em;
 }
 
@@ -52,12 +52,12 @@ li {
   align-items: center;
   justify-content: center;   /* горизонтальне вирівнювання */ 
   height: 2.4em;
-  width: 3em;
+  width: 2.8em;
   color: rgba(0,0,0,0.7);
   border-radius: 0.4em;
   line-height: 3em;
   letter-spacing: 1px;
-  margin: 0.4em;
+  margin: 0.2em;
   transition: 0.3s;
   text-align: right;
   font-size: 1em;
@@ -73,19 +73,19 @@ li {
 }
 
 #capslock {
-  width: 6em;
+  width: 5.5em;
 }
 
 #shiftleft {
-  width: 8em;
+  width: 7em;
 }
 
 #enter {
-  width: 6em;
+  width: 5.5em;
 }
 
 #shiftright {
-  width: 8em;
+  width: 7em;
 }
 
 #backspace {
@@ -93,10 +93,10 @@ li {
 }
 
 #space {
-	width:23em;
+	width:16em;
 }
 #controlleft {
-	width:4em;
+	width:4.5em;
 }
 #metaleft {
 	width:4em;
@@ -105,7 +105,7 @@ li {
 	width:4em;
 }
 #controlright {
-	width:4em;
+	width:4.5em;
 }
 #metaright {
 	width:4em;
@@ -503,7 +503,9 @@ a {
 }
 
 .upperBox {
-  width: 100%;  
+  width: 100%;
+  height:7em;
+  padding: 10px 10px;
   box-sizing: border-box;
   position: relative;
 }
@@ -511,7 +513,7 @@ a {
 .box {
   margin: 0 auto;
   background: rgba(155,155,155,0.1);
-  padding: 5px;
+  padding: 2px;
   text-align: left;
   width: 100%;
   position: absolute;
@@ -525,7 +527,7 @@ a {
 }
 
 .button {
-  font-size: 1em;
+  font-size: 0.8em;
   padding: 0px;
   color: #fff;
   border: 2px;
