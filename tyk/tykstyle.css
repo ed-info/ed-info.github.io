@@ -1,25 +1,35 @@
-body {  
+body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
+  margin: 0;
+  padding: 0;
+  background: #37466c;
+  color: #2b2b2b;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  height: 100vh;
+  overflow: auto; /* 🔽 Дозволяє прокручувати */
 }
 
 .title {
   color: mintcream;
   text-transform: uppercase;
-  margin-top: 3em;
-  margin-bottom: 3em;
+  margin-top: 1em;
+  margin-bottom: 1em;
   font-size: 1em;
   letter-spacing: 0.3em;
 }
 
-.keyboard {
+.keyboard { 
+  width: 100%;
+  height: auto;
+  overflow: auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  
+  
 }
 
 .row {
@@ -28,8 +38,20 @@ body {
   height: 2em;
 }
 
+.keyboard ul {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
 li {
-  height: 3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* горизонтальне вирівнювання */ 
+  height: 2.4em;
   width: 3em;
   color: rgba(0,0,0,0.7);
   border-radius: 0.4em;
@@ -37,9 +59,14 @@ li {
   letter-spacing: 1px;
   margin: 0.4em;
   transition: 0.3s;
-  text-align: center;
+  text-align: right;
   font-size: 1em;
+  flex-shrink: 0;
 }
+
+
+
+
 
 #tab {
   width: 5em;
@@ -141,11 +168,11 @@ li {
             cursor: pointer;
             border: 0px rgba(0, 0, 0, 0);
             background-color: rgba(0, 0, 0, 0);
-            height: 1.5em;
+            height: 1.7em;
             width: 250px;
             color: #3498db;
             font-size: 1.2em;
-            text-align:left;          
+            text-align:center;          
 }
 
 /* ----------------------------------------------
@@ -476,11 +503,9 @@ a {
 }
 
 .upperBox {
-height: 434px;
-width:100%;
-position: absolute;
-top: 0;
-left: 0;
+  width: 100%;  
+  box-sizing: border-box;
+  position: relative;
 }
 
 .box {
@@ -500,7 +525,7 @@ left: 0;
 }
 
 .button {
-  font-size: 1.5em;
+  font-size: 1em;
   padding: 0px;
   color: #fff;
   border: 2px;
@@ -525,11 +550,11 @@ left: 0;
 
 
 #taskBox {
-font-size: 3.2em;
+font-size: 3em;
 font-family: "Courier New",Courier,monospace;
 overflow: hidden;
 height: 1.1em;
-margin:2em .2em;
+margin:1em .2em;
 padding: 0;
 background-color: #fff;
 border: 3px solid gold;
@@ -562,7 +587,7 @@ text-align:right;
 	border: 0;
 	height: 4px;
 	position: absolute;
-	top: 5em;
+	top: 0;
 	left: 0;
 }
 
