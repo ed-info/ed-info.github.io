@@ -199,6 +199,7 @@
   var timeEnd = 0;
   var charKey = ' ';
   let shiftStates = { left: false, right: false };
+  let inputLocked = false;
 
 
   const keys = ["tilda","1","2","3","4","5","6","7","8","9","0","minus","plus","Q","W","E","R","T","Y","U","I","O","P","lsc","rsc","bckslash","A","S","D","F","G","H","J","K","L","ddot","apo","Z","X","C","V","B","N","M","comma","dot","slash","space"];
@@ -411,7 +412,11 @@
     }
   });
 
-  function key_Pressed(event_key, key_id) {
+function key_Pressed(event_key, key_id) {
+  if (inputLocked) return;
+  inputLocked = true;
+
+  try {
     if (!started) {
       started = true;
       timeStart = getTimestamp();
@@ -468,7 +473,14 @@
         }
       }
     }
+  } finally {
+    // Завжди знімаємо блокування
+    setTimeout(() => {
+      inputLocked = false;
+    }, 200);
   }
+}
+
 
   function isLetter(ckey) {
     return isEng(ckey) || isCyr(ckey);
