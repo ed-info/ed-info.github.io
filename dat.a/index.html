@@ -47,9 +47,13 @@
             <a href="#" onclick="createForm()">📑 Форма</a> 
             <a href="#" onclick="createOwnSQL()">✍️ SQL-запит</a> </div>
 		</div>
-		<div class="menu-item">Дані
-			<div class="dropdown" id="data-menu"> </div>
-		</div>
+        <div class="menu-item">Дані
+            <div class="dropdown">               
+              <div id="data-menu"></div>
+              <a href="#" onclick="showDataWorkDialog()" id="data-work-link" style="display:none;">⚙️ Робота з даними</a>
+            </div>
+        </div>
+
 		<div class="menu-item">Таблиці
 			<div class="dropdown"> <a href="#" onclick="createTable()">𝄜 Створити</a> 
             <a href="#" onclick="showSavedTablesDialog()">📚 Збережені таблиці</a> </div>
@@ -75,7 +79,7 @@
 		<div id="mainTitle"> <span>Виберіть або створіть базу даних</span> </div> 
         <img id="title-image" src="logo.png" alt="лого" class="title-image" /> </div>
 	<div id="startPrompt" style="padding: 20px;">
-		<p>Вітаємо у вебзастосунку dat.A!</p>        
+		<p>Вітаємо у dat.A - вашому персональному помічнику у світі баз даних!</p>        
 	</div> 
      <div id="logo-image" class="center-image">
     <img src="logo.png" alt="logo">
@@ -800,7 +804,7 @@
 				<div style="text-align: center; margin-bottom: 15px;"> <img src="logo.png" alt="Логотип" width="128" height="auto"> </div>
 				<h2 style="margin-top: 0;text-align:center;">Про застосунок <strong>dat.A</strong></h2>
 				<p><strong>dat.A</strong> — це простий вебзастосунок для роботи з базами даних безпосередньо у вашому браузері.</p>
-				<p><strong>Версія:</strong> 0.9 (неофіційна)</p>
+				<p><strong>Версія:</strong> 0.99 (09082025)</p>
 				<p>Розроблено з любов'ю до інформатики та тих, хто її вивчає, і тих, хто їх навчає  💻❤️</p>
 			</div>
 			<!-- Права частина: кнопка закриття -->
@@ -1072,6 +1076,102 @@
 			<button onclick="document.getElementById('dataModal').style.display='none'">Скасувати</button>
 		</div>
 	</div>
+    
+    <!-- Модальне вікно "Робота з даними" -->
+<div id="dataWorkModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; width:60%; height:60%; border-radius:10px; display:flex; gap:20px;">
+        <!-- Ліва частина: список -->
+        <div style="flex-grow:1; overflow-y:auto;">
+            <h3>Таблиці та результати запитів</h3>
+            <ul id="dataWorkList" style="list-style:none; padding:0; margin:0;">
+                <!-- Динамічно -->
+            </ul>
+        </div>
+        <!-- Права частина: кнопки -->
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+            <button onclick="openSelectedDataWork()" style="width:64px; height:64px; font-size:24px;
+                    display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>📂</div>
+                <div style="font-size:10px;">Відкрити</div>
+            </button>
+            <button onclick="closeDataWorkDialog()" style="width:64px; height:64px; font-size:24px;
+                    display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>❌</div>
+                <div style="font-size:10px;">Скасувати</div>
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Перегляд та робота з даними --> 
+<div id="dataViewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background-color: rgba(0,0,0,0.5); z-index:1006; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh; overflow:hidden;">
+        
+        <!-- Ліва частина: фільтри, сортування -->
+        <div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+            <h2 id="dataViewTitle" style="margin:0;">Перегляд таблиці</h2>
+            
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <label>Поле:
+                <select id="dataFieldSelect"></select>
+            </label>
+            <div style="display:flex; gap:10px;">
+                <label><input type="radio" name="sortOrder" value="asc" checked> За зростанням</label>
+                <label><input type="radio" name="sortOrder" value="desc"> За спаданням</label>
+            </div>
+        </div>
+            
+        <!-- Фільтр + Пошук в одному рядку -->
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <label>Фільтр:
+                <select id="dataFilterCondition">
+                    <option value=""> </option>
+                    <option value="=">=</option>
+                    <option value="!=">!=</option>
+                    <option value=">">&gt;</option>
+                    <option value="<">&lt;</option>
+                </select>
+                <input type="text" id="dataFilterInput" style="width:150px;">
+            </label> 
+
+            <label>Пошук:
+                <input type="text" id="dataSearchInput" style="width:150px;">
+            </label>
+    
+        </div>
+
+            <div style="overflow-x:auto; flex-grow:1;">
+                <table id="dataViewTable" border="1" cellpadding="5" style="width:100%; border-collapse:collapse; table-layout:fixed;">
+                    <thead id="dataViewHead" style="background-color:#eee;"></thead>
+                    <tbody id="dataViewBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Права частина: кнопки -->
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:center; width:64px;">
+            <button onclick="sortDataTable()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>↕️</div>
+                <div style="font-size:10px;">Сортувати</div>
+            </button>
+            <button onclick="applyDataFilter()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>🔍</div>
+                <div style="font-size:10px;">Фільтр</div>
+            </button>
+            <button onclick="applyDataSearch()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>🔎</div>
+                <div style="font-size:10px;">Пошук</div>
+            </button>
+            <button onclick="closeDataViewModal()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div>❌</div>
+                <div style="font-size:10px;">Закрити</div>
+            </button>
+        </div>
+    </div>
+</div>
+    
+    
 </body>
 
 </html>

@@ -1521,6 +1521,8 @@ function addTableToMenu(tableName) {
     item.onclick = () => editData(tableName);
 
     dataMenu.appendChild(item);
+    document.getElementById("data-work-link").style.display = "block";
+    
 }
 
 /**
@@ -5934,5 +5936,213 @@ function showData() {
         openSelectedTable(); // Твоя функція для відкриття
     }
     
+let selectedDataWorkName = null;
+
+function showDataWorkDialog() {
+    const listEl = document.getElementById("dataWorkList");
+    listEl.innerHTML = "";
+    selectedDataWorkName = null;
+
+    // Додаємо звичайні таблиці
+    (database.tables || []).forEach(t => {
+        const li = document.createElement("li");
+        li.textContent = t.name;
+        li.style.padding = "8px";
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+            [...listEl.children].forEach(el => el.style.background = "");
+            li.style.background = "#d0e0ff";
+            selectedDataWorkName = t.name;
+        });
+        listEl.appendChild(li);
+    });
+
+    // Додаємо результати запитів
+    (queries.results || []).forEach(q => {
+        const li = document.createElement("li");
+        li.textContent = "*" + q.name; // * — щоб відрізнити
+        li.style.padding = "8px";
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+            [...listEl.children].forEach(el => el.style.background = "");
+            li.style.background = "#d0e0ff";
+            selectedDataWorkName = "*" + q.name;
+        });
+        listEl.appendChild(li);
+    });
+
+    document.getElementById("dataWorkModal").style.display = "flex";
+}
+
+function closeDataWorkDialog() {
+    document.getElementById("dataWorkModal").style.display = "none";
+}
+
+let currentDataView = { columns: [], rows: [] };
+
+function openSelectedDataWork() {
+    if (!selectedDataWorkName) {
+        Message("Виберіть таблицю або результат запиту.");
+        return;
+    }
+    closeDataWorkDialog();
+    openDataView(selectedDataWorkName);
+}
+
+function openDataView(tableName) {
+    let tableData;
+    let columns;
+
+    if (tableName.startsWith('*')) {
+        const q = queries.results.find(t => t.name === tableName.substring(1));
+        if (!q) return Message("Запит не знайдено");
+        columns = q.schema.map(c => c.title);
+        tableData = q.data;
+    } else {
+        const t = database.tables.find(tbl => tbl.name === tableName);
+        if (!t) return Message("Таблиця не знайдена");
+        columns = t.schema.map(c => c.title);
+        tableData = t.data;
+    }
+
+    currentDataView.columns = columns;
+    currentDataView.rows = [...tableData];
+
+    // Заповнити селект полів
+    const select = document.getElementById("dataFieldSelect");
+    select.innerHTML = columns.map(c => `<option value="${c}">${c}</option>`).join("");
+
+    // Показати дані
+    renderDataViewTable(columns, currentDataView.rows);
+
+    document.getElementById("dataViewTitle").textContent = `Таблиця: ${tableName}`;
+    document.getElementById("dataViewModal").style.display = "flex";
+}
+
+function renderDataViewTable(columns, rows) {
+    const head = document.getElementById("dataViewHead");
+    const body = document.getElementById("dataViewBody");
+
+    head.innerHTML = "";
+    const trHead = document.createElement("tr");
+    columns.forEach(c => {
+        const th = document.createElement("th");
+        th.textContent = c;
+        trHead.appendChild(th);
+    });
+    head.appendChild(trHead);
+
+    body.innerHTML = "";
+    rows.forEach(r => {
+        const tr = document.createElement("tr");
+        r.forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+}
+
+function sortDataTable() {
+    const field = document.getElementById("dataFieldSelect").value;
+    const order = document.querySelector('input[name="sortOrder"]:checked').value;
+    const colIndex = currentDataView.columns.indexOf(field);
+    if (colIndex === -1) return;
+
+    currentDataView.rows.sort((a, b) => {
+        if (a[colIndex] < b[colIndex]) return order === "asc" ? -1 : 1;
+        if (a[colIndex] > b[colIndex]) return order === "asc" ? 1 : -1;
+        return 0;
+    });
+
+    renderDataViewTable(currentDataView.columns, currentDataView.rows);
+}
+
+function applyDataFilter() {
+    const mask = document.getElementById("dataFilterInput").value.trim();
+    const condition = document.getElementById("dataFilterCondition").value;
+    
+    if (!mask || !condition) {
+        renderDataViewTable(currentDataView.columns, currentDataView.rows);
+        return;
+    }
+
+    const field = document.getElementById("dataFieldSelect").value;
+    const colIndex = currentDataView.columns.indexOf(field);
+    if (colIndex === -1) return;
+
+    // Маска в RegExp
+    const regex = maskToRegex(mask);
+
+    const filtered = currentDataView.rows.filter(r => {
+        const cellValue = String(r[colIndex]);
+
+        // Порівняння по умові
+        switch (condition) {
+            case "=":
+                return regex.test(cellValue);
+            case "!=":
+                return !regex.test(cellValue);
+            case ">":
+                return cellValue > mask;
+            case "<":
+                return cellValue < mask;
+            default:
+                return true;
+        }
+    });
+
+    renderDataViewTable(currentDataView.columns, filtered);
+}
+
+
+
+function applyDataSearch() {
+    const mask= document.getElementById("dataSearchInput").value.toLowerCase();
+    if (!mask) {
+        renderDataViewTable(currentDataView.columns, currentDataView.rows);
+        return;
+    }
+
+    const field = document.getElementById("dataFieldSelect").value;
+    const colIndex = currentDataView.columns.indexOf(field);
+    if (colIndex === -1) return;
+
+    const regex = maskToRegex(mask);
+
+    const filtered = currentDataView.rows.filter(r =>
+        regex.test(String(r[colIndex]))
+    );
+
+    renderDataViewTable(currentDataView.columns, filtered);
+}
+function closeDataViewModal() {
+    document.getElementById("dataViewModal").style.display = "none";
+}
+function maskToRegex(mask) {
+    // Екрануємо всі спецсимволи RegExp, щоб вони не спрацьовували
+    let regexStr = mask.replace(/([.+^${}()|\\])/g, "\\$1");
+
+    // Зірочка (*) → .* (будь-яка кількість символів)
+    regexStr = regexStr.replace(/\*/g, ".*");
+
+    // Знак питання (?) → . (один будь-який символ)
+    regexStr = regexStr.replace(/\?/g, ".");
+
+    // Решітка (#) → [0-9] (одна будь-яка цифра)
+    regexStr = regexStr.replace(/#/g, "[0-9]");
+
+    // [!...] → [^...] (заперечення у регулярках)
+    regexStr = regexStr.replace(/\[!([^\]]+)\]/g, "[^$1]");
+
+    // Діапазони та звичайні [ ] залишаємо як є, бо вони вже валідні у RegExp
+    // Тут просто забираємо екранування з []
+    regexStr = regexStr.replace(/\\\[/g, "[");
+    regexStr = regexStr.replace(/\\\]/g, "]");
+
+    return new RegExp("^" + regexStr + "$", "i"); // ^ і $ — щоб збігався весь рядок
+}
+
 
 
