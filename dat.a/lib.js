@@ -415,6 +415,116 @@ function editData(tableName) {
         headerRow.appendChild(th);
     });
     head.appendChild(headerRow);
+//----------------------------------
+// Додаємо ресайзинг для кожного заголовка
+// ----------------------------------
+// Ресайзинг стовпців — заміна старого коду
+// ----------------------------------
+(function setupColumnResizing() {
+    // знайти таблицю, яка містить thead (head)
+    const tableEl = head.closest('table') || document.getElementById('editTable');
+    if (!tableEl) return;
+
+    // видалити старий colgroup (якщо є)
+    const oldColgroup = tableEl.querySelector('colgroup');
+    if (oldColgroup) oldColgroup.remove();
+
+    // створити новий colgroup з потрібною кількістю <col>
+    const colgroup = document.createElement('colgroup');
+    for (let i = 0; i < columns.length; i++) {
+        const col = document.createElement('col');
+        // відновити збережену ширину, якщо є
+        const w = (currentEditTable && currentEditTable.columnWidths && currentEditTable.columnWidths[i]) ? currentEditTable.columnWidths[i] : null;
+        if (w) col.style.width = w + 'px';
+        colgroup.appendChild(col);
+    }
+    tableEl.insertBefore(colgroup, tableEl.querySelector('thead') || tableEl.firstChild);
+
+    // фіксуємо layout, щоб змінювався лише targeted <col>
+    tableEl.style.tableLayout = 'fixed';
+    // Якщо не хочеш, щоб таблиця розтягувалась на 100% — можна залишити без зміни
+    if (!tableEl.style.width) tableEl.style.width = '100%';
+
+    // стиль для запобігання переносу тексту (опціонально)
+    tableEl.querySelectorAll('th, td').forEach(el => {
+        el.style.overflow = 'hidden';
+        el.style.textOverflow = 'ellipsis';
+        el.style.whiteSpace = 'nowrap';
+    });
+
+    // Додаємо ресайз-хендл в кожен <th>
+    headerRow.querySelectorAll("th").forEach((th, colIndex) => {
+        th.style.position = "relative";
+
+        // не додаємо ще одного ресайзера, якщо він вже є
+        if (th.querySelector('.col-resizer')) return;
+
+        const resizer = document.createElement("div");
+        resizer.className = 'col-resizer';
+        // невеликий стиль — при потребі винеси у CSS
+        Object.assign(resizer.style, {
+            width: "8px",
+            height: "100%",
+            position: "absolute",
+            top: "0",
+            right: "0",
+            cursor: "col-resize",
+            userSelect: "none",
+            zIndex: "20",
+            transform: "translateX(50%)" // трохи виступає праворуч
+        });
+
+        th.appendChild(resizer);
+
+        resizer.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            // цільовий <col>
+            const cols = tableEl.querySelectorAll('col');
+            const col = cols[colIndex];
+            if (!col) return;
+
+            const startX = e.clientX;
+            const startWidth = col.getBoundingClientRect().width;
+            const minWidth = 40; // мінімальна ширина в px
+
+            // забрати виділення тексту під час перетягування
+            const prevUserSelect = document.body.style.userSelect;
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+
+            function onMouseMove(ev) {
+                const dx = ev.clientX - startX;
+                let newWidth = Math.max(minWidth, Math.round(startWidth + dx));
+                col.style.width = newWidth + 'px';
+
+                // зберегти у currentEditTable для відновлення при наступному відкритті
+                if (currentEditTable) {
+                    currentEditTable.columnWidths = currentEditTable.columnWidths || [];
+                    currentEditTable.columnWidths[colIndex] = newWidth;
+                }
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.style.userSelect = prevUserSelect || '';
+                document.body.style.cursor = '';
+                // За бажанням можна зберегти у localStorage разом з базою:
+                // saveDatabase();
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    });
+})();
+
+
+
+//----------------------------------    
+    
+    
+    
 
     dataRows = rows || [];
     console.log("dataRows=", dataRows);
@@ -624,26 +734,41 @@ function editData(tableName) {
 - Видаляє рядок із таблиці і зберігає БД.
 */
 function deleteSelectedRow() {
-    if (!selectedCell || currentEditTable.name.startsWith('*')) { // Запобігає видаленню з запиту або без вибору клітинки
+    if (!selectedCell || currentEditTable.name.startsWith('*')) {
         Message("Спочатку клацніть у комірку рядка, який хочете видалити, або це вікно не є редагованим.");
         return;
     }
 
-    const row = selectedCell.parentElement; // Отримуємо HTML-елемент рядка
-    const cells = row.querySelectorAll("td"); // Всі клітинки рядка
+    const row = selectedCell.parentElement;
+    const cells = row.querySelectorAll("td");
 
-    const pkColIndex = currentEditTable.schema.findIndex(col => col.primaryKey); // Знаходимо індекс первинного ключа
-    if (pkColIndex === -1) {
+    // Збираємо всі стовпці, які є частиною PK
+    const pkCols = currentEditTable.schema
+        .map((col, idx) => col.primaryKey ? { title: col.title, index: idx } : null)
+        .filter(Boolean);
+
+    if (pkCols.length === 0) {
         Message("У таблиці немає первинного ключа, тому неможливо видалити запис з бази.");
         return;
     }
 
-    const pkValue = cells[pkColIndex].innerText.trim(); // Значення первинного ключа
-    const sql = `DELETE FROM "${currentEditTable.name}" WHERE "${currentEditTable.schema[pkColIndex].title}" = '${pkValue}';`; // Формування SQL-запиту
-    db.run(sql); // Виконання запиту
-    row.remove(); // Видалення рядка з DOM
-    saveDatabase(); // Збереження БД
+    // Формуємо умову WHERE для складеного PK
+    const whereClauses = pkCols.map(pk => {
+        const value = cells[pk.index].innerText.trim();
+        return `"${pk.title}" = '${value.replace(/'/g, "''")}'`;
+    });
+
+    const sql = `DELETE FROM "${currentEditTable.name}" WHERE ${whereClauses.join(" AND ")};`;
+
+    try {
+        db.run(sql);
+        row.remove();
+        saveDatabase();
+    } catch (e) {
+        Message("Помилка видалення: " + e.message);
+    }
 }
+
 
 /*
 Функція saveTableData()
@@ -663,11 +788,11 @@ function saveTableData() {
         return;
     }
 
-    const rows = document.querySelectorAll("#editBody tr"); // Всі редаговані рядки
+    const rows = document.querySelectorAll("#editBody tr"); 
 
     rows.forEach(row => {
         const cells = row.querySelectorAll("td");
-        const values = [];
+        const valuesObj = {};
         let allEmpty = true;
 
         currentEditTable.schema.forEach((col, index) => {
@@ -677,6 +802,7 @@ function saveTableData() {
             const select = cell.querySelector("select");
             if (select) {
                 val = select.value;
+                if (val === "empty") val = "";
             } else {
                 const input = cell.querySelector("input[type='date']");
                 if (input) {
@@ -687,19 +813,55 @@ function saveTableData() {
             }
 
             if (val !== "") allEmpty = false;
-
-            const escaped = val.replace(/'/g, "''");
-            values.push(`'${escaped}'`);
+            valuesObj[col.title] = val;
         });
 
         if (allEmpty) return;
 
-        const columns = currentEditTable.schema.map(col => `"${col.title}"`);
-        const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns.join(", ")}) VALUES (${values.join(", ")});`;
-        db.run(sql);
+        // Масив PK-стовпців
+        const pkCols = currentEditTable.schema
+            .filter(col => col.primaryKey)
+            .map(col => col.title);
+
+        if (pkCols.length > 0) {
+            // Перевіряємо, чи існує рядок із таким PK
+            const whereClauses = pkCols.map(pk => `"${pk}" = '${valuesObj[pk].replace(/'/g, "''")}'`).join(" AND ");
+            const checkSQL = `SELECT COUNT(*) as cnt FROM "${currentEditTable.name}" WHERE ${whereClauses};`;
+            let exists = false;
+
+            try {
+                const res = db.exec(checkSQL);
+                if (res.length > 0 && res[0].values[0][0] > 0) {
+                    exists = true;
+                }
+            } catch (e) {
+                console.warn("Помилка перевірки існування PK:", e);
+            }
+
+            if (exists) {
+                // UPDATE
+                const setClauses = Object.keys(valuesObj)
+                    .map(key => `"${key}" = '${valuesObj[key].replace(/'/g, "''")}'`)
+                    .join(", ");
+                const updateSQL = `UPDATE "${currentEditTable.name}" SET ${setClauses} WHERE ${whereClauses};`;
+                db.run(updateSQL);
+            } else {
+                // INSERT
+                const columns = Object.keys(valuesObj).map(k => `"${k}"`).join(", ");
+                const vals = Object.values(valuesObj).map(v => `'${v.replace(/'/g, "''")}'`).join(", ");
+                const insertSQL = `INSERT INTO "${currentEditTable.name}" (${columns}) VALUES (${vals});`;
+                db.run(insertSQL);
+            }
+        } else {
+            // Якщо PK немає — як раніше
+            const columns = Object.keys(valuesObj).map(k => `"${k}"`).join(", ");
+            const vals = Object.values(valuesObj).map(v => `'${v.replace(/'/g, "''")}'`).join(", ");
+            const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns}) VALUES (${vals});`;
+            db.run(sql);
+        }
     });
 
-    // ❗ Після збереження — оновити currentEditTable.data з SQLite
+    // Оновлюємо кешовані дані
     try {
         const res = db.exec(`SELECT * FROM "${currentEditTable.name}"`);
         currentEditTable.data = res.length ? res[0].values : [];
@@ -708,10 +870,11 @@ function saveTableData() {
         currentEditTable.data = [];
     }
 
-    saveDatabase(); // Зберегти БД та структуру
+    saveDatabase();
     Message("Дані збережено.");
     closeEditModal();
 }
+
 
 
 /**
@@ -1105,7 +1268,6 @@ function saveSchema() {
     const schema = [];
     const fieldNames = new Set();
     let hasDuplicate = false;
-    let hasPrimaryKey = false;
 
     for (let row of rows) {
         const isPrimaryKey = row.cells[0].querySelector("input").checked;
@@ -1139,8 +1301,6 @@ function saveSchema() {
             if (refFieldSelect) refField = refFieldSelect.value || null;
         }
 
-        if (isPrimaryKey) hasPrimaryKey = true;
-
         schema.push({
             primaryKey: isPrimaryKey,
             title: title,
@@ -1162,20 +1322,16 @@ function saveSchema() {
         return;
     }
 
-    if (!hasPrimaryKey) {
+    if (schema.filter(f => f.primaryKey).length === 0) {
         Message("Не вказано жодного первинного ключа. Таблиця не буде збережена.");
         return;
     }
 
-    // --- Визначення режиму ---
     let isNewTable = newDbFile === true;
     let oldTableName = null;
-    console.log("newDbFile=",newDbFile)
-    
-    
-    if (newDbFile) editingTableName=newTableName;
-    console.log("editingTableName=",editingTableName)
-    // Якщо не нова база, але таблиця створюється вперше
+
+    if (newDbFile) editingTableName = newTableName;
+
     if (!isNewTable && editingTableName) {
         if (typeof editingTableName === "string") {
             oldTableName = editingTableName.trim();
@@ -1184,14 +1340,12 @@ function saveSchema() {
         }
     }
 
-    // Якщо не вдалось визначити oldTableName, вважаємо, що створюється нова таблиця
     if (!isNewTable && !oldTableName) {
         isNewTable = true;
     }
 
     const nameChanged = !isNewTable && oldTableName !== newTableName;
 
-    // --- Зчитування даних зі старої таблиці ---
     let oldData = [];
     if (!isNewTable) {
         try {
@@ -1211,7 +1365,6 @@ function saveSchema() {
         }
     }
 
-    // --- Створення нової таблиці ---
     db.run("PRAGMA foreign_keys = ON;");
 
     const fieldsSQL = schema.map(field => {
@@ -1222,10 +1375,14 @@ function saveSchema() {
         else if (type === "ТАК/НІ") type = "BOOLEAN";
         else if (type === "ДАТА") type = "TEXT";
 
-        let fieldDef = `"${field.title}" ${type}`;
-        if (field.primaryKey) fieldDef += " PRIMARY KEY";
-        return fieldDef;
+        return `"${field.title}" ${type}`;
     });
+
+    // Додаємо складений або одинарний PRIMARY KEY
+    const pkFields = schema.filter(f => f.primaryKey).map(f => `"${f.title}"`);
+    if (pkFields.length > 0) {
+        fieldsSQL.push(`PRIMARY KEY (${pkFields.join(", ")})`);
+    }
 
     const foreignKeys = schema
         .filter(f => f.foreignKey && f.refTable && f.refField)
@@ -1242,7 +1399,6 @@ function saveSchema() {
         return;
     }
 
-    // --- Вставлення старих даних у нову таблицю ---
     const newFieldNames = schema.map(f => f.title);
     oldData.forEach(record => {
         const insertFields = [];
@@ -1263,7 +1419,6 @@ function saveSchema() {
         }
     });
 
-    // --- Читання даних назад у масиви ---
     const table = {
         name: newTableName,
         schema: schema,
@@ -1283,7 +1438,6 @@ function saveSchema() {
         console.warn("Не вдалося зчитати дані для таблиці:", e);
     }
 
-    // --- Оновлення database.tables ---
     if (!isNewTable) {
         const index = database.tables.findIndex(t => t.name === oldTableName);
         if (index !== -1) {
@@ -1292,7 +1446,6 @@ function saveSchema() {
     }
     database.tables.push(table);
 
-    // --- Оновлення залежностей та UI ---
     if (!isNewTable && nameChanged) {
         updateRelationsOnRename(oldTableName, newTableName);
         updateQueriesOnTableRename(oldTableName, newTableName);
@@ -2110,6 +2263,7 @@ function generateSqlQuery() {
     
 
     function validateSqlQuery(sql) {
+        return true;
         try {
             const errors = [];
     
@@ -5284,7 +5438,7 @@ function executeOwnSQL() {
     }
 
     try { 
-        if (!validateSqlQuery(sqlQuery)) return;
+        //if (!validateSqlQuery(sqlQuery)) return;
         const res = db.exec(sqlQuery);                
 
         if (res.length > 0) {
