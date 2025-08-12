@@ -1,3 +1,16 @@
+/* noto-color-emoji-regular - emoji */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Noto Color Emoji';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/noto-color-emoji-v35-emoji-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+.emoji {
+    font-family: 'Noto Color Emoji', sans-serif;
+}
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -493,3 +506,16 @@ select {
     margin-top: 2px;
   }
 
+input[type="date"] {
+    border: none;         /* Прибирає рамку */
+    outline: none;        /* Прибирає рамку при фокусі */
+    background: transparent; /* повністю прозоре тло */
+    appearance: none;  /* Для більшості браузерів */
+    -webkit-appearance: none; /* Для Chrome/Safari */
+    -moz-appearance: none;    /* Для Firefox */
+}
+
+.selected-row {
+  outline: 2px solid #3399FF; /* блакитна рамка */
+  outline-offset: -2px; /* щоб рамка була зсередини */
+}
