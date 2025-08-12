@@ -3743,87 +3743,117 @@ function populateFieldSelectionPanel() {
 
 
 
-    function redrawLines() {
-        const canvas = document.getElementById("relationCanvas");
+function redrawLines() {
+    const canvas = document.getElementById("relationCanvas");
 
-        const existingSvg = document.getElementById("relation-svg");
-        if (existingSvg) existingSvg.remove();
+    const existingSvg = document.getElementById("relation-svg");
+    if (existingSvg) existingSvg.remove();
 
-        const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svgEl.setAttribute("id", "relation-svg");
-        svgEl.style.position = "absolute";
-        svgEl.style.top = 0;
-        svgEl.style.left = 0;
-        svgEl.style.width = "100%";
-        svgEl.style.height = "100%";
-        svgEl.style.zIndex = "0";
-        svgEl.style.pointerEvents = "none";
+    const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgEl.setAttribute("id", "relation-svg");
+    svgEl.style.position = "absolute";
+    svgEl.style.top = 0;
+    svgEl.style.left = 0;
+    svgEl.style.width = "100%";
+    svgEl.style.height = "100%";
+    svgEl.style.zIndex = "0";
+    svgEl.style.pointerEvents = "none";
 
-        const canvasRect = canvas.getBoundingClientRect();
+    // Додаємо визначення маркерів у <defs>
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
 
-        relationLines.forEach(line => {
-            const fromRect = line.from.getBoundingClientRect();
-            const toRect = line.to.getBoundingClientRect();
+    // Маркер для стрілки на кінці (приймач)
+    const markerEnd = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerEnd.setAttribute("id", "arrowEnd");
+    markerEnd.setAttribute("markerWidth", "6");
+    markerEnd.setAttribute("markerHeight", "6");
+    markerEnd.setAttribute("refX", "6");
+    markerEnd.setAttribute("refY", "3");
+    markerEnd.setAttribute("orient", "auto");
+    markerEnd.setAttribute("markerUnits", "strokeWidth");
 
-            const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-            const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
 
-            const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-            const toY = toRect.top + toRect.height / 2 - canvasRect.top;
+    const pathEnd = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathEnd.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); // трикутник
+    pathEnd.setAttribute("fill", "#3498db");
 
-            const H_OFFSET = 12; // горизонтальний зсув від точки
+    //markerEnd.appendChild(pathEnd);
+    //defs.appendChild(markerEnd);
 
-            let fromX, toX, fromDir, toDir;
+    // Маркер для стрілки на початку (джерело)
+    const markerStart = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerStart.setAttribute("id", "arrowStart");
+    markerStart.setAttribute("markerWidth", "6");
+    markerStart.setAttribute("markerHeight", "6");
+    markerStart.setAttribute("refX", "0");
+    markerStart.setAttribute("refY", "3");
+    markerStart.setAttribute("orient", "auto");
+    markerStart.setAttribute("markerUnits", "strokeWidth");
 
-            if (fromCenterX < toCenterX) {
-                // Зліва направо
-                fromX = fromRect.left + fromRect.width - canvasRect.left;
-                toX = toRect.left - canvasRect.left;
-                fromDir = +1;
-                toDir = -1;
-            } else {
-                // Справа наліво
-                fromX = fromRect.left - canvasRect.left;
-                toX = toRect.left + toRect.width - canvasRect.left;
-                fromDir = -1;
-                toDir = +1;
-            }
 
-            // Ламана: 5 точок
-            const p1 = {
-                x: fromX,
-                y: fromY
-            }; // вихід з поля
-            const p2 = {
-                x: fromX + fromDir * H_OFFSET,
-                y: fromY
-            }; // горизонтальний зсув
-            const p3 = {
-                x: p2.x,
-                y: toY
-            }; // вертикальний до рівня to
-            const p4 = {
-                x: toX + toDir * H_OFFSET,
-                y: toY
-            }; // горизонтальний до to
-            const p5 = {
-                x: toX,
-                y: toY
-            }; // вхід в to
+    const pathStart = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathStart.setAttribute("d", "M 6 0 L 0 3 L 6 6 z"); // трикутник, в інший бік
+    pathStart.setAttribute("fill", "#ff0000");
 
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-            const points = [p1, p2, p3, p4, p5].map(p => `${p.x},${p.y}`).join(" ");
-            path.setAttribute("points", points);
-            path.setAttribute("fill", "none");
-            //path.setAttribute("stroke", "#3498db");
-            path.setAttribute("stroke", line.color || "#3498db");
-            path.setAttribute("stroke-width", "2");
+    markerStart.appendChild(pathStart);
+    defs.appendChild(markerStart);
 
-            svgEl.appendChild(path);
-        });
+    svgEl.appendChild(defs);
 
-        canvas.insertBefore(svgEl, canvas.firstChild);
-    }
+    const canvasRect = canvas.getBoundingClientRect();
+
+    relationLines.forEach(line => {
+        const fromRect = line.from.getBoundingClientRect();
+        const toRect = line.to.getBoundingClientRect();
+
+        const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+        const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
+
+        const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+        const toY = toRect.top + toRect.height / 2 - canvasRect.top;
+
+        const H_OFFSET = 12; // горизонтальний зсув від точки
+
+        let fromX, toX, fromDir, toDir;
+
+        if (fromCenterX < toCenterX) {
+            // Зліва направо
+            fromX = fromRect.left + fromRect.width - canvasRect.left;
+            toX = toRect.left - canvasRect.left;
+            fromDir = +1;
+            toDir = -1;
+        } else {
+            // Справа наліво
+            fromX = fromRect.left - canvasRect.left;
+            toX = toRect.left + toRect.width - canvasRect.left;
+            fromDir = -1;
+            toDir = +1;
+        }
+
+        const p1 = { x: fromX, y: fromY };
+        const p2 = { x: fromX + fromDir * H_OFFSET, y: fromY };
+        const p4 = { x: toX + toDir * H_OFFSET, y: toY };
+        const p5 = { x: toX, y: toY };
+
+        const points = [p1, p2, p4, p5].map(p => `${p.x},${p.y}`).join(" ");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        path.setAttribute("points", points);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", line.color || "#3498db");
+        path.setAttribute("stroke-width", "2");
+
+        // Додаємо стрілки на початок і кінець
+        path.setAttribute("marker-start", "url(#arrowStart)");
+        path.setAttribute("marker-end", "url(#arrowEnd)");
+
+        svgEl.appendChild(path);
+    });
+
+    canvas.insertBefore(svgEl, canvas.firstChild);
+}
+
+
 
 
 
@@ -4944,8 +4974,8 @@ function populateFieldSelectionPanel() {
                                     : type.toUpperCase().includes("TEXT") ? "Текст"
                                     : type.toUpperCase().includes("BOOL") ? "Так/Ні"
                                     : type,
-                                primaryKey: pk === 1,
-                                comment: pk === 1 ? "Первинний ключ" : "",
+                                primaryKey: pk > 0,
+                                comment: pk > 0 ? "Первинний ключ" : "",
                                 foreignKey: !!fk,
                                 refTable: fk ? fk.refTable : null,
                                 refField: fk ? fk.toCol : null
