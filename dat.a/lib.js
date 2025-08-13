@@ -27,6 +27,8 @@
     let selectedDbFile = null;
     let newDbFile = false; // змінна для фіксації створення нового файлу
     let editingTableName = "unnamed";
+    let autoIncrement = null;
+    let isNewTable = true;
     
     closeAllModals();
     
@@ -161,7 +163,46 @@
     }
     //
 
-    function showStorageDialog() {
+/**
+ * Перевірка для імені файлу, таблиць та полів
+ **/
+ function checkName(name) {
+    
+    name = name.trim();
+
+    // 1. Перевірка довжини
+    if (name.length < 2 || name.length > 32) {
+        Message("Ім'я повинно містити від 2 до 32 символів.");
+        return false;
+    }
+
+    // 2. Перевірка першого символу — літера (латиниця або кирилиця)
+    const firstCharPattern = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ]$/;
+    if (!firstCharPattern.test(name[0])) {
+        Message("Ім'я повинно починатися з літери (латинської або кириличної).");
+        return false;
+    }
+
+    // 3. Перевірка на допустимі символи
+    const allowedPattern = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ0-9\-_']+$/;
+    if (!allowedPattern.test(name)) {
+        Message("Ім'я містить недопустимі символи. Дозволені: літери, цифри, дефіс (-), підкреслення (_), апостроф (').");
+        return false;
+    }
+
+    // 4. Перевірка на заборонені символи (додаткова страховка)
+    const forbiddenPattern = /[?"\/\\<>*\|:"]/;
+    if (forbiddenPattern.test(name)) {
+        Message("Ім'я містить заборонені символи: ? \" / \\ < > * | :");
+        return false;
+    }
+
+    return true;
+}
+
+//
+
+function showStorageDialog() {
         const listEl = document.getElementById("storageList");
         listEl.innerHTML = "";
         selectedDbFile = null;
@@ -294,9 +335,247 @@
         updateMainTitle();
     }
 
+/**
+ *  Розширене введення даних з контролем типів та налаштування елементів вводу (select, input, contentEditable, обмеження по типу даних, перевірки) *  
+**/
+function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
+    container.innerHTML = "";
+    let createdEl = null;
+
+    const typeStr = String(col?.type || "").toLowerCase();
+    const isPK = !!col?.primaryKey;
+    const isPKAuto = isPK && typeStr === "ціле число" && col?.autoInc === true;
+    const isForeignKey = !!(col && col.foreignKey && col.refTable && col.refField);
+
+    // ===== хелпери для caret у contentEditable =====
+    const getCaretOffset = (el) => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return 0;
+        const range = sel.getRangeAt(0);
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(el);
+        preRange.setEnd(range.endContainer, range.endOffset);
+        return preRange.toString().length;
+    };
+
+    const setCaretOffset = (el, offset) => {
+        offset = Math.max(0, Math.min(offset, el.innerText.length));
+        const range = document.createRange();
+        const sel = window.getSelection();
+        let current = 0;
+
+        // знаходимо textNode для потрібного офсету
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+        let node = walker.nextNode();
+        while (node) {
+            const len = node.nodeValue.length;
+            if (current + len >= offset) {
+                range.setStart(node, offset - current);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                return;
+            }
+            current += len;
+            node = walker.nextNode();
+        }
+
+        // якщо немає текстових вузлів — ставимо в кінець елемента
+        range.selectNodeContents(el);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    };
+
+    // універсальний санітайзер для типів
+    const sanitizeByType = (s, t) => {
+        s = (s ?? "").toString().replace(/\r?\n/g, ""); // прибираємо перенос
+        t = String(t || "").toLowerCase();
+
+        if (t === "текст") {
+            if (s.length > 64) s = s.slice(0, 64);
+            return s;
+        }
+        if (t === "ціле число") {
+            s = s.replace(/[^\d-]/g, "").replace(/(?!^)-/g, "");
+            if (s.startsWith("--")) s = "-" + s.slice(2);
+            return s;
+        }
+        if (t === "дробове число") {
+            s = s.replace(/[^\d.\-]/g, "")
+                 .replace(/(?!^)-/g, "")
+                 .replace(/(\..*)\./g, "$1");
+            return s;
+        }
+        // інші — як текст без переносів
+        return s;
+    };
+
+    // ===== FOREIGN KEY =====
+    if (isForeignKey) {
+        const select = document.createElement("select");
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "empty";
+        emptyOption.textContent = "(пусто)";
+        select.appendChild(emptyOption);
+
+        const refTableObj = database.tables.find(t => t.name === col.refTable);
+        if (refTableObj) {
+            const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
+
+            // Підбираємо колонку для відображення тексту
+            let refTextIndex = refTableObj.schema.findIndex(f => f.title.toLowerCase().includes("name"));
+            if (refTextIndex === -1) refTextIndex = refTableObj.schema.findIndex(f => f.title !== col.refField);
+            if (refTextIndex === -1) refTextIndex = refIdIndex;
+
+            if (refIdIndex !== -1) {
+                refTableObj.data.forEach(refRow => {
+                    const option = document.createElement("option");
+                    option.value = refRow[refIdIndex];
+                    option.textContent = refRow[refTextIndex];
+                    select.appendChild(option);
+                });
+                select.value = (cellData === null || cellData === undefined || cellData === "") ? "empty" : String(cellData);
+            }
+        }
+
+        select.disabled = !!isReadOnly;
+        container.appendChild(select);
+        createdEl = select;
+
+        select.addEventListener("change", () => {
+            rowData[index] = select.value === "empty" ? null : select.value;
+        });
+    }
+    // ===== BOOLEAN =====
+    else if (typeStr === "так/ні" || typeStr === "boolean") {
+        const select = document.createElement("select");
+        select.innerHTML = `<option value="1">Так</option><option value="0">Ні</option>`;
+        select.value = (cellData == 1) ? "1" : "0";
+        select.disabled = !!isReadOnly;
+        container.appendChild(select);
+        createdEl = select;
+
+        select.addEventListener("change", () => {
+            rowData[index] = Number(select.value);
+        });
+    }
+    // ===== DATE =====
+    else if (typeStr === "дата" || typeStr === "date") {
+        const input = document.createElement("input");
+        input.type = "date";
+        const asStr = typeof cellData === "string" ? cellData : "";
+        const value = /^\d{4}-\d{2}-\d{2}$/.test(asStr) ? asStr : new Date().toISOString().split("T")[0];
+        input.value = value;
+        input.disabled = !!isReadOnly;
+        container.appendChild(input);
+        createdEl = input;
+
+        const isValidDate = dateStr => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+            const [y, m, d] = dateStr.split("-").map(Number);
+            if (m < 1 || m > 12) return false;
+            const daysInMonth = [
+                31, (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0) ? 29 : 28,
+                31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+            ];
+            return d >= 1 && d <= daysInMonth[m - 1];
+        };
+
+        const checkDate = () => {
+            if (isValidDate(input.value)) {
+                input.style.backgroundColor = "";
+                input.style.color = "";
+            } else {
+                input.style.backgroundColor = "red";
+                input.style.color = "white";
+            }
+            rowData[index] = input.value;
+        };
+
+        input.addEventListener("input", checkDate);
+        checkDate();
+    }
+    // ===== TEXT / NUMBER (contentEditable) =====
+    else {
+        // ВАЖЛИВО: дозволяємо редагувати PK, якщо він НЕ autoInc
+        const editable = !isReadOnly && !isPKAuto;
+        let displayValue = sanitizeByType(cellData ?? "", typeStr);
+        container.textContent = displayValue;
+        container.contentEditable = editable ? "true" : "false";
+        container.spellcheck = false;
+        createdEl = container;
+
+        // Переходи по Enter (без вставки \n)
+        if (editable) {
+            container.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    const currentRow = container.closest("tr");
+                    const nextRow = currentRow?.nextElementSibling;
+                    const colIdx = Array.from(currentRow.children).indexOf(container);
+
+                    if (nextRow) {
+                        // опційно підсвітити новий рядок, якщо є функція
+                        if (typeof highlightRow === "function") highlightRow(nextRow);
+                        const nextCell = nextRow.children[colIdx];
+                        if (nextCell) nextCell.focus();
+                    } else {
+                        container.focus();
+                    }
+                }
+            });
+
+            // Вставка лише простого тексту, без переносів
+            container.addEventListener("paste", (e) => {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData("text") || "";
+                const clean = sanitizeByType(text, typeStr);
+                // вставляємо у поточну позицію курсора
+                document.execCommand("insertText", false, clean);
+            });
+
+            // ЄДИНИЙ санітайзер вводу з збереженням позиції курсора
+            container.addEventListener("input", () => {
+                const oldText = container.innerText;
+                const caret = getCaretOffset(container);
+
+                // санітизуємо окремо частину "до курсора", щоб прорахувати новий офсет
+                const beforeOld = oldText.slice(0, caret);
+                const beforeNew = sanitizeByType(beforeOld, typeStr);
+
+                const newText = sanitizeByType(oldText, typeStr);
+
+                if (newText !== oldText) {
+                    container.innerText = newText;
+                    // відновлюємо карет у відповідне місце
+                    setCaretOffset(container, Math.min(beforeNew.length, newText.length));
+                }
+
+                // оновлення rowData за типом
+                if (typeStr === "ціле число" || typeStr === "дробове число") {
+                    const n = newText === "" ? null : Number(newText);
+                    rowData[index] = (n === null || Number.isNaN(n)) ? null : n;
+                } else {
+                    rowData[index] = newText;
+                }
+            });
+        }
+    }
+
+    // Копіюємо dataset у створений control (для форми/збереження)
+    if (createdEl && createdEl !== container) {
+        if (container.dataset.tableName) createdEl.dataset.tableName = container.dataset.tableName;
+        if (container.dataset.fieldName) createdEl.dataset.fieldName = container.dataset.fieldName;
+        if (container.dataset.colIndex)  createdEl.dataset.colIndex  = container.dataset.colIndex;
+    }
+
+    return createdEl;
+}
 
 
-    // -------------
+
 
 /**
  * Функція editData
@@ -402,8 +681,8 @@ function editData(tableName) {
 
     currentEditTable = table;
     document.getElementById("editTitle").innerText = isReadOnly ?
-        `Перегляд результатів запиту \"${table.name}\"` :
-        `Редагування таблиці \"${table.name}\"`;
+        `Результати запиту ${table.name.slice(5)}` :
+        `Записи таблиці \"${table.name}\"`;
 
     const head = document.getElementById("editHead");
     const body = document.getElementById("editBody");
@@ -420,9 +699,8 @@ function editData(tableName) {
         headerRow.appendChild(th);
     });
     head.appendChild(headerRow);
-    //----------------------------------
-    // Додаємо ресайзинг для кожного заголовка
-    // ----------------------------------
+    
+    // Додаємо ресайзинг для кожного заголовка   
     (function setupColumnResizing() {
         // знайти таблицю, яка містить thead (head)
         const tableEl = head.closest('table') || document.getElementById('editTable');
@@ -525,6 +803,7 @@ function editData(tableName) {
     //---------------------------------- 
 
     dataRows = rows || [];
+    
     console.log("dataRows=", dataRows);
 
     dataRows.forEach(rowData => {
@@ -532,240 +811,20 @@ function editData(tableName) {
         rowData.forEach((cellData, index) => {
             const td = document.createElement("td");
             const col = table.schema[index];
-
-            const isPrimaryKey = !isQueryTable && col && col.primaryKey;
-            const isForeignKey = !isQueryTable && col && col.foreignKey && col.refTable && col.refField;
-
-            if (isForeignKey) {
-                const select = document.createElement("select");
-
-                const emptyOption = document.createElement("option");
-                emptyOption.value = "empty";
-                emptyOption.textContent = "(пусто)";
-                select.appendChild(emptyOption);
-
-                const refTableObj = database.tables.find(t => t.name === col.refTable);
-                if (refTableObj) {
-                    const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-                    const refTextIndex = refTableObj.schema.findIndex(f => f.title.toLowerCase().includes("name") || f.title !== col.refField);
-
-                    if (refIdIndex !== -1) {
-                        console.log("refTableObj=", refTableObj)
-                        refTableObj.data.forEach(refRow => {
-                            console.log("refTextIndex,refRow[refIdIndex]=", refTextIndex, refRow[refIdIndex])
-                            const option = document.createElement("option");
-                            option.value = refRow[refIdIndex];
-                            option.textContent = refTextIndex !== -1 ? refRow[refTextIndex] : refRow[refIdIndex];
-                            select.appendChild(option);
-                        });
-                        select.value = cellData ?? "empty";
-                    }
-                }
-                td.appendChild(select);
-                select.disabled = isQueryTable;
-                select.addEventListener("change", () => {
-                    rowData[index] = select.value === "empty" ? null : select.value;
-                });
-            } else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
-                const select = document.createElement("select");
-                const optionYes = document.createElement("option");
-                optionYes.value = "1";
-                optionYes.textContent = "Так";
-                select.appendChild(optionYes);
-
-                const optionNo = document.createElement("option");
-                optionNo.value = "0";
-                optionNo.textContent = "Ні";
-                select.appendChild(optionNo);
-
-                select.value = cellData == 1 ? "1" : "0";
-                select.disabled = isQueryTable;
-                td.appendChild(select);
-                select.addEventListener("change", () => {
-                    rowData[index] = Number(select.value);
-                });
-
-            } else if (col.type === "Дата") {
-                const input = document.createElement("input");
-                input.type = "date";
-                let value = typeof cellData === "string" && cellData.match(/^\d{4}-\d{2}-\d{2}$/) ?
-                    cellData :
-                    new Date().toISOString().split("T")[0];
-                input.value = value;
-                input.disabled = isQueryTable;
-                td.appendChild(input);
-            
-                // Функція для перевірки коректності дати
-                function isValidDate(dateStr) {
-                    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-                    const [year, month, day] = dateStr.split("-").map(Number);
-            
-                    if (month < 1 || month > 12) return false;
-            
-                    const daysInMonth = [
-                        31,
-                        (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0) ? 29 : 28, // лютий з високосністю
-                        31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-                    ];
-            
-                    return day >= 1 && day <= daysInMonth[month - 1];
-                }
-            
-                // Перевірка при зміні значення
-                input.addEventListener("input", () => {
-                    if (isValidDate(input.value)) {
-                        input.style.backgroundColor = "";
-                        input.style.color = "";
-                    } else {
-                        input.style.backgroundColor = "red";
-                        input.style.color = "white";
-                    }
-                    rowData[index] = input.value;
-                });
-            
-                // Початкова перевірка
-                if (!isValidDate(input.value)) {
-                    input.style.backgroundColor = "red";
-                    input.style.color = "white";
-                }
-            
-                rowData[index] = input.value;
-                                
-            } else {
-                let displayValue = cellData ?? "";
-
-                // Форматування чисел:
-                if (typeof cellData === "number") {
-                    if (Number.isInteger(cellData)) {
-                        displayValue = cellData.toString(); // ціле число без десяткових
-                    } else {
-                        displayValue = cellData.toString(); // або toFixed(n) якщо треба обмежити
-                    }
-                } else if (!isNaN(cellData) && cellData !== null && cellData !== "") {
-                    // Якщо з БД приходить як рядок з експоненційним форматом
-                    const num = Number(cellData);
-                    if (!isNaN(num)) {
-                        if (Number.isInteger(num)) {
-                            displayValue = num.toString();
-                        } else {
-                            displayValue = num.toString(); // або num.toFixed(n)
-                        }
-                    }
-                }
-
-                td.innerText = displayValue;
-                td.contentEditable = !isQueryTable && !isPrimaryKey;
-                if (!isQueryTable && isPrimaryKey) td.classList.add("pk");
-
-                // Обробка Enter і Shift+Enter
-                if (!isQueryTable && !isPrimaryKey) {
-                    td.addEventListener("keydown", (e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault(); // блокуємо стандартний перенос рядка
-                            const currentRow = td.parentElement;
-                            const tableBody = currentRow.parentElement;
-                            const colIndex = Array.from(currentRow.children).indexOf(td);
-                            let targetRow;
-
-                            if (e.shiftKey) {
-                                // Shift+Enter — перехід вгору
-                                targetRow = currentRow.previousElementSibling;
-                            } else {
-                                // Enter — перехід вниз
-                                targetRow = currentRow.nextElementSibling;
-                            }
-
-                            if (targetRow && targetRow.children[colIndex]) {
-                                // Прибираємо підсвічування з попереднього рядка
-                                if (selectedCell && selectedCell.parentElement) {
-                                    selectedCell.parentElement.classList.remove("selected-row");
-                                }
-                
-                                // Фокусуємо нову клітинку
-                                const newCell = targetRow.children[colIndex];
-                                newCell.focus();
-                
-                                // Встановлюємо selectedCell на нову клітинку
-                                selectedCell = newCell;
-                
-                                // Додаємо підсвічування до нового рядка
-                                selectedCell.parentElement.classList.add("selected-row");                               
-                                
-                               
-                                // Переміщуємо курсор у кінець комірки
-                                const range = document.createRange();
-                                const sel = window.getSelection();
-                                range.selectNodeContents(newCell);
-                                range.collapse(false);
-                                sel.removeAllRanges();
-                                sel.addRange(range);
-                            }
-                        }
-                    });
-                }
-
-                // Перевірка введення
-                if (col.type && col.type.toLowerCase() === "текст") {
-                    // Обмеження 64 символи
-                    td.addEventListener("input", () => {
-                        if (td.innerText.length > 64) {
-                            td.innerText = td.innerText.slice(0, 64);
-                            const range = document.createRange();
-                            const sel = window.getSelection();
-                            range.selectNodeContents(td);
-                            range.collapse(false);
-                            sel.removeAllRanges();
-                            sel.addRange(range);
-                        }
-                    });
-                } else if (col.type && col.type.toLowerCase() === "ціле число") {
-                    td.addEventListener("input", () => {
-                        let text = td.innerText;
-                        // дозволяємо тільки цифри та мінус на початку
-                        text = text.replace(/[^\d-]/g, "");
-                        text = text.replace(/(?!^)-/g, ""); // тільки один мінус і тільки на початку
-                        if (text.startsWith("--")) text = "-" + text.slice(2);
-                        td.innerText = text;
-                        // Повертаємо курсор у кінець
-                        const range = document.createRange();
-                        const sel = window.getSelection();
-                        range.selectNodeContents(td);
-                        range.collapse(false);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                    });
-                } else if (col.type && col.type.toLowerCase() === "дробове число") {
-                    td.addEventListener("input", () => {
-                        let text = td.innerText;
-                        // дозволяємо цифри, крапку і мінус на початку
-                        text = text.replace(/[^\d\.\-]/g, "");
-                        text = text.replace(/(?!^)-/g, ""); // тільки один мінус на початку
-                        text = text.replace(/(\..*)\./g, "$1"); // тільки одна крапка
-                        td.innerText = text;
-                        // Повертаємо курсор у кінець
-                        const range = document.createRange();
-                        const sel = window.getSelection();
-                        range.selectNodeContents(td);
-                        range.collapse(false);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                    });
-                }
-
-            }
-
+        
+            advDataInput(td, cellData, col, rowData, index, isQueryTable);
+        
             td.addEventListener("click", () => {
-                // Прибрати рамку з попереднього рядка, якщо він був
                 if (selectedCell && selectedCell.parentElement) {
                     selectedCell.parentElement.classList.remove("selected-row");
                 }
                 selectedCell = td;
-                // Додати клас до рядка поточної клітинки
                 selectedCell.parentElement.classList.add("selected-row");
             });
-
+        
             tr.appendChild(td);
         });
+        
         body.appendChild(tr);
     });
 
@@ -775,121 +834,85 @@ function editData(tableName) {
     document.getElementById("editModal").style.display = "flex";
 }
 
-/*
+/**
  * Додаємо рядок даних
- */
+ **/
  
  function addDataRow() {
-        if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
-        const tbody = document.getElementById("editBody");
-        const tr = document.createElement("tr");
+    if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
     
-        currentEditTable.schema.forEach((col, index) => {
-            const td = document.createElement("td");
-            console.log("Add data row, col=",col)
-    
-            if ((col.primaryKey)&&(col.type=="Ціле число")) {
-                // Знайти найбільше значення PK у колонці
-                let max = 0;
-                const rows = tbody.querySelectorAll("tr");
-                rows.forEach(row => {
-                    const val = parseInt(row.children[index].innerText);
-                    if (!isNaN(val)) max = Math.max(max, val);
-                });
-                td.innerText = max + 1;
-                td.contentEditable = "false";
-            }
-            else if (col.foreignKey && col.refTable && col.refField) {
-                const select = document.createElement("select");
-            
-                const refTableObj = database.tables.find(t => t.name === col.refTable);
-                if (refTableObj) {
-                    const refFieldObj = refTableObj.schema.find(f => f.title === col.refField);
-                    const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-            
-                    let refTextIndex = -1;
-            
-                    if (refFieldObj) {
-                        if (refFieldObj.type === "Текст") {
-                            // Показуємо значення самого refField
-                            refTextIndex = refIdIndex;
-                        } else if (refFieldObj.type === "Ціле число") {
-                            // Шукаємо інше поле з таким самим title, як поле у головній таблиці
-                            refTextIndex = refTableObj.schema.findIndex(f => f.title === col.title);
-                        }
-                    }
-            
-                    if (refIdIndex !== -1 && refTextIndex !== -1) {
-                        refTableObj.data.forEach(refRow => {
-                            const option = document.createElement("option");
-                            option.value = refRow[refIdIndex];     // id, що зберігається
-                            option.textContent = refRow[refTextIndex]; // відображуваний текст
-                            select.appendChild(option);
-                        });
-                    }
-                }
-            
-                td.appendChild(select);
-            }
-            
-            
-            else if (col.type === "Так/Ні" || col.type.toLowerCase() === "boolean") {
-                const select = document.createElement("select");
-            
-                const optionYes = document.createElement("option");
-                optionYes.value = "1";
-                optionYes.textContent = "Так";
-                select.appendChild(optionYes);
-            
-                const optionNo = document.createElement("option");
-                optionNo.value = "0";
-                optionNo.textContent = "Ні";
-                select.appendChild(optionNo);
-            
-                td.appendChild(select);
-            } else if (col.type === "Дата") {
-                const input = document.createElement("input");
-                input.type = "date";
-            
-                // Значення за замовчуванням — сьогоднішня дата
-                const today = new Date().toISOString().split("T")[0];
-                input.value = today;
-            
-                td.appendChild(input);           
+    const tbody = document.getElementById("editBody");
+    const tr = document.createElement("tr");
 
-            }
-             else {
-                td.contentEditable = "true";
-                td.innerText = "";
+    // Створюємо новий масив даних для рядка
+    const newRowData = currentEditTable.schema.map(() => null);
 
-                // Обмеження 64 символи для текстових колонок
-                if (col.type && col.type.toLowerCase() === "текст") {
-                td.addEventListener("input", () => {
-                        if (td.innerText.length > 64) {
-                            td.innerText = td.innerText.slice(0, 64);
-                            const range = document.createRange();
-                            const sel = window.getSelection();
-                            range.selectNodeContents(td);
-                            range.collapse(false);
-                            sel.removeAllRanges();
-                            sel.addRange(range);
-                        }
-                });
-            }
-    }
+    let firstEditableCell = null;
 
-            
-    
-            td.addEventListener("click", () => {
-                selectedCell = td;
+    currentEditTable.schema.forEach((col, index) => {
+        const td = document.createElement("td");
+        td.dataset.tableName = currentEditTable.name;
+        td.dataset.fieldName = col.title;
+        td.dataset.colIndex = index;
+
+        let defaultValue = null;
+
+        // Автоінкремент для PK
+        if (col.primaryKey && col.type === "Ціле число" && col.autoInc === true) {
+            let max = 0;
+            currentEditTable.data.forEach(row => {
+                const val = parseInt(row[index]);
+                if (!isNaN(val)) max = Math.max(max, val);
             });
-    
-            tr.appendChild(td);
+            defaultValue = max + 1;
+            newRowData[index] = defaultValue;
+        }
+
+        // Використовуємо advDataInput для створення елемента вводу
+        const el = advDataInput(td, defaultValue, col, newRowData, index, false);
+
+        // Запам'ятовуємо першу редаговану комірку
+        if (!firstEditableCell && el && el !== td) {
+            firstEditableCell = el;
+        } else if (!firstEditableCell && td.isContentEditable) {
+            firstEditableCell = td;
+        }
+
+        // Запам'ятовуємо обрану комірку при кліку
+        td.addEventListener("click", () => {
+            selectedCell = td;
+            highlightRow(tr);
         });
-    
-        tbody.appendChild(tr);
+
+        tr.appendChild(td);
+    });
+
+    // Додаємо новий масив у дані таблиці
+    currentEditTable.data.push(newRowData);
+
+    tbody.appendChild(tr);
+
+    // Виділяємо новий рядок
+    highlightRow(tr);
+
+    // Стаємо курсором у першу редаговану комірку
+    if (firstEditableCell) {
+        if (firstEditableCell.focus) {
+            firstEditableCell.focus();
+        }
+        if (firstEditableCell.select) {
+            firstEditableCell.select();
+        }
     }
-    
+}
+
+// Допоміжна функція для виділення рядка
+function highlightRow(tr) {
+    const tbody = tr.parentElement;
+    tbody.querySelectorAll("tr").forEach(row => row.classList.remove("selected-row"));
+    tr.classList.add("selected-row");
+}
+
 //
 
 let deleteRowCallback = null; // сюди збережемо функцію, яку виконаємо після підтвердження
@@ -981,26 +1004,67 @@ function deleteSelectedRow() {
 
 
 
-/*
-Функція saveTableData()
-------------------------
-Призначення: Зберігає всі дані з таблиці редагування у базу даних, враховуючи різні типи елементів (select, input).
-Параметри: Відсутні (використовує DOM та currentEditTable).
-Результат: Дані записуються у БД, таблиця оновлюється.
-Спосіб роботи:
-- Проходить усі рядки таблиці;
-- Для кожної клітинки бере значення з select / input / тексту;
-- Якщо рядок не порожній — формує INSERT OR REPLACE SQL;
-- Зберігає базу та оновлює currentEditTable.data.
-*/
+/**
+* Функція saveTableData()
+*------------------------
+* Призначення: Зберігає всі дані з таблиці редагування у базу даних, враховуючи різні типи елементів (select, input).
+* Параметри: Відсутні (використовує DOM та currentEditTable).
+* Результат: Дані записуються у БД, таблиця оновлюється.
+* Спосіб роботи:
+* - Проходить усі рядки таблиці;
+* - Для кожної клітинки бере значення з select / input / тексту;
+* - Якщо рядок не порожній — формує INSERT OR REPLACE SQL;
+* - Зберігає базу та оновлює currentEditTable.data.
+**/
 function saveTableData() {
     if (!currentEditTable || currentEditTable.name.startsWith('*')) {
         Message("Ця таблиця не підлягає редагуванню.");
         return;
     }
 
-    const rows = document.querySelectorAll("#editBody tr"); 
+    const rows = document.querySelectorAll("#editBody tr");
 
+    // Масив PK-стовпців
+    const pkCols = currentEditTable.schema
+        .filter(col => col.primaryKey)
+        .map(col => col.title);
+
+    if (pkCols.length > 0) {
+        // Перевірка дублювання PK у введених даних
+        const seenPKs = new Set();
+        for (let row of rows) {
+            const cells = row.querySelectorAll("td");
+            let pkValueCombo = pkCols.map(pk => {
+                const colIndex = currentEditTable.schema.findIndex(c => c.title === pk);
+                const cell = cells[colIndex];
+                let val = "";
+
+                const select = cell.querySelector("select");
+                if (select) {
+                    val = select.value;
+                    if (val === "empty") val = "";
+                } else {
+                    const input = cell.querySelector("input[type='date']");
+                    if (input) {
+                        val = input.value;
+                    } else {
+                        val = cell.innerText.trim();
+                    }
+                }
+                return val;
+            }).join("||");
+
+            if (pkValueCombo.trim() !== "") {
+                if (seenPKs.has(pkValueCombo)) {
+                    Message(`Помилка: знайдено повторювані значення первинного ключа: ${pkValueCombo}`);
+                    return; // зупиняємо збереження
+                }
+                seenPKs.add(pkValueCombo);
+            }
+        }
+    }
+
+    // Далі йде твій оригінальний код збереження
     rows.forEach(row => {
         const cells = row.querySelectorAll("td");
         const valuesObj = {};
@@ -1029,13 +1093,7 @@ function saveTableData() {
 
         if (allEmpty) return;
 
-        // Масив PK-стовпців
-        const pkCols = currentEditTable.schema
-            .filter(col => col.primaryKey)
-            .map(col => col.title);
-
         if (pkCols.length > 0) {
-            // Перевіряємо, чи існує рядок із таким PK
             const whereClauses = pkCols.map(pk => `"${pk}" = '${valuesObj[pk].replace(/'/g, "''")}'`).join(" AND ");
             const checkSQL = `SELECT COUNT(*) as cnt FROM "${currentEditTable.name}" WHERE ${whereClauses};`;
             let exists = false;
@@ -1050,21 +1108,18 @@ function saveTableData() {
             }
 
             if (exists) {
-                // UPDATE
                 const setClauses = Object.keys(valuesObj)
                     .map(key => `"${key}" = '${valuesObj[key].replace(/'/g, "''")}'`)
                     .join(", ");
                 const updateSQL = `UPDATE "${currentEditTable.name}" SET ${setClauses} WHERE ${whereClauses};`;
                 db.run(updateSQL);
             } else {
-                // INSERT
                 const columns = Object.keys(valuesObj).map(k => `"${k}"`).join(", ");
                 const vals = Object.values(valuesObj).map(v => `'${v.replace(/'/g, "''")}'`).join(", ");
                 const insertSQL = `INSERT INTO "${currentEditTable.name}" (${columns}) VALUES (${vals});`;
                 db.run(insertSQL);
             }
         } else {
-            // Якщо PK немає — як раніше
             const columns = Object.keys(valuesObj).map(k => `"${k}"`).join(", ");
             const vals = Object.values(valuesObj).map(v => `'${v.replace(/'/g, "''")}'`).join(", ");
             const sql = `INSERT OR REPLACE INTO "${currentEditTable.name}" (${columns}) VALUES (${vals});`;
@@ -1072,7 +1127,6 @@ function saveTableData() {
         }
     });
 
-    // Оновлюємо кешовані дані
     try {
         const res = db.exec(`SELECT * FROM "${currentEditTable.name}"`);
         currentEditTable.data = res.length ? res[0].values : [];
@@ -1118,6 +1172,7 @@ function saveNewDb() {
     console.log("Save new file")
     newDbFile = true; 
     const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням
+    if (!checkName(name)) return; // якщо "погане" ім'я
     console.log("Save new file=",name + ".db-data")
     console.log("newDbFile0 =",newDbFile)
     // Якщо створюємо новий файл і такий вже існує
@@ -1185,36 +1240,37 @@ function saveDb() {
     const name = document.getElementById("dbName").value.trim() || "my_database";
 
     database.fileName = name;
-    database.tables = [];
-    queries.definitions = [];
-    queries.results = [];
+    if (newDbFile) { // ❗ Скидаємо структуру тільки при створенні нової БД
+        database.tables = [];
+        database.forms = [];
+        queries.definitions = [];
+        queries.results = [];
 
-    const dataMenu = document.getElementById("data-menu");
-    dataMenu.innerHTML = "";
+        const dataMenu = document.getElementById("data-menu");
+        dataMenu.innerHTML = "";
 
-    db = new SQL.Database();
+        db = new SQL.Database();
 
-    // Генеруємо 32-бітовий ідентифікатор
-    const dbId = generateDbId();
+        // Генеруємо 32-бітовий ідентифікатор
+        const dbId = generateDbId();
 
-    // Зберігаємо в PRAGMA user_version  
-    console.log("dbId=",dbId)
-    console.log("dbId type of:", dbId, typeof dbId);
-    // ✅ Записуємо user_version — після змін, щоб гарантовано зберіглось
+        // Зберігаємо в PRAGMA user_version  
+        console.log("dbId=",dbId)
+        console.log("dbId type of:", dbId, typeof dbId);
+        // ✅ Записуємо user_version — після змін, щоб гарантовано зберіглось
     
-    db.run(`PRAGMA user_version = ${dbId};`);
+        db.run(`PRAGMA user_version = ${dbId};`);
 
 
-    // Зберігаємо ідентифікатор також у JS-структуру
-    database.id = dbId;
+        // Зберігаємо ідентифікатор 
+        database.id = dbId;
+        console.log("Файл бази даних створено:", database);
+        console.log("Ідентифікатор БД (32-bit):", dbId, `(${toHex4Part(dbId)})`);
 
-    // Також можна зберегти в об'єкт database, якщо потрібно
-    database.id = dbId;
-
+    }
     saveDatabase();
 
-    console.log("Файл бази даних створено:", database);
-    console.log("Ідентифікатор БД (32-bit):", dbId, `(${toHex4Part(dbId)})`);
+    
 
     closeDbModal();
     updateMainTitle();
@@ -1228,6 +1284,8 @@ function saveDb() {
 **/
 function saveDbAndCreateTable() {
     console.log("saveDbAndCreateTable")
+    const name = document.getElementById("dbName").value.trim() || "my_database"; // зчитування назви БД або використання за замовчуванням
+    if (!checkName(name)) return; // якщо "погане" ім'я   
     saveNewDb(); // зберігаємо базу
     if (newDbFile) {
         closeDbModal(); // закриваємо модальне вікно
@@ -1243,24 +1301,61 @@ let table = {
 
 // Список усіх таблиць бази, використовується для перевірок у редакторі
 let tableList = [];
-
 /** 
-* Функція createTable()
-* Призначення: Відкриває модальне вікно для створення нової таблиці та ініціалізує її структуру.
-* Параметри: відсутні.
-* Результат: Очищення попередньої структури, додавання першого рядка полів таблиці.
-*/
+ * Функція createTable()
+ * Призначення: Відкриває модальне вікно для створення нової таблиці та ініціалізує її структуру.
+ */
 function createTable() {
+    // Переконаємось, що стара таблиця не перезаписується
+    if (!database.tables) database.tables = [];
     table.schema = []; // очищення схеми
-    document.getElementById("schemaBody").innerHTML = ""; // очищення HTML
-    document.getElementById("tableName").value = "Неназвана таблиця"; // встановлення імені
-    tableList = database.tables.map(t => t.name); // оновлення списку таблиць (для звʼязків)
-    addSchemaRow(); // Додати перший рядок
-    document.getElementById("makeTable").innerText = `Створення структури таблиці`; // заголовок
-    document.getElementById("modal").style.display = "flex"; // показ модального вікна
+    autoIncrement = null;
+
+    // Очищуємо HTML таблиці
+    const schemaBody = document.getElementById("schemaBody");
+    if (!schemaBody) {
+        console.error("Відсутній елемент schemaBody!");
+        return;
+    }
+    schemaBody.innerHTML = "";
+
+    // Переконаємось, що заголовки FK існують
+    const refTableHeader = document.getElementById("refTableHeader");
+    const refFieldHeader = document.getElementById("refFieldHeader");
+    if (!refTableHeader) {
+        console.warn("Відсутній refTableHeader, створюємо його динамічно");
+        const th = document.createElement("th");
+        th.id = "refTableHeader";
+        th.innerText = "Таблиця 📌";
+        schemaBody.closest("table").querySelector("thead tr").appendChild(th);
+    }
+    if (!refFieldHeader) {
+        console.warn("Відсутній refFieldHeader, створюємо його динамічно");
+        const th = document.createElement("th");
+        th.id = "refFieldHeader";
+        th.innerText = "Поле 📌";
+        schemaBody.closest("table").querySelector("thead tr").appendChild(th);
+    }
+
+    // Встановлюємо назву таблиці за замовчуванням
+    document.getElementById("tableName").value = "Неназвана таблиця";
+
+    // Оновлюємо список існуючих таблиць для перевірки FK
+    tableList = database.tables.map(t => t.name);
+
+    // Додаємо перший рядок для створення полів
+    addSchemaRow();
+
+    // Встановлюємо заголовок модального вікна
+    document.getElementById("makeTable").innerText = `Створення структури таблиці`;
+
+    // Показуємо модальне вікно
+    document.getElementById("modal").style.display = "flex";
+
+    // Встановлюємо видимість заголовків FK
     toggleForeignKeyHeaders();
 }
-
+ 
 /** 
 * Функція closeModal()
 * Призначення: Закриває модальне вікно створення таблиці.
@@ -1377,6 +1472,19 @@ function getFieldsForTable(tableName) {
     return table.schema.map(field => field.title);
 }
 
+//
+function getColumnName(checkbox) {
+    const cell = checkbox.closest("td");       // комірка з чекбоксом
+    const row = cell.closest("tr");            // рядок
+    const cells = Array.from(row.cells);
+    const index = cells.indexOf(cell);
+
+    // наступна комірка після чекбокса
+    if (index >= 0 && index + 1 < cells.length) {
+        return cells[index + 1].innerText.trim();
+    }
+    return null;
+}
 /**
 * Функція handlePrimaryKey(checkbox)
 * Призначення: Обробляє встановлення або зняття первинного ключа для поля таблиці.
@@ -1387,18 +1495,41 @@ function getFieldsForTable(tableName) {
 function handlePrimaryKey(checkbox) {
     const row = checkbox.closest("tr");
     const cells = row.cells;
-
-    // Комірка коментаря — завжди передостання
     const commentCell = cells[cells.length - 2];
     const typeSelect = row.cells[2].querySelector("select");
 
     if (checkbox.checked) {
         if (!commentCell.innerText.includes("Первинний ключ")) {
+            if(!getColumnName(checkbox)) { 
+                Message("Поле без назви!");
+                checkbox.checked = false;
+                return
+            }
             commentCell.innerText = "Первинний ключ";
         }
-        if (typeSelect) {
-            typeSelect.value = "Ціле число";
-        }
+
+        // Показуємо модальне вікно
+        const modal = document.getElementById("pkModal");
+        modal.style.display = "block";
+
+        // Кнопка "Так"
+        const yesBtn = document.getElementById("pkYes");
+        yesBtn.onclick = () => {
+            if (typeSelect) {
+                typeSelect.value = "Ціле число";
+                autoIncrement = getColumnName(checkbox);
+                console.log("PK field autoIncrement=",autoIncrement )// встановлення автоінкременту
+            }
+                modal.style.display = "none";
+        };
+
+        // Кнопка "Ні"
+        const noBtn = document.getElementById("pkNo");
+        noBtn.onclick = () => {
+            modal.style.display = "none";
+            // повертаємося у функцію
+        };
+
     } else {
         if (commentCell.innerText === "Первинний ключ") {
             commentCell.innerText = "";
@@ -1483,6 +1614,7 @@ function updateFieldOptions(tableSelect) {
 **/
 function saveSchema() {
     const newTableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
+    if (!checkName(newTableName)) return;
     const rows = document.querySelectorAll("#schemaBody tr");
 
     const schema = [];
@@ -1523,6 +1655,7 @@ function saveSchema() {
 
         schema.push({
             primaryKey: isPrimaryKey,
+            autoInc: title===autoIncrement,
             title: title,
             type: type,
             comment: comment,
@@ -1547,11 +1680,11 @@ function saveSchema() {
         return;
     }
 
-    let isNewTable = newDbFile === true;
+    
     let oldTableName = null;
 
     if (newDbFile) editingTableName = newTableName;
-
+    console.log("isNewTable =",isNewTable )
     if (!isNewTable && editingTableName) {
         if (typeof editingTableName === "string") {
             oldTableName = editingTableName.trim();
@@ -1679,6 +1812,7 @@ function saveSchema() {
     Message("Структуру таблиці збережено.");
     closeModal();
     newDbFile = false;
+    isNewTable = false;
 }
 
 
@@ -1940,10 +2074,10 @@ function closeMessage() {
     document.getElementById("messageModal").style.display = "none"; // Сховати вікно
 }
 
-/* 
+/** 
  * Запит на підтвердження видалення обраної бази даних
  * Показує модальне вікно підтвердження
- */
+ **/
 function confirmDeleteDb() {
     if (!selectedDbFile) {
         Message("Виберіть файл для видалення."); // Якщо файл не вибрано — повідомлення
@@ -1957,24 +2091,10 @@ function confirmDeleteDb() {
     document.getElementById("deleteModal").style.display = "flex"; // Показати вікно підтвердження
 }
 
-/* 
+/** 
  * Видаляє базу даних із localStorage
  * Після видалення оновлює список
- */
-function doDeleteDb() {
-    if (dbToDelete) {
-        // Видалити дані бази та запити
-        localStorage.removeItem(dbToDelete + ".db-data");
-        localStorage.removeItem(dbToDelete + ".queries-data");
-
-        Message(`Файл "${dbToDelete}" видалено.`); // Показати повідомлення
-
-        closeDeleteModal();     // Закрити підтвердження
-        closeStorageDialog();   // Закрити список
-        showStorageDialog();    // Оновити список
-    }
-}
-
+ **/
 function doDeleteDb() {
     if (dbToDelete) {
         // Якщо видаляється поточна база даних — спочатку її закриваємо
@@ -2180,7 +2300,7 @@ function populateFieldDropdown(tableSelect) {
 }
 
 
-/* 
+/** 
  * Повертає тип поля у вказаній таблиці
  * Параметри:
  *   tableName — назва таблиці
@@ -4351,37 +4471,6 @@ function redrawLines() {
         }
     }
     //
-        function deleteSelectedQuery() {
-        if (!selectedQueryName) {
-            Message("Будь ласка, оберіть запит для видалення.");
-            return;
-        }
-        const queryIndex = queries.definitions.findIndex(q => q.name === selectedQueryName);
-        if (queryIndex !== -1) {
-            const deletedQueryName = queries.definitions[queryIndex].name;
-            queries.definitions.splice(queryIndex, 1); // Remove from definitions
-            saveDatabase(); // Save updated definitions
-
-            // Also remove any corresponding query results from `queries.results` and from the `data-menu`
-            const menuDisplayName = `*запит "${deletedQueryName}"`; // Construct the display name for the result
-            const resultIndex = queries.results.findIndex(r => r.name === `запит "${deletedQuery_name}"`); // Find the result by its internal name
-            if (resultIndex !== -1) {
-                queries.results.splice(resultIndex, 1); // Remove from results
-            }
-
-            const dataMenu = document.getElementById("data-menu");
-            const existingMenuItem = Array.from(dataMenu.children).find(item => item.textContent === menuDisplayName);
-            if (existingMenuItem) {
-                existingMenuItem.remove(); // Remove from menu
-            }
-
-            Message(`Запит "${deletedQueryName}" видалено.`);
-            showSavedQueriesDialog(); // Refresh the list
-        } else {
-            Message("Вибраний запит не знайдено.");
-        }
-    }
-    //
     function editSelectedForm() {
         if (!selectedFormName) {
             Message("Виберіть форму для редагування.");
@@ -4447,14 +4536,6 @@ function redrawLines() {
         Message(`Форма "${form.name}" завантажена для редагування.`);
     }
 
-
-    //
-
-
-    function closeFormModal() {
-        document.getElementById("formCreatorModal").style.display = "none";
-        // selectFormElement(null); // Deselect any active element
-    }
 
     // Functions for managing saved forms (assuming showSavedFormsDialog, openSelectedFormForEdit, deleteSelectedForm are called from elsewhere, e.g., a menu)
     function showSavedFormsDialog() {
@@ -4700,181 +4781,231 @@ function addFormField() {
         formGridVisible = !formGridVisible;
     }
 
-    function previewForm() {
-        const formName = document.getElementById("formNameInput").value.trim();
-        const previewModal = document.getElementById("formPreviewModal");
-        const previewCanvas = document.getElementById("formPreviewCanvas");
+function previewForm() {
+    const formName = document.getElementById("formNameInput").value.trim();
+    const previewModal = document.getElementById("formPreviewModal");
+    const previewCanvas = document.getElementById("formPreviewCanvas");
 
-        previewCanvas.innerHTML = "";
-        document.getElementById("formPreviewTitle").innerText = `${formName} — запис #${currentFormRecordIndex + 1}`;
+    previewCanvas.innerHTML = "";
+    document.getElementById("formPreviewTitle").innerText =
+        `${formName} — запис #${currentFormRecordIndex + 1}`;
 
-        const elements = [...document.querySelectorAll("#formCanvas .form-label, #formCanvas .form-field")];
-        elements.forEach(el => {
-            if (el.classList.contains("form-field")) {
-                const tableName = el.dataset.tableName;
-                const fieldName = el.dataset.fieldName;
-                const table = database.tables.find(t => t.name === tableName);
+    const elements = [...document.querySelectorAll("#formCanvas .form-label, #formCanvas .form-field")];
 
-                const input = document.createElement("input");
-                input.type = "text";
-                input.style.position = "absolute";
-                input.style.left = el.style.left;
-                input.style.top = el.style.top;
-                input.style.width = el.style.width;
-                input.style.height = el.style.height;
-                input.style.fontFamily = el.style.fontFamily || 'Arial';
-                input.style.fontSize = el.style.fontSize || '16px';
-                input.style.fontWeight = el.style.fontWeight || 'normal';
-                input.style.fontStyle = el.style.fontStyle || 'normal';
-                input.style.textDecoration = el.style.textDecoration || '';
-                input.style.color = el.style.color || '#000000';
-                input.style.background = "#ccc";
-                input.style.padding = "2px";
-                input.style.borderStyle = "inset";
-                input.style.borderWidth = "3px";
-                input.style.borderColor = "#888";
-                input.style.overflow = "hidden";
-                input.style.whiteSpace = "nowrap";
-                input.dataset.tableName = tableName;
-                input.dataset.fieldName = fieldName;
+    elements.forEach(el => {
+        if (el.classList.contains("form-field")) {
+            const tableName = el.dataset.tableName;
+            const fieldName = el.dataset.fieldName;
+            const table = database.tables.find(t => t.name === tableName);
 
-                if (table && table.data.length > currentFormRecordIndex) {
-                    const colIndex = table.schema.findIndex(c => c.title === fieldName);
-                    if (colIndex !== -1) {
-                        const record = table.data[currentFormRecordIndex];
-                        input.value = record?.[colIndex] ?? "";
-                        input.dataset.colIndex = colIndex;
-                    } else {
-                        input.value = "Поле не знайдено";
-                    }
+            const fieldContainer = document.createElement("div");
+            fieldContainer.className = "form-field"; // важливо лишити клас
+            fieldContainer.style.position = "absolute";
+            fieldContainer.style.left = el.style.left;
+            fieldContainer.style.top = el.style.top;
+            fieldContainer.style.width = el.style.width;
+            fieldContainer.style.height = el.style.height;
+            fieldContainer.style.fontFamily = el.style.fontFamily || 'Arial';
+            fieldContainer.style.fontSize = el.style.fontSize || '16px';
+            fieldContainer.style.fontWeight = el.style.fontWeight || 'normal';
+            fieldContainer.style.fontStyle = el.style.fontStyle || 'normal';
+            fieldContainer.style.textDecoration = el.style.textDecoration || '';
+            fieldContainer.style.color = el.style.color || '#000000';
+            fieldContainer.style.padding = "2px";
+            fieldContainer.style.borderStyle = "inset";
+            fieldContainer.style.borderWidth = "3px";
+            fieldContainer.style.borderColor = "#888";
+            fieldContainer.style.overflow = "hidden";
+            fieldContainer.style.whiteSpace = "nowrap";
+            fieldContainer.style.background = "#ccc";
+
+            // збережемо зв'язки на контейнері
+            fieldContainer.dataset.tableName = tableName || "";
+            fieldContainer.dataset.fieldName = fieldName || "";
+
+            let cellValue = "";
+            let colSchema = null;
+            let colIndex = -1;
+
+            if (table && table.data.length > currentFormRecordIndex) {
+                colIndex = table.schema.findIndex(c => c.title === fieldName);
+                if (colIndex !== -1) {
+                    colSchema = table.schema[colIndex];
+                    const record = table.data[currentFormRecordIndex];
+                    cellValue = record?.[colIndex] ?? "";
+                    fieldContainer.dataset.colIndex = String(colIndex);
                 } else {
-                    input.value = "Таблиця порожня або не знайдена";
+                    cellValue = "Поле не знайдено";
                 }
-
-                previewCanvas.appendChild(input);
             } else {
-                const label = document.createElement("div");
-                label.style.position = "absolute";
-                label.style.left = el.style.left;
-                label.style.top = el.style.top;
-                label.style.width = el.style.width;
-                label.style.height = el.style.height;
-                label.style.fontFamily = el.style.fontFamily || 'Arial';
-                label.style.fontSize = el.style.fontSize || '16px';
-                label.style.fontWeight = el.style.fontWeight || 'normal';
-                label.style.fontStyle = el.style.fontStyle || 'normal';
-                label.style.textDecoration = el.style.textDecoration || '';
-                label.style.color = el.style.color || '#000000';
-                label.style.padding = "5px";
-                label.style.border = "none";
-                label.style.background = "transparent";
-                label.style.overflow = "hidden";
-                label.style.whiteSpace = "nowrap";
-                label.innerText = el.innerText.trim();
-
-                previewCanvas.appendChild(label);
+                cellValue = "Таблиця порожня або не знайдена";
             }
-        });
 
-        previewModal.style.display = "flex";
-    }
+            if (colSchema) {
+                const control = advDataInput(
+                    fieldContainer,
+                    cellValue,
+                    colSchema,
+                    table.data[currentFormRecordIndex],
+                    colIndex,
+                    false // у прев’ю дозволяємо редагування
+                );
 
-    function saveFormChanges() {
-        const inputs = [...document.querySelectorAll("#formPreviewCanvas input")];
-
-        if (inputs.length === 0) {
-            Message("Немає полів для збереження.");
-            return;
-        }
-
-        const tableName = inputs[0].dataset.tableName;
-        const table = database.tables.find(t => t.name === tableName);
-        if (!table) {
-            Message("Таблицю не знайдено.");
-            return;
-        }
-
-        console.log("currentFormRecordIndex =", currentFormRecordIndex);
-
-        const values = {};
-        let allEmpty = true;
-
-        inputs.forEach(input => {
-            const field = input.dataset.fieldName;
-            const val = input.value.trim();
-            values[field] = val;
-            if (val !== "") allEmpty = false;
-        });
-
-        if (allEmpty) {
-            Message("Порожній запис не буде додано.");
-            return;
-        }
-
-        const pkField = table.schema.find(col => col.primaryKey)?.title;
-        const pkIndex = table.schema.findIndex(col => col.primaryKey);
-
-        if (!pkField) {
-            Message("У таблиці відсутній первинний ключ. Збереження неможливе.");
-            return;
-        }
-
-        const existingRow = table.data[currentFormRecordIndex];
-        console.log("existingRow=", existingRow, table.data.length)
-        const isNewRecord = currentFormRecordIndex === undefined || (currentFormRecordIndex + 1) === table.data.length;
-
-
-        if (isNewRecord) {
-            // 🆕 INSERT
-            const fields = Object.keys(values);
-            const placeholders = fields.map(() => "?").join(", ");
-            const sql = `INSERT INTO "${tableName}" (${fields.map(f => `"${f}"`).join(", ")}) VALUES (${placeholders})`;
-            const params = fields.map(f => values[f]);
-            console.log("INSERT SQL:", sql, params);
-            db.run(sql, params);
-
-
-            // Оновлюємо in-memory
-            const newRow = table.schema.map(col => values[col.title] ?? "");
-            table.data.push(newRow);
-
-            currentFormRecordIndex = table.data.length - 1;
-            Message("Новий запис додано!");
-        } else {
-            // ✏️ UPDATE
-            const setClause = Object.keys(values)
-                .filter(field => field !== pkField)
-                .map(field => `"${field}" = ?`)
-                .join(", ");
-
-            const sql = `UPDATE "${tableName}" SET ${setClause} WHERE "${pkField}" = ?`;
-            const params = Object.keys(values)
-                .filter(f => f !== pkField)
-                .map(f => values[f]);
-
-            const pkValue = existingRow[pkIndex];
-            params.push(pkValue);
-
-            console.log("UPDATE SQL:", sql, params);
-            db.run(sql, params);
-
-
-            // Оновлюємо in-memory
-            Object.keys(values).forEach(field => {
-                const colIndex = table.schema.findIndex(col => col.title === field);
-                if (colIndex >= 0) {
-                    table.data[currentFormRecordIndex][colIndex] = values[field];
+                // дублюємо dataset і на control (на випадок пошуку саме по control)
+                if (control) {
+                    control.dataset.tableName = fieldContainer.dataset.tableName;
+                    control.dataset.fieldName = fieldContainer.dataset.fieldName;
+                    control.dataset.colIndex  = fieldContainer.dataset.colIndex;
                 }
-            });
+            } else {
+                fieldContainer.textContent = cellValue;
+            }
 
-            Message("Зміни збережено!");
+            previewCanvas.appendChild(fieldContainer);
+
+        } else {
+            const label = document.createElement("div");
+            label.style.position = "absolute";
+            label.style.left = el.style.left;
+            label.style.top = el.style.top;
+            label.style.width = el.style.width;
+            label.style.height = el.style.height;
+            label.style.fontFamily = el.style.fontFamily || 'Arial';
+            label.style.fontSize = el.style.fontSize || '16px';
+            label.style.fontWeight = el.style.fontWeight || 'normal';
+            label.style.fontStyle = el.style.fontStyle || 'normal';
+            label.style.textDecoration = el.style.textDecoration || '';
+            label.style.color = el.style.color || '#000000';
+            label.style.padding = "5px";
+            label.style.border = "none";
+            label.style.background = "transparent";
+            label.style.overflow = "hidden";
+            label.style.whiteSpace = "nowrap";
+            label.innerText = el.innerText.trim();
+
+            previewCanvas.appendChild(label);
         }
+    });
 
-        saveDatabase();
+    previewModal.style.display = "flex";
+}
+
+function saveFormChanges() {
+    const fields = [...document.querySelectorAll("#formPreviewCanvas .form-field")];
+
+    if (fields.length === 0) {
+        Message("Немає полів для збереження.");
+        return;
     }
 
+    // Визначаємо назву таблиці (має бути одна таблиця у формі)
+    const tableNames = [...new Set(fields.map(f => f.dataset.tableName).filter(Boolean))];
+    if (tableNames.length !== 1) {
+        Message("Поля форми належать різним таблицям або відсутня назва таблиці.");
+        return;
+    }
 
+    const tableName = tableNames[0];
+    const table = database.tables.find(t => t.name === tableName);
+    if (!table) {
+        Message("Таблицю не знайдено.");
+        return;
+    }
 
+    const values = {};
+    let allEmpty = true;
+
+    fields.forEach(f => {
+        const colIndex = Number(f.dataset.colIndex ?? (f.querySelector("[data-col-index]")?.dataset.colIndex));
+        const colSchema = table.schema[colIndex];
+        if (!colSchema) return;
+
+        const control = f.querySelector("input, select, textarea, [contenteditable='true']");
+        let value = null;
+
+        if (!control) {
+            value = f.textContent ?? "";
+        } else if (control.tagName === "SELECT") {
+            value = control.value === "empty" ? null : control.value;
+        } else if (control.hasAttribute("contenteditable")) {
+            value = control.innerText;
+        } else {
+            value = control.value;
+        }
+
+        // нормалізація за типом
+        const t = String(colSchema.type || "").toLowerCase();
+        if (t === "ціле число") {
+            value = value ? parseInt(value, 10) : null;
+            if (isNaN(value)) value = null;
+        } else if (t === "дробове число") {
+            value = value ? Number(value) : null;
+            if (isNaN(value)) value = null;
+        } else if (t === "так/ні" || t === "boolean") {
+            value = (value === "1" || value === 1) ? 1 : 0;
+        } else if (t === "дата" || t === "date") {
+            if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) value = null;
+        } else {
+            value = value ?? "";
+        }
+
+        const fieldName = f.dataset.fieldName;
+        if (!fieldName) return;
+
+        values[fieldName] = value;
+        if (value !== "" && value !== null) allEmpty = false;
+    });
+
+    if (allEmpty) {
+        Message("Порожній запис не буде додано.");
+        return;
+    }
+
+    // Первинний ключ
+    const pkField = table.schema.find(col => col.primaryKey)?.title;
+    const pkIndex = table.schema.findIndex(col => col.primaryKey);
+    if (!pkField) {
+        Message("У таблиці відсутній первинний ключ. Збереження неможливе.");
+        return;
+    }
+
+    // Перевірка дублювання PK у таблиці (уникнути помилки UNIQUE)
+    const pkValue = values[pkField];
+    if (pkValue !== null && pkValue !== "") {
+        const checkSQL = `SELECT COUNT(*) AS cnt FROM "${tableName}" WHERE "${pkField}" = ?`;
+        const res = db.exec(checkSQL, [pkValue]);
+        if (res.length > 0 && res[0].values[0][0] > 0 && currentFormRecordIndex === undefined) {
+            // Якщо додаємо новий запис і PK вже є — попереджаємо
+            Message(`Помилка: значення ключа "${pkField}" = "${pkValue}" вже існує у таблиці.`);
+            return;
+        }
+    }
+
+    // INSERT OR REPLACE — універсальне збереження
+    const fieldKeys = Object.keys(values);
+    const placeholders = fieldKeys.map(() => "?").join(", ");
+    const sql = `INSERT OR REPLACE INTO "${tableName}" (${fieldKeys.map(f => `"${f}"`).join(", ")}) VALUES (${placeholders})`;
+    const params = fieldKeys.map(f => values[f]);
+    db.run(sql, params);
+
+    // Оновлюємо in-memory дані
+    const newRow = table.schema.map(col => values[col.title] ?? "");
+    const existingIndex = table.data.findIndex(r => r[pkIndex] === pkValue);
+
+    if (existingIndex >= 0) {
+        table.data[existingIndex] = newRow;
+        currentFormRecordIndex = existingIndex;
+        Message("Дані оновлено!");
+    } else {
+        table.data.push(newRow);
+        currentFormRecordIndex = table.data.length - 1;
+        Message("Новий запис додано!");
+    }
+
+    saveDatabase();
+}
+
+//*******************************
     document.addEventListener('DOMContentLoaded', () => {
         const formCanvas = document.getElementById("formCanvas");
         const fieldSelectionModal = document.getElementById("fieldSelectionModal");
@@ -5861,6 +5992,7 @@ function executeOwnSQL() {
         return;
     }
     newDbFile = false;
+    isNewTable = false;
     editingTableName = tableToEdit;
     console.log("Edit schema=", selectedTableNameForEdit)
     table.schema = tableToEdit.schema || [];

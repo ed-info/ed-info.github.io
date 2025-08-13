@@ -320,7 +320,7 @@
 				</button>
 				<button onclick="addJoinRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div style="font-size:24px; line-height:1;">🔗</div>
-					<div>Додати
+					<div style="font-size:10px;">Додати
 						<br>зв'язок</div>
 				</button>
 				<button onclick="openRelationFromQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
@@ -330,7 +330,7 @@
 				</button>
 				<button onclick="generateSqlQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div style="font-size:20px; line-height:1;">💾</div>
-					<div>Зберегти</div>
+					<div style="font-size:9px;">Зберегти<br>і виконати</div>
 				</button>
 				<button onclick="closeQueryModal()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
 					<div style="font-size:20px; line-height:1;">❌</div>
@@ -393,7 +393,7 @@
 	</div>
 	<div id="savedTablesModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
          background-color: rgba(0,0,0,0.5); z-index:10005; justify-content:center; align-items:center;">
-		<div style="background:#fff; padding:20px; border-radius:10px; max-height:50%; display: flex; flex-direction: row; gap: 30px;">
+		<div style="background:#fff; padding:20px; border-radius:10px; max-height:50%; min-height:395px; display: flex; flex-direction: row; gap: 30px;">
 			<!-- Ліва частина — текст + список -->
 			<div style="display: flex; flex-direction: column; max-height: 60vh; overflow-y: auto;">
 				<h3 style="margin-top: 0;">Збережені таблиці</h3>
@@ -1193,6 +1193,39 @@
             </button>
             <button id="cancelDelete" onclick="deleteRowCancelled()" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
                 ❌<div style="font-size:10px;">Скасувати</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="pkModal" style="
+    display:none; 
+    position:fixed; 
+    top:0; left:0; 
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.4);
+    z-index:10022;
+">
+    <div class="modal-content" style="         
+        width:400px; 
+        position:absolute; 
+        top:50%; left:50%; 
+        transform:translate(-50%,-50%);
+        display:flex; 
+        gap:20px;
+    ">
+        <div style="flex:1; display:flex; align-items:center;">
+            <span id="pkMessage" style="font-size:18px;">
+                Додано первинний ключ!<br> 
+                Встановити його тип як ціле число з автоінкрементом?
+            </span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button id="pkYes" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                👍<div style="font-size:10px;">Так</div>
+            </button>
+            <button id="pkNo" style="width:64px; height:64px; font-size:24px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                👎<div style="font-size:10px;">Ні</div>
             </button>
         </div>
     </div>
