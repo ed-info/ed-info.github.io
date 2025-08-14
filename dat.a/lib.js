@@ -29,6 +29,8 @@
     let editingTableName = "unnamed";
     let autoIncrement = null;
     let isNewTable = true;
+    let isNewRecord = false;
+    let formGridVisible = false;
     
     closeAllModals();
     
@@ -40,22 +42,22 @@
         //loadDatabase();
     });
    
-     function getCurrentTableNames() {
+function getCurrentTableNames() {
       return Object.keys(database.tables || {});
     }
-    function getCurrentQueryNames() {
-      console.log("Queries=",queries.definitions)
+function getCurrentQueryNames() {      
       return Object.keys(queries.definitions || {});
     }
-    function getCurrentReportNames() {
+function getCurrentReportNames() {
       return (database.reports || []).map(r => r.name);
     }
-    function getCurrentFormNames() {
+function getCurrentFormNames() {
       return (database.forms || []).map(f => f.name);
     }
        
     // Завантаження БД з localStorage або створення нової
     function loadDatabase() {
+        console.log("loadDatabase")        
         const name = database.fileName || "my_database";
         const saved = localStorage.getItem(name + ".db-data");
         console.log("name =",name )
@@ -64,13 +66,12 @@
             const uIntArray = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
             
             db = new SQL.Database(uIntArray);
-            console.log("База даних завантажена з localStorage");
-            console.log("db =",db )
+            console.log("База даних завантажена: ",db);            
             // Завантажити запити тільки якщо є база
             const savedQueries = localStorage.getItem(name + ".queries-data");
             if (savedQueries) {
                 queries.definitions = JSON.parse(savedQueries);
-                console.log("Визначення запитів завантажено з localStorage");
+                console.log("Визначення запитів завантажено: ",queries.definitions);
                 
             } else {
                 queries.definitions = [];
@@ -79,7 +80,7 @@
             const savedQueryResults = localStorage.getItem(name + ".query-results");
             if (savedQueryResults) {
                 queries.results = JSON.parse(savedQueryResults);
-                console.log("Результати запитів завантажено з localStorage");
+                console.log("Результати запитів завантажено:", queries.results);
             } else {
                 queries.results = [];
             }
@@ -87,8 +88,7 @@
             const savedReports = localStorage.getItem(name + ".reports-data");
             if (savedReports) {
                 database.reports = JSON.parse(savedReports);
-                console.log("Звіти завантажено з localStorage");
-                console.log("Load Report: ",database.reports)
+                console.log("Звіти завантажено: ",database.reports);               
             } else {
                 database.reports = [];
             }
@@ -96,7 +96,7 @@
             const savedForms = localStorage.getItem(name + ".forms-data");
             if (savedForms) {
                 database.forms = JSON.parse(savedForms);
-                console.log("Форми завантажено з localStorage");
+                console.log("Форми завантажено: ",database.forms);
             } else {
                 database.forms = [];
             }
@@ -104,7 +104,7 @@
             const savedRelations = localStorage.getItem(name + ".relations-data");
             if (savedRelations) {
                 database.relations = JSON.parse(savedRelations);
-                console.log("Зв'язки завантажено з localStorage");
+                console.log("Зв'язки завантажено: ", database.relations);
             } else {
                 database.relations = [];
             }
@@ -131,25 +131,27 @@
 
     // Збереження БД у localStorage
     function saveDatabase() {
-        console.log("DBSCHM=", database.tables)
+        console.log("Зберігаємо базу даних: ", database.fileName)        
         if (!db) return;
         const data = db.export();
         const base64 = btoa(String.fromCharCode(...data));
-        localStorage.setItem(database.fileName + ".db-data", base64);
-        console.log("Save file: ", database.fileName)
+        localStorage.setItem(database.fileName + ".db-data", base64);       
+        console.log("Зберігаємо таблиці: ",database.tables)
         localStorage.setItem(database.fileName + ".tables-data", JSON.stringify(database.tables));
         // Зберігаємо запити та їх результати
+        console.log("Зберігаємо запити: ",queries.definitions)
         localStorage.setItem(database.fileName + ".queries-data", JSON.stringify(queries.definitions));
+        console.log("Зберігаємо результати запитів: ",queries.results)
         localStorage.setItem(database.fileName + ".query-results", JSON.stringify(queries.results || []));
 
 
         // Зберігаємо звіти
         localStorage.setItem(database.fileName + ".reports-data", JSON.stringify(database.reports || []));
-        console.log("Report: ",database.reports)
+        console.log("Зберігаємо звіти: ",database.reports)
         // Зберігаємо форми
         localStorage.setItem(database.fileName + ".forms-data", JSON.stringify(database.forms || []));
         // Зберігаємо зв'язки
-        console.log("Зберігаємо зв'язки=",database.relations)
+        console.log("Зберігаємо зв'язки: ",database.relations)
         localStorage.setItem(database.fileName + ".relations-data", JSON.stringify(database.relations || []));
         
         console.log("База даних збережена у localStorage");
@@ -162,42 +164,87 @@
                     
     }
     //
-
+/**
+ * очищуємо базу даних, меню даних та панель швидкого доступу
+ **/
+function clearDB() {
+    // очистити всі змінні
+    database.fileName = "";
+    database.tables =  [];
+    database.reports = [];
+    database.relations = [];
+    database.forms =  [];            
+    queries.definitions = [];
+    queries.results = [];
+            
+    const dataMenu = document.getElementById("data-menu");
+    dataMenu.innerHTML = "";
+  
+    updateQuickAccessPanel([], [], [], []);   
+} 
+ 
 /**
  * Перевірка для імені файлу, таблиць та полів
  **/
  function checkName(name) {
     
     name = name.trim();
-
-    // 1. Перевірка довжини
+    // перевірка довжини
     if (name.length < 2 || name.length > 32) {
-        Message("Ім'я повинно містити від 2 до 32 символів.");
+        Message("Назва має містити від 2 до 32 символів.");
         return false;
     }
-
-    // 2. Перевірка першого символу — літера (латиниця або кирилиця)
+    // перевірка на наявність пропусків
+    if (/\s/.test(name)) {
+        Message("Назва не повинна містити пропусків - замініть на символ '_'.");
+        return false;
+    }
+    // перевірка першого символу — літера (латиниця або кирилиця)
     const firstCharPattern = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ]$/;
     if (!firstCharPattern.test(name[0])) {
-        Message("Ім'я повинно починатися з літери (латинської або кириличної).");
+        Message("Назва повинна починатися з літери (латинської або кириличної).");
         return false;
     }
-
-    // 3. Перевірка на допустимі символи
+    // перевірка на допустимі символи
     const allowedPattern = /^[A-Za-zА-Яа-яЁёІіЇїЄєҐґ0-9\-_']+$/;
     if (!allowedPattern.test(name)) {
-        Message("Ім'я містить недопустимі символи. Дозволені: літери, цифри, дефіс (-), підкреслення (_), апостроф (').");
+        Message("Назва містить недопустимі символи. Дозволені: літери, цифри, дефіс (-), підкреслення (_), апостроф (').");
         return false;
     }
-
-    // 4. Перевірка на заборонені символи (додаткова страховка)
+    // перевірка на заборонені символи (додаткова страховка)
     const forbiddenPattern = /[?"\/\\<>*\|:"]/;
     if (forbiddenPattern.test(name)) {
-        Message("Ім'я містить заборонені символи: ? \" / \\ < > * | :");
+        Message("Назва містить заборонені символи: ? \" / \\ < > * | :");
         return false;
     }
 
     return true;
+}
+
+/**
+ * Перевірка назв полів у структурі таблиці
+ **/
+function checkFieldName() {
+    const rows = document.querySelectorAll("#schemaBody tr");
+    let allValid = true;
+
+    rows.forEach(row => {
+        const nameCell = row.cells[1];
+        const fieldName = nameCell.innerText.trim();
+
+        // знімаємо попереднє підсвічування
+        nameCell.style.backgroundColor = "";
+
+        if (fieldName) {
+            if (!checkName(fieldName)) {
+                // погане ім'я → підсвітити комірку
+                nameCell.style.backgroundColor = "#ffcccc"; // рожево-червоний
+                allValid = false;
+            }
+        }
+    });
+
+    return allValid;
 }
 
 //
@@ -251,20 +298,13 @@ function showStorageDialog() {
         const uIntArray = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
         db = new SQL.Database(uIntArray);
 
-        // 🔄 Очистити database, queries та меню
-        database.fileName = selectedDbFile;
-        database.tables = [];
-        queries.definitions = []; // Clear query definitions on new DB load
-        queries.results = []; // Clear query results on new DB load
-        database.forms = [];
-        database.reports = [];
-
-        const dataMenu = document.getElementById("data-menu");
-        dataMenu.innerHTML = "";
+        // Очистити database, queries та меню
+        clearDB();
 
         // Завантажити дані з локального сховища
         const fullDatabase = JSON.parse(localStorage.getItem(selectedDbFile + ".tables-data"));
         console.log("fullDatabase=",fullDatabase)
+        queries.definitions = [];
         if (fullDatabase) {
             database.tables = fullDatabase;
         
@@ -307,7 +347,8 @@ function showStorageDialog() {
         }
         
 
-        // Load queries definitions
+        // Load 
+        database.fileName = selectedDbFile;
         loadDatabase() 
 
         // 🔄 Автоматично додати зв’язки з foreign key
@@ -321,16 +362,15 @@ function showStorageDialog() {
                         fromField: field.title,
                         toTable: field.refTable,
                         toField: field.refField,
-                        readonly: true, // 👈 Це можна використовувати для стилізації як "червоний і незмінний"
+                        readonly: true, // 👈 Це можна використовувати для стилізації
                     });
                 }
             });
         });
-        console.log("database.relations=",database.relations)
 
-        console.log("database.tables=", database.tables)
         database.tables.forEach(t => addTableToMenu(t.name)); // 🔧 Оновити меню "Дані"
         Message("Базу даних '" + selectedDbFile + "' завантажено.");
+        database.fileName = selectedDbFile;
         closeStorageDialog();
         updateMainTitle();
     }
@@ -695,7 +735,7 @@ function editData(tableName) {
     });
     head.appendChild(headerRow);
     
-    // Додаємо ресайзинг для кожного заголовка   
+    // додаємо ресайзинг для кожного заголовка   
     (function setupColumnResizing() {
         // знайти таблицю, яка містить thead (head)
         const tableEl = head.closest('table') || document.getElementById('editTable');
@@ -832,8 +872,7 @@ function editData(tableName) {
 /**
  * Додаємо рядок даних
  **/
- 
- function addDataRow() {
+function addDataRow() {
     if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
     
     const tbody = document.getElementById("editBody");
@@ -1059,7 +1098,7 @@ function saveTableData() {
         }
     }
 
-    // Далі йде твій оригінальний код збереження
+    // збереження
     rows.forEach(row => {
         const cells = row.querySelectorAll("td");
         const valuesObj = {};
@@ -1214,6 +1253,9 @@ function doCloseOverwriteConfirm() {
 function createDbFile() {
     newDbFile = true;
     editingTableName = null;
+    // Очистити всі змінні
+    clearDB();           
+
     db = new SQL.Database(); // створюємо нову БД, але без запитів
     document.getElementById("dbName").value = "my_database"; // встановлюємо значення за замовчуванням
     document.getElementById("dbModal").style.display = "flex"; // відкриваємо модальне вікно
@@ -1233,17 +1275,9 @@ function generateDbId() {
 **/
 function saveDb() {
     const name = document.getElementById("dbName").value.trim() || "my_database";
-
-    database.fileName = name;
+    
     if (newDbFile) { // ❗ Скидаємо структуру тільки при створенні нової БД
-        database.tables = [];
-        database.forms = [];
-        queries.definitions = [];
-        queries.results = [];
-
-        const dataMenu = document.getElementById("data-menu");
-        dataMenu.innerHTML = "";
-
+        clearDB();
         db = new SQL.Database();
 
         // Генеруємо 32-бітовий ідентифікатор
@@ -1263,6 +1297,7 @@ function saveDb() {
         console.log("Ідентифікатор БД (32-bit):", dbId, `(${toHex4Part(dbId)})`);
 
     }
+    database.fileName = name;
     saveDatabase();
 
     
@@ -1290,7 +1325,7 @@ function saveDbAndCreateTable() {
 
 // Обʼєкт для збереження тимчасової інформації про створювану таблицю
 let table = {
-    name: "Неназвана таблиця", // назва таблиці за замовчуванням
+    name: "Неназвана_таблиця", // назва таблиці за замовчуванням
     schema: [] // структура таблиці
 };
 
@@ -1333,7 +1368,7 @@ function createTable() {
     }
 
     // Встановлюємо назву таблиці за замовчуванням
-    document.getElementById("tableName").value = "Неназвана таблиця";
+    document.getElementById("tableName").value = "Неназвана_таблиця";
 
     // Оновлюємо список існуючих таблиць для перевірки FK
     tableList = database.tables.map(t => t.name);
@@ -1621,8 +1656,16 @@ function updateFieldOptions(tableSelect) {
 * Результат: Створена або оновлена таблиця з новою схемою в БД.
 **/
 function saveSchema() {
-    const newTableName = document.getElementById("tableName").value.trim() || "Неназвана таблиця";
+    const newTableName = document.getElementById("tableName").value.trim() || "Неназвана_таблиця";
     if (!checkName(newTableName)) return;
+    
+    // Перевірка назв полів
+    if (!checkFieldName()) {
+        Message("Виправте назви полів з недопустимими символами.");
+        return;
+    }
+    
+    
     const rows = document.querySelectorAll("#schemaBody tr");
 
     const schema = [];
@@ -2113,20 +2156,9 @@ function doDeleteDb() {
             
                     // Очистити всі змінні
                     db = null;
-                    database.fileName = "";
-                    database.tables = [];
-                    database.reports = [];
-                    database.relations = [];
-                    database.forms = [];
-            
-                    queries.definitions = [];
-                    queries.results = [];
-            
-                    const dataMenu = document.getElementById("data-menu");
-                    dataMenu.innerHTML = "";
-            
+                    clearDB();            
                     updateMainTitle(); // Змінити заголовок на "Виберіть або створіть базу даних"                    
-                    updateQuickAccessPanel([], [], [], []);            
+                               
         }
 
         // Видалити дані бази та запити з localStorage
@@ -4725,7 +4757,7 @@ function addFormField() {
 
 
 
-    let formGridVisible = false;
+
 
     function addFormGrid() {
         const formCanvas = document.getElementById("formCanvas");
@@ -4857,7 +4889,7 @@ function saveFormChanges() {
         return;
     }
 
-    // Визначаємо назву таблиці (має бути одна таблиця у формі)
+    // Назва таблиці
     const tableNames = [...new Set(fields.map(f => f.dataset.tableName).filter(Boolean))];
     if (tableNames.length !== 1) {
         Message("Поля форми належать різним таблицям або відсутня назва таблиці.");
@@ -4871,6 +4903,11 @@ function saveFormChanges() {
         return;
     }
 
+    // Допоміжні функції
+    const hasValue = v => !(v === undefined || v === null || (typeof v === "string" && v.trim() === ""));
+    const toNullIfEmpty = v => (hasValue(v) ? v : null);
+
+    // Збір і нормалізація значень
     const values = {};
     let allEmpty = true;
 
@@ -4880,7 +4917,7 @@ function saveFormChanges() {
         if (!colSchema) return;
 
         const control = f.querySelector("input, select, textarea, [contenteditable='true']");
-        let value = null;
+        let value;
 
         if (!control) {
             value = f.textContent ?? "";
@@ -4892,27 +4929,28 @@ function saveFormChanges() {
             value = control.value;
         }
 
-        // нормалізація за типом
         const t = String(colSchema.type || "").toLowerCase();
-        if (t === "ціле число") {
-            value = value ? parseInt(value, 10) : null;
-            if (isNaN(value)) value = null;
-        } else if (t === "дробове число") {
-            value = value ? Number(value) : null;
-            if (isNaN(value)) value = null;
+        if (t === "ціле число" || t === "integer") {
+            value = hasValue(value) ? parseInt(String(value).trim(), 10) : null;
+            if (Number.isNaN(value)) value = null;
+        } else if (t === "дробове число" || t === "real" || t === "float" || t === "numeric") {
+            value = hasValue(value) ? Number(String(value).trim()) : null;
+            if (Number.isNaN(value)) value = null;
         } else if (t === "так/ні" || t === "boolean") {
-            value = (value === "1" || value === 1) ? 1 : 0;
+            const s = String(value).toLowerCase().trim();
+            value = (s === "1" || s === "true" || s === "yes" || s === "on") ? 1 : 0;
         } else if (t === "дата" || t === "date") {
-            if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) value = null;
+            value = (hasValue(value) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) ? String(value) : null;
         } else {
-            value = value ?? "";
+            // Невідомий або текстовий тип: порожній => null (уникаємо STRICT datatype mismatch)
+            value = toNullIfEmpty(value);
         }
 
         const fieldName = f.dataset.fieldName;
         if (!fieldName) return;
 
         values[fieldName] = value;
-        if (value !== "" && value !== null) allEmpty = false;
+        if (value !== null && value !== "") allEmpty = false;
     });
 
     if (allEmpty) {
@@ -4920,67 +4958,119 @@ function saveFormChanges() {
         return;
     }
 
-    // Первинний ключ   
+    // Первинний ключ (припускаємо один PK-стовпець)
     const pkCol = table.schema.find(col => col.primaryKey);
     if (!pkCol) {
         Message("У таблиці відсутній первинний ключ. Збереження неможливе.");
         return;
     }
-    
     const pkField = pkCol.title;
     const pkIndex = table.schema.findIndex(col => col.primaryKey);
-    
-    // Отримуємо значення PK із форми
-    let pkValue = values[pkField];
-    
-    // Якщо PK не задано у формі
-    if (pkValue === undefined || pkValue === "") {
-        // Якщо стовпець з автоінкрементом — залишаємо null
+
+    // PK зі значень форми та з поточного рядка в пам'яті
+    let pkValueFromForm = values[pkField];
+    const pkFromRow = (currentFormRecordIndex !== undefined) ? table.data[currentFormRecordIndex]?.[pkIndex] : undefined;
+    const hasExistingPkInRow = hasValue(pkFromRow);
+
+    // Визначаємо режим: редагування існуючого чи додавання нового
+    const isEditExisting = hasExistingPkInRow; // важливо: "порожній" рядок (PK порожній) => це новий запис!
+
+    // --- Перевірки у режимі додавання ---
+    if (!isEditExisting) {
+        // Новий запис
         if (pkCol.autoInc) {
-            pkValue = null;
+            // Не вставляємо PK взагалі — нехай SQLite згенерує
+            delete values[pkField];
+            pkValueFromForm = undefined;
         } else {
-            Message(`Не вказано значення первинного ключа "${pkField}".`);
-            return;
+            // Не автоінкрементний PK має бути задано
+            if (!hasValue(pkValueFromForm)) {
+                Message(`Не вказано значення первинного ключа "${pkField}".`);
+                return;
+            }
+            // Перевірка дублювання
+            const checkSQL = `SELECT COUNT(*) AS cnt FROM "${tableName}" WHERE "${pkField}" = ?`;
+            const res = db.exec(checkSQL, [pkValueFromForm]);
+            if (res.length > 0 && res[0].values[0][0] > 0) {
+                Message(`Помилка: значення ключа "${pkField}" = "${pkValueFromForm}" вже існує у таблиці.`);
+                return;
+            }
         }
-    }
-    
-    // Перевірка дублювання PK (тільки якщо PK задано і не автоінкремент)
-    if (!pkCol.autoInc && pkValue !== null) {
-        const checkSQL = `SELECT COUNT(*) AS cnt FROM "${tableName}" WHERE "${pkField}" = ?`;
-        const res = db.exec(checkSQL, [pkValue]);
-        if (res.length > 0 && res[0].values[0][0] > 0 && currentFormRecordIndex === undefined) {
-            Message(`Помилка: значення ключа "${pkField}" = "${pkValue}" вже існує у таблиці.`);
-            return;
-        }
-    }
-    
-
-    
-    //
-    console.log("Form values=", values)
-    // INSERT OR REPLACE — універсальне збереження
-    const fieldKeys = Object.keys(values);
-    const placeholders = fieldKeys.map(() => "?").join(", ");
-    const sql = `INSERT OR REPLACE INTO "${tableName}" (${fieldKeys.map(f => `"${f}"`).join(", ")}) VALUES (${placeholders})`;
-    const params = fieldKeys.map(f => values[f]);
-    db.run(sql, params);
-
-    // Оновлюємо in-memory дані
-    const newRow = table.schema.map(col => values[col.title] ?? "");
-    const existingIndex = table.data.findIndex(r => r[pkIndex] === pkValue);
-
-    if (existingIndex >= 0) {
-        table.data[existingIndex] = newRow;
-        currentFormRecordIndex = existingIndex;
-        Message("Дані оновлено!");
     } else {
-        table.data.push(newRow);
-        currentFormRecordIndex = table.data.length - 1;
+        // --- Режим редагування ---
+        // Якщо PK автоінкремент — не дозволяємо міняти його руками; фіксуємо старе значення
+        if (pkCol.autoInc) {
+            values[pkField] = pkFromRow;
+        } else {
+            // Не автоінкрементний — якщо користувач змінив PK, перевіримо дублювання
+            if (hasValue(pkValueFromForm) && String(pkValueFromForm) !== String(pkFromRow)) {
+                const checkSQL = `SELECT COUNT(*) AS cnt FROM "${tableName}" WHERE "${pkField}" = ?`;
+                const res = db.exec(checkSQL, [pkValueFromForm]);
+                if (res.length > 0 && res[0].values[0][0] > 0) {
+                    Message(`Помилка: значення ключа "${pkField}" = "${pkValueFromForm}" вже існує у таблиці.`);
+                    return;
+                }
+            } else {
+                // Якщо у формі PK не заданий, лишаємо старий
+                values[pkField] = pkFromRow;
+            }
+        }
+    }
+
+    // --- Запис у БД ---
+    if (!isEditExisting) {
+        // INSERT (без REPLACE), PK автоінкремент — без PK в списку полів
+        const fieldKeys = Object.keys(values);
+        const placeholders = fieldKeys.map(() => "?").join(", ");
+        const sql = `INSERT INTO "${tableName}" (${fieldKeys.map(f => `"${f}"`).join(", ")}) VALUES (${placeholders})`;
+        const params = fieldKeys.map(f => values[f]);
+        db.run(sql, params);
+
+        // Якщо PK автоінкремент — підтягуємо згенерований PK
+        if (pkCol.autoInc) {
+            const r = db.exec(`SELECT last_insert_rowid() AS id`);
+            const newId = r && r[0] && r[0].values && r[0].values[0] ? r[0].values[0][0] : null;
+            values[pkField] = newId;
+        }
+
+        // Оновлюємо in-memory: заповнюємо поточний «порожній» рядок, якщо він є; інакше додаємо
+        const newRow = table.schema.map(col => (col.title in values) ? values[col.title] : null);
+        if (currentFormRecordIndex !== undefined) {
+            table.data[currentFormRecordIndex] = newRow;
+        } else {
+            table.data.push(newRow);
+            currentFormRecordIndex = table.data.length - 1;
+        }
         Message("Новий запис додано!");
+    } else {
+        // UPDATE лише тих полів, що у формі
+        // Якщо PK автоінкремент — не оновлюємо pkField у SET
+        const updateKeys = Object.keys(values).filter(k => !(pkCol.autoInc && k === pkField));
+        const setClause = updateKeys.map(k => `"${k}" = ?`).join(", ");
+        const params = updateKeys.map(k => values[k]);
+        const wherePk = pkFromRow; // старий PK
+        const sql = `UPDATE "${tableName}" SET ${setClause} WHERE "${pkField}" = ?`;
+        db.run(sql, [...params, wherePk]);
+
+        // Оновлюємо in-memory: мерджимо лише ті поля, що прийшли з форми
+        const row = table.data[currentFormRecordIndex];
+        const colIndexByTitle = Object.fromEntries(table.schema.map((c, i) => [c.title, i]));
+        updateKeys.forEach(k => {
+            const idx = colIndexByTitle[k];
+            if (idx !== undefined) row[idx] = values[k];
+        });
+        // Якщо змінено не-автоінкрементний PK — також оновимо його у рядку
+        if (!pkCol.autoInc && hasValue(values[pkField])) {
+            row[pkIndex] = values[pkField];
+        }
+
+        Message("Дані оновлено!");
     }
 
     saveDatabase();
 }
+
+
 
 //*******************************
     document.addEventListener('DOMContentLoaded', () => {
@@ -5212,7 +5302,7 @@ function saveFormChanges() {
         // додати порожній запис до всіх таблиць, які використовуються у формі
         const elements = [...document.querySelectorAll("#formCanvas .form-field")];
         const usedTables = [...new Set(elements.map(el => el.dataset.tableName))];
-
+        let isNewRecord = true;    
         usedTables.forEach(tableName => {
             const table = database.tables.find(t => t.name === tableName);
             if (!table) return;
@@ -5251,27 +5341,17 @@ function saveFormChanges() {
             const uIntArray = new Uint8Array(arrayBuffer);
     
             try {
+                clearDB();
                 const importedDb = new SQL.Database(uIntArray);
-    
+                
                 const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
                 const fileName = nameWithoutExt;
     
                 // Зберігаємо файл в localStorage
                 const base64 = btoa(String.fromCharCode(...uIntArray));
-                localStorage.setItem(fileName + ".db-data", base64);
-    
-                // Очищаємо поточну пам’ять
-                database.fileName = fileName;
-                database.tables = [];
-                database.relations = []; // 🆕
-                queries.definitions = [];
-                queries.results = [];
-                database.forms = [];
-                database.reports = [];
-                db = importedDb;
-    
-                const dataMenu = document.getElementById("data-menu");
-                dataMenu.innerHTML = "";
+                localStorage.setItem(fileName + ".db-data", base64);    
+               
+                db = importedDb;    
     
                 const res = db.exec("SELECT name, sql FROM sqlite_master WHERE type='table';");
                 if (res.length > 0) {
@@ -5355,6 +5435,7 @@ function saveFormChanges() {
                         });
                     });
                 }
+                database.fileName = fileName;
                 saveDatabase()
                 database.tables.forEach(t => addTableToMenu(t.name));
                 updateMainTitle();
@@ -5619,21 +5700,9 @@ function showDatabaseInfo() {
 
         // Очистити всі змінні
         db = null;
-        database.fileName = "";
-        database.tables = [];
-        database.reports = [];
-        database.relations = [];
-        database.forms = [];
-
-        queries.definitions = [];
-        queries.results = [];
-
-        const dataMenu = document.getElementById("data-menu");
-        dataMenu.innerHTML = "";
-
+        clearDB();
         updateMainTitle(); // Змінити заголовок на "Виберіть або створіть базу даних"
-        Message("Базу даних закрито.");
-        updateQuickAccessPanel([], [], [], []);
+        Message("Базу даних закрито.");       
     }
 
     // Вихід з програми
