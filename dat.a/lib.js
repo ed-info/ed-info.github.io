@@ -389,27 +389,30 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
 
     // універсальний санітайзер для типів
     const sanitizeByType = (s, t) => {
-        s = (s ?? "").toString().replace(/\r?\n/g, ""); // прибираємо перенос
+        s = (s ?? "").toString().replace(/\r?\n/g, ""); // прибираємо лише перенос рядка
         t = String(t || "").toLowerCase();
-
+    
         if (t === "текст") {
             if (s.length > 64) s = s.slice(0, 64);
             return s;
         }
+    
         if (t === "ціле число") {
             s = s.replace(/[^\d-]/g, "").replace(/(?!^)-/g, "");
             if (s.startsWith("--")) s = "-" + s.slice(2);
             return s;
         }
+    
         if (t === "дробове число") {
             s = s.replace(/[^\d.\-]/g, "")
                  .replace(/(?!^)-/g, "")
                  .replace(/(\..*)\./g, "$1");
             return s;
         }
-        // інші — як текст без переносів
+    
         return s;
     };
+    
 
     // ===== FOREIGN KEY =====
     if (isForeignKey) {
@@ -498,72 +501,64 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
         checkDate();
     }
     // ===== TEXT / NUMBER (contentEditable) =====
-    else {
-        // ВАЖЛИВО: дозволяємо редагувати PK, якщо він НЕ autoInc
-        const editable = !isReadOnly && !isPKAuto;
-        let displayValue = sanitizeByType(cellData ?? "", typeStr);
-        container.textContent = displayValue;
-        container.contentEditable = editable ? "true" : "false";
-        container.spellcheck = false;
-        createdEl = container;
-
-        // Переходи по Enter (без вставки \n)
-        if (editable) {
-            container.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    const currentRow = container.closest("tr");
-                    const nextRow = currentRow?.nextElementSibling;
-                    const colIdx = Array.from(currentRow.children).indexOf(container);
-
-                    if (nextRow) {
-                        // опційно підсвітити новий рядок, якщо є функція
-                        if (typeof highlightRow === "function") highlightRow(nextRow);
-                        const nextCell = nextRow.children[colIdx];
-                        if (nextCell) nextCell.focus();
-                    } else {
-                        container.focus();
+    else { 
+            const editable = !isReadOnly && !isPKAuto;
+            let displayValue = sanitizeByType(cellData ?? "", typeStr);
+            container.textContent = displayValue;
+            container.contentEditable = editable ? "true" : "false";
+            container.spellcheck = false;
+            createdEl = container;
+        
+            if (editable) {
+                container.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        const currentRow = container.closest("tr");
+                        const nextRow = currentRow?.nextElementSibling;
+                        const colIdx = Array.from(currentRow.children).indexOf(container);
+                        if (nextRow) {
+                            if (typeof highlightRow === "function") highlightRow(nextRow);
+                            const nextCell = nextRow.children[colIdx];
+                            if (nextCell) nextCell.focus();
+                        } else {
+                            container.focus();
+                        }
                     }
-                }
-            });
-
-            // Вставка лише простого тексту, без переносів
-            container.addEventListener("paste", (e) => {
-                e.preventDefault();
-                const text = (e.clipboardData || window.clipboardData).getData("text") || "";
-                const clean = sanitizeByType(text, typeStr);
-                // вставляємо у поточну позицію курсора
-                document.execCommand("insertText", false, clean);
-            });
-
-            // ЄДИНИЙ санітайзер вводу з збереженням позиції курсора
-            container.addEventListener("input", () => {
-                const oldText = container.innerText;
-                const caret = getCaretOffset(container);
-
-                // санітизуємо окремо частину "до курсора", щоб прорахувати новий офсет
-                const beforeOld = oldText.slice(0, caret);
-                const beforeNew = sanitizeByType(beforeOld, typeStr);
-
-                const newText = sanitizeByType(oldText, typeStr);
-
-                if (newText !== oldText) {
-                    container.innerText = newText;
-                    // відновлюємо карет у відповідне місце
-                    setCaretOffset(container, Math.min(beforeNew.length, newText.length));
-                }
-
-                // оновлення rowData за типом
-                if (typeStr === "ціле число" || typeStr === "дробове число") {
-                    const n = newText === "" ? null : Number(newText);
-                    rowData[index] = (n === null || Number.isNaN(n)) ? null : n;
-                } else {
-                    rowData[index] = newText;
-                }
-            });
+                });
+        
+                // ===== paste =====
+                container.addEventListener("paste", (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData("text") || "";
+                    const clean = text.replace(/\r?\n/g, "").replace(/\s+$/g, ""); // обрізаємо кінцеві пробіли тільки при вставці
+                    document.execCommand("insertText", false, clean);
+                });
+        
+                // ===== input =====
+                container.addEventListener("input", () => {
+                    const oldText = container.innerText;
+                    const caret = getCaretOffset(container);
+                    let newText = oldText;
+                    
+                    if (typeStr === "ціле число" || typeStr === "дробове число") {
+                     newText = sanitizeByType(oldText, typeStr);
+                    }
+        
+                    if (newText !== oldText) {
+                        container.innerText = newText;
+                        setCaretOffset(container, Math.min(caret, newText.length));
+                    }
+        
+                    if (typeStr === "ціле число" || typeStr === "дробове число") {
+                        const n = newText === "" ? null : Number(newText);
+                        rowData[index] = (n === null || Number.isNaN(n)) ? null : n;
+                    } else {
+                        rowData[index] = newText;
+                    }
+                });
+            }
         }
-    }
-
+        
     // Копіюємо dataset у створений control (для форми/збереження)
     if (createdEl && createdEl !== container) {
         if (container.dataset.tableName) createdEl.dataset.tableName = container.dataset.tableName;
@@ -1518,7 +1513,12 @@ function handlePrimaryKey(checkbox) {
             if (typeSelect) {
                 typeSelect.value = "Ціле число";
                 autoIncrement = getColumnName(checkbox);
-                console.log("PK field autoIncrement=",autoIncrement )// встановлення автоінкременту
+                console.log("PK field autoIncrement=", autoIncrement);
+                // встановлення автоінкременту у схемі
+                const rowIdx = checkbox.closest("tr").rowIndex - 1; // -1 бо є заголовок
+                if (table.schema[rowIdx]) table.schema[rowIdx].autoInc = true;
+                // фарбування комірки
+                checkbox.closest("td").style.backgroundColor = "#0f56d9";                
             }
                 modal.style.display = "none";
         };
@@ -1528,11 +1528,19 @@ function handlePrimaryKey(checkbox) {
         noBtn.onclick = () => {
             modal.style.display = "none";
             // повертаємося у функцію
+            // скидання автоінкременту
+            const rowIdx = checkbox.closest("tr").rowIndex - 1;
+            if (table.schema[rowIdx]) table.schema[rowIdx].autoInc = false;
+            checkbox.closest("td").style.backgroundColor = "";
+
         };
 
     } else {
         if (commentCell.innerText === "Первинний ключ") {
             commentCell.innerText = "";
+            const rowIdx = checkbox.closest("tr").rowIndex - 1;
+            if (table.schema[rowIdx]) table.schema[rowIdx].autoInc = false;
+            checkbox.closest("td").style.backgroundColor = "";
         }
     }
 }
@@ -2244,19 +2252,14 @@ function populateTableDropdowns() {
     });
 }
 
-/* 
+/**
  * Заповнює список таблиць у конкретному рядку конструктора запиту
  * Параметр:
  *   row — рядок, у якому потрібно заповнити список
- */
+ **/
 function populateTableDropdownsForRow(row) {
-    const select = row.querySelector(".query-table-select"); // Знайти select у рядку
+    const select = row.querySelector(".query-table-select");
     select.innerHTML = "<option value=''>Виберіть таблицю</option>";
-    // Додаємо опцію "*"
-    const starOption = document.createElement("option");
-    starOption.value = "*";
-    starOption.textContent = "* (Всі таблиці)";
-    select.appendChild(starOption);
     database.tables.forEach(table => {
         const option = document.createElement("option");
         option.value = table.name;
@@ -2265,39 +2268,43 @@ function populateTableDropdownsForRow(row) {
     });
 }
 
-/* 
+
+/** 
  * Заповнює список полів таблиці на основі вибраної таблиці
  * Параметр:
  *   tableSelect — select-елемент з вибраною таблицею
- */
+ **/
 function populateFieldDropdown(tableSelect) {
-    const row = tableSelect.closest("tr"); // Знайти відповідний рядок
-    const fieldSelect = row.querySelector(".query-field-select"); // Select полів
-    fieldSelect.innerHTML = ""; // Очистити
+    const row = tableSelect.closest("tr");
+    const fieldSelect = row.querySelector(".query-field-select");
+    fieldSelect.innerHTML = "";
 
-    const selectedTableName = tableSelect.value; // Вибрана таблиця
-
-    if (selectedTableName === "*") {
-        // Якщо вибрано "*", то поле вибору поля робимо порожнім або з пустою опцією
-        const emptyOption = document.createElement("option");
-        emptyOption.value = "";
-        emptyOption.textContent = ""; // або "Немає полів"
-        fieldSelect.appendChild(emptyOption);
-        fieldSelect.disabled = true; // опціонально - заблокуємо вибір поля
-    } else {
-        fieldSelect.disabled = false;
-        const selectedTable = database.tables.find(t => t.name === selectedTableName); // Знайти таблицю
-        if (selectedTable) {
-            fieldSelect.innerHTML = "<option value=''>Виберіть поле</option>"; // Очистити та додати початкову опцію
-            selectedTable.schema.forEach(field => {
-                const option = document.createElement("option");
-                option.value = field.title;
-                option.textContent = field.title;
-                fieldSelect.appendChild(option); // Додати кожне поле
-            });
-        }
+    const selectedTableName = tableSelect.value;
+    if (!selectedTableName) {
+        fieldSelect.disabled = true;
+        return;
     }
+
+    const selectedTable = database.tables.find(t => t.name === selectedTableName);
+    if (!selectedTable) return;
+
+    fieldSelect.disabled = false;
+
+    // Додати опцію "* (всі поля)" на початок
+    const starOption = document.createElement("option");
+    starOption.value = "*";
+    starOption.textContent = "* (Всі поля)";
+    fieldSelect.appendChild(starOption);
+
+    // Додати реальні поля таблиці
+    selectedTable.schema.forEach(field => {
+        const option = document.createElement("option");
+        option.value = field.title;
+        option.textContent = field.title;
+        fieldSelect.appendChild(option);
+    });
 }
+
 
 
 /** 
@@ -2332,7 +2339,7 @@ function generateSqlQuery() {
 
     let hasSelect = false;
     let hasAggregate = false;
-    let aggregateAliasCounter = 0; // лічильник для унікальних alias
+    let aggregateAliasCounter = 0;
 
     rows.forEach(row => {
         const tableSelect = row.querySelector(".query-table-select");
@@ -2348,128 +2355,109 @@ function generateSqlQuery() {
         const isVisible = visibleCheckbox.checked;
         const sortBy = sortSelect.value;
         const operator = operatorSelect.value.trim();
-        let criteria = criteriaInput.value.trim();
+        const criteria = criteriaInput.value.trim();
         const fieldRole = roleSelect.value;
 
-        // Якщо tableName = "*", тоді поле може бути пустим (агрегат без поля)
-        if (tableName && (fieldName || tableName === "*")) {
-            if (tableName !== "*" && !baseTable) baseTable = tableName;
+        if (!tableName || (!fieldName && fieldName !== "*")) return;
 
-            let selectExpr = "";
-            let alias = "";
-            let fieldExpr = "";
+        if (!baseTable && tableName !== "*") baseTable = tableName;
 
-            if (tableName === "*") {
-                // Агрегати без конкретного поля
-                switch (fieldRole) {
-                    case "count":
-                        alias = `count_${aggregateAliasCounter++}`;
-                        selectExpr = `COUNT(*) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    default:
-                        // Якщо потрібно, можна додати інші агрегати без поля
-                        selectExpr = "*";
-                        hasSelect = true;
-                        break;
+        let selectExpr = "";
+        let alias = "";
+        let fieldExpr = "";
+
+        if (fieldName === "*") {
+            // Вибір всіх полів таблиці
+            selectExpr = `"${tableName}".*`;
+            hasSelect = true;
+        } else {
+            fieldExpr = `"${tableName}"."${fieldName}"`;
+            switch (fieldRole) {
+                case "select":
+                    selectExpr = fieldExpr;
+                    hasSelect = true;
+                    break;
+                case "group":
+                    selectExpr = fieldExpr;
+                    groupByFields.push(fieldExpr);
+                    break;
+                case "count":
+                    alias = `count_${aggregateAliasCounter++}`;
+                    selectExpr = `COUNT(${fieldExpr}) AS ${alias}`;
+                    hasAggregate = true;
+                    break;
+                case "sum":
+                    alias = `sum_${aggregateAliasCounter++}`;
+                    selectExpr = `SUM(${fieldExpr}) AS ${alias}`;
+                    hasAggregate = true;
+                    break;
+                case "avg":
+                    alias = `avg_${aggregateAliasCounter++}`;
+                    selectExpr = `AVG(${fieldExpr}) AS ${alias}`;
+                    hasAggregate = true;
+                    break;
+                case "min":
+                    alias = `min_${aggregateAliasCounter++}`;
+                    selectExpr = `MIN(${fieldExpr}) AS ${alias}`;
+                    hasAggregate = true;
+                    break;
+                case "max":
+                    alias = `max_${aggregateAliasCounter++}`;
+                    selectExpr = `MAX(${fieldExpr}) AS ${alias}`;
+                    hasAggregate = true;
+                    break;
+                default:
+                    selectExpr = fieldExpr;
+                    hasSelect = true;
+                    break;
+            }
+        }
+
+        if (isVisible && selectExpr) selectFields.push(selectExpr);
+
+        // WHERE умови для конкретних полів (не для *)
+        if (fieldName !== "*" && criteria && operator) {
+            const fieldType = getFieldType(tableName, fieldName);
+            let processedCriteria = criteria;
+
+            if (fieldType === "Так/Ні") {
+                let value = processedCriteria.toLowerCase();
+                if (["так", "true", "1"].includes(value)) value = "1";
+                else if (["ні", "false", "0"].includes(value)) value = "0";
+                processedCriteria = `${operator} ${value}`;
+            } else if (fieldType === "Дата") {
+                const match = processedCriteria.match(/^([0-9]{2})[.\-\/]([0-9]{2})[.\-\/]([0-9]{4})$/);
+                if (match) {
+                    const [ , dd, mm, yyyy ] = match;
+                    const isoDate = `${yyyy}-${mm}-${dd}`;
+                    processedCriteria = `${operator} '${isoDate}'`;
+                } else {
+                    processedCriteria = `${operator} '${processedCriteria}'`;
                 }
             } else {
-                fieldExpr = `"${tableName}"."${fieldName}"`;
-                switch (fieldRole) {
-                    case "select":
-                        selectExpr = fieldExpr;
-                        hasSelect = true;
-                        break;
-                    case "group":
-                        selectExpr = fieldExpr;
-                        groupByFields.push(fieldExpr);
-                        break;
-                    case "count":
-                        alias = `count_${aggregateAliasCounter++}`;
-                        selectExpr = `COUNT(${fieldExpr}) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    case "sum":
-                        alias = `sum_${aggregateAliasCounter++}`;
-                        selectExpr = `SUM(${fieldExpr}) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    case "avg":
-                        alias = `avg_${aggregateAliasCounter++}`;
-                        selectExpr = `AVG(${fieldExpr}) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    case "min":
-                        alias = `min_${aggregateAliasCounter++}`;
-                        selectExpr = `MIN(${fieldExpr}) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    case "max":
-                        alias = `max_${aggregateAliasCounter++}`;
-                        selectExpr = `MAX(${fieldExpr}) AS ${alias}`;
-                        hasAggregate = true;
-                        break;
-                    default:
-                        selectExpr = fieldExpr;
-                        hasSelect = true;
-                        break;
-                }
+                processedCriteria = isNaN(processedCriteria)
+                    ? `${operator} '${processedCriteria}'`
+                    : `${operator} ${processedCriteria}`;
             }
 
-            if (isVisible && selectExpr) {
-                selectFields.push(selectExpr);
-            }
-
-            // WHERE умова можна застосувати лише якщо є конкретне поле (не "*")
-            if (tableName !== "*" && criteria.length > 0 && operator.length > 0) {
-                const fieldType = getFieldType(tableName, fieldName);
-                let processedCriteria = criteria;
-
-                if (fieldType === "Так/Ні") {
-                    let value = processedCriteria.toLowerCase();
-                    if (["так", "true", "1"].includes(value)) value = "1";
-                    else if (["ні", "false", "0"].includes(value)) value = "0";
-                    processedCriteria = `${operator} ${value}`;
-                } else if (fieldType === "Дата") {
-                    const match = processedCriteria.match(/^([0-9]{2})[.\-\/]([0-9]{2})[.\-\/]([0-9]{4})$/);
-                    if (match) {
-                        const [ , dd, mm, yyyy ] = match;
-                        const isoDate = `${yyyy}-${mm}-${dd}`;
-                        processedCriteria = `${operator} '${isoDate}'`;
-                    } else {
-                        processedCriteria = `${operator} '${processedCriteria}'`;
-                    }
-                } else {
-                    processedCriteria = isNaN(processedCriteria)
-                        ? `${operator} '${processedCriteria}'`
-                        : `${operator} ${processedCriteria}`;
-                }
-
-                whereClauses.push(`${fieldExpr} ${processedCriteria}`);
-            }
-
-            if (sortBy) {
-                if (alias) {
-                    orderByClauses.push(`${alias} ${sortBy}`);
-                } else if (tableName !== "*") {
-                    orderByClauses.push(`${fieldExpr} ${sortBy}`);
-                } else {
-                    // Якщо tableName = "*", але сортування є — сортуємо за alias якщо є, або пропускаємо
-                    // Тут можна додати логіку, якщо потрібно
-                }
-            }
-
-            queryConfig.push({
-                tableName,
-                fieldName,
-                isVisible,
-                sortBy,
-                operator,
-                criteria,
-                fieldRole,
-                alias
-            });
+            whereClauses.push(`${fieldExpr} ${processedCriteria}`);
         }
+
+        if (sortBy) {
+            if (alias) orderByClauses.push(`${alias} ${sortBy}`);
+            else if (fieldName !== "*") orderByClauses.push(`${fieldExpr} ${sortBy}`);
+        }
+
+        queryConfig.push({
+            tableName,
+            fieldName,
+            isVisible,
+            sortBy,
+            operator,
+            criteria,
+            fieldRole,
+            alias
+        });
     });
 
     // JOIN-зв’язки
@@ -2493,70 +2481,41 @@ function generateSqlQuery() {
         return;
     }
 
-    // Якщо baseTable не вказано і є хоча б один рядок з реальною таблицею
     if (!baseTable) {
-        // Спроба встановити базову таблицю з JOIN-ів, якщо є
-        if (joins.length > 0) {
-            baseTable = joins[0].table;
-        } else {
+        if (joins.length > 0) baseTable = joins[0].table;
+        else {
             Message("Не вказано базову таблицю для FROM.");
             return;
         }
     }
 
-    // Побудова SQL-запиту
-    let sql = `SELECT ${selectFields.join(", ")}`;
-    sql += `\nFROM "${baseTable}"`;
-
-    joins.forEach(join => {
-        sql += `\nJOIN "${join.table}" ON ${join.condition}`;
-    });
-
-    if (whereClauses.length > 0) {
-        sql += `\nWHERE ${whereClauses.join(" AND ")}`;
-    }
-
-    if (groupByFields.length > 0) {
-        sql += `\nGROUP BY ${groupByFields.join(", ")}`;
-    } else if (hasSelect && hasAggregate) {
-        // Якщо є агрегати і вибіркові поля без групування — додати всі select поля (окрім агрегатів) у GROUP BY
+    // Побудова SQL
+    let sql = `SELECT ${selectFields.join(", ")}\nFROM "${baseTable}"`;
+    joins.forEach(join => sql += `\nJOIN "${join.table}" ON ${join.condition}`);
+    if (whereClauses.length) sql += `\nWHERE ${whereClauses.join(" AND ")}`;
+    if (groupByFields.length) sql += `\nGROUP BY ${groupByFields.join(", ")}`;
+    else if (hasSelect && hasAggregate) {
+        // Якщо є агрегати і звичайні поля без групування
         const groupByFromSelects = selectFields
-            .filter(f => !f.match(/^(COUNT|SUM|AVG|MIN|MAX)\(/i)) // виключити агрегати
+            .filter(f => !f.match(/^(COUNT|SUM|AVG|MIN|MAX)\(/i) && !f.includes(".*"))
             .map(f => {
-                // Прибрати псевдоніми, якщо є
                 const aliasMatch = f.match(/ AS (.+)$/i);
-                if (aliasMatch) {
-                    return aliasMatch[1];
-                }
-                return f;
+                return aliasMatch ? aliasMatch[1] : f;
             });
-        if (groupByFromSelects.length > 0) {
-            sql += `\nGROUP BY ${groupByFromSelects.join(", ")}`;
-        }
+        if (groupByFromSelects.length) sql += `\nGROUP BY ${groupByFromSelects.join(", ")}`;
     }
+    if (orderByClauses.length) sql += `\nORDER BY ${orderByClauses.join(", ")}`;
 
-    if (orderByClauses.length > 0) {
-        sql += `\nORDER BY ${orderByClauses.join(", ")}`;
-    }
-
-    const queryDefinition = {
-        name: queryName,
-        config: queryConfig,
-        joins: joins,
-        sql: sql
-    };
-
+    const queryDefinition = { name: queryName, config: queryConfig, joins, sql };
     const existingQueryIndex = queries.definitions.findIndex(q => q.name === queryName);
-    if (existingQueryIndex !== -1) {
-        queries.definitions[existingQueryIndex] = queryDefinition;
-    } else {
-        queries.definitions.push(queryDefinition);
-    }
+    if (existingQueryIndex !== -1) queries.definitions[existingQueryIndex] = queryDefinition;
+    else queries.definitions.push(queryDefinition);
     saveDatabase();
 
     document.getElementById("generatedSql").innerText = sql;
     document.getElementById("sqlModal").style.display = "flex";
 }
+
 
 
 
@@ -4961,26 +4920,44 @@ function saveFormChanges() {
         return;
     }
 
-    // Первинний ключ
-    const pkField = table.schema.find(col => col.primaryKey)?.title;
-    const pkIndex = table.schema.findIndex(col => col.primaryKey);
-    if (!pkField) {
+    // Первинний ключ   
+    const pkCol = table.schema.find(col => col.primaryKey);
+    if (!pkCol) {
         Message("У таблиці відсутній первинний ключ. Збереження неможливе.");
         return;
     }
-
-    // Перевірка дублювання PK у таблиці (уникнути помилки UNIQUE)
-    const pkValue = values[pkField];
-    if (pkValue !== null && pkValue !== "") {
+    
+    const pkField = pkCol.title;
+    const pkIndex = table.schema.findIndex(col => col.primaryKey);
+    
+    // Отримуємо значення PK із форми
+    let pkValue = values[pkField];
+    
+    // Якщо PK не задано у формі
+    if (pkValue === undefined || pkValue === "") {
+        // Якщо стовпець з автоінкрементом — залишаємо null
+        if (pkCol.autoInc) {
+            pkValue = null;
+        } else {
+            Message(`Не вказано значення первинного ключа "${pkField}".`);
+            return;
+        }
+    }
+    
+    // Перевірка дублювання PK (тільки якщо PK задано і не автоінкремент)
+    if (!pkCol.autoInc && pkValue !== null) {
         const checkSQL = `SELECT COUNT(*) AS cnt FROM "${tableName}" WHERE "${pkField}" = ?`;
         const res = db.exec(checkSQL, [pkValue]);
         if (res.length > 0 && res[0].values[0][0] > 0 && currentFormRecordIndex === undefined) {
-            // Якщо додаємо новий запис і PK вже є — попереджаємо
             Message(`Помилка: значення ключа "${pkField}" = "${pkValue}" вже існує у таблиці.`);
             return;
         }
     }
+    
 
+    
+    //
+    console.log("Form values=", values)
     // INSERT OR REPLACE — універсальне збереження
     const fieldKeys = Object.keys(values);
     const placeholders = fieldKeys.map(() => "?").join(", ");
@@ -5977,6 +5954,14 @@ function executeOwnSQL() {
         thead.appendChild(headerRow);
     }
 
+/**
+ *  Отримання зовнішніх ключів
+ **/
+ function getPrimaryKeyFieldsForTable(tableName) {
+    const tbl = database.tables.find(t => t.name === tableName);
+    if (!tbl || !tbl.schema) return [];
+    return tbl.schema.filter(c => c.primaryKey).map(c => c.title);
+}
 
 
 
@@ -6013,6 +5998,10 @@ function executeOwnSQL() {
         const row = document.createElement("tr");
 
         const isPrimary = field.primaryKey ? 'checked' : '';
+        const pkCellStyle = (field.primaryKey && field.autoInc) 
+            ? 'background-color: #0f56d9; text-align:center;' 
+            : 'text-align:center;';
+                    
         const isForeign = field.foreignKey ? 'checked' : '';
         const selectedType = field.type || "Текст";
         const fkTable = field.refTable || "";
@@ -6026,8 +6015,9 @@ function executeOwnSQL() {
             </select>
         `;
 
-        const fkFieldOptions = getFieldsForTable(fkTable).map(f =>
+        const fkFieldOptions = getPrimaryKeyFieldsForTable(fkTable).map(f =>
             `<option value="${f}" ${f === fkField ? "selected" : ""}>${f}</option>`).join("");
+
 
         const fieldSelectHtml = `
             <select ${isForeign ? "" : "disabled"}>
@@ -6038,7 +6028,7 @@ function executeOwnSQL() {
 
         // Збір усіх комірок
         const cells = [
-            `<td style="text-align:center;"><input type="checkbox" onchange="handlePrimaryKey(this)" ${isPrimary}></td>`,
+            `<td style="${pkCellStyle}"><input type="checkbox" onchange="handlePrimaryKey(this)" ${isPrimary}></td>`,
             `<td contenteditable="true">${field.title}</td>`,
             `<td><select>
                 <option ${selectedType === "Текст" ? "selected" : ""}>Текст</option>
