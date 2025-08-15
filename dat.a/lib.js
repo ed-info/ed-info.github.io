@@ -2186,7 +2186,7 @@ function closeDeleteModal() {
  * Показує модальне вікно конструктора запиту
  */
 function createQuery() {
-    document.getElementById("queryName").value = "Новий запит"; // Назва за замовчуванням
+    document.getElementById("queryName").value = "Новий_запит"; // Назва за замовчуванням
     document.getElementById("queryBody").innerHTML = ""; // Очистити старі рядки
     addQueryRow(); // Додати перший рядок
     document.getElementById("queryModal").style.display = "flex"; // Показати вікно
@@ -2200,10 +2200,10 @@ function closeQueryModal() {
     document.getElementById("queryModal").style.display = "none";
 }
 
-/* 
+/** 
  * Додає новий рядок до конструктора запиту
  * Рядок містить вибір таблиці, поля, видимість, сортування, фільтр
- */
+ **/
 function addQueryRow() {
     const tbody = document.getElementById("queryBody");
     const row = document.createElement("tr");
@@ -2235,21 +2235,37 @@ function addQueryRow() {
             </div>
         </td>
         <td>
-            <select class="query-field-role" title="Тип участі у запиті">
-                <option value="select">Поле</option>
-                <option value="group">Групування</option>
-                <option value="count">Кількість</option>
-                <option value="sum">Сума</option>
-                <option value="avg">Середнє</option>
-                <option value="min">Мінімальне</option>
-                <option value="max">Максимальне</option>
+            <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
+                <option value="select">поле</option>
+                <option value="group">ГРУПА</option>
+                <option value="count">КІЛЬКІСТЬ</option>
+                <option value="sum">СУМА</option>
+                <option value="avg">СЕРЕДНЄ</option>
+                <option value="min">МІНІМАЛЬНЕ</option>
+                <option value="max">МАКСИМАЛЬНЕ</option>
             </select>
+            <input type="text" class="query-alias-input" placeholder="псевдонім" style="margin-top:4px; display:none; width:100%;">
         </td>
         <td><button onclick="deleteQueryRow(this)">❌</button></td>
     `;
 
     tbody.appendChild(row);
     populateTableDropdownsForRow(row);
+}
+
+/**
+ * функція для показу/приховування input псевдоніма
+ **/
+function toggleAliasInput(selectEl) {
+    const row = selectEl.closest("tr");
+    const aliasInput = row.querySelector(".query-alias-input");
+    console.log("toggleAliasInput=",selectEl.value)
+    if (selectEl.value !== "select") {
+        aliasInput.style.display = "block";
+    } else {
+        aliasInput.style.display = "none";
+        aliasInput.value = "";
+    }
 }
 
 
@@ -2395,11 +2411,21 @@ function generateSqlQuery() {
         if (!baseTable && tableName !== "*") baseTable = tableName;
 
         let selectExpr = "";
-        let alias = "";
-        let fieldExpr = "";
-
+        const aliasInput = row.querySelector(".query-alias-input");
+        let alias = aliasInput.value.trim();
+        
+        // Якщо alias порожній — згенеруємо
+        if (!alias && fieldRole !== "select") {
+            switch (fieldRole) {
+                case "count": alias = `count_${aggregateAliasCounter++}`; break;
+                case "sum":   alias = `sum_${aggregateAliasCounter++}`;   break;
+                case "avg":   alias = `avg_${aggregateAliasCounter++}`;   break;
+                case "min":   alias = `min_${aggregateAliasCounter++}`;   break;
+                case "max":   alias = `max_${aggregateAliasCounter++}`;   break;
+            }
+        }
+        
         if (fieldName === "*") {
-            // Вибір всіх полів таблиці
             selectExpr = `"${tableName}".*`;
             hasSelect = true;
         } else {
@@ -2410,31 +2436,26 @@ function generateSqlQuery() {
                     hasSelect = true;
                     break;
                 case "group":
-                    selectExpr = fieldExpr;
+                    selectExpr = alias ? `${fieldExpr} AS ${alias}` : fieldExpr;
                     groupByFields.push(fieldExpr);
                     break;
                 case "count":
-                    alias = `count_${aggregateAliasCounter++}`;
                     selectExpr = `COUNT(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
                 case "sum":
-                    alias = `sum_${aggregateAliasCounter++}`;
                     selectExpr = `SUM(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
                 case "avg":
-                    alias = `avg_${aggregateAliasCounter++}`;
                     selectExpr = `AVG(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
                 case "min":
-                    alias = `min_${aggregateAliasCounter++}`;
                     selectExpr = `MIN(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
                 case "max":
-                    alias = `max_${aggregateAliasCounter++}`;
                     selectExpr = `MAX(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
@@ -2444,6 +2465,7 @@ function generateSqlQuery() {
                     break;
             }
         }
+        
 
         if (isVisible && selectExpr) selectFields.push(selectExpr);
 
@@ -2677,7 +2699,7 @@ function executeFinalSqlQuery() {
     const menuDisplayName = `*${internalQueryName}`;
 
     try {
-        if (!validateSqlQuery(pendingQueryText)) return;
+        const isAggregateQuery = /\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(pendingQueryText);
         const res = db.exec(pendingQueryText); 
         
         if (res.length > 0) {
@@ -2706,9 +2728,14 @@ function executeFinalSqlQuery() {
             } else {
                 queries.results.push(queryResultTable);
             }
-
-            addTableToMenu(menuDisplayName);
-            Message(`Запит виконано успішно.\nЗнайдено ${dataRows.length} відповідних записів`);
+           
+            if (isAggregateQuery) {
+                    Message("Запит виконано успішно. Отримано агрегований результат.");
+            } else {
+                    Message(`Запит виконано успішно.\nЗнайдено ${dataRows.length} відповідних записів`);                   
+            }
+            addTableToMenu(menuDisplayName);           
+            
             closeSqlModal();
             closeQueryModal();
             editData(menuDisplayName);
@@ -2805,7 +2832,7 @@ function populateQueryModal(queryDefinition) {
         row.innerHTML = `
             <td><select class="query-table-select" onchange="populateFieldDropdown(this)"></select></td>
             <td><select class="query-field-select"></select></td>
-            <td><input type="checkbox" class="query-visible-checkbox"></td>
+            <td><input type="checkbox" checked class="query-visible-checkbox"></td>
             <td>
                 <select class="query-sort-select">
                     <option value="">Невпорядковано</option>
@@ -2814,30 +2841,31 @@ function populateQueryModal(queryDefinition) {
                 </select>
             </td>
             <td>
-                <div style="display: flex; gap: 4px;">
-                    <select class="query-operator-select">
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <select class="query-operator-select" style="width: 60px;">
                         <option value="==">==</option>
-                        <option value="<"><</option>
-                        <option value="<="><=</option>
-                        <option value=">">></option>
-                        <option value=">=">>=</option>
+                        <option value="<">&lt;</option>
+                        <option value="<=">&lt;=</option>
+                        <option value=">">&gt;</option>
+                        <option value=">=">&gt;=</option>
                         <option value="!=">!=</option>
                         <option value="IN">IN</option>
                         <option value="NOT IN">NOT IN</option>
                     </select>
-                    <input type="text" class="query-criteria-input">
+                    <input type="text" class="query-criteria-input" style="flex: 1;">
                 </div>
             </td>
             <td>
-                <select class="query-field-role" title="Тип участі у запиті">
-                    <option value="select">Поле</option>
-                    <option value="group">Групування</option>
-                    <option value="count">Кількість</option>
-                    <option value="sum">Сума</option>
-                    <option value="avg">Середнє</option>
-                    <option value="min">Мінімальне</option>
-                    <option value="max">Максимальне</option>
+                <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
+                    <option value="select">поле</option>
+                    <option value="group">ГРУПА</option>
+                    <option value="count">КІЛЬКІСТЬ</option>
+                    <option value="sum">СУМА</option>
+                    <option value="avg">СЕРЕДНЄ</option>
+                    <option value="min">МІНІМАЛЬНЕ</option>
+                    <option value="max">МАКСИМАЛЬНЕ</option>
                 </select>
+                <input type="text" class="query-alias-input" placeholder="Псевдонім" style="margin-top:4px; display:none; width:100%;">
             </td>
             <td><button onclick="deleteQueryRow(this)">❌</button></td>
         `;
@@ -2867,7 +2895,18 @@ function populateQueryModal(queryDefinition) {
 
         // Встановлюємо роль поля (важливо!)
         const roleSelect = row.querySelector(".query-field-role");
-        roleSelect.value = item.fieldRole || "select";
+        roleSelect.value = item.fieldRole || "select";     
+        
+        // Встановлюємо псевдонім, якщо він був
+        const aliasInput = row.querySelector(".query-alias-input");
+        if (item.alias) {
+            aliasInput.value = item.alias;
+        }
+
+        // Оновлюємо видимість інпуту псевдоніма
+        toggleAliasInput(roleSelect);
+        
+        
     });
 
     // Відновлення JOIN-зв’язків
@@ -3112,7 +3151,7 @@ function populateQueryModal(queryDefinition) {
 
 
     // New function for Report Creator
-    let isGridVisible = false; // Track grid visibility
+let isGridVisible = false; // Track grid visibility
 function createReport(report = null) {
     const modal = document.getElementById("reportBuilderModal");
     const canvas = document.getElementById("reportCanvas");
@@ -3168,7 +3207,7 @@ function createReport(report = null) {
             canvas.appendChild(div);
         });
     } else {
-        nameInput.value = "Новий звіт";
+        nameInput.value = "Новий_звіт";
     }
     reportCreatorModal.style.display = "flex";
 }
@@ -3196,57 +3235,70 @@ let startX, startY, startWidth, startHeight;
 function startResize(e) {
     e.stopPropagation();
     e.preventDefault();
+
     resizing = true;
-    resizeElement = e.target.parentElement;
+    resizeHandleEl = e.target;                 // 🔑 запам'ятали сам хендл
+    resizeElement = resizeHandleEl.parentElement;
+
+    const rect = resizeElement.getBoundingClientRect();
     startX = e.clientX;
     startY = e.clientY;
-    startWidth = resizeElement.offsetWidth;
-    startHeight = resizeElement.offsetHeight;
+    startWidth = rect.width;
+    startHeight = rect.height;
+    startLeft = resizeElement.offsetLeft;      // 🔑 початкові координати елемента
+    startTop  = resizeElement.offsetTop;
+
     document.addEventListener("pointermove", doResize);
     document.addEventListener("pointerup", stopResize);
     document.addEventListener("pointercancel", stopResize);
 }
 
 function doResize(e) {
-    if (!resizing || !resizeElement) return;
+    if (!resizing || !resizeElement || !resizeHandleEl) return;
+
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    let newWidth = startWidth;
-    let newHeight = startHeight;
-    let newLeft = resizeElement.offsetLeft;
-    let newTop = resizeElement.offsetTop;
 
-    if (resizeElement.classList.contains("bottom-right")) {
-        newWidth = Math.max(50, startWidth + dx);
+    let newWidth  = startWidth;
+    let newHeight = startHeight;
+    let newLeft   = startLeft;
+    let newTop    = startTop;
+
+    // 🔑 Перевіряємо КЛАСИ САМОГО ХЕНДЛА, а не елемента
+    if (resizeHandleEl.classList.contains("bottom-right")) {
+        newWidth  = Math.max(50, startWidth  + dx);
         newHeight = Math.max(30, startHeight + dy);
-    } else if (resizeElement.classList.contains("bottom-left")) {
-        newWidth = Math.max(50, startWidth - dx);
+    } else if (resizeHandleEl.classList.contains("bottom-left")) {
+        newWidth  = Math.max(50, startWidth  - dx);
         newHeight = Math.max(30, startHeight + dy);
-        newLeft = resizeElement.offsetLeft + dx;
-    } else if (resizeElement.classList.contains("top-right")) {
-        newWidth = Math.max(50, startWidth + dx);
+        newLeft   = startLeft + dx;
+    } else if (resizeHandleEl.classList.contains("top-right")) {
+        newWidth  = Math.max(50, startWidth  + dx);
         newHeight = Math.max(30, startHeight - dy);
-        newTop = resizeElement.offsetTop + dy;
-    } else if (resizeElement.classList.contains("top-left")) {
-        newWidth = Math.max(50, startWidth - dx);
+        newTop    = startTop + dy;
+    } else if (resizeHandleEl.classList.contains("top-left")) {
+        newWidth  = Math.max(50, startWidth  - dx);
         newHeight = Math.max(30, startHeight - dy);
-        newLeft = resizeElement.offsetLeft + dx;
-        newTop = resizeElement.offsetTop + dy;
+        newLeft   = startLeft + dx;
+        newTop    = startTop + dy;
     }
 
-    resizeElement.style.width = `${newWidth}px`;
+    resizeElement.style.width  = `${newWidth}px`;
     resizeElement.style.height = `${newHeight}px`;
-    resizeElement.style.left = `${newLeft}px`;
-    resizeElement.style.top = `${newTop}px`;
+    resizeElement.style.left   = `${newLeft}px`;
+    resizeElement.style.top    = `${newTop}px`;
 }
 
 function stopResize() {
     resizing = false;
     resizeElement = null;
+    resizeHandleEl = null;
+
     document.removeEventListener("pointermove", doResize);
     document.removeEventListener("pointerup", stopResize);
     document.removeEventListener("pointercancel", stopResize);
 }
+
 
 function addResizeHandles(element) {
     const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
@@ -3346,6 +3398,55 @@ let isResizing = false;
 let resizeHandle = null;
 let initialX, initialY;
 let initialLeft, initialTop, initialWidth, initialHeight;
+let resizeHandleEl = null;  // ← тут зберігаємо сам кутовий хендл
+let startLeft, startTop;    // ← початкові координати елемента
+    // --- спільна функція для форм і звітів ---
+function initFieldPanelListeners(tableSelect, fieldSelect, fieldClass) {
+        tableSelect.addEventListener("change", () => {
+            const selectedTableName = tableSelect.value;
+            const selectedTable =
+                database.tables.find(t => t.name === selectedTableName) ||
+                queries.results.find(q => `*${q.name}` === selectedTableName);
+    
+            fieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
+            if (selectedTable) {
+                selectedTable.schema.forEach(field => {
+                    const option = document.createElement("option");
+                    option.value = field.title;
+                    option.textContent = field.title;
+                    fieldSelect.appendChild(option);
+                });
+            }
+            if (activeElement && activeElement.classList.contains(fieldClass)) {
+                const fieldTextDiv = activeElement.querySelector('.field-text');
+                const currentField = activeElement.dataset.fieldName || "";
+                if (fieldTextDiv) {
+                    fieldTextDiv.innerText = selectedTableName ? `${selectedTableName}.${currentField}` : "Поле даних";
+                }
+                activeElement.dataset.tableName = selectedTableName;
+            }
+        });
+    
+        fieldSelect.addEventListener("change", () => {
+            const selectedTableName = tableSelect.value;
+            const selectedFieldName = fieldSelect.value;
+            if (activeElement && activeElement.classList.contains(fieldClass) && selectedTableName && selectedFieldName) {
+                const fieldTextDiv = activeElement.querySelector('.field-text');
+                if (fieldTextDiv) {
+                    fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
+                }
+                activeElement.dataset.tableName = selectedTableName;
+                activeElement.dataset.fieldName = selectedFieldName;
+            } else if (activeElement && activeElement.classList.contains(fieldClass)) {
+                const fieldTextDiv = activeElement.querySelector('.field-text');
+                if (fieldTextDiv) {
+                    fieldTextDiv.innerText = tableSelect.value ? `${tableSelect.value}.` : "Поле даних";
+                }
+                delete activeElement.dataset.fieldName;
+            }
+        });
+    }
+    
 
 document.addEventListener('DOMContentLoaded', () => {
     const reportCanvas = document.getElementById("reportCanvas");
@@ -3366,7 +3467,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (element) {
             activeElement = element;
             activeElement.classList.add("selected");
+            // ✅ Додаємо маркери, якщо їх немає
+            if (!activeElement.querySelector(".resize-handle")) {
+                addResizeHandles(activeElement);
+            }
+                        
             const rect = activeElement.getBoundingClientRect();
+            
             initialLeft = activeElement.offsetLeft;
             initialTop = activeElement.offsetTop;
             initialWidth = rect.width;
@@ -3471,49 +3578,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Інші обробники (без змін) ---
-    fieldPanelTableSelect.addEventListener("change", () => {
-        const selectedTableName = fieldPanelTableSelect.value;
-        const selectedTable =
-            database.tables.find(t => t.name === selectedTableName) ||
-            queries.results.find(q => `*${q.name}` === selectedTableName);
-        fieldPanelFieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
-        if (selectedTable) {
-            selectedTable.schema.forEach(field => {
-                const option = document.createElement("option");
-                option.value = field.title;
-                option.textContent = field.title;
-                fieldPanelFieldSelect.appendChild(option);
-            });
-        }
-        if ((activeElement && activeElement.classList.contains("report-field"))) {
-            const fieldTextDiv = activeElement.querySelector('.field-text');
-            if (fieldTextDiv) {
-                const currentField = activeElement.dataset.fieldName || "";
-                fieldTextDiv.innerText = selectedTableName ? `${selectedTableName}.${currentField}` : "Поле даних";
-            }
-            activeElement.dataset.tableName = selectedTableName;
-        }
-    });
+    // --- Інші обробники 
 
-    fieldPanelFieldSelect.addEventListener("change", () => {
-        const selectedTableName = fieldPanelTableSelect.value;
-        const selectedFieldName = fieldPanelFieldSelect.value;
-        if (activeElement && activeElement.classList.contains("report-field") && selectedTableName && selectedFieldName) {
-            const fieldTextDiv = activeElement.querySelector('.field-text');
-            if (fieldTextDiv) {
-                fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
-            }
-            activeElement.dataset.tableName = selectedTableName;
-            activeElement.dataset.fieldName = selectedFieldName;
-        } else if (activeElement && activeElement.classList.contains("report-field")) {
-            const fieldTextDiv = activeElement.querySelector('.field-text');
-            if (fieldTextDiv) {
-                fieldTextDiv.innerText = fieldPanelTableSelect.value ? `${fieldPanelTableSelect.value}.` : "Поле даних";
-            }
-            delete activeElement.dataset.fieldName;
-        }
-    });
+    // --- Виклики ---
+    initFieldPanelListeners(fieldPanelTableSelect, fieldPanelFieldSelect, "report-field");
+   
+    
+    
 
     // --- Налаштування тексту ---
     document.getElementById("fontFamilySelect").addEventListener("change", (e) => {
@@ -3839,6 +3910,7 @@ function populateFieldSelectionPanel() {
             queries.results.find(q => `*${q.name}` === tableName)
         );
     }
+
 
 
 
@@ -4382,7 +4454,7 @@ function redrawLines() {
     // createForm function
     function createForm() {
         document.getElementById("formCreatorModal").style.display = "flex";
-        document.getElementById("formNameInput").value = "Нова форма";
+        document.getElementById("formNameInput").value = "Нова_форма";
         document.getElementById("formCanvas").innerHTML = "";
         document.getElementById("fieldSelectionModal").style.display = "none";        
         document.getElementById("formCanvas").classList.remove('grid-visible');
@@ -4462,6 +4534,22 @@ function redrawLines() {
         }
     }
     //
+
+// Додає виділення при кліку і показує маркери
+function initializeFormElement(element) {
+    element.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.querySelectorAll(".form-element.selected").forEach(el => {
+            el.classList.remove("selected");
+            el.querySelectorAll(".resize-handle").forEach(h => h.remove());
+        });
+
+        element.classList.add("selected");
+        addResizeHandles(element);
+    });
+}
+
+    //
     function editSelectedForm() {
         if (!selectedFormName) {
             Message("Виберіть форму для редагування.");
@@ -4478,6 +4566,7 @@ function redrawLines() {
 
         const formNameInput = document.getElementById("formNameInput");
         const formCanvas = document.getElementById("formCanvas");
+        
 
         formNameInput.value = form.name;
         formCanvas.innerHTML = "";
@@ -4519,6 +4608,7 @@ function redrawLines() {
             }
 
             formCanvas.appendChild(div);
+            initializeFormElement(div); 
         });
 
         // Показати конструктор форми, якщо він прихований
@@ -5078,13 +5168,10 @@ function saveFormChanges() {
         const fieldSelectionModal = document.getElementById("fieldSelectionModal");
         const fieldPanelTableSelect1 = document.getElementById("fieldPanelTableSelect");
         const fieldPanelFieldSelect1 = document.getElementById("fieldPanelFieldSelect");
-        
+        initFieldPanelListeners(fieldPanelTableSelect1, fieldPanelFieldSelect1, "form-field");
         formCanvas.addEventListener("mousedown", (e) => {
             const element = e.target.closest(".form-element");
             const handle = e.target.closest(".resize-handle");
-
-
-
 
             document.querySelectorAll(".form-element.selected").forEach(el => el.classList.remove("selected"));
             fieldSelectionModal.style.display = "none";
@@ -5192,79 +5279,8 @@ function saveFormChanges() {
             resizeHandle = null;
         });
 
-
-        // Populate the field selection panel when a table is selected
-        fieldPanelTableSelect1.addEventListener("change", () => {
-            const selectedTableName = fieldPanelTableSelect.value;
-            const selectedTable = database.tables.find(t => t.name === selectedTableName);
-
-            fieldPanelFieldSelect.innerHTML = "<option value=''>Виберіть поле</option>";
-
-            if (selectedTable) {
-                selectedTable.schema.forEach(field => {
-                    const option = document.createElement("option");
-                    option.value = field.title;
-                    option.textContent = field.title;
-                    fieldPanelFieldSelect.appendChild(option);
-                });
-            }
-
-            // ⛔ НЕ скидати fieldName автоматично — лише при явній зміні таблиці
-            if (activeElement && activeElement.classList.contains("form-field")) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    // Якщо поле вже є — залишаємо, інакше оновлюємо тільки table
-                    const currentField = activeElement.dataset.fieldName || "";
-                    fieldTextDiv.innerText = selectedTableName ? `${selectedTableName}.${currentField}` : "Поле даних";
-                }
-                activeElement.dataset.tableName = selectedTableName;
-            }
-        });
-
-        // Update the active element's text when a field is selected
-        fieldPanelFieldSelect1.addEventListener("change", () => {
-            const selectedTableName = fieldPanelTableSelect.value;
-            const selectedFieldName = fieldPanelFieldSelect.value;
-            if (activeElement && activeElement.classList.contains("form-field") && selectedTableName && selectedFieldName) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    fieldTextDiv.innerText = `${selectedTableName}.${selectedFieldName}`;
-                }
-                activeElement.dataset.tableName = selectedTableName;
-                activeElement.dataset.fieldName = selectedFieldName;
-            } else if (activeElement && activeElement.classList.contains("form-field")) {
-                const fieldTextDiv = activeElement.querySelector('.field-text');
-                if (fieldTextDiv) {
-                    fieldTextDiv.innerText = fieldPanelTableSelect.value ? `${fieldPanelTableSelect.value}.` : "Поле даних";
-                }
-                delete activeElement.dataset.fieldName;
-            }
-        });
-
-        // Стилі для тексту
-        document.getElementById("fontFamilySelect").addEventListener("change", e => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontFamily = e.target.value;
-        });
-        document.getElementById("fontSizeInput").addEventListener("input", e => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontSize = `${e.target.value}px`;
-        });
-        document.getElementById("fontColorInput").addEventListener("input", e => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.color = e.target.value;
-        });
-        document.getElementById("fontWeightToggle").addEventListener("change", e => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontWeight = e.target.checked ? 'bold' : 'normal';
-        });
-        document.getElementById("fontStyleToggle").addEventListener("change", e => {
-            if (activeElement && isTextElement(activeElement)) activeElement.style.fontStyle = e.target.checked ? 'italic' : 'normal';
-        });
-        document.getElementById("textDecorationUnderline").addEventListener("change", e => {
-            if (activeElement && isTextElement(activeElement)) updateTextDecoration();
-        });
-        document.getElementById("textDecorationStrikethrough").addEventListener("change", e => {
-            if (activeElement && isTextElement(activeElement)) updateTextDecoration();
-        });
     });
-
+    
 
     document.addEventListener("click", (e) => {
         const el = e.target.closest(".form-element");
@@ -6341,8 +6357,6 @@ function exportTableToCSV() {
     link.click();
     document.body.removeChild(link);
 }
-
-
 
 
  // Панель швидкого доступу
