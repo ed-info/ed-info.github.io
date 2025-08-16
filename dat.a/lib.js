@@ -1340,6 +1340,8 @@ function createTable() {
     if (!database.tables) database.tables = [];
     table.schema = []; // очищення схеми
     autoIncrement = null;
+    isNewTable = true;
+    editingTableName = null;
 
     // Очищуємо HTML таблиці
     const schemaBody = document.getElementById("schemaBody");
