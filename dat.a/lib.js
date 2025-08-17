@@ -155,6 +155,7 @@ function getCurrentFormNames() {
         localStorage.setItem(database.fileName + ".relations-data", JSON.stringify(database.relations || []));
         
         console.log("База даних збережена у localStorage");
+        document.getElementById("import-table-link").style.display = "block";
         updateQuickAccessPanel(
                   getCurrentTableNames(),
                   getCurrentQueryNames(),
@@ -4164,44 +4165,40 @@ function redrawLines() {
     svgEl.style.zIndex = "0";
     svgEl.style.pointerEvents = "none";
 
-    // Додаємо визначення маркерів у <defs>
+    // <defs> для стрілок
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
 
-    // Маркер для стрілки на кінці (приймач)
-    const markerEnd = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-    markerEnd.setAttribute("id", "arrowEnd");
-    markerEnd.setAttribute("markerWidth", "6");
-    markerEnd.setAttribute("markerHeight", "6");
-    markerEnd.setAttribute("refX", "6");
-    markerEnd.setAttribute("refY", "3");
-    markerEnd.setAttribute("orient", "auto");
-    markerEnd.setAttribute("markerUnits", "strokeWidth");
+    // Червона стрілка (FOREIGN KEY)
+    const markerRed = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerRed.setAttribute("id", "arrowRed");
+    markerRed.setAttribute("markerWidth", "6");
+    markerRed.setAttribute("markerHeight", "6");
+    markerRed.setAttribute("refX", "6");
+    markerRed.setAttribute("refY", "3");
+    markerRed.setAttribute("orient", "auto");
+    markerRed.setAttribute("markerUnits", "strokeWidth");
 
+    const pathRed = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathRed.setAttribute("d", "M 0 0 L 6 3 L 0 6 z");
+    pathRed.setAttribute("fill", "red");
+    markerRed.appendChild(pathRed);
+    defs.appendChild(markerRed);
 
-    const pathEnd = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    pathEnd.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); // трикутник
-    pathEnd.setAttribute("fill", "#3498db");
+    // Блакитна стрілка (користувацькі)
+    const markerBlue = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    markerBlue.setAttribute("id", "arrowBlue");
+    markerBlue.setAttribute("markerWidth", "6");
+    markerBlue.setAttribute("markerHeight", "6");
+    markerBlue.setAttribute("refX", "6");
+    markerBlue.setAttribute("refY", "3");
+    markerBlue.setAttribute("orient", "auto");
+    markerBlue.setAttribute("markerUnits", "strokeWidth");
 
-    //markerEnd.appendChild(pathEnd);
-    //defs.appendChild(markerEnd);
-
-    // Маркер для стрілки на початку (джерело)
-    const markerStart = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-    markerStart.setAttribute("id", "arrowStart");
-    markerStart.setAttribute("markerWidth", "6");
-    markerStart.setAttribute("markerHeight", "6");
-    markerStart.setAttribute("refX", "0");
-    markerStart.setAttribute("refY", "3");
-    markerStart.setAttribute("orient", "auto");
-    markerStart.setAttribute("markerUnits", "strokeWidth");
-
-
-    const pathStart = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    pathStart.setAttribute("d", "M 6 0 L 0 3 L 6 6 z"); // трикутник, в інший бік
-    pathStart.setAttribute("fill", "#ff0000");
-
-    markerStart.appendChild(pathStart);
-    defs.appendChild(markerStart);
+    const pathBlue = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathBlue.setAttribute("d", "M 0 0 L 6 3 L 0 6 z");
+    pathBlue.setAttribute("fill", "deepskyblue");
+    markerBlue.appendChild(pathBlue);
+    defs.appendChild(markerBlue);
 
     svgEl.appendChild(defs);
 
@@ -4214,21 +4211,25 @@ function redrawLines() {
         const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
         const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
 
-        const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-        const toY = toRect.top + toRect.height / 2 - canvasRect.top;
+        // базові координати
+        let fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+        let toY = toRect.top + toRect.height / 2 - canvasRect.top;
 
-        const H_OFFSET = 12; // горизонтальний зсув від точки
+        // якщо користувацький зв'язок → зміщуємо вниз
+        if (!line.readonly) {
+            fromY += 3;
+            toY += 3;
+        }
 
+        const H_OFFSET = 12;
         let fromX, toX, fromDir, toDir;
 
         if (fromCenterX < toCenterX) {
-            // Зліва направо
             fromX = fromRect.left + fromRect.width - canvasRect.left;
             toX = toRect.left - canvasRect.left;
             fromDir = +1;
             toDir = -1;
         } else {
-            // Справа наліво
             fromX = fromRect.left - canvasRect.left;
             toX = toRect.left + toRect.width - canvasRect.left;
             fromDir = -1;
@@ -4245,18 +4246,22 @@ function redrawLines() {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
         path.setAttribute("points", points);
         path.setAttribute("fill", "none");
-        path.setAttribute("stroke", line.color || "#3498db");
+
+        if (line.readonly) {
+            path.setAttribute("stroke", "red");
+            path.setAttribute("marker-end", "url(#arrowRed)");
+        } else {
+            path.setAttribute("stroke", "deepskyblue");
+            path.setAttribute("marker-end", "url(#arrowBlue)");
+        }
+
         path.setAttribute("stroke-width", "2");
-
-        // Додаємо стрілки на початок і кінець
-        path.setAttribute("marker-start", "url(#arrowStart)");
-        path.setAttribute("marker-end", "url(#arrowEnd)");
-
         svgEl.appendChild(path);
     });
 
     canvas.insertBefore(svgEl, canvas.firstChild);
 }
+
 
 
 
@@ -5720,6 +5725,7 @@ function showDatabaseInfo() {
         db = null;
         clearDB();
         updateMainTitle(); // Змінити заголовок на "Виберіть або створіть базу даних"
+        document.getElementById("import-table-link").style.display = "none";
         Message("Базу даних закрито.");       
     }
 
@@ -6756,6 +6762,145 @@ function maskToRegex(mask) {
     regexStr = regexStr.replace(/\\\]/g, "]");
 
     return new RegExp("^" + regexStr + "$", "i"); // ^ і $ — щоб збігався весь рядок
+}
+/**
+ * Імпорт таблиці з Excel/LO Calc/WPS Spreadsheet через Ctrl+C/Ctrl+V
+ **/
+function showImportTableDialog() {
+  document.getElementById("importTableModal").style.display = "flex";
+  const input = document.getElementById("clipboardInput");
+  input.value = "";
+  input.focus();
+
+  // повторно активуємо фокус при будь-якому кліку / натисканні клавіші
+  document.getElementById("importTableModal").addEventListener("click", () => input.focus());
+  document.getElementById("importTableModal").addEventListener("keydown", () => input.focus());
+
+  input.onpaste = function(e) {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    renderPreviewTable(text);
+  };
+}
+
+
+function closeImportTableDialog() {
+  document.getElementById("importTableModal").style.display = "none";
+  document.getElementById("previewArea").innerHTML = "";
+}
+
+let importedData = null; // глобально збережені дані після вставки
+
+function renderPreviewTable(text) {
+  if (!text.trim()) return;
+  const rows = text.trim().split("\n").map(r => r.split("\t"));
+  importedData = rows;
+
+  const table = document.createElement("table");
+  table.border = "1";
+  rows.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    row.forEach(cell => {
+      const td = document.createElement(i === 0 ? "th" : "td");
+      td.textContent = cell.trim();
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+  const preview = document.getElementById("previewArea");
+  preview.innerHTML = "";
+  preview.appendChild(table);
+  document.getElementById("importMsg").style.display = "none";
+}
+
+function confirmImportTable() {
+  if (!importedData || importedData.length < 2) {
+    Message("Немає даних для імпорту.");
+    return;
+  }
+
+  // Структура таблиці
+  const headers = importedData[0];
+  const sampleRow = importedData[1];
+  const schema = headers.map((h, i) => {
+    const val = sampleRow[i];
+    let type = "Текст";
+    if (!isNaN(parseInt(val)) && Number.isInteger(Number(val))) type = "Ціле число";
+    else if (!isNaN(parseFloat(val))) type = "Дробове число";
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(val)) type = "Дата";
+    return { title: h.trim(), type: type };
+  });
+
+  // додаємо ID на початку
+  const fullSchema = [{ title: "ID", type: "Ціле число", primaryKey: true, autoInc: true }]
+    .concat(schema);
+
+  // показ у вікні підтвердження
+  document.getElementById("confirmImportModal").style.display = "flex";
+  const schemaDiv = document.getElementById("tableSchemaPreview");
+
+  // малюємо таблицю
+  let html = `<table border="1" cellpadding="5" style="border-collapse:collapse; width:100%;">`;
+  html += `<thead><tr><th>Назва поля</th><th>Тип даних</th><th>PK</th><th>Автоінкремент</th></tr></thead><tbody>`;
+  fullSchema.forEach(f => {
+    html += `<tr>
+      <td>${f.title}</td>
+      <td>${f.type}</td>
+      <td>${f.primaryKey ? "🔑" : ""}</td>
+      <td>${f.autoInc ? "✔️" : ""}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  schemaDiv.innerHTML = html;
+
+  // збереження для наступного кроку
+  window._importSchema = fullSchema;
+}
+
+
+function closeConfirmImport() {
+  document.getElementById("confirmImportModal").style.display = "none";
+}
+
+function saveImportedTable() {
+  const name = document.getElementById("importTableName").value.trim();
+  if (!checkName(name)) return;
+
+  const schema = [].concat(window._importSchema);
+
+  // створення таблиці
+  const newTable = { name, schema, data: [] };
+  importedData.slice(1).forEach((row, i) => {
+    const rec = [i+1].concat(row); // додаємо ID
+    newTable.data.push(rec);
+  });
+
+  database.tables.push(newTable);
+
+  // створити в SQLite
+  const fieldsDef = schema.map(f => {
+    let t = f.type.toUpperCase();
+    if (t === "ЦІЛЕ ЧИСЛО") t = "INTEGER";
+    if (t === "ДРОБОВЕ ЧИСЛО") t = "REAL";
+    if (t === "ТЕКСТ") t = "TEXT";
+    if (t === "ДАТА") t = "TEXT";
+    let def = `"${f.title}" ${t}`;
+    if (f.primaryKey) def += " PRIMARY KEY AUTOINCREMENT";
+    return def;
+  }).join(", ");
+  db.run(`CREATE TABLE "${name}" (${fieldsDef});`);
+
+  // вставка даних
+  newTable.data.forEach(row => {
+    const values = row.map(v => v === null ? "NULL" : `'${String(v).replace(/'/g,"''")}'`);
+    db.run(`INSERT INTO "${name}" VALUES (${values.join(", ")});`);
+  });
+
+  saveDatabase();
+  addTableToMenu(name);
+  Message("Таблицю імпортовано.");
+  closeImportTableDialog();
+  closeConfirmImport();
 }
 
 
