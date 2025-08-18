@@ -2232,8 +2232,10 @@ function addQueryRow() {
                     <option value=">">&gt;</option>
                     <option value=">=">&gt;=</option>
                     <option value="!=">!=</option>
-                    <option value="IN">IN</option>
+                    <option value="IN">IN</option>                    
+                    <option value="LIKE">LIKE</option>
                     <option value="NOT IN">NOT IN</option>
+                    <option value="BETWEEN">BETWEEN</option>
                 </select>
                 <input type="text" class="query-criteria-input" style="flex: 1;">
             </div>
@@ -2241,14 +2243,14 @@ function addQueryRow() {
         <td>
             <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
                 <option value="select">----</option>
-                <option value="group">ГРУПА</option>
-                <option value="count">КІЛЬКІСТЬ</option>
-                <option value="sum">СУМА</option>
-                <option value="avg">СЕРЕДНЄ</option>
-                <option value="min">МІНІМАЛЬНЕ</option>
-                <option value="max">МАКСИМАЛЬНЕ</option>
+                <option title="ГРУПА" value="group">GROUP</option>
+                <option title="КІЛЬКІСТЬ" value="count">COUNT</option>
+                <option title="СУМА" value="sum">SUM</option>
+                <option title="СЕРЕДНЄ" value="avg">AVG</option>
+                <option title="МІНІМАЛЬНЕ" value="min">MIN</option>
+                <option title="МАКСИМАЛЬНЕ" value="max">MAX</option>
             </select>
-            <input type="text" class="query-alias-input" placeholder="псевдонім" style="margin-top:4px; display:none; width:100%;">
+            <input type="text" class="query-alias-input" placeholder="псевдонім" style="margin-top:4px; display:none; width:100%;height:1.5em;">
         </td>
         <td><button onclick="deleteQueryRow(this)">❌</button></td>
     `;
@@ -2770,7 +2772,7 @@ function executeFinalSqlQuery() {
             }
            
             if (isAggregateQuery) {
-                    Message("Запит виконано успішно. Отримано агрегований результат.");
+                    Message("Запит виконано успішно. Отримано сукупний результат.");
             } else {
                     Message(`Запит виконано успішно.\nЗнайдено ${dataRows.length} відповідних записів`);                   
             }
@@ -2889,8 +2891,10 @@ function populateQueryModal(queryDefinition) {
                         <option value=">">&gt;</option>
                         <option value=">=">&gt;=</option>
                         <option value="!=">!=</option>
-                        <option value="IN">IN</option>
+                        <option value="IN">IN</option>                        
+                        <option value="LIKE">LIKE</option>
                         <option value="NOT IN">NOT IN</option>
+                        <option value="BETWEEN">BETWEEN</option>
                     </select>
                     <input type="text" class="query-criteria-input" style="flex: 1;">
                 </div>
@@ -2898,12 +2902,12 @@ function populateQueryModal(queryDefinition) {
             <td>
                 <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
                     <option value="select">----</option>
-                    <option value="group">ГРУПА</option>
-                    <option value="count">КІЛЬКІСТЬ</option>
-                    <option value="sum">СУМА</option>
-                    <option value="avg">СЕРЕДНЄ</option>
-                    <option value="min">МІНІМАЛЬНЕ</option>
-                    <option value="max">МАКСИМАЛЬНЕ</option>
+                    <option title="ГРУПА" value="group">GROUP</option>
+                    <option title="КІЛЬКІСТЬ" value="count">COUNT</option>
+                    <option title="СУМА" value="sum">SUM</option>
+                    <option title="СЕРЕДНЄ" value="avg">AVG</option>
+                    <option title="МІНІМАЛЬНЕ" value="min">MIN</option>
+                    <option title="МАКСИМАЛЬНЕ" value="max">MAX</option>
                 </select>
                 <input type="text" class="query-alias-input" placeholder="Псевдонім" style="margin-top:4px; display:none; width:100%;">
             </td>

@@ -519,3 +519,9 @@ input[type="date"] {
   outline: 2px solid #3399FF; /* блакитна рамка */
   outline-offset: -2px; /* щоб рамка була зсередини */
 }
+.query-alias-input {
+  margin-top: 4px;
+  display: block;
+  width: 100%;
+  height:1.5em;
+}
