@@ -118,6 +118,7 @@ function getCurrentFormNames() {
         }
         newDbFile = false;
         queries.results = []; // Завжди очищати результати
+        document.getElementById("import-table-link").style.display = "block";
         updateMainTitle();
         updateQuickAccessPanel(
                   getCurrentTableNames(),
@@ -2239,7 +2240,7 @@ function addQueryRow() {
         </td>
         <td>
             <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
-                <option value="select">поле</option>
+                <option value="select">----</option>
                 <option value="group">ГРУПА</option>
                 <option value="count">КІЛЬКІСТЬ</option>
                 <option value="sum">СУМА</option>
@@ -2289,11 +2290,6 @@ function populateTableDropdowns() {
     const tableSelects = document.querySelectorAll(".query-table-select"); // Всі селекти таблиць
     tableSelects.forEach(select => {
         select.innerHTML = "<option value=''>Виберіть таблицю</option>"; // Початковий варіант
-        // Додаємо опцію "*"
-        const starOption = document.createElement("option");
-        starOption.value = "*";
-        starOption.textContent = "* (Всі таблиці)";
-        select.appendChild(starOption);
         database.tables.forEach(table => {
             const option = document.createElement("option");
             option.value = table.name;
@@ -2391,6 +2387,42 @@ function generateSqlQuery() {
     let hasSelect = false;
     let hasAggregate = false;
     let aggregateAliasCounter = 0;
+    
+    // --- helpers for criteria formatting ---
+    const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`;
+    
+    const parseList = (raw) => {
+      if (!raw) return [];
+      let s = raw.trim();
+      if (s.startsWith("(") && s.endsWith(")")) s = s.slice(1, -1);
+      return s.split(",").map(v => v.trim()).filter(v => v.length);
+    };
+    
+    const isNumericLiteral = (v) => /^-?\d+(?:\.\d+)?$/.test(String(v).trim());
+    
+    const toIsoDate = (v) => {
+      const s = String(v).trim();
+      // yyyy-mm-dd
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      // dd.mm.yyyy або dd-mm-yyyy або dd/mm/yyyy
+      m = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return s; // як є, якщо формат інший
+    };
+    
+    const formatLiteral = (v, fieldType) => {
+      const raw = String(v).trim().replace(/^'(.*)'$/, "$1"); // зняти зайві одинарні лапки навколо елемента
+      if (fieldType === "Дата") return sqlQuote(toIsoDate(raw));
+      if (fieldType === "Так/Ні") {
+        const L = raw.toLowerCase();
+        if (["так","true","1"].includes(L)) return "1";
+        if (["ні","false","0"].includes(L)) return "0";
+        return isNumericLiteral(raw) ? raw : sqlQuote(raw);
+      }
+      return isNumericLiteral(raw) ? raw : sqlQuote(raw);
+    };
+    
 
     rows.forEach(row => {
         const tableSelect = row.querySelector(".query-table-select");
@@ -2427,7 +2459,7 @@ function generateSqlQuery() {
                 case "max":   alias = `max_${aggregateAliasCounter++}`;   break;
             }
         }
-        
+        let fieldExpr;
         if (fieldName === "*") {
             selectExpr = `"${tableName}".*`;
             hasSelect = true;
@@ -2473,32 +2505,37 @@ function generateSqlQuery() {
         if (isVisible && selectExpr) selectFields.push(selectExpr);
 
         // WHERE умови для конкретних полів (не для *)
-        if (fieldName !== "*" && criteria && operator) {
+        if (fieldName !== "*" && operator) {
             const fieldType = getFieldType(tableName, fieldName);
-            let processedCriteria = criteria;
-
-            if (fieldType === "Так/Ні") {
-                let value = processedCriteria.toLowerCase();
-                if (["так", "true", "1"].includes(value)) value = "1";
-                else if (["ні", "false", "0"].includes(value)) value = "0";
-                processedCriteria = `${operator} ${value}`;
-            } else if (fieldType === "Дата") {
-                const match = processedCriteria.match(/^([0-9]{2})[.\-\/]([0-9]{2})[.\-\/]([0-9]{4})$/);
-                if (match) {
-                    const [ , dd, mm, yyyy ] = match;
-                    const isoDate = `${yyyy}-${mm}-${dd}`;
-                    processedCriteria = `${operator} '${isoDate}'`;
-                } else {
-                    processedCriteria = `${operator} '${processedCriteria}'`;
+            const op = operator.toUpperCase().trim();
+        
+            if (op === "IS NULL" || op === "IS NOT NULL") {
+                // ці оператори не потребують значення
+                whereClauses.push(`${fieldExpr} ${op}`);
+            } else if (op === "IN" || op === "NOT IN") {
+                // підтримка: "a,b,c" або "(a,b,c)" (числа/дати/рядки)
+                const items = parseList(criteria);
+                const values = items.map(v => formatLiteral(v, fieldType));
+                if (values.length) {
+                    whereClauses.push(`${fieldExpr} ${op} (${values.join(", ")})`);
                 }
-            } else {
-                processedCriteria = isNaN(processedCriteria)
-                    ? `${operator} '${processedCriteria}'`
-                    : `${operator} ${processedCriteria}`;
+            } else if (criteria) {
+                // звичайні порівняння (=, <>, >, <, >=, <=, LIKE, тощо) + одиночне значення
+                let right;
+                if (fieldType === "Дата") {
+                    right = sqlQuote(toIsoDate(criteria));
+                } else if (fieldType === "Так/Ні") {
+                    const L = criteria.toLowerCase().trim();
+                    if (["так","true","1"].includes(L)) right = "1";
+                    else if (["ні","false","0"].includes(L)) right = "0";
+                    else right = isNumericLiteral(criteria) ? criteria : sqlQuote(criteria);
+                } else {
+                    right = isNumericLiteral(criteria) ? criteria : sqlQuote(criteria);
+                }
+                whereClauses.push(`${fieldExpr} ${op} ${right}`);
             }
-
-            whereClauses.push(`${fieldExpr} ${processedCriteria}`);
         }
+        
 
         if (sortBy) {
             if (alias) orderByClauses.push(`${alias} ${sortBy}`);
@@ -2860,7 +2897,7 @@ function populateQueryModal(queryDefinition) {
             </td>
             <td>
                 <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
-                    <option value="select">поле</option>
+                    <option value="select">----</option>
                     <option value="group">ГРУПА</option>
                     <option value="count">КІЛЬКІСТЬ</option>
                     <option value="sum">СУМА</option>
@@ -2885,16 +2922,10 @@ function populateQueryModal(queryDefinition) {
         const operatorSelect = row.querySelector(".query-operator-select");
         const criteriaInput = row.querySelector(".query-criteria-input");
 
-        // Визначаємо оператор і критерій з item.criteria
-        const opMatch = item.criteria?.match(/^(\!\=|\>\=|\<\=|\=\=|\<|\>|\bIN\b|\bNOT IN\b)?\s*(.*)$/i);
-        if (opMatch) {
-            const [, operator = "==", value = ""] = opMatch;
-            operatorSelect.value = operator.trim();
-            criteriaInput.value = value.trim();
-        } else {
-            operatorSelect.value = "==";
-            criteriaInput.value = item.criteria;
-        }
+        // Встановлюємо оператор і критерій
+
+        operatorSelect.value = item.operator;
+        criteriaInput.value = item.criteria;
 
         // Встановлюємо роль поля (важливо!)
         const roleSelect = row.querySelector(".query-field-role");
