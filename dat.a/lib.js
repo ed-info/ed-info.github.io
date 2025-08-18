@@ -31,6 +31,8 @@
     let isNewTable = true;
     let isNewRecord = false;
     let formGridVisible = false;
+    let sqlQuery = null;
+    let queryName = null;
     
     closeAllModals();
     
@@ -2373,6 +2375,9 @@ function getFieldType(tableName, fieldName) {
 }
 
 //**************************************************************************
+function isParameterPlaceholder(v) {
+    return /^\[.*\]$/.test(v.trim());
+}
     
 function generateSqlQuery() {
     const queryName = document.getElementById("queryName").value.trim();
@@ -2524,7 +2529,10 @@ function generateSqlQuery() {
             } else if (criteria) {
                 // звичайні порівняння (=, <>, >, <, >=, <=, LIKE, тощо) + одиночне значення
                 let right;
-                if (fieldType === "Дата") {
+                if (isParameterPlaceholder(criteria)) {
+                    // якщо це параметр [Введіть ...], не чіпаємо
+                    right = criteria;
+                } else if (fieldType === "Дата") {
                     right = sqlQuote(toIsoDate(criteria));
                 } else if (fieldType === "Так/Ні") {
                     const L = criteria.toLowerCase().trim();
@@ -2630,7 +2638,7 @@ function generateSqlQuery() {
     
     function showNextParameterPrompt() {
         if (currentPlaceholderIndex >= pendingPlaceholders.length) {
-            executeFinalSqlQuery();
+            runFinalSqlQuery();
             return;
         }
     
@@ -2714,29 +2722,36 @@ function generateSqlQuery() {
         }
     }
     
-    
-    
+function executeSqlQuery() {
+    console.log("executeSqlQuery")
+    sqlQuery = document.getElementById("generatedSql").innerText;
+    queryName = document.getElementById("queryName").value.trim();
+    runSqlQuery(sqlQuery, queryName); 
+}
+function executeOwnSQL() {
+    sqlQuery = document.getElementById("ownSqlInput").value.trim();
+    queryName = document.getElementById("ownSQLName").value.trim();
+    runSqlQuery(sqlQuery, queryName);
+}    
 
-    function executeSqlQuery() {
-        const sqlQuery = document.getElementById("generatedSql").innerText;
-        const queryName = document.getElementById("queryName").value.trim();
-        pendingQueryName = queryName;
+function runSqlQuery(sqlQuery, queryName) {
+    pendingQueryName = queryName;
+    console.log("runSqlQuery")
+    const matches = [...sqlQuery.matchAll(/\[([^\]]+)\]/g)];
+    const uniquePlaceholders = [...new Set(matches.map(m => m[1]))];
     
-        const matches = [...sqlQuery.matchAll(/\[([^\]]+)\]/g)];
-        const uniquePlaceholders = [...new Set(matches.map(m => m[1]))];
-    
-        if (uniquePlaceholders.length > 0) {
+    if (uniquePlaceholders.length > 0) {
             pendingQueryText = sqlQuery;
             pendingPlaceholders = uniquePlaceholders;
             currentPlaceholderIndex = 0;
             showNextParameterPrompt();
         } else {
             pendingQueryText = sqlQuery;
-            executeFinalSqlQuery();
+            runFinalSqlQuery();
         }
     }
 
-function executeFinalSqlQuery() {
+function runFinalSqlQuery() {
     const internalQueryName = `запит "${pendingQueryName}"`;
     const menuDisplayName = `*${internalQueryName}`;
 
@@ -2770,7 +2785,7 @@ function executeFinalSqlQuery() {
             } else {
                 queries.results.push(queryResultTable);
             }
-           
+            
             if (isAggregateQuery) {
                     Message("Запит виконано успішно. Отримано сукупний результат.");
             } else {
@@ -2780,6 +2795,7 @@ function executeFinalSqlQuery() {
             
             closeSqlModal();
             closeQueryModal();
+            closeOwnSqlModal() 
             editData(menuDisplayName);
         } else {
             Message("Запит виконано, але результат порожній.");
@@ -5909,110 +5925,6 @@ function showDatabaseInfo() {
     function closeOwnSqlModal() {
         document.getElementById("ownSqlModal").style.display = "none";
     }
-/* Виконання користувацького SQL-запиту */    
-function executeOwnSQL() {
-    const sqlQuery = document.getElementById("ownSqlInput").value.trim();
-    const queryName = document.getElementById("ownSQLName").value.trim();
-    const resultsDiv = document.getElementById("ownSqlResults");
-    resultsDiv.innerHTML = ""; // Очистити попередні результати
-
-    if (!sqlQuery) {
-        resultsDiv.innerHTML = "<p style='color: orange;'>Будь ласка, введіть SQL-запит.</p>";
-        return;
-    }
-
-    if (!db) {
-        resultsDiv.innerHTML = "<p style='color: red;'>База даних не завантажена. Будь ласка, завантажте або створіть базу даних.</p>";
-        return;
-    }
-
-    try { 
-        //if (!validateSqlQuery(sqlQuery)) return;
-        const res = db.exec(sqlQuery);                
-
-        if (res.length > 0) {
-            const columns = res[0].columns;
-            const dataRows = res[0].values;
-
-            // ✅ Показ повідомлення про кількість записів
-            const info = document.createElement("p");
-            info.style.color = "green";
-            info.style.fontWeight = "bold";
-            info.textContent = `Результати – знайдено ${dataRows.length} записів`;
-            resultsDiv.appendChild(info);
-
-            // --- Виведення таблиці результату ---
-            const table = document.createElement("table");
-            table.style.width = "100%";
-            table.style.borderCollapse = "collapse";
-            table.style.marginTop = "10px";
-
-            const thead = document.createElement("thead");
-            const headerRow = document.createElement("tr");
-            columns.forEach(col => {
-                const th = document.createElement("th");
-                th.textContent = col;
-                th.style.border = "1px solid #ddd";
-                th.style.padding = "8px";
-                th.style.backgroundColor = "#f2f2f2";
-                th.style.textAlign = "left";
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
-
-            const tbody = document.createElement("tbody");
-            dataRows.forEach(rowData => {
-                const tr = document.createElement("tr");
-                rowData.forEach(cellData => {
-                    const td = document.createElement("td");
-                    td.textContent = cellData ?? "";
-                    td.style.border = "1px solid #ddd";
-                    td.style.padding = "8px";
-                    td.style.textAlign = "left";
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            resultsDiv.appendChild(table);
-
-            // --- Збереження результатів у таблицю ---
-            const internalQueryName = `запит "${queryName}"`;
-            const menuDisplayName = `*${internalQueryName}`;
-
-            const schema = columns.map(col => ({
-                title: col,
-                type: "Текст",
-                primaryKey: false,
-                comment: ""
-            }));
-
-            const queryResultTable = {
-                name: internalQueryName,
-                schema: schema,
-                data: dataRows
-            };
-
-            const existingIndex = queries.results.findIndex(t => t.name === internalQueryName);
-            if (existingIndex !== -1) {
-                queries.results[existingIndex] = queryResultTable;
-                const dataMenu = document.getElementById("data-menu");
-                const existingItem = Array.from(dataMenu.children).find(item => item.textContent === menuDisplayName);
-                if (existingItem) existingItem.remove();
-            } else {
-                queries.results.push(queryResultTable);
-            }
-
-            addTableToMenu(menuDisplayName);
-        } else {
-            resultsDiv.innerHTML = "<p style='color: green;'>Запит виконано успішно, але результат порожній або не повертає даних (наприклад, INSERT, UPDATE, DELETE).</p>";
-        }
-    } catch (e) {
-        resultsDiv.innerHTML = `<p style='color: red;'>Помилка виконання запиту: ${e.message}</p>`;
-    }
-}
-
     
     
     function saveOwnSQL() {
