@@ -4906,6 +4906,7 @@ function addFormLabel() {
     });
 
     formCanvas.appendChild(labelElement);
+    makeDraggableAndResizable(labelElement);
 }
 
 let selectedFormField = null;
@@ -4945,10 +4946,106 @@ function addFormField() {
     });
 
     formCanvas.appendChild(fieldElement);
+    makeDraggableAndResizable(fieldElement);
 }
 
 
 
+function makeDraggableAndResizable(el) {
+    const parent = el.parentElement;
+
+    // === DRAG ===
+    let offsetX, offsetY, dragging = false;
+    el.addEventListener("mousedown", startDrag);
+    el.addEventListener("touchstart", startDrag);
+
+    function startDrag(e) {
+        if (e.target.classList.contains("resize-handle")) return; // не чіпаємо resize
+        dragging = true;
+        const rect = el.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+        document.addEventListener("mousemove", onDrag);
+        document.addEventListener("mouseup", stopDrag);
+        document.addEventListener("touchmove", onDrag);
+        document.addEventListener("touchend", stopDrag);
+    }
+
+    function onDrag(e) {
+        if (!dragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const parentRect = parent.getBoundingClientRect();
+        let left = clientX - parentRect.left - offsetX;
+        let top = clientY - parentRect.top - offsetY;
+        el.style.left = Math.max(0, left) + "px";
+        el.style.top = Math.max(0, top) + "px";
+    }
+
+    function stopDrag() {
+        dragging = false;
+        document.removeEventListener("mousemove", onDrag);
+        document.removeEventListener("mouseup", stopDrag);
+        document.removeEventListener("touchmove", onDrag);
+        document.removeEventListener("touchend", stopDrag);
+    }
+
+    // === RESIZE ===
+    const handles = el.querySelectorAll(".resize-handle");
+    handles.forEach(handle => {
+        handle.addEventListener("mousedown", startResize);
+        handle.addEventListener("touchstart", startResize);
+
+        function startResize(e) {
+            e.stopPropagation(); // щоб не рухався сам елемент
+            const rect = el.getBoundingClientRect();
+            const parentRect = parent.getBoundingClientRect();
+            const startX = e.touches ? e.touches[0].clientX : e.clientX;
+            const startY = e.touches ? e.touches[0].clientY : e.clientY;
+            const startW = rect.width;
+            const startH = rect.height;
+            const startL = rect.left - parentRect.left;
+            const startT = rect.top - parentRect.top;
+            const pos = handle.classList;
+
+            function onResize(ev) {
+                const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+                const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+                let dx = clientX - startX;
+                let dy = clientY - startY;
+
+                if (pos.contains("right")) {
+                    el.style.width = Math.max(40, startW + dx) + "px";
+                }
+                if (pos.contains("bottom")) {
+                    el.style.height = Math.max(20, startH + dy) + "px";
+                }
+                if (pos.contains("left")) {
+                    el.style.width = Math.max(40, startW - dx) + "px";
+                    el.style.left = Math.max(0, startL + dx) + "px";
+                }
+                if (pos.contains("top")) {
+                    el.style.height = Math.max(20, startH - dy) + "px";
+                    el.style.top = Math.max(0, startT + dy) + "px";
+                }
+            }
+
+            function stopResize() {
+                document.removeEventListener("mousemove", onResize);
+                document.removeEventListener("mouseup", stopResize);
+                document.removeEventListener("touchmove", onResize);
+                document.removeEventListener("touchend", stopResize);
+            }
+
+            document.addEventListener("mousemove", onResize);
+            document.addEventListener("mouseup", stopResize);
+            document.addEventListener("touchmove", onResize);
+            document.addEventListener("touchend", stopResize);
+        }
+    });
+}
 
 
 
