@@ -4411,108 +4411,143 @@ function redrawLines() {
     
 
 
-    async function exportDTA() {
-        const zip = new JSZip();
+async function exportDTA() {
+    const zip = new JSZip();
 
-        // Додай SQLite базу
-        const dbData = db.export();
-        zip.file("database.sqlite", dbData);
+    // SQLite база
+    const dbData = db.export();
+    zip.file("database.sqlite", dbData);
 
-        // Додай запити
-        const queriesJson = JSON.stringify(queries.definitions, null, 2);
-        zip.file("queries.json", queriesJson);
+    // Запити
+    const queriesJson = JSON.stringify(queries.definitions, null, 2);
+    zip.file("queries.json", queriesJson);
 
-        // Додай звіти
-        const reportsJson = JSON.stringify(database.reports, null, 2);
-        zip.file("reports.json", reportsJson);
-        
-        // Додай результати запитів
-        zip.file("query-results.json", JSON.stringify(queries.results || []));
+    // Звіти
+    const reportsJson = JSON.stringify(database.reports, null, 2);
+    zip.file("reports.json", reportsJson);
+
+    // Результати запитів
+    zip.file("query-results.json", JSON.stringify(queries.results || []));
+
+    // Схеми (без data)
+    const schemas = database.tables.map(t => ({
+        name: t.name,
+        schema: t.schema
+    }));
+    zip.file("schemas.json", JSON.stringify(schemas, null, 2));
+
+    // 🆕 Форми
+    const formsJson = JSON.stringify(database.forms || [], null, 2);
+    zip.file("forms.json", formsJson);
+
+    // Архів
+    const content = await zip.generateAsync({ type: "blob" });
+    const filename = (database.fileName || "my_database") + ".dta";
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(content);
+    a.download = filename;
+    a.click();
+}
 
 
-        // Генеруємо архів і завантажуємо
-        const content = await zip.generateAsync({
-            type: "blob"
-        });
-        const filename = (database.fileName || "my_database") + ".dta";
+async function importDTA(file) {
+    const zip = await JSZip.loadAsync(file);
+    const dbFile = await zip.file("database.sqlite").async("uint8array");
+    db = new SQL.Database(dbFile);
+    database.fileName = file.name.split('.')[0];
 
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(content);
-        a.download = filename;
-        a.click();
+    // Запити
+    const queriesText = await zip.file("queries.json").async("string");
+    queries.definitions = JSON.parse(queriesText);
+
+    // Звіти
+    const reportsText = await zip.file("reports.json").async("string");
+    database.reports = JSON.parse(reportsText);
+
+    // Результати запитів
+    if (zip.file("query-results.json")) {
+        const resultsText = await zip.file("query-results.json").async("string");
+        queries.results = JSON.parse(resultsText);
+    } else {
+        queries.results = [];
     }
 
-    async function importDTA(file) {
-        const zip = await JSZip.loadAsync(file);
-        const dbFile = await zip.file("database.sqlite").async("uint8array");
-        db = new SQL.Database(dbFile);
-        database.fileName = file.name.split('.')[0];
-        // Відновити запити
-        const queriesText = await zip.file("queries.json").async("string");
-        queries.definitions = JSON.parse(queriesText);
+    // Схеми
+    let savedSchemas = [];
+    if (zip.file("schemas.json")) {
+        const schemasText = await zip.file("schemas.json").async("string");
+        savedSchemas = JSON.parse(schemasText);
+    }
 
-        // Відновити звіти
-        const reportsText = await zip.file("reports.json").async("string");
-        database.reports = JSON.parse(reportsText);
-        
-        // 🆕 Відновити результати запитів (якщо є)
-        if (zip.file("query-results.json")) {
-                const resultsText = await zip.file("query-results.json").async("string");
-                queries.results = JSON.parse(resultsText);
-                console.log("Результати запитів імпортовано з DTA");
+    // 🆕 Форми
+    if (zip.file("forms.json")) {
+        const formsText = await zip.file("forms.json").async("string");
+        database.forms = JSON.parse(formsText);
+    } else {
+        database.forms = [];
+    }
+
+    // Відновлення таблиць через sqlite_master + savedSchemas
+    database.tables = [];
+    const res = db.exec("SELECT name, sql FROM sqlite_master WHERE type='table';");
+    if (res.length > 0) {
+        const tableRows = res[0].values;
+        tableRows.forEach(([name, sql]) => {
+            if (name.startsWith("sqlite_")) return;
+
+            const savedSchema = savedSchemas.find(s => s.name === name)?.schema;
+
+            let schema = [];
+            if (savedSchema) {
+                schema = savedSchema;
             } else {
-                queries.results = [];
-        }
-
-        // Оновити меню даних
-        database.tables = [];
-        const res = db.exec("SELECT name, sql FROM sqlite_master WHERE type='table';");
-        if (res.length > 0) {
-            const tableRows = res[0].values;
-            tableRows.forEach(([name, sql]) => {
-                if (name.startsWith("sqlite_")) return;
                 const match = sql.match(/\((.+)\)/s);
-                if (!match) return;
-                const schemaText = match[1];
-                const schemaParts = schemaText.split(",").map(s => s.trim());
-                const schema = schemaParts.map(part => {
-                    const [titleRaw, typeRaw, ...rest] = part.split(/\s+/);
-                    return {
-                        title: titleRaw.replace(/"/g, ''),
-                        type: typeRaw === "INTEGER" ? "Ціле число" : typeRaw === "REAL" ? "Дробове число" : typeRaw === "BOOLEAN" ? "Так/Ні" : typeRaw === "TEXT" ? "Текст" : typeRaw,
-                        primaryKey: rest.includes("PRIMARY") || rest.includes("PRIMARY KEY"),
-                        comment: rest.includes("PRIMARY") ? "Первинний ключ" : ""
-                    };
-                });
+                if (match) {
+                    const schemaText = match[1];
+                    const schemaParts = schemaText.split(",").map(s => s.trim());
+                    schema = schemaParts.map(part => {
+                        const [titleRaw, typeRaw, ...rest] = part.split(/\s+/);
+                        return {
+                            title: titleRaw.replace(/"/g, ''),
+                            type: typeRaw === "INTEGER" ? "Ціле число" :
+                                  typeRaw === "REAL"    ? "Дробове число" :
+                                  typeRaw === "BOOLEAN" ? "Так/Ні" :
+                                  typeRaw === "TEXT"    ? "Текст" : typeRaw,
+                            primaryKey: rest.includes("PRIMARY") || rest.includes("PRIMARY KEY"),
+                            comment: rest.includes("PRIMARY") ? "Первинний ключ" : ""
+                        };
+                    });
+                }
+            }
 
-                const selectRes = db.exec(`SELECT * FROM "${name}"`);
-                const dataRows = selectRes.length ? selectRes[0].values : [];
+            const selectRes = db.exec(`SELECT * FROM "${name}"`);
+            const dataRows = selectRes.length ? selectRes[0].values : [];
 
-                database.tables.push({
-                    name,
-                    schema,
-                    data: dataRows
-                });
+            database.tables.push({
+                name,
+                schema,
+                data: dataRows
             });
-        }
-
-        // Оновити меню
-        document.getElementById("data-menu").innerHTML = "";
-        database.tables.forEach(t => addTableToMenu(t.name));
-        queries.results.forEach(q => {
-                addTableToMenu(`*${q.name}`);
         });
-
-        saveDatabase();
-        Message("Базу даних успішно імпортовано з .dta файлу.");
-        updateMainTitle();
-        updateQuickAccessPanel(
-                  getCurrentTableNames(),
-                  getCurrentQueryNames(),
-                  getCurrentReportNames(),
-                  getCurrentFormNames()
-                );
     }
+
+    // Оновлення меню
+    document.getElementById("data-menu").innerHTML = "";
+    database.tables.forEach(t => addTableToMenu(t.name));
+    queries.results.forEach(q => addTableToMenu(`*${q.name}`));
+
+    saveDatabase();
+    Message("Базу даних успішно імпортовано з .dta файлу.");
+    updateMainTitle();
+    updateQuickAccessPanel(
+        getCurrentTableNames(),
+        getCurrentQueryNames(),
+        getCurrentReportNames(),
+        getCurrentFormNames()
+    );
+}
+
 
     //
 
