@@ -469,23 +469,24 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
 
         const refTableObj = database.tables.find(t => t.name === col.refTable);
         if (refTableObj) {
+            // індекс колонки, яка є зовнішнім ключем
             const refIdIndex = refTableObj.schema.findIndex(f => f.title === col.refField);
-
-            // Підбираємо колонку для відображення тексту
-            let refTextIndex = refTableObj.schema.findIndex(f => f.title.toLowerCase().includes("name"));
-            if (refTextIndex === -1) refTextIndex = refTableObj.schema.findIndex(f => f.title !== col.refField);
-            if (refTextIndex === -1) refTextIndex = refIdIndex;
-
+        
             if (refIdIndex !== -1) {
                 refTableObj.data.forEach(refRow => {
                     const option = document.createElement("option");
-                    option.value = refRow[refIdIndex];
-                    option.textContent = refRow[refTextIndex];
+                    option.value = refRow[refIdIndex];        // значення FK
+                    option.textContent = refRow[refIdIndex];  // теж показуємо його
                     select.appendChild(option);
                 });
-                select.value = (cellData === null || cellData === undefined || cellData === "") ? "empty" : String(cellData);
+        
+                // виставити правильне значення у select
+                select.value = (cellData === null || cellData === undefined || cellData === "")
+                    ? "empty"
+                    : String(cellData);
             }
         }
+        
 
         select.disabled = !!isReadOnly;
         container.appendChild(select);
