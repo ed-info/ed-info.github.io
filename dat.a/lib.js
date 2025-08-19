@@ -5008,7 +5008,8 @@ function makeDraggableAndResizable(el) {
             const startH = rect.height;
             const startL = rect.left - parentRect.left;
             const startT = rect.top - parentRect.top;
-            const pos = handle.classList;
+            const pos = handle.classList[1];
+            console.log("pos=",pos)
 
             function onResize(ev) {
                 const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
@@ -5016,17 +5017,17 @@ function makeDraggableAndResizable(el) {
                 let dx = clientX - startX;
                 let dy = clientY - startY;
 
-                if (pos.contains("right")) {
+                if (pos.includes("right")) {
                     el.style.width = Math.max(40, startW + dx) + "px";
                 }
-                if (pos.contains("bottom")) {
+                if (pos.includes("bottom")) {
                     el.style.height = Math.max(20, startH + dy) + "px";
                 }
-                if (pos.contains("left")) {
+                if (pos.includes("left")) {
                     el.style.width = Math.max(40, startW - dx) + "px";
                     el.style.left = Math.max(0, startL + dx) + "px";
                 }
-                if (pos.contains("top")) {
+                if (pos.includes("top")) {
                     el.style.height = Math.max(20, startH - dy) + "px";
                     el.style.top = Math.max(0, startT + dy) + "px";
                 }
@@ -5050,7 +5051,7 @@ function makeDraggableAndResizable(el) {
 
 
 
-    function addFormGrid() {
+function addFormGrid() {
         const formCanvas = document.getElementById("formCanvas");
         if (formGridVisible) {
             formCanvas.style.backgroundImage = "none";
