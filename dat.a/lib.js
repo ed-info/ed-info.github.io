@@ -1648,7 +1648,7 @@ function updateFieldOptions(tableSelect) {
     const row = tableSelect.closest("tr");
     const fieldSelect = row.cells[5].querySelector("select");
     const selectedTable = tableSelect.value;
-
+    console.log("selectedTable=",selectedTable)
     fieldSelect.innerHTML = `<option value="">Завантаження...</option>`;
 
     const fields = getFieldsForTable(selectedTable);
@@ -5984,31 +5984,39 @@ function showDatabaseInfo() {
     }
 /**
  * Оновлення заголовку таблиці структури 
- * якщо увімкнено хоча б один зовніщній ключ - додаємо два стовпці
- * якщо не увікнено жодного зовнішнього ключа - приховуємо 
- * */
-    function updateSchemaTableHeader(hasForeign) {
-        const thead = document.getElementById("schemaHead");
-        thead.innerHTML = ""; // очистити
+ * якщо увімкнено хоча б один зовнішній ключ – показуємо два стовпці
+ * якщо не увімкнено жодного зовнішнього ключа – приховуємо 
+ */
+function updateSchemaTableHeader(hasForeign) {
+    const thead = document.getElementById("schemaHead");
+    thead.innerHTML = ""; // очистити
 
-        const headerRow = document.createElement("tr");
-        headerRow.innerHTML = `
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `
         <th>🔑</th>
         <th>Назва поля</th>
         <th>Тип</th>
         <th>📌</th>
-        ${hasForeign ? "<th>Таблиця 📌</th><th>Поле 📌</th>" : ""}
+        <th id="refTableHeader">Таблиця 📌</th>
+        <th id="refFieldHeader">Поле 📌</th>
         <th>Коментар</th>
         <th>✂</th>
-        `;
-        thead.appendChild(headerRow);
-    }
+    `;
+    thead.appendChild(headerRow);
+
+    // показати або приховати
+    document.getElementById("refTableHeader").style.display = hasForeign ? "" : "none";
+    document.getElementById("refFieldHeader").style.display = hasForeign ? "" : "none";
+}
+
 
 /**
  *  Отримання зовнішніх ключів
  **/
  function getPrimaryKeyFieldsForTable(tableName) {
+    console.log("getPrimaryKeyFieldsForTable=",tableName) 
     const tbl = database.tables.find(t => t.name === tableName);
+    console.log("tbl=",tbl) 
     if (!tbl || !tbl.schema) return [];
     return tbl.schema.filter(c => c.primaryKey).map(c => c.title);
 }
@@ -6056,6 +6064,7 @@ function showDatabaseInfo() {
         const selectedType = field.type || "Текст";
         const fkTable = field.refTable || "";
         const fkField = field.refField || "";
+        console.log("field.refField=",field.refField)
         const comment = field.comment || "";
 
         const tableSelectHtml = `
@@ -6068,7 +6077,7 @@ function showDatabaseInfo() {
         const fkFieldOptions = getPrimaryKeyFieldsForTable(fkTable).map(f =>
             `<option value="${f}" ${f === fkField ? "selected" : ""}>${f}</option>`).join("");
 
-
+        console.log("fkFieldOptions=",getPrimaryKeyFieldsForTable(fkTable))
         const fieldSelectHtml = `
             <select ${isForeign ? "" : "disabled"}>
                 <option value="">(поле)</option>
