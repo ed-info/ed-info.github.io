@@ -2228,16 +2228,17 @@ function addQueryRow() {
         <td>
             <div style="display: flex; gap: 4px; align-items: center;">
                 <select class="query-operator-select" style="width: 60px;">
-                    <option value="==">==</option>
-                    <option value="<">&lt;</option>
-                    <option value="<=">&lt;=</option>
-                    <option value=">">&gt;</option>
-                    <option value=">=">&gt;=</option>
-                    <option value="!=">!=</option>
-                    <option value="IN">IN</option>                    
-                    <option value="LIKE">LIKE</option>
-                    <option value="NOT IN">NOT IN</option>
-                    <option value="BETWEEN">BETWEEN</option>
+                    <option title="рівне" value="==">==</option>
+                    <option title="менше" value="<">&lt;</option>
+                    <option title="менше або рівне" value="<=">&lt;=</option>
+                    <option title="більше" value=">">&gt;</option>
+                    <option title="більше або рівне" value=">=">&gt;=</option>
+                    <option title="не рівне" value="!=">!=</option>
+                    <option title="схоже на шаблон" value="LIKE">LIKE</option>
+                    <option title="входить до переліку" value="IN">IN</option>
+                    <option title="не входить до переліку" value="NOT IN">NOT IN</option>
+                    <option title="входить до проміжку" value="BETWEEN">BETWEEN</option>
+                    <option title="не входить до проміжку" value="NOT BETWEEN">NOT BETWEEN</option>
                 </select>
                 <input type="text" class="query-criteria-input" style="flex: 1;">
             </div>
@@ -2526,6 +2527,14 @@ function generateSqlQuery() {
                 if (values.length) {
                     whereClauses.push(`${fieldExpr} ${op} (${values.join(", ")})`);
                 }
+            } else if (op === "BETWEEN" || op === "NOT BETWEEN") {
+                // Очікуємо критерій у вигляді "20000 AND 30000"
+                const parts = criteria.split(/\s+AND\s+/i);
+                if (parts.length === 2) {
+                    const left = formatLiteral(parts[0], fieldType);
+                    const right = formatLiteral(parts[1], fieldType);
+                    whereClauses.push(`${fieldExpr} ${op} ${left} AND ${right}`);
+                }            
             } else if (criteria) {
                 // звичайні порівняння (=, <>, >, <, >=, <=, LIKE, тощо) + одиночне значення
                 let right;
@@ -2900,18 +2909,19 @@ function populateQueryModal(queryDefinition) {
             </td>
             <td>
                 <div style="display: flex; gap: 4px; align-items: center;">
-                    <select class="query-operator-select" style="width: 60px;">
-                        <option value="==">==</option>
-                        <option value="<">&lt;</option>
-                        <option value="<=">&lt;=</option>
-                        <option value=">">&gt;</option>
-                        <option value=">=">&gt;=</option>
-                        <option value="!=">!=</option>
-                        <option value="IN">IN</option>                        
-                        <option value="LIKE">LIKE</option>
-                        <option value="NOT IN">NOT IN</option>
-                        <option value="BETWEEN">BETWEEN</option>
-                    </select>
+                <select class="query-operator-select" style="width: 60px;">
+                    <option title="рівне" value="==">==</option>
+                    <option title="менше" value="<">&lt;</option>
+                    <option title="менше або рівне" value="<=">&lt;=</option>
+                    <option title="більше" value=">">&gt;</option>
+                    <option title="більше або рівне" value=">=">&gt;=</option>
+                    <option title="не рівне" value="!=">!=</option>
+                    <option title="схоже на шаблон" value="LIKE">LIKE</option>
+                    <option title="входить до переліку" value="IN">IN</option>
+                    <option title="не входить до переліку" value="NOT IN">NOT IN</option>
+                    <option title="входить до проміжку" value="BETWEEN">BETWEEN</option>
+                    <option title="не входить до проміжку" value="NOT BETWEEN">NOT BETWEEN</option>
+                </select>
                     <input type="text" class="query-criteria-input" style="flex: 1;">
                 </div>
             </td>
