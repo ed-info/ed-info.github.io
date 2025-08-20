@@ -29,10 +29,12 @@
     let editingTableName = "unnamed";
     let autoIncrement = null;
     let isNewTable = true;
-    let isNewRecord = false;
-    let formGridVisible = false;
+    let isNewRecord = false;    
     let sqlQuery = null;
     let queryName = null;
+    let constructorMode = null;
+    let screenGridVisible = false; 
+    let screenCanvas = null; 
     
     closeAllModals();
     
@@ -1806,7 +1808,8 @@ function saveSchema() {
         db.run(createSQL);
     } catch (e) {
         console.warn("Не вдалося створити таблицю:", e, createSQL);
-        Message("Не вдалося створити таблицю.");
+        
+        Message("Не вдалося створити таблицю.\n"+e);
         return;
     }
 
@@ -2111,12 +2114,12 @@ function removeTableFromMenu(oldTableName) {
     }
 }
 
-/* 
+/** 
  * Відображає модальне вікно з повідомленням
  * Параметри:
  *   msg — текст повідомлення, яке потрібно показати
  * Результат: показує вікно з заданим текстом
- */
+ **/
 function Message(msg) {
     const modal = document.getElementById("messageModal"); // Отримати елемент модального вікна
     const content = document.getElementById("messageContent"); // Отримати блок для тексту
@@ -2125,9 +2128,9 @@ function Message(msg) {
     modal.style.display = "flex"; // Показати вікно
 }
 
-/* 
+/** 
  * Приховує модальне вікно повідомлення 
- */
+ **/
 function closeMessage() {
     document.getElementById("messageModal").style.display = "none"; // Сховати вікно
 }
@@ -2180,18 +2183,18 @@ function doDeleteDb() {
     }
 }
 
-/* 
+/** 
  * Приховує модальне вікно підтвердження видалення 
- */
+ **/
 function closeDeleteModal() {
     document.getElementById("deleteModal").style.display = "none"; // Сховати
     dbToDelete = null; // Очистити значення
 }
 
-/* 
+/** 
  * Ініціалізує створення нового SQL-запиту 
  * Показує модальне вікно конструктора запиту
- */
+ **/
 function createQuery() {
     document.getElementById("queryName").value = "Новий_запит"; // Назва за замовчуванням
     document.getElementById("queryBody").innerHTML = ""; // Очистити старі рядки
@@ -2200,9 +2203,9 @@ function createQuery() {
     populateTableDropdowns(); // Заповнити випадаючі списки таблиць
 }
 
-/* 
+/** 
  * Приховує модальне вікно конструктора запиту
- */
+ **/
 function closeQueryModal() {
     document.getElementById("queryModal").style.display = "none";
 }
@@ -2279,19 +2282,19 @@ function toggleAliasInput(selectEl) {
 }
 
 
-/* 
+/** 
  * Видаляє рядок з конструктора запиту
  * Параметр:
  *   button — кнопка ❌, яка викликала подію
- */
+ **/
 function deleteQueryRow(button) {
     const row = button.closest("tr"); // Знайти відповідний рядок
     row.remove(); // Видалити рядок
 }
 
-/* 
+/** 
  * Заповнює всі випадаючі списки таблиць у конструкторі запиту
- */
+ **/
 function populateTableDropdowns() {
     const tableSelects = document.querySelectorAll(".query-table-select"); // Всі селекти таблиць
     tableSelects.forEach(select => {
@@ -3215,67 +3218,9 @@ function populateQueryModal(queryDefinition) {
     }
 
 
-    // New function for Report Creator
+
 let isGridVisible = false; // Track grid visibility
-function createReport(report = null) {
-    const modal = document.getElementById("reportBuilderModal");
-    const canvas = document.getElementById("reportCanvas");
-    const nameInput = document.getElementById("reportNameInput");
-    document.getElementById("reportTitle").textContent = "Створення звіту";
-    canvas.innerHTML = ""; // Очистити старі елементи
-    populateFieldPanelTableSelect();
-    if (report) {
-        nameInput.value = report.name || "Звіт без назви";
-        document.getElementById("reportTitle").textContent = "Редагування звіту";
-        report.elements.forEach(el => {
-            const div = document.createElement("div");
-            div.classList.add("report-element");
-            if (el.type === "label") {
-                div.classList.add("report-label");
-                div.innerText = el.text || "Напис";
-                div.contentEditable = true;
-                div.style.cursor = "text";
-                div.addEventListener("keydown", (e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        div.blur();
-                    }
-                });
-            } else if (el.type === "field") {
-                div.classList.add("report-field");
-                const textDiv = document.createElement("div");
-                textDiv.classList.add("field-text");
-                textDiv.innerText = `${el.tableName}.${el.fieldName}`;
-                div.dataset.tableName = el.tableName;
-                div.dataset.fieldName = el.fieldName;
-                div.appendChild(textDiv);
-            }
-            Object.assign(div.style, {
-                position: "absolute",
-                left: addPx(el.left),
-                top: addPx(el.top),
-                width: addPx(el.width),
-                height: addPx(el.height),
-                fontFamily: el.fontFamily,
-                fontSize: el.fontSize,
-                fontWeight: el.fontWeight,
-                fontStyle: el.fontStyle,
-                textDecoration: el.textDecoration,
-                color: el.color,
-                backgroundColor: "transparent",
-                padding: "5px",
-                cursor: "grab",
-                touchAction: "none" // 🔥 Важливо!
-            });
-            initializeReportElement(div);
-            addResizeHandles(div);
-            canvas.appendChild(div);
-        });
-    } else {
-        nameInput.value = "Новий_звіт";
-    }
-    reportCreatorModal.style.display = "flex";
-}
+
 
 function populateFieldPanelTableSelect() {
     fieldPanelTableSelect.innerHTML = "<option value=''>Виберіть таблицю або запит</option>";
@@ -3293,159 +3238,11 @@ function populateFieldPanelTableSelect() {
     });
 }
 
-let resizing = false;
-let resizeElement = null;
+
 let startX, startY, startWidth, startHeight;
 
-function startResize(e) {
-    e.stopPropagation();
-    e.preventDefault();
-
-    resizing = true;
-    resizeHandleEl = e.target;                 // 🔑 запам'ятали сам хендл
-    resizeElement = resizeHandleEl.parentElement;
-
-    const rect = resizeElement.getBoundingClientRect();
-    startX = e.clientX;
-    startY = e.clientY;
-    startWidth = rect.width;
-    startHeight = rect.height;
-    startLeft = resizeElement.offsetLeft;      // 🔑 початкові координати елемента
-    startTop  = resizeElement.offsetTop;
-
-    document.addEventListener("pointermove", doResize);
-    document.addEventListener("pointerup", stopResize);
-    document.addEventListener("pointercancel", stopResize);
-}
-
-function doResize(e) {
-    if (!resizing || !resizeElement || !resizeHandleEl) return;
-
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    let newWidth  = startWidth;
-    let newHeight = startHeight;
-    let newLeft   = startLeft;
-    let newTop    = startTop;
-
-    // 🔑 Перевіряємо КЛАСИ САМОГО ХЕНДЛА, а не елемента
-    if (resizeHandleEl.classList.contains("bottom-right")) {
-        newWidth  = Math.max(50, startWidth  + dx);
-        newHeight = Math.max(30, startHeight + dy);
-    } else if (resizeHandleEl.classList.contains("bottom-left")) {
-        newWidth  = Math.max(50, startWidth  - dx);
-        newHeight = Math.max(30, startHeight + dy);
-        newLeft   = startLeft + dx;
-    } else if (resizeHandleEl.classList.contains("top-right")) {
-        newWidth  = Math.max(50, startWidth  + dx);
-        newHeight = Math.max(30, startHeight - dy);
-        newTop    = startTop + dy;
-    } else if (resizeHandleEl.classList.contains("top-left")) {
-        newWidth  = Math.max(50, startWidth  - dx);
-        newHeight = Math.max(30, startHeight - dy);
-        newLeft   = startLeft + dx;
-        newTop    = startTop + dy;
-    }
-
-    resizeElement.style.width  = `${newWidth}px`;
-    resizeElement.style.height = `${newHeight}px`;
-    resizeElement.style.left   = `${newLeft}px`;
-    resizeElement.style.top    = `${newTop}px`;
-}
-
-function stopResize() {
-    resizing = false;
-    resizeElement = null;
-    resizeHandleEl = null;
-
-    document.removeEventListener("pointermove", doResize);
-    document.removeEventListener("pointerup", stopResize);
-    document.removeEventListener("pointercancel", stopResize);
-}
 
 
-function addResizeHandles(element) {
-    const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
-    positions.forEach(pos => {
-        const handle = document.createElement("div");
-        handle.classList.add("resize-handle", pos);
-        handle.style.cursor = {
-            "top-left": "nwse-resize",
-            "top-right": "nesw-resize",
-            "bottom-left": "nesw-resize",
-            "bottom-right": "nwse-resize"
-        }[pos];
-        handle.onpointerdown = startResize; // 🔁 Використовуємо pointerdown
-        element.appendChild(handle);
-    });
-}
-
-function initializeReportElement(el) {
-    el.classList.add("report-element");
-    el.style.cursor = "grab";
-    el.style.touchAction = "none"; // 🔥 Критично важливо
-
-    el.onpointerdown = function(e) {
-        const reportCanvas = document.getElementById("reportCanvas");
-        const fieldSelectionModal = document.getElementById("fieldSelectionModal");
-        const handle = e.target.closest(".resize-handle");
-
-        activeElement = el;
-        document.querySelectorAll(".report-element").forEach(el => {
-            el.classList.remove("selected");
-            el.querySelectorAll(".resize-handle").forEach(h => h.remove());
-        });
-        document.querySelectorAll(".report-element.selected").forEach(el => el.classList.remove("selected"));
-        el.classList.add("selected");
-        addResizeHandles(el);
-        closeTextOptionsModal();
-
-        const rect = el.getBoundingClientRect();
-        initialLeft = el.offsetLeft;
-        initialTop = el.offsetTop;
-        initialWidth = rect.width;
-        initialHeight = rect.height;
-        initialX = e.clientX;
-        initialY = e.clientY;
-
-        if (handle) {
-            isResizing = true;
-            resizeHandle = handle;
-            el.style.cursor = handle.style.cursor;
-        } else {
-            isDragging = true;
-            el.style.cursor = "grabbing";
-            const BORDER_TOLERANCE = 10;
-            const elementRect = el.getBoundingClientRect();
-            const relativeClickX = e.clientX - elementRect.left;
-            const relativeClickY = e.clientY - elementRect.top;
-            const nearLeft = relativeClickX < BORDER_TOLERANCE;
-            const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
-            const nearTop = relativeClickY < BORDER_TOLERANCE;
-            const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
-
-            if (el.classList.contains("report-label")) {
-                if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                    isDragging = false;
-                    el.focus();
-                }
-            } else if (el.classList.contains("report-field")) {
-                if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                    fieldSelectionModal.style.display = "flex";
-                    populateFieldSelectionPanel();
-                    isDragging = false;
-                } else {
-                    fieldSelectionModal.style.display = "none";
-                }
-            }
-        }
-
-        if (isDragging || isResizing || (el.classList.contains("report-label") && !isDragging)) {
-            e.preventDefault();
-        }
-    };
-}
 
 function cancelFieldSelection() {
     document.getElementById("fieldSelectionModal").style.display = "none";
@@ -3463,9 +3260,9 @@ let isResizing = false;
 let resizeHandle = null;
 let initialX, initialY;
 let initialLeft, initialTop, initialWidth, initialHeight;
-let resizeHandleEl = null;  // ← тут зберігаємо сам кутовий хендл
-let startLeft, startTop;    // ← початкові координати елемента
+
     // --- спільна функція для форм і звітів ---
+    
 function initFieldPanelListeners(tableSelect, fieldSelect, fieldClass) {
         tableSelect.addEventListener("change", () => {
             const selectedTableName = tableSelect.value;
@@ -3514,143 +3311,8 @@ function initFieldPanelListeners(tableSelect, fieldSelect, fieldClass) {
     
 
 document.addEventListener('DOMContentLoaded', () => {
-    const reportCanvas = document.getElementById("reportCanvas");
-    const fieldSelectionModal = document.getElementById("fieldSelectionModal");
-    const fieldPanelTableSelect = document.getElementById("fieldPanelTableSelect");
-    const fieldPanelFieldSelect = document.getElementById("fieldPanelFieldSelect");
-
-    // 🔁 Використовуємо pointer events
-    reportCanvas.onpointerdown = (e) => {
-        const element = e.target.closest(".report-element");
-        const handle = e.target.closest(".resize-handle");
-
-        document.querySelectorAll(".report-element.selected").forEach(el => {
-            el.classList.remove("selected");
-        });
-        closeTextOptionsModal();
-
-        if (element) {
-            activeElement = element;
-            activeElement.classList.add("selected");
-            // ✅ Додаємо маркери, якщо їх немає
-            if (!activeElement.querySelector(".resize-handle")) {
-                addResizeHandles(activeElement);
-            }
-                        
-            const rect = activeElement.getBoundingClientRect();
-            
-            initialLeft = activeElement.offsetLeft;
-            initialTop = activeElement.offsetTop;
-            initialWidth = rect.width;
-            initialHeight = rect.height;
-            initialX = e.clientX;
-            initialY = e.clientY;
-
-            if (handle) {
-                isResizing = true;
-                resizeHandle = handle;
-                element.style.cursor = handle.style.cursor;
-            } else {
-                isDragging = true;
-                element.style.cursor = "grabbing";
-                const BORDER_TOLERANCE = 10;
-                const elementRect = activeElement.getBoundingClientRect();
-                const relativeClickX = e.clientX - elementRect.left;
-                const relativeClickY = e.clientY - elementRect.top;
-                const nearLeft = relativeClickX < BORDER_TOLERANCE;
-                const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
-                const nearTop = relativeClickY < BORDER_TOLERANCE;
-                const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
-
-                if (activeElement.classList.contains("report-label")) {
-                    if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                        isDragging = false;
-                        element.focus();
-                    }
-                } else if (activeElement.classList.contains("report-field")) {
-                    if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
-                        populateFieldSelectionPanel();
-                        fieldSelectionModal.style.display = "flex";
-                        isDragging = false;
-                    } else {
-                        fieldSelectionModal.style.display = "none";
-                    }
-                }
-            }
-
-            if (isDragging || isResizing || (activeElement.classList.contains("report-label") && !isDragging)) {
-                e.preventDefault();
-            }
-        } else {
-            activeElement = null;
-        }
-    };
-
-    reportCanvas.onpointermove = (e) => {
-        if (!activeElement) return;
-        if (isDragging) {
-            const dx = e.clientX - initialX;
-            const dy = e.clientY - initialY;
-            activeElement.style.left = `${initialLeft + dx}px`;
-            activeElement.style.top = `${initialTop + dy}px`;
-        } else if (isResizing) {
-            const dx = e.clientX - initialX;
-            const dy = e.clientY - initialY;
-            let newWidth = initialWidth;
-            let newHeight = initialHeight;
-            let newLeft = initialLeft;
-            let newTop = initialTop;
-
-            if (resizeHandle.classList.contains("bottom-right")) {
-                newWidth = Math.max(50, initialWidth + dx);
-                newHeight = Math.max(30, initialHeight + dy);
-            } else if (resizeHandle.classList.contains("bottom-left")) {
-                newWidth = Math.max(50, initialWidth - dx);
-                newHeight = Math.max(30, initialHeight + dy);
-                newLeft = initialLeft + dx;
-            } else if (resizeHandle.classList.contains("top-right")) {
-                newWidth = Math.max(50, initialWidth + dx);
-                newHeight = Math.max(30, initialHeight - dy);
-                newTop = initialTop + dy;
-            } else if (resizeHandle.classList.contains("top-left")) {
-                newWidth = Math.max(50, initialWidth - dx);
-                newHeight = Math.max(30, initialHeight - dy);
-                newLeft = initialLeft + dx;
-                newTop = initialTop + dy;
-            }
-
-            activeElement.style.width = `${newWidth}px`;
-            activeElement.style.height = `${newHeight}px`;
-            activeElement.style.left = `${newLeft}px`;
-            activeElement.style.top = `${newTop}px`;
-        }
-    };
-
-    reportCanvas.onpointerup = () => {
-        if (activeElement) {
-            activeElement.style.cursor = "grab";
-        }
-        isDragging = false;
-        isResizing = false;
-        resizeHandle = null;
-    };
-
-    reportCanvas.onpointerleave = () => {
-        isDragging = false;
-        isResizing = false;
-        if (activeElement) {
-            activeElement.style.cursor = "grab";
-        }
-    };
-
-    // --- Інші обробники 
-
-    // --- Виклики ---
+    //  обробники 
     initFieldPanelListeners(fieldPanelTableSelect, fieldPanelFieldSelect, "report-field");
-   
-    
-    
-
     // --- Налаштування тексту ---
     document.getElementById("fontFamilySelect").addEventListener("change", (e) => {
         if (activeElement && isTextElement(activeElement)) activeElement.style.fontFamily = e.target.value;
@@ -3705,68 +3367,8 @@ function populateFieldSelectionPanel() {
     }
 }
 
-    function addReportLabel() {
-        const reportCanvas = document.getElementById("reportCanvas");
-        const labelElement = document.createElement("div");
-        labelElement.className = "report-element report-label";
-        labelElement.style.left = "50px";
-        labelElement.style.top = "50px";
-        labelElement.style.width = "150px";
-        labelElement.style.height = "50px";
-        labelElement.contentEditable = "true";
-        labelElement.innerText = "Новий напис";
-
-        // Add resize handles (simplified)
-        labelElement.innerHTML += `
-            <div class="resize-handle top-left"></div>
-            <div class="resize-handle top-right"></div>
-            <div class="resize-handle bottom-left"></div>
-            <div class="resize-handle bottom-right"></div>
-        `;
-
-        reportCanvas.appendChild(labelElement);
-        Message("Елемент 'Напис' додано. Клацніть всередині нього (подалі від країв), щоб відредагувати текст, або перетягніть.");
-    }
-
-    function addReportField() {
-        const reportCanvas = document.getElementById("reportCanvas");
-        const fieldElement = document.createElement("div");
-        fieldElement.className = "report-element report-field";
-        fieldElement.style.left = "200px";
-        fieldElement.style.top = "100px";
-        fieldElement.style.width = "200px";
-        fieldElement.style.height = "60px";
-
-        // Create an inner div for text content to preserve resize handles
-        const fieldTextDiv = document.createElement("div");
-        fieldTextDiv.className = "field-text";
-        fieldTextDiv.innerText = "Поле даних";
-        fieldElement.appendChild(fieldTextDiv);
-
-        // Add resize handles
-        fieldElement.innerHTML += `
-            <div class="resize-handle top-left"></div>
-            <div class="resize-handle top-right"></div>
-            <div class="resize-handle bottom-left"></div>
-            <div class="resize-handle bottom-right"></div>
-        `;
-
-        reportCanvas.appendChild(fieldElement);
-        Message("Елемент 'Поле' додано. Клацніть всередині нього (подалі від країв), щоб обрати таблицю та поле.");
-    }
 
 
-    function addReportGrid() {
-        const reportCanvas = document.getElementById("reportCanvas");
-        if (isGridVisible) {
-            reportCanvas.classList.remove('grid-visible');
-            Message("Сітка прихована.");
-        } else {
-            reportCanvas.classList.add('grid-visible');
-            Message("Сітка відображена.");
-        }
-        isGridVisible = !isGridVisible; // Toggle the state
-    }
 
     function openTextOptions() {
         if (!activeElement || !isTextElement(activeElement)) {
@@ -4547,39 +4149,63 @@ async function importDTA(file) {
         getCurrentFormNames()
     );
 }
-
-
-    //
-
-
-    let currentFormRecordIndex = 0; // For form viewer navigation
-    let selectedFormName = null; // To keep track of the selected form in the saved forms dialog
-
-    // createForm function
-    function createForm() {
-        document.getElementById("formCreatorModal").style.display = "flex";
-        document.getElementById("formNameInput").value = "Нова_форма";
-        document.getElementById("formCanvas").innerHTML = "";
+/**
+ * Конструктор звітів та форм
+ **/
+function createConstructor() {
+        document.getElementById(constructorMode+"CreatorModal").style.display = "flex";
+        let newMode = "Нова_форма";
+        if (constructorMode==="report") newMode = "Новий_звіт";
+        document.getElementById(constructorMode+"NameInput").value = newMode;
+        screenCanvas = document.getElementById(constructorMode+"Canvas");
+        screenCanvas.innerHTML = "";
         document.getElementById("fieldSelectionModal").style.display = "none";        
-        document.getElementById("formCanvas").classList.remove('grid-visible');
+        document.getElementById(constructorMode+"Canvas").classList.remove('grid-visible');
         isGridVisible = false;
 
+}
+/**
+ * Конструктор звітів
+ **/
+function createReport() {
+        constructorMode = "report";
+        createConstructor();
+    }
+/**
+ * Редагування обраного звіту
+ **/
+function editSelectedReport() {
+        if (!selectedReportName) {
+            Message("Будь ласка, оберіть звіт для редагування.");
+            return;
+        }
+        document.getElementById("reportListModal").style.display = "none";
+        const report = database.reports.find(r => r.name === selectedReportName);
+        if (!report) {
+            Message("Звіт не знайдено.");
+            return;
+        }
+        constructorMode = "report";
+        screenCanvas = document.getElementById(constructorMode+"Canvas");
+        renderCanvas(report);
 
+        document.getElementById("reportCreatorModal").style.display = "flex";
+
+        Message(`Звіт "${report.name}" завантажено для редагування.`);
+}    
+/** **/
+let currentFormRecordIndex = 0; // For form viewer navigation
+let selectedFormName = null; // To keep track of the selected form in the saved forms dialog 
+let selectedFormField = null;   
+/**
+ * Конструктор форм
+ **/
+function createForm() {
+        constructorMode = "form";
+        createConstructor();
     }
 
-
-    function closeFormModal() {
-        document.getElementById("formCreatorModal").style.display = "none";
-        // Ensure the field selection panel is hidden when closing the modal
-        document.getElementById("fieldSelectionModal").style.display = "none";        
-        // Ensure grid is off when closing report creator
-        document.getElementById("formCanvas").classList.remove('grid-visible');
-        isGridVisible = false;
-
-    }
-    //*******************************************************************************
-
-    function saveForm() {
+function saveForm() {
         const formName = document.getElementById("formNameInput").value.trim();
         const formCanvas = document.getElementById("formCanvas");
 
@@ -4615,46 +4241,12 @@ async function importDTA(file) {
 
         saveDatabase();
         Message(`Форму "${formName}" збережено.`);
-    }
-//
-//
-    function deleteSelectedForm() {
-        if (!selectedFormName) {
-            Message("Будь ласка, виберіть форму для видалення.");
-            return;
-        }
-        const formIndex = database.forms.findIndex(q => q.name === selectedFormName);
-        if (formIndex !== -1) {
-            const deletedFormName = database.forms[formIndex].name;
-            database.forms.splice(formIndex, 1); // Remove 
-            saveDatabase(); // Save updated
-
-            const dataMenu = document.getElementById("data-menu");
-
-            Message(`Форму "${deletedFormName}" видалено.`);
-            showSavedFormsDialog(); // Refresh the list
-        } else {
-            Message("Вибрану форму  не знайдено.");
-        }
-    }
-    //
-
-// Додає виділення при кліку і показує маркери
-function initializeFormElement(element) {
-    element.addEventListener("click", (e) => {
-        e.stopPropagation();
-        document.querySelectorAll(".form-element.selected").forEach(el => {
-            el.classList.remove("selected");
-            el.querySelectorAll(".resize-handle").forEach(h => h.remove());
-        });
-
-        element.classList.add("selected");
-        addResizeHandles(element);
-    });
 }
 
-    //
-    function editSelectedForm() {
+/**
+ * Редагування обраної форми
+ **/
+function editSelectedForm() {
         if (!selectedFormName) {
             Message("Виберіть форму для редагування.");
             return;
@@ -4667,65 +4259,25 @@ function initializeFormElement(element) {
         }
 
         document.getElementById("savedFormsModal").style.display = "none";
+        constructorMode = "form";
+        screenCanvas = document.getElementById(constructorMode+"Canvas");
+        renderCanvas(form);
 
-        const formNameInput = document.getElementById("formNameInput");
-        const formCanvas = document.getElementById("formCanvas");
-        
-
-        formNameInput.value = form.name;
-        formCanvas.innerHTML = "";
-
-        form.elements.forEach(el => {
-            const div = document.createElement("div");
-            div.classList.add("form-element");
-            div.style.position = "absolute";
-            div.style.left = el.left + "px";
-            div.style.top = el.top + "px";
-            div.style.width = el.width + "px";
-            div.style.height = el.height + "px";
-            div.style.cursor = "grab";
-            div.style.boxSizing = "border-box";
-            div.style.fontFamily = el.fontFamily;
-            div.style.fontSize = el.fontSize;
-            div.style.fontWeight = el.fontWeight;
-            div.style.fontStyle = el.fontStyle;
-            div.style.textDecoration = el.textDecoration;
-            div.style.color = el.color;
-            console.log("el(edit)=", el)
-            if (el.type === "field") {
-                div.classList.add("form-field");
-                div.dataset.fieldName = el.fieldName;
-                div.dataset.tableName = el.tableName;
-                div.style.border = "1px dashed green";
-                div.style.backgroundColor = "rgba(144, 238, 144, 0.3)";
-
-                const fieldText = document.createElement("div");
-                fieldText.classList.add("field-text");
-                fieldText.innerText = `${el.tableName}.${el.fieldName}`;
-                div.appendChild(fieldText);
-            } else if (el.type === "label") {
-                div.classList.add("form-label");
-                div.contentEditable = "true";
-                div.innerText = el.text;
-                div.style.border = "1px dashed gray";
-                div.style.backgroundColor = "rgba(240,240,240,0.8)";
-            }
-
-            formCanvas.appendChild(div);
-            initializeFormElement(div); 
-        });
-
-        // Показати конструктор форми, якщо він прихований
         document.getElementById("formCreatorModal").style.display = "flex";
 
         Message(`Форма "${form.name}" завантажена для редагування.`);
-    }
+}
 
+function closeFormModal() {
+        document.getElementById("formCreatorModal").style.display = "none";
+        // Ensure the field selection panel is hidden when closing the modal
+        document.getElementById("fieldSelectionModal").style.display = "none";        
+        // Ensure grid is off when closing report creator
+        document.getElementById("formCanvas").classList.remove('grid-visible');
+        isGridVisible = false;
 
-    // Functions for managing saved forms (assuming showSavedFormsDialog, openSelectedFormForEdit, deleteSelectedForm are called from elsewhere, e.g., a menu)
-    function showSavedFormsDialog() {
-        // This modal and its elements are not in the provided index.html snippet.
-        // Assuming such a modal (e.g., id="savedFormsModal" with list id="savedFormsList") exists or will be handled externally.
+}
+function showSavedFormsDialog() {
         const listEl = document.getElementById("savedFormsList");
         if (!listEl) {
             console.error("Елемент #savedFormsList не знайдено. Переконайтеся, що modal для збережених форм існує.");
@@ -4754,7 +4306,7 @@ function initializeFormElement(element) {
         document.getElementById("savedFormsModal").style.display = "flex";
     }
 
-    function deleteSelectedFormElement() {
+function deleteSelectedFormElement() {
       if (!activeElement || !activeElement.classList.contains("form-element")) {
         Message("Виберіть елемент форми для видалення.");
         return;
@@ -4762,21 +4314,17 @@ function initializeFormElement(element) {
     
       activeElement.remove();
       activeElement = null;
-    }
-    
+ }    
 
-    function closeSavedFormsDialog() {
+function closeSavedFormsDialog() {
         const savedFormsModal = document.getElementById("savedFormsModal");
         if (savedFormsModal) {
             savedFormsModal.style.display = "none";
         }
         selectedFormName = null;
-    }
+}
 
-    //
-
-
-    function previewSelecteForm() {
+function previewSelecteForm() {
         if (!selectedFormName) {
             Message("Виберіть форму для перегляду.");
             return;
@@ -4790,15 +4338,10 @@ function initializeFormElement(element) {
 
         document.getElementById("savedFormsModal").style.display = "none";
         previewSavedForm(form);
-    }
+}
 
-
-    // Form Viewer
-    let currentViewedForm = null;
-    let currentFormDataTable = null;
-    let currentFormData = [];
-
-    function previewSavedForm(form) {
+// Form Viewer
+function previewSavedForm(form) {
         const previewModal = document.getElementById("formPreviewModal");
         const previewCanvas = document.getElementById("formPreviewCanvas");
 
@@ -4874,14 +4417,101 @@ function initializeFormElement(element) {
 
 
         previewModal.style.display = "flex";
+}
+function deleteSelectedForm() {
+        if (!selectedFormName) {
+            Message("Будь ласка, виберіть форму для видалення.");
+            return;
+        }
+        const formIndex = database.forms.findIndex(q => q.name === selectedFormName);
+        if (formIndex !== -1) {
+            const deletedFormName = database.forms[formIndex].name;
+            database.forms.splice(formIndex, 1); // Remove 
+            saveDatabase(); // Save updated
+
+            const dataMenu = document.getElementById("data-menu");
+
+            Message(`Форму "${deletedFormName}" видалено.`);
+            showSavedFormsDialog(); // Refresh the list
+        } else {
+            Message("Вибрану форму  не знайдено.");
+        }
+}
+//*******************************************************************************
+
+
+/**
+* Додає виділення при кліку і показує маркери
+**/
+function initializeCanvasElement(element) {
+    element.addEventListener("click", (e) => {
+        e.stopPropagation();
+        
+        document.querySelectorAll("."+constructorMode+"-element.selected").forEach(el => {
+            el.classList.remove("selected");
+            el.querySelectorAll(".resize-handle").forEach(h => h.remove());
+        });
+
+        element.classList.add("selected");
+        addResizeHandles(element);
+    });
+}
+/**
+ * Відтворення об'єктів збережених звіту/форми
+ **/
+function renderCanvas(stored) {
+        const cm = constructorMode;
+        const cNameInput = document.getElementById(cm+"NameInput");
+        const cCanvas = document.getElementById(cm+"Canvas"); 
+        cNameInput.value = stored.name;
+        cCanvas.innerHTML = "";
+
+        stored.elements.forEach(el => {
+            const div = document.createElement("div");
+            div.classList.add(cm+"-element");
+            div.style.position = "absolute";
+            div.style.left = el.left + "px";
+            div.style.top = el.top + "px";
+            div.style.width = el.width + "px";
+            div.style.height = el.height + "px";
+            div.style.cursor = "grab";
+            div.style.boxSizing = "border-box";
+            div.style.fontFamily = el.fontFamily;
+            div.style.fontSize = el.fontSize;
+            div.style.fontWeight = el.fontWeight;
+            div.style.fontStyle = el.fontStyle;
+            div.style.textDecoration = el.textDecoration;
+            div.style.color = el.color;
+            console.log("el(edit)=", el)
+            if (el.type === "field") {
+                div.classList.add(cm+"-field");
+                div.dataset.fieldName = el.fieldName;
+                div.dataset.tableName = el.tableName;
+                div.style.border = "1px dashed green";
+                div.style.backgroundColor = "rgba(144, 238, 144, 0.3)";
+
+                const fieldText = document.createElement("div");
+                fieldText.classList.add("field-text");
+                fieldText.innerText = `${el.tableName}.${el.fieldName}`;
+                div.appendChild(fieldText);
+            } else if (el.type === "label") {
+                div.classList.add(cm+"-label");
+                div.contentEditable = "true";
+                div.innerText = el.text;
+                div.style.border = "1px dashed gray";
+                div.style.backgroundColor = "rgba(240,240,240,0.8)";
+            }
+
+            cCanvas.appendChild(div);
+            initializeCanvasElement(div);
+            makeDraggableAndResizable(div); 
+        }); 
     }
 
-
-
-function addFormLabel() {
-    const formCanvas = document.getElementById("formCanvas");
+// Додаємо напис
+function addScreenLabel() {    
     const labelElement = document.createElement("div");
-    labelElement.className = "form-element form-label";
+    labelElement.className = constructorMode+"-element "+constructorMode+"-label";
     Object.assign(labelElement.style, {
         position: "absolute",
         left: "50px",
@@ -4897,24 +4527,15 @@ function addFormLabel() {
 
     labelElement.contentEditable = "true";
     labelElement.innerText = "Новий напис";
-
-    // Додаємо resize-маркери окремо
-    ["top-left", "top-right", "bottom-left", "bottom-right"].forEach(pos => {
-        const handle = document.createElement("div");
-        handle.className = `resize-handle ${pos}`;
-        labelElement.appendChild(handle);
-    });
-
-    formCanvas.appendChild(labelElement);
+    screenCanvas.appendChild(labelElement);
+    // Додаємо resize-маркери
+    addResizeHandles(labelElement);    
     makeDraggableAndResizable(labelElement);
 }
-
-let selectedFormField = null;
-
-function addFormField() {
-    const formCanvas = document.getElementById("formCanvas");
+// Додаємо поле
+function addScreenField() {   
     const fieldElement = document.createElement("div");
-    fieldElement.className = "form-element form-field";
+    fieldElement.className = constructorMode+"-element "+constructorMode+"-field";
     Object.assign(fieldElement.style, {
         position: "absolute",
         left: "200px",
@@ -4933,23 +4554,56 @@ function addFormField() {
     fieldText.innerText = "Поле";
     fieldElement.appendChild(fieldText);
 
-    // Додаємо resize-маркери окремо
-    ["top-left", "top-right", "bottom-left", "bottom-right"].forEach(pos => {
-        const handle = document.createElement("div");
-        handle.className = `resize-handle ${pos}`;
-        fieldElement.appendChild(handle);
-    });
+    // Додаємо resize-маркери
+    addResizeHandles(fieldElement);
 
     // Обробник вибору поля
     fieldElement.addEventListener("click", () => {
         selectedFormField = fieldElement;
     });
-
-    formCanvas.appendChild(fieldElement);
+    screenCanvas.appendChild(fieldElement);
     makeDraggableAndResizable(fieldElement);
 }
 
+let currentEditElement = null;
+function editLabel(el) {
+    currentEditElement = el;
+    const modal = document.getElementById("editLabelModal");
+    const input = document.getElementById("editInput");
 
+    input.value = el.innerText;
+    modal.style.display = "flex";
+
+    input.focus();
+}
+
+// Кнопка Ok
+function textOk() {
+    if (currentEditElement) {
+        currentEditElement.innerText = document.getElementById("editInput").value;
+    }
+        // Додаємо resize-маркери окремо
+    ["top-left", "top-right", "bottom-left", "bottom-right"].forEach(pos => {
+        const handle = document.createElement("div");
+        handle.className = `resize-handle ${pos}`;
+        currentEditElement.appendChild(handle);
+    });
+    document.getElementById("editLabelModal").style.display = "none";
+    currentEditElement = null;
+    dragging = false;
+   
+};
+
+// Кнопка Скасувати
+function textCancel() {
+    document.getElementById("editLabelModal").style.display = "none";
+    currentEditElement = null;
+    dragging = false;    
+};
+
+/**
+ * Зробити об'єкт перетягуваним, зі зміною розмірів та можливістю редагування вмісту
+ **/
 
 function makeDraggableAndResizable(el) {
     const parent = el.parentElement;
@@ -4958,19 +4612,42 @@ function makeDraggableAndResizable(el) {
     let offsetX, offsetY, dragging = false;
     el.addEventListener("mousedown", startDrag);
     el.addEventListener("touchstart", startDrag);
-
-    function startDrag(e) {
-        if (e.target.classList.contains("resize-handle")) return; // не чіпаємо resize
+    
+    function startDrag(e) {        
+        if (el.isContentEditable) {    
+            console.log('Click!!!')
+            if (!e.target.classList.contains("resize-handle")) {
+                const dXY = 5;
+                const curRect = el.getBoundingClientRect();
+                const curX = e.touches ? e.touches[0].clientX : e.clientX;
+                const curY = e.touches ? e.touches[0].clientY : e.clientY;
+                let inRect =((curX > curRect.left+dXY) && (curX < curRect.right-dXY) && (curY > curRect.top+dXY) && (curY < curRect.bottom-dXY))
+                if (inRect){
+                    console.log("EDIT")
+                    editLabel(el);
+                    stopDrag()
+                     dragging = false;
+                    }
+                return;
+            }
+        }
+    
+        // Якщо клік по resize-handle — перетягування заборонено
+        if (e.target.classList.contains("resize-handle")) return;
+    
+        // Інакше — запускаємо перетягування
         dragging = true;
         const rect = el.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         offsetX = clientX - rect.left;
         offsetY = clientY - rect.top;
+    
         document.addEventListener("mousemove", onDrag);
         document.addEventListener("mouseup", stopDrag);
         document.addEventListener("touchmove", onDrag);
         document.addEventListener("touchend", stopDrag);
+    
     }
 
     function onDrag(e) {
@@ -5047,22 +4724,20 @@ function makeDraggableAndResizable(el) {
         }
     });
 }
+   
 
 
-
-
-function addFormGrid() {
-        const formCanvas = document.getElementById("formCanvas");
-        if (formGridVisible) {
-            formCanvas.style.backgroundImage = "none";
+function addScreenGrid() {    
+    if (screenGridVisible) {
+            screenCanvas.style.backgroundImage = "none";
         } else {
-            formCanvas.style.backgroundImage =
+            screenCanvas.style.backgroundImage =
                 "repeating-linear-gradient(0deg, #ccc 0, #ccc 1px, transparent 1px, transparent 19px), " +
                 "repeating-linear-gradient(90deg, #ccc 0, #ccc 1px, transparent 1px, transparent 19px)";
-            formCanvas.style.backgroundSize = "20px 20px";
+            screenCanvas.style.backgroundSize = "20px 20px";
         }
-        formGridVisible = !formGridVisible;
-    }
+        screenGridVisible = !screenGridVisible;
+}    
 
 function previewForm() {
     const formName = document.getElementById("formNameInput").value.trim();
@@ -5362,27 +5037,42 @@ function saveFormChanges() {
     saveDatabase();
 }
 
-
+//
+function addResizeHandles(element) {
+    const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
+    positions.forEach(pos => {
+        const handle = document.createElement("div");
+        handle.classList.add("resize-handle", pos);
+        handle.style.cursor = {
+            "top-left": "nwse-resize",
+            "top-right": "nesw-resize",
+            "bottom-left": "nesw-resize",
+            "bottom-right": "nwse-resize"
+        }[pos];        
+        element.appendChild(handle);
+    });
+}
 
 //*******************************
-    document.addEventListener('DOMContentLoaded', () => {
-        const formCanvas = document.getElementById("formCanvas");
+document.addEventListener('DOMContentLoaded', () => {
+        const reportCanvas = document.getElementById("reportCanvas");
+        const formCanvas   = document.getElementById("formCanvas");
         const fieldSelectionModal = document.getElementById("fieldSelectionModal");
         const fieldPanelTableSelect1 = document.getElementById("fieldPanelTableSelect");
         const fieldPanelFieldSelect1 = document.getElementById("fieldPanelFieldSelect");
         initFieldPanelListeners(fieldPanelTableSelect1, fieldPanelFieldSelect1, "form-field");
+        
         formCanvas.addEventListener("mousedown", (e) => {
             const element = e.target.closest(".form-element");
             const handle = e.target.closest(".resize-handle");
 
-            document.querySelectorAll(".form-element.selected").forEach(el => el.classList.remove("selected"));
+            document.querySelectorAll(".form-element.selected").forEach(el => el.classList.remove("selected"));            
             fieldSelectionModal.style.display = "none";
             closeTextOptionsModal();
 
             if (element) {
                 activeElement = element;
-                activeElement.classList.add("selected");
-                //addResizeHandles(element); // 🔧 маркери розміру
+                activeElement.classList.add("selected");                
                 const rect = activeElement.getBoundingClientRect();
 
                 initialLeft = activeElement.offsetLeft;
@@ -5434,6 +5124,71 @@ function saveFormChanges() {
                 activeElement = null;
             }
         });
+        
+        reportCanvas.addEventListener("mousedown", (e) => {
+            const element = e.target.closest(".report-element");
+            const handle = e.target.closest(".resize-handle");
+
+            document.querySelectorAll(".report-element.selected").forEach(el => el.classList.remove("selected"));            
+            fieldSelectionModal.style.display = "none";
+            closeTextOptionsModal();
+
+            if (element) {
+                activeElement = element;
+                activeElement.classList.add("selected");
+                //addResizeHandles(element); // 🔧 маркери розміру
+                const rect = activeElement.getBoundingClientRect();
+
+                initialLeft = activeElement.offsetLeft;
+                initialTop = activeElement.offsetTop;
+                initialWidth = rect.width;
+                initialHeight = rect.height;
+                initialX = e.clientX;
+                initialY = e.clientY;
+
+                if (handle) {
+                    isResizing = true;
+                    resizeHandle = handle;
+                    element.style.cursor = handle.style.cursor;
+                } else {
+                    isDragging = true;
+                    element.style.cursor = "grabbing";
+
+                    const BORDER_TOLERANCE = 10;
+                    const elementRect = activeElement.getBoundingClientRect();
+                    const relativeClickX = e.clientX - elementRect.left;
+                    const relativeClickY = e.clientY - elementRect.top;
+
+                    const nearLeft = relativeClickX < BORDER_TOLERANCE;
+                    const nearRight = elementRect.width - relativeClickX < BORDER_TOLERANCE;
+                    const nearTop = relativeClickY < BORDER_TOLERANCE;
+                    const nearBottom = elementRect.height - relativeClickY < BORDER_TOLERANCE;
+
+                    if (activeElement.classList.contains("report-label")) {
+                        if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
+                            isDragging = false;
+                            element.focus();
+                        }
+                    } else if (activeElement.classList.contains("report-field")) {
+                        if (!nearLeft && !nearRight && !nearTop && !nearBottom) {
+                            fieldSelectionModal.style.display = "flex";
+                            populateFieldSelectionPanel();
+                            
+                            isDragging = false;
+                        } else {
+                            fieldSelectionModal.style.display = "none";
+                        }
+                    }
+                }
+
+                if (isDragging || isResizing || (activeElement.classList.contains("report-label") && !isDragging)) {
+                    e.preventDefault();
+                }
+            } else {
+                activeElement = null;
+            }
+        });
+
 
         formCanvas.addEventListener("mousemove", (e) => {
             if (!activeElement) return;
@@ -5480,14 +5235,66 @@ function saveFormChanges() {
             isResizing = false;
             resizeHandle = null;
         });
+        
+       reportCanvas.addEventListener("mousemove", (e) => {
+            if (!activeElement) return;
+            const dx = e.clientX - initialX;
+            const dy = e.clientY - initialY;
+
+            if (isDragging) {
+                activeElement.style.left = `${initialLeft + dx}px`;
+                activeElement.style.top = `${initialTop + dy}px`;
+            } else if (isResizing) {
+                let newWidth = initialWidth;
+                let newHeight = initialHeight;
+                let newLeft = initialLeft;
+                let newTop = initialTop;
+
+                if (resizeHandle.classList.contains("bottom-right")) {
+                    newWidth = Math.max(50, initialWidth + dx);
+                    newHeight = Math.max(30, initialHeight + dy);
+                } else if (resizeHandle.classList.contains("bottom-left")) {
+                    newWidth = Math.max(50, initialWidth - dx);
+                    newHeight = Math.max(30, initialHeight + dy);
+                    newLeft = initialLeft + dx;
+                } else if (resizeHandle.classList.contains("top-right")) {
+                    newWidth = Math.max(50, initialWidth + dx);
+                    newHeight = Math.max(30, initialHeight - dy);
+                    newTop = initialTop + dy;
+                } else if (resizeHandle.classList.contains("top-left")) {
+                    newWidth = Math.max(50, initialWidth - dx);
+                    newHeight = Math.max(30, initialHeight - dy);
+                    newLeft = initialLeft + dx;
+                    newTop = initialTop + dy;
+                }
+
+                activeElement.style.width = `${newWidth}px`;
+                activeElement.style.height = `${newHeight}px`;
+                activeElement.style.left = `${newLeft}px`;
+                activeElement.style.top = `${newTop}px`;
+            }
+        });
+
+        reportCanvas.addEventListener("mouseup", () => {
+            if (activeElement) activeElement.style.cursor = "grab";
+            isDragging = false;
+            isResizing = false;
+            resizeHandle = null;
+        });
 
     });
     
 
     document.addEventListener("click", (e) => {
-        const el = e.target.closest(".form-element");
+        let el = e.target.closest(".report-element");
         if (el) {
             activeElement = el;
+            return;
+        }
+        el = e.target.closest(".form-element");
+        if (el) {
+            activeElement = el;
+            return;
         }
     });
 
@@ -6007,20 +5814,7 @@ function showDatabaseInfo() {
         previewReport(report); // функція вже реалізована для перегляду
     }
 
-    function editSelectedReport() {
-        if (!selectedReportName) {
-            Message("Будь ласка, оберіть звіт для редагування.");
-            return;
-        }
-        document.getElementById("reportListModal").style.display = "none";
-        const report = database.reports.find(r => r.name === selectedReportName);
-        if (!report) {
-            Message("Звіт не знайдено.");
-            return;
-        }
 
-        createReport(report); // відкриває звіт у режимі редагування
-    }
 
     function deleteActiveElement() {
         if (!activeElement) {
