@@ -2991,7 +2991,7 @@ function populateQueryModal(queryDefinition) {
 
             // Also remove any corresponding query results from `queries.results` and from the `data-menu`
             const menuDisplayName = `*запит "${deletedQueryName}"`; // Construct the display name for the result
-            const resultIndex = queries.results.findIndex(r => r.name === `запит "${deletedQuery_name}"`); // Find the result by its internal name
+            const resultIndex = queries.results.findIndex(r => r.name === `запит "${deletedQueryname}"`); // Find the result by its internal name
             if (resultIndex !== -1) {
                 queries.results.splice(resultIndex, 1); // Remove from results
             }
