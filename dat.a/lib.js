@@ -4613,42 +4613,45 @@ function makeDraggableAndResizable(el) {
     el.addEventListener("mousedown", startDrag);
     el.addEventListener("touchstart", startDrag);
     
-    function startDrag(e) {        
-          
-            console.log('Click!!!')
-            if (!e.target.classList.contains("resize-handle")) {
-                const dXY = 5;
-                const curRect = el.getBoundingClientRect();
-                const curX = e.touches ? e.touches[0].clientX : e.clientX;
-                const curY = e.touches ? e.touches[0].clientY : e.clientY;
-                let inRect =((curX > curRect.left+dXY) && (curX < curRect.right-dXY) && (curY > curRect.top+dXY) && (curY < curRect.bottom-dXY))
-                if (inRect){
-                    console.log("EDIT")
-                    editLabel(el);
-                    stopDrag()
-                     dragging = false;
-                    }
-                return;
-            }
-        
+    function startDrag(e) {
+        console.log('Click!!!');
     
         // Якщо клік по resize-handle — перетягування заборонено
         if (e.target.classList.contains("resize-handle")) return;
     
-        // Інакше — запускаємо перетягування
-        dragging = true;
-        const rect = el.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = el.getBoundingClientRect();
+    
+        // Перевіряємо, чи елемент це "Напис" (report-label або form-label)
+        if (el.classList.contains("report-label") || el.classList.contains("form-label")) {
+            const dXY = 10; // відступи від краю
+            const inRect = (
+                clientX > rect.left + dXY &&
+                clientX < rect.right - dXY &&
+                clientY > rect.top + dXY &&
+                clientY < rect.bottom - dXY
+            );
+            if (inRect) {
+                console.log("EDIT");
+                editLabel(el);
+                stopDrag();
+                dragging = false;
+                return;
+            }
+        }
+    
+        // --- Якщо не "редагування", запускаємо перетягування ---
+        dragging = true;
         offsetX = clientX - rect.left;
         offsetY = clientY - rect.top;
     
         document.addEventListener("mousemove", onDrag);
         document.addEventListener("mouseup", stopDrag);
-        document.addEventListener("touchmove", onDrag);
+        document.addEventListener("touchmove", onDrag, { passive: false });
         document.addEventListener("touchend", stopDrag);
-    
     }
+    
 
     function onDrag(e) {
         if (!dragging) return;
