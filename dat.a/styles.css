@@ -183,6 +183,8 @@
       padding: 5px;
       box-sizing: border-box;      
       cursor: grab;
+      touch-action: none;   /* вимикає нативний скрол під час жестів */
+      user-select: none;    /* щоб не виділявся текст */
     }
 
     /* Активний елемент — суцільна синя рамка */
@@ -318,6 +320,8 @@
       padding: 5px;
       box-sizing: border-box;
       cursor: grab;
+      touch-action: none;   /* вимикає нативний скрол під час жестів */
+      user-select: none;    /* щоб не виділявся текст */
     }
 
     .form-element.selected {
