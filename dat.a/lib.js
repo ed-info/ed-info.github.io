@@ -2487,7 +2487,10 @@ function generateSqlQuery() {
 
         // --- GROUP BY ---
         if (groupName) {
-            groupByFields.push(`"${tableName}"."${groupName}"`);
+            const expr = `"${tableName}"."${groupName}"`;
+            if (!groupByFields.includes(expr)) {
+                groupByFields.push(expr);
+            }
         }
 
         // --- WHERE ---
@@ -2574,6 +2577,7 @@ function generateSqlQuery() {
     document.getElementById("generatedSql").innerText = sql;
     document.getElementById("sqlModal").style.display = "flex";
 }
+
 
 
 
