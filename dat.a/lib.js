@@ -2249,8 +2249,7 @@ function addQueryRow() {
         </td>
         <td>
             <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
-                <option value="select">----</option>
-                <option title="ГРУПА" value="group">GROUP</option>
+                <option value="select">----</option>               
                 <option title="КІЛЬКІСТЬ" value="count">COUNT</option>
                 <option title="СУМА" value="sum">SUM</option>
                 <option title="СЕРЕДНЄ" value="avg">AVG</option>
@@ -2259,6 +2258,7 @@ function addQueryRow() {
             </select>
             <input type="text" class="query-alias-input" placeholder="псевдонім" style="margin-top:4px; display:none; width:100%;height:1.5em;">
         </td>
+        <td><select class="group-field-select"></select></td>
         <td><button onclick="deleteQueryRow(this)">❌</button></td>
     `;
 
@@ -2333,8 +2333,9 @@ function populateTableDropdownsForRow(row) {
 function populateFieldDropdown(tableSelect) {
     const row = tableSelect.closest("tr");
     const fieldSelect = row.querySelector(".query-field-select");
+    const groupSelect = row.querySelector(".group-field-select");
     fieldSelect.innerHTML = "";
-
+    groupSelect.innerHTML = "";
     const selectedTableName = tableSelect.value;
     if (!selectedTableName) {
         fieldSelect.disabled = true;
@@ -2345,6 +2346,7 @@ function populateFieldDropdown(tableSelect) {
     if (!selectedTable) return;
 
     fieldSelect.disabled = false;
+    groupSelect.disabled = false;
 
     // Додати опцію "* (всі поля)" на початок
     const starOption = document.createElement("option");
@@ -2357,7 +2359,18 @@ function populateFieldDropdown(tableSelect) {
         const option = document.createElement("option");
         option.value = field.title;
         option.textContent = field.title;
-        fieldSelect.appendChild(option);
+        fieldSelect.appendChild(option);        
+    });
+    const startOption = document.createElement("option");
+    startOption.value = "";
+    startOption.textContent = "----";
+    groupSelect.appendChild(startOption);
+        // Додати реальні поля таблиці
+    selectedTable.schema.forEach(field => {
+        const option = document.createElement("option");
+        option.value = field.title;
+        option.textContent = field.title;        
+        groupSelect.appendChild(option);
     });
 }
 
@@ -2399,185 +2412,124 @@ function generateSqlQuery() {
     let hasSelect = false;
     let hasAggregate = false;
     let aggregateAliasCounter = 0;
-    
-    // --- helpers for criteria formatting ---
+
+    // --- helpers ---
     const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`;
-    
     const parseList = (raw) => {
-      if (!raw) return [];
-      let s = raw.trim();
-      if (s.startsWith("(") && s.endsWith(")")) s = s.slice(1, -1);
-      return s.split(",").map(v => v.trim()).filter(v => v.length);
+        if (!raw) return [];
+        let s = raw.trim();
+        if (s.startsWith("(") && s.endsWith(")")) s = s.slice(1, -1);
+        return s.split(",").map(v => v.trim()).filter(v => v.length);
     };
-    
     const isNumericLiteral = (v) => /^-?\d+(?:\.\d+)?$/.test(String(v).trim());
-    
     const toIsoDate = (v) => {
-      const s = String(v).trim();
-      // yyyy-mm-dd
-      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-      // dd.mm.yyyy або dd-mm-yyyy або dd/mm/yyyy
-      m = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
-      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-      return s; // як є, якщо формат інший
+        const s = String(v).trim();
+        let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+        m = s.match(/^(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})$/);
+        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+        return s;
     };
-    
     const formatLiteral = (v, fieldType) => {
-      const raw = String(v).trim().replace(/^'(.*)'$/, "$1"); // зняти зайві одинарні лапки навколо елемента
-      if (fieldType === "Дата") return sqlQuote(toIsoDate(raw));
-      if (fieldType === "Так/Ні") {
-        const L = raw.toLowerCase();
-        if (["так","true","1"].includes(L)) return "1";
-        if (["ні","false","0"].includes(L)) return "0";
+        const raw = String(v).trim().replace(/^'(.*)'$/, "$1");
+        if (fieldType === "Дата") return sqlQuote(toIsoDate(raw));
+        if (fieldType === "Так/Ні") {
+            const L = raw.toLowerCase();
+            if (["так","true","1"].includes(L)) return "1";
+            if (["ні","false","0"].includes(L)) return "0";
+            return isNumericLiteral(raw) ? raw : sqlQuote(raw);
+        }
         return isNumericLiteral(raw) ? raw : sqlQuote(raw);
-      }
-      return isNumericLiteral(raw) ? raw : sqlQuote(raw);
     };
-    
 
     rows.forEach(row => {
-        const tableSelect = row.querySelector(".query-table-select");
-        const fieldSelect = row.querySelector(".query-field-select");
-        const visibleCheckbox = row.querySelector(".query-visible-checkbox");
-        const sortSelect = row.querySelector(".query-sort-select");
-        const operatorSelect = row.querySelector(".query-operator-select");
-        const criteriaInput = row.querySelector(".query-criteria-input");
-        const roleSelect = row.querySelector(".query-field-role");
-
-        const tableName = tableSelect.value;
-        const fieldName = fieldSelect ? fieldSelect.value : "";
-        const isVisible = visibleCheckbox.checked;
-        const sortBy = sortSelect.value;
-        const operator = operatorSelect.value.trim();
-        const criteria = criteriaInput.value.trim();
-        const fieldRole = roleSelect.value;
+        const tableName = row.querySelector(".query-table-select").value;
+        const fieldName = row.querySelector(".query-field-select")?.value || "";
+        const groupName = row.querySelector(".group-field-select")?.value || "";
+        const isVisible = row.querySelector(".query-visible-checkbox").checked;
+        const sortBy = row.querySelector(".query-sort-select").value;
+        const operator = row.querySelector(".query-operator-select").value.trim();
+        const criteria = row.querySelector(".query-criteria-input").value.trim();
+        const fieldRole = row.querySelector(".query-field-role").value;
+        let alias = row.querySelector(".query-alias-input").value.trim();
 
         if (!tableName || (!fieldName && fieldName !== "*")) return;
-
         if (!baseTable && tableName !== "*") baseTable = tableName;
 
+        let fieldExpr = fieldName === "*"
+            ? `"${tableName}".*`
+            : `"${tableName}"."${fieldName}"`;
+
+        // --- SELECT ---
         let selectExpr = "";
-        const aliasInput = row.querySelector(".query-alias-input");
-        let alias = aliasInput.value.trim();
-        
-        // Якщо alias порожній — згенеруємо
-        if (!alias && fieldRole !== "select") {
-            switch (fieldRole) {
-                case "count": alias = `count_${aggregateAliasCounter++}`; break;
-                case "sum":   alias = `sum_${aggregateAliasCounter++}`;   break;
-                case "avg":   alias = `avg_${aggregateAliasCounter++}`;   break;
-                case "min":   alias = `min_${aggregateAliasCounter++}`;   break;
-                case "max":   alias = `max_${aggregateAliasCounter++}`;   break;
-            }
-        }
-        let fieldExpr;
         if (fieldName === "*") {
-            selectExpr = `"${tableName}".*`;
+            selectExpr = fieldExpr;
             hasSelect = true;
         } else {
-            fieldExpr = `"${tableName}"."${fieldName}"`;
             switch (fieldRole) {
-                case "select":
-                    selectExpr = fieldExpr;
-                    hasSelect = true;
-                    break;
-                case "group":
-                    selectExpr = alias ? `${fieldExpr} AS ${alias}` : fieldExpr;
-                    groupByFields.push(fieldExpr);
-                    break;
                 case "count":
-                    selectExpr = `COUNT(${fieldExpr}) AS ${alias}`;
-                    hasAggregate = true;
-                    break;
                 case "sum":
-                    selectExpr = `SUM(${fieldExpr}) AS ${alias}`;
-                    hasAggregate = true;
-                    break;
                 case "avg":
-                    selectExpr = `AVG(${fieldExpr}) AS ${alias}`;
-                    hasAggregate = true;
-                    break;
                 case "min":
-                    selectExpr = `MIN(${fieldExpr}) AS ${alias}`;
-                    hasAggregate = true;
-                    break;
                 case "max":
-                    selectExpr = `MAX(${fieldExpr}) AS ${alias}`;
+                    if (!alias) alias = `${fieldRole}_${aggregateAliasCounter++}`;
+                    selectExpr = `${fieldRole.toUpperCase()}(${fieldExpr}) AS ${alias}`;
                     hasAggregate = true;
                     break;
+                case "select":
                 default:
-                    selectExpr = fieldExpr;
+                    selectExpr = alias ? `${fieldExpr} AS ${alias}` : fieldExpr;
                     hasSelect = true;
                     break;
             }
         }
-        
-
         if (isVisible && selectExpr) selectFields.push(selectExpr);
 
-        // WHERE умови для конкретних полів (не для *)
+        // --- GROUP BY ---
+        if (groupName) {
+            groupByFields.push(`"${tableName}"."${groupName}"`);
+        }
+
+        // --- WHERE ---
         if (fieldName !== "*" && operator) {
             const fieldType = getFieldType(tableName, fieldName);
-            const op = operator.toUpperCase().trim();
-        
+            const op = operator.toUpperCase();
             if (op === "IS NULL" || op === "IS NOT NULL") {
-                // ці оператори не потребують значення
                 whereClauses.push(`${fieldExpr} ${op}`);
             } else if (op === "IN" || op === "NOT IN") {
-                // підтримка: "a,b,c" або "(a,b,c)" (числа/дати/рядки)
                 const items = parseList(criteria);
                 const values = items.map(v => formatLiteral(v, fieldType));
-                if (values.length) {
-                    whereClauses.push(`${fieldExpr} ${op} (${values.join(", ")})`);
-                }
-            } else if (op === "BETWEEN" || op === "NOT BETWEEN") {
-                // Очікуємо критерій у вигляді "20000 AND 30000"
+                if (values.length) whereClauses.push(`${fieldExpr} ${op} (${values.join(", ")})`);
+            } else if (op.includes("BETWEEN")) {
                 const parts = criteria.split(/\s+AND\s+/i);
                 if (parts.length === 2) {
                     const left = formatLiteral(parts[0], fieldType);
                     const right = formatLiteral(parts[1], fieldType);
                     whereClauses.push(`${fieldExpr} ${op} ${left} AND ${right}`);
-                }            
-            } else if (criteria) {
-                // звичайні порівняння (=, <>, >, <, >=, <=, LIKE, тощо) + одиночне значення
-                let right;
-                if (isParameterPlaceholder(criteria)) {
-                    // якщо це параметр [Введіть ...], не чіпаємо
-                    right = criteria;
-                } else if (fieldType === "Дата") {
-                    right = sqlQuote(toIsoDate(criteria));
-                } else if (fieldType === "Так/Ні") {
-                    const L = criteria.toLowerCase().trim();
-                    if (["так","true","1"].includes(L)) right = "1";
-                    else if (["ні","false","0"].includes(L)) right = "0";
-                    else right = isNumericLiteral(criteria) ? criteria : sqlQuote(criteria);
-                } else {
-                    right = isNumericLiteral(criteria) ? criteria : sqlQuote(criteria);
                 }
+            } else if (criteria) {
+                let right = isParameterPlaceholder(criteria)
+                    ? criteria
+                    : formatLiteral(criteria, fieldType);
                 whereClauses.push(`${fieldExpr} ${op} ${right}`);
             }
         }
-        
 
+        // --- ORDER BY ---
         if (sortBy) {
             if (alias) orderByClauses.push(`${alias} ${sortBy}`);
             else if (fieldName !== "*") orderByClauses.push(`${fieldExpr} ${sortBy}`);
         }
 
+        // --- save config row ---
         queryConfig.push({
-            tableName,
-            fieldName,
-            isVisible,
-            sortBy,
-            operator,
-            criteria,
-            fieldRole,
-            alias
+            tableName, fieldName, isVisible,
+            sortBy, operator, criteria,
+            fieldRole, alias, groupName
         });
     });
 
-    // JOIN-зв’язки
+    // --- JOIN ---
     const joinRows = document.querySelectorAll("#joinBody tbody tr");
     joinRows.forEach(row => {
         const tableA = row.querySelector(".join-table-a").value;
@@ -2597,7 +2549,6 @@ function generateSqlQuery() {
         Message("Будь ласка, оберіть хоча б одне видиме поле для запиту.");
         return;
     }
-
     if (!baseTable) {
         if (joins.length > 0) baseTable = joins[0].table;
         else {
@@ -2606,23 +2557,14 @@ function generateSqlQuery() {
         }
     }
 
-    // Побудова SQL
+    // --- SQL ---
     let sql = `SELECT ${selectFields.join(", ")}\nFROM "${baseTable}"`;
     joins.forEach(join => sql += `\nJOIN "${join.table}" ON ${join.condition}`);
     if (whereClauses.length) sql += `\nWHERE ${whereClauses.join(" AND ")}`;
     if (groupByFields.length) sql += `\nGROUP BY ${groupByFields.join(", ")}`;
-    else if (hasSelect && hasAggregate) {
-        // Якщо є агрегати і звичайні поля без групування
-        const groupByFromSelects = selectFields
-            .filter(f => !f.match(/^(COUNT|SUM|AVG|MIN|MAX)\(/i) && !f.includes(".*"))
-            .map(f => {
-                const aliasMatch = f.match(/ AS (.+)$/i);
-                return aliasMatch ? aliasMatch[1] : f;
-            });
-        if (groupByFromSelects.length) sql += `\nGROUP BY ${groupByFromSelects.join(", ")}`;
-    }
     if (orderByClauses.length) sql += `\nORDER BY ${orderByClauses.join(", ")}`;
 
+    // --- save query ---
     const queryDefinition = { name: queryName, config: queryConfig, joins, sql };
     const existingQueryIndex = queries.definitions.findIndex(q => q.name === queryName);
     if (existingQueryIndex !== -1) queries.definitions[existingQueryIndex] = queryDefinition;
@@ -2632,6 +2574,7 @@ function generateSqlQuery() {
     document.getElementById("generatedSql").innerText = sql;
     document.getElementById("sqlModal").style.display = "flex";
 }
+
 
 
 
@@ -2931,8 +2874,7 @@ function populateQueryModal(queryDefinition) {
             </td>
             <td>
                 <select class="query-field-role" title="Тип участі у запиті" onchange="toggleAliasInput(this)">
-                    <option value="select">----</option>
-                    <option title="ГРУПА" value="group">GROUP</option>
+                    <option value="select">----</option>                    
                     <option title="КІЛЬКІСТЬ" value="count">COUNT</option>
                     <option title="СУМА" value="sum">SUM</option>
                     <option title="СЕРЕДНЄ" value="avg">AVG</option>
@@ -2941,6 +2883,7 @@ function populateQueryModal(queryDefinition) {
                 </select>
                 <input type="text" class="query-alias-input" placeholder="Псевдонім" style="margin-top:4px; display:none; width:100%;">
             </td>
+            <td><select class="group-field-select"></select></td>
             <td><button onclick="deleteQueryRow(this)">❌</button></td>
         `;
         queryBody.appendChild(row);
@@ -2950,6 +2893,7 @@ function populateQueryModal(queryDefinition) {
         row.querySelector(".query-table-select").value = item.tableName;
         populateFieldDropdown(row.querySelector(".query-table-select"));
         row.querySelector(".query-field-select").value = item.fieldName;
+        row.querySelector(".group-field-select").value = item.groupName;
         row.querySelector(".query-visible-checkbox").checked = item.isVisible;
         row.querySelector(".query-sort-select").value = item.sortBy;
 
