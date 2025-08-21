@@ -4409,7 +4409,7 @@ function previewSavedForm(form) {
                 label.style.background = "transparent";
                 label.style.overflow = "hidden";
                 label.style.whiteSpace = "nowrap";
-                label.contentEditable = "true";
+                label.contentEditable = "false";
 
                 previewCanvas.appendChild(label);
             }
@@ -4496,7 +4496,7 @@ function renderCanvas(stored) {
                 div.appendChild(fieldText);
             } else if (el.type === "label") {
                 div.classList.add(cm+"-label");
-                div.contentEditable = "true";
+                div.contentEditable = "false";
                 div.innerText = el.text;
                 div.style.border = "1px dashed gray";
                 div.style.backgroundColor = "rgba(240,240,240,0.8)";
@@ -4525,7 +4525,7 @@ function addScreenLabel() {
         boxSizing: "border-box"
     });
 
-    labelElement.contentEditable = "true";
+    labelElement.contentEditable = "false";
     labelElement.innerText = "Новий напис";
     screenCanvas.appendChild(labelElement);
     // Додаємо resize-маркери
@@ -4614,7 +4614,7 @@ function makeDraggableAndResizable(el) {
     el.addEventListener("touchstart", startDrag);
     
     function startDrag(e) {        
-        if (el.isContentEditable) {    
+          
             console.log('Click!!!')
             if (!e.target.classList.contains("resize-handle")) {
                 const dXY = 5;
@@ -4630,7 +4630,7 @@ function makeDraggableAndResizable(el) {
                     }
                 return;
             }
-        }
+        
     
         // Якщо клік по resize-handle — перетягування заборонено
         if (e.target.classList.contains("resize-handle")) return;
