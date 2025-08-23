@@ -35,6 +35,7 @@
     let constructorMode = null;
     let screenGridVisible = false; 
     let screenCanvas = null; 
+    let isCreatingNewRecord = false;
     
     closeAllModals();
     
@@ -504,6 +505,7 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
         }
 
         select.disabled = !!isReadOnly;
+        
         container.appendChild(select);
         createdEl = select;
 
@@ -1566,48 +1568,73 @@ function handlePrimaryKey(checkbox) {
 **/
 function handleForeignKey(checkbox) {
     const tbody = document.getElementById("schemaBody");
-    const rows = tbody.querySelectorAll("tr");
+    if (!tbody) return;
 
-    const anyChecked = Array.from(rows).some(row => {
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    // Перевіряємо, чи заголовки FK вже видимі (до змін DOM)
+    const refTableHeader = document.getElementById("refTableHeader");
+    const headersVisible = !!refTableHeader && window.getComputedStyle(refTableHeader).display !== "none";
+
+    // Чи є хоча б один увімкнений checkbox у всіх рядках
+    const anyChecked = rows.some(row => {
         const cb = row.cells[3]?.querySelector('input[type="checkbox"]');
-        return cb?.checked;
+        return !!cb?.checked;
     });
 
     rows.forEach(row => {
         const cells = row.cells;
-        const hasForeignKeyColumns = cells.length > 6; // якщо > 6 — значить є стовпчики ЗК
+        const hasForeignKeyColumns = cells.length > 6; // якщо >6 — значить є стовпчики ЗК
 
         if (anyChecked && !hasForeignKeyColumns) {
-            // Додаємо стовпчики ЗК перед останніми двома (коментар + кнопка)
+            // Додаємо стовпчики FK перед останніми двома (коментар + кнопка)
             const commentCell = cells[cells.length - 2];
-            const deleteCell = cells[cells.length - 1];
 
-            const tableSelect = document.createElement("td");
-            const fieldSelect = document.createElement("td");
-            const substCheck = document.createElement("td");
+            const tableTd = document.createElement("td");
+            const fieldTd = document.createElement("td");
+            const substTd = document.createElement("td");
 
-            const tableOptions = tableList.map(t => `<option value="${t}">${t}</option>`).join("");
+            const tableOptions = tableList
+                .map(t => `<option value="${t}">${t}</option>`)
+                .join("");
 
-            tableSelect.innerHTML = `
+            tableTd.innerHTML = `
                 <select onchange="updateFieldOptions(this)">
                     <option value="">(таблиця)</option>
                     ${tableOptions}
                 </select>`;
-            fieldSelect.innerHTML = `<select><option value="">(поле)</option></select>`;
+            fieldTd.innerHTML = `<select><option value="">(поле)</option></select>`;
+            substTd.innerHTML = `<input type="checkbox">`;
 
-            row.insertBefore(tableSelect, commentCell);
-            row.insertBefore(fieldSelect, commentCell);
-            substCheck.innerHTML = `<input type="checkbox">`;
-            row.insertBefore(substCheck, commentCell);
-
+            row.insertBefore(tableTd, commentCell);
+            row.insertBefore(fieldTd, commentCell);
+            row.insertBefore(substTd, commentCell);
 
         } else if (!anyChecked && hasForeignKeyColumns) {
-            // Видаляємо останні два стовпчики перед коментарем
-            row.deleteCell(cells.length - 3); // підстановка
-            row.deleteCell(cells.length - 3); // поле ЗК
-            row.deleteCell(cells.length - 3); // таблиця ЗК
+            // Видаляємо три комірки (підстановка, поле, таблиця) перед коментарем
+            const commentIndex = cells.length - 2;
+            // Видаляємо завжди з індексу commentIndex-1 тричі — після кожного deleteCell
+            row.deleteCell(commentIndex - 1); // підстановка
+            row.deleteCell(commentIndex - 1); // поле ЗК
+            row.deleteCell(commentIndex - 1); // таблиця ЗК
         }
     });
+
+    // якщо заголовки вже були видимі і користувач увімкнув чекбокс у конкретному рядку,
+    // то у цьому рядку знімаємо disabled з select-ів (таблиця + поле)
+    const currentRow = checkbox.closest("tr");
+    if (headersVisible && checkbox.checked && currentRow) {
+        // шукаємо перший і другий select в цьому рядку — вони мають бути tableSelect і fieldSelect
+        const selects = currentRow.querySelectorAll("select");
+        if (selects.length >= 1) {
+            selects.forEach(sel => {
+                sel.disabled = false;
+                sel.removeAttribute("disabled");
+            });
+        }
+    }
+    
+    console.log("handleForeignKey: toggled row =", checkbox.closest("tr"), "headersVisible=", headersVisible, "anyChecked=", anyChecked);
 
     toggleForeignKeyHeaders();
 }
@@ -4436,7 +4463,7 @@ function renderCanvas(stored) {
             div.style.fontStyle = el.fontStyle;
             div.style.textDecoration = el.textDecoration;
             div.style.color = el.color;
-            console.log("el(edit)=", el)
+            
             if (el.type === "field") {
                 div.classList.add(cm+"-field");
                 div.dataset.fieldName = el.fieldName;
@@ -4696,14 +4723,34 @@ function addScreenGrid() {
         screenGridVisible = !screenGridVisible;
 }    
 
-function previewForm() {
+function previewForm(resetIndex = false) {
     const formName = document.getElementById("formNameInput").value.trim();
     const previewModal = document.getElementById("formPreviewModal");
     const previewCanvas = document.getElementById("formPreviewCanvas");
 
+    // обмежуємо індекс тільки по таблицях, які є у формі
+    const formTables = [...document.querySelectorAll("#formCanvas .form-field")]
+        .map(el => el.dataset.tableName)
+        .filter(Boolean);
+    const maxRecordIndex = formTables.length > 0
+        ? Math.max(...formTables.map(name => {
+            const t = database.tables.find(tbl => tbl.name === name);
+            return t ? t.data.length : 0;
+        })) - 1
+        : 0;
+
+    if (resetIndex) {
+        currentFormRecordIndex = 0; // тільки при першому відкритті
+    }
+
+    // обмежуємо currentFormRecordIndex
+    currentFormRecordIndex = Math.min(currentFormRecordIndex, maxRecordIndex);
+
     previewCanvas.innerHTML = "";
+
+    const isLastRecord = currentFormRecordIndex === maxRecordIndex;
     document.getElementById("formPreviewTitle").innerText =
-        `${formName} — запис #${currentFormRecordIndex + 1}`;
+        `${formName} — запис #${currentFormRecordIndex + 1}${isLastRecord ? " (останній запис)" : ""}`;
 
     const elements = [...document.querySelectorAll("#formCanvas .form-label, #formCanvas .form-field")];
 
@@ -4714,7 +4761,7 @@ function previewForm() {
             const table = database.tables.find(t => t.name === tableName);
 
             const fieldContainer = document.createElement("div");
-            fieldContainer.className = "form-field"; // важливо лишити клас
+            fieldContainer.className = "form-field";
             fieldContainer.style.position = "absolute";
             fieldContainer.style.left = el.style.left;
             fieldContainer.style.top = el.style.top;
@@ -4734,7 +4781,6 @@ function previewForm() {
             fieldContainer.style.whiteSpace = "nowrap";
             fieldContainer.style.background = "#ccc";
 
-            // збережемо зв'язки на контейнері
             fieldContainer.dataset.tableName = tableName || "";
             fieldContainer.dataset.fieldName = fieldName || "";
 
@@ -4746,32 +4792,28 @@ function previewForm() {
                 cellValue = "Таблиця не знайдена";
             } else if (table.data.length === 0) {
                 cellValue = "Таблиця порожня";
-            } else if (currentFormRecordIndex >= table.data.length) {
-                cellValue = "Запис відсутній";
             } else {
                 colIndex = table.schema.findIndex(c => c.title === fieldName);
                 if (colIndex !== -1) {
                     colSchema = table.schema[colIndex];
-                    const record = table.data[currentFormRecordIndex];
+                    const record = table.data[Math.min(currentFormRecordIndex, table.data.length - 1)];
                     cellValue = record?.[colIndex] ?? "";
                     fieldContainer.dataset.colIndex = String(colIndex);
                 } else {
                     cellValue = "Поле не знайдено";
                 }
             }
-            
 
             if (colSchema) {
                 const control = advDataInput(
                     fieldContainer,
                     cellValue,
                     colSchema,
-                    table.data[currentFormRecordIndex],
+                    table.data[Math.min(currentFormRecordIndex, table.data.length - 1)],
                     colIndex,
-                    false // у прев’ю дозволяємо редагування
+                    false
                 );
 
-                // дублюємо dataset і на control (на випадок пошуку саме по control)
                 if (control) {
                     control.dataset.tableName = fieldContainer.dataset.tableName;
                     control.dataset.fieldName = fieldContainer.dataset.fieldName;
@@ -4809,6 +4851,7 @@ function previewForm() {
 
     previewModal.style.display = "flex";
 }
+
 
 function saveFormChanges() {
     const fields = [...document.querySelectorAll("#formPreviewCanvas .form-field")];
@@ -4860,30 +4903,35 @@ function saveFormChanges() {
         } else {
             value = control.value;
         }
-
+        console.log("value 0=",value)
         const t = normType(colSchema.type);
+        console.log("normType=",t)
         if (t === "ціле число" || t === "integer") {
-            value = hasValue(value) ? parseInt(String(value).trim(), 10) : null;
+            value = hasValue(value) ? parseInt(value, 10) : null;
             if (Number.isNaN(value)) value = null;
         } else if (t === "дробове число" || t === "real" || t === "float" || t === "numeric") {
-            value = hasValue(value) ? Number(String(value).trim()) : null;
+            value = hasValue(value) ? Number(value) : null;
             if (Number.isNaN(value)) value = null;
         } else if (t === "так/ні" || t === "boolean") {
-            const s = String(value).toLowerCase().trim();
+            const s = String(value).toLowerCase();
             value = (s === "1" || s === "true" || s === "yes" || s === "on") ? 1 : 0;
         } else if (t === "дата" || t === "date") {
             value = (hasValue(value) && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) ? String(value) : null;
         } else {
+            // рядки не повинні перетворюватися на null, якщо це не порожні рядки
+            if (typeof value === "string") value = value.trim();
             value = toNullIfEmpty(value);
         }
-
+        
+        console.log("value 1=",value)
         const fieldName = f.dataset.fieldName;
+        console.log("fieldName =",fieldName )
         if (!fieldName) return;
 
         values[fieldName] = value;
         if (value !== null && value !== "") allEmpty = false;
     });
-
+    console.log("values=",values)
     if (allEmpty) {
         Message("Порожній запис не буде додано.");
         return;
@@ -4906,12 +4954,26 @@ function saveFormChanges() {
 
     const idx = currentFormRecordIndex ?? 0;
     const pkFromRow = (idx < (table.data?.length ?? 0)) ? table.data[idx]?.[pkIndex] : undefined;
-    const rowExists = hasValue(pkFromRow); // існуючий запис, якщо у рядку вже є PK
 
+    // Форсований режим: вважаємо новим записом, якщо індекс виходить за межі ТАБ0 є спеціальний прапорець
+    const isNewRecordMode = !!isCreatingNewRecord || idx >= (table.data?.length ?? 0);
+    
+    console.log("isNewRecordMode=",isNewRecordMode,isCreatingNewRecord )
+    // Рядок існує, якщо ми не у режимі нового запису і PK є
+    const rowExists = !isNewRecordMode && hasValue(pkFromRow);
     let pkValueFromForm = values[pkField];
-
+    
+    
+console.log("Debug info:", {
+    isNewRecordMode,
+    currentFormRecordIndex,
+    tableDataLength: table.data?.length ?? 0,
+    pkFromRow,
+    rowExists
+});
     // --- Гілка ДОДАВАННЯ ---
     if (!rowExists) {
+        console.log("add row from Form")
         if (isAutoPk) {
             // Нехай SQLite згенерує PK — не передаємо його у INSERT
             delete values[pkField];
@@ -4948,16 +5010,24 @@ function saveFormChanges() {
             values[pkField] = newId;
         }
     
-        // Оновити in-memory: завжди додаємо новий рядок
-        const newRow = table.schema.map(col => (col.title in values) ? values[col.title] : null);
-        table.data = table.data || [];
-        table.data.push(newRow);
-        currentFormRecordIndex = table.data.length - 1;
+        // --- Виправлене формування нового рядка для in-memory ---
+        // Перезавантажити таблицю з бази
+const refreshResult = db.exec(`SELECT * FROM "${tableName}";`);
+if (refreshResult.length > 0) {
+    table.data = refreshResult[0].values;
+    currentFormRecordIndex = table.data.length - 1;
+    console.log("Table refreshed from database, new length:", table.data.length);
+} else {
+    // Якщо таблиця порожня
+    table.data = [];
+    currentFormRecordIndex = -1;
+}
     
         Message("Новий запис додано!");
         saveDatabase();
         return;
     }
+    
     
 
     // --- Гілка РЕДАГУВАННЯ ---
@@ -4982,6 +5052,7 @@ function saveFormChanges() {
 
     // Оновлюємо лише колонки, що прийшли з форми (без PK, якщо авто-PK)
     const updateKeys = Object.keys(values).filter(k => !(isAutoPk && k === pkField));
+    console.log("updateKeys=",updateKeys,values)
     if (updateKeys.length > 0) {
         const setClause = updateKeys.map(k => `"${k}" = ?`).join(", ");
         const params = updateKeys.map(k => values[k]);
@@ -5294,7 +5365,9 @@ function createNewRecord() {
     // зібрати всі таблиці, що використовуються у формі
     const elements = [...document.querySelectorAll("#formCanvas .form-field")];
     const usedTables = [...new Set(elements.map(el => el.dataset.tableName).filter(Boolean))];
-
+    // входимо у режим створення нового запису:
+    isCreatingNewRecord = true;
+   
     usedTables.forEach(tableName => {
         const table = database.tables.find(t => t.name === tableName);
         if (!table) return;
