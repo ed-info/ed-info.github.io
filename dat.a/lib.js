@@ -1,4 +1,3 @@
-
     // Структура бази даних
     let database = {
         fileName: "",
@@ -4772,14 +4771,16 @@ function previewForm(resetIndex = false) {
             fieldContainer.style.fontWeight = el.style.fontWeight || 'normal';
             fieldContainer.style.fontStyle = el.style.fontStyle || 'normal';
             fieldContainer.style.textDecoration = el.style.textDecoration || '';
-            fieldContainer.style.color = el.style.color || '#000000';
-            fieldContainer.style.padding = "2px";
+            fieldContainer.style.color = el.style.color || '#000000';            
             fieldContainer.style.borderStyle = "inset";
-            fieldContainer.style.borderWidth = "3px";
+            fieldContainer.style.borderWidth = "4px";
             fieldContainer.style.borderColor = "#888";
             fieldContainer.style.overflow = "hidden";
             fieldContainer.style.whiteSpace = "nowrap";
-            fieldContainer.style.background = "#ccc";
+            fieldContainer.style.background = "#f0f0f0";
+            fieldContainer.style.display = "flex";
+            fieldContainer.style.alignItems = "center";
+            fieldContainer.style.paddingLeft = "5px";
 
             fieldContainer.dataset.tableName = tableName || "";
             fieldContainer.dataset.fieldName = fieldName || "";
@@ -6729,6 +6730,7 @@ function maskToRegex(mask) {
  **/
 function showImportTableDialog() {
   document.getElementById("importTableModal").style.display = "flex";
+  document.getElementById("importMsg").style.display = "block";
   const input = document.getElementById("clipboardInput");
   input.value = "";
   input.focus();
@@ -6826,6 +6828,13 @@ function closeConfirmImport() {
 function saveImportedTable() {
   const name = document.getElementById("importTableName").value.trim();
   if (!checkName(name)) return;
+
+  // 🔍 Перевірка, чи вже існує таблиця з таким іменем
+  const exists = database.tables.some(t => t.name === name);
+  if (exists) {
+    Message(`Таблиця з назвою "${name}" вже існує. Оберіть іншу назву.`);
+    return;
+  }
 
   const schema = [].concat(window._importSchema);
 
