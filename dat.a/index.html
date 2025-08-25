@@ -279,71 +279,80 @@
 			</div>
 		</div>
 	</div>
-	<!-- Вікно створення запиту-->
-	<div id="queryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-       background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
-		<div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh; overflow:hidden;">
-			<!-- Лівий контейнер: вміст -->
-			<div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
-				<h2 style="margin:0;">Створення запиту</h2>
-				<label for="queryName">Назва запиту:</label>
-				<input type="text" id="queryName" value="Новий запит" style="width:100%; padding:8px; font-size:16px;">
-				<table class="query-table" border="1" cellpadding="5" style="width:100%; border-collapse:collapse;">
-					<thead>
-						<tr>
-							<th>Таблиця</th>
-							<th>Поле</th>
-							<th>Видиме</th>
-							<th>Упорядкування</th>
-							<th>Критерій</th>
-                            <th>Підсумки</th>
-                            <th>Група</th>
-							<th>✄️</th>
-						</tr>
-					</thead>
-					<tbody id="queryBody"></tbody>
-				</table>
-				<table id="joinBody" class="query-table" style="width: 100%; margin-top: 10px; display: none;">
-					<thead>
-						<tr>
-							<th>Таблиця A</th>
-							<th>Поле A</th>
-							<th>Таблиця B</th>
-							<th>Поле B</th>
-							<th>✄️</th>
-						</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
+<!-- Вікно створення запиту-->
+<div id="queryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+   background-color: rgba(0,0,0,0.5); z-index:1005; justify-content:center; align-items:center;">
+	<div style="background:#fff; padding:20px; width:90%; max-width:1000px; border-radius:10px; display:flex; gap:20px; max-height:80vh; overflow:hidden;">
+		<!-- Лівий контейнер: вміст -->
+		<div style="flex:1; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+			<h2 style="margin:0;">Створення запиту</h2>
+			
+			<div style="display:flex; align-items:center; gap:10px;">
+				<label for="queryName" style="white-space:nowrap;">Назва запиту:</label>
+				<input type="text" id="queryName" value="Новий запит" style="flex:1; padding:8px; font-size:16px;">
+				
+				<span style="white-space:nowrap;">з таблиці:</span>
+				<select id="fromTable" class="query-table-select" onchange="populateFieldDropdown(this)" style="flex:1; padding:8px; font-size:16px; max-width:150px;">					
+					<!-- сюди підставляємо таблиці -->
+				</select>
 			</div>
-			<!-- Правий контейнер: всі кнопки вертикально, квадратні -->
-			<div style="display:flex; flex-direction:column; gap:12px; min-width:80px; align-items:center;">
-				<button onclick="addQueryRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-					<div style="font-size:24px; line-height:1;">+</div>
-					<div>Додати
-						<br>рядок</div>
-				</button>
-				<button onclick="addJoinRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-					<div style="font-size:24px; line-height:1;">🔗</div>
-					<div style="font-size:10px;">Додати
-						<br>зв'язок</div>
-				</button>
-				<button onclick="openRelationFromQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-					<div style="font-size:20px; line-height:1;">🧩</div>
-					<div style="font-size:9px;">Конструктор
-						<br>зв'язків</div>
-				</button>
-				<button onclick="generateSqlQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-					<div style="font-size:24px; line-height:1;">🚩️</div>
-					<div style="font-size:9px;">Зберегти<br>і виконати</div>
-				</button>
-				<button onclick="closeQueryModal()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-					<div style="font-size:20px; line-height:1;">❌</div>
-					<div style="font-size:10px;">Скасувати</div>
-				</button>
-			</div>
+			
+			<table class="query-table" border="1" cellpadding="5" style="width:100%; border-collapse:collapse;">
+				<thead>
+					<tr>
+						<th>Таблиця</th>
+						<th>Поле</th>
+						<th>Видиме</th>
+						<th>Упорядкування</th>
+						<th>Критерій</th>
+						<th>Підсумки</th>
+						<th>Група</th>
+						<th>✄️</th>
+					</tr>
+				</thead>
+				<tbody id="queryBody"></tbody>
+			</table>
+			
+			<table id="joinBody" class="query-table" style="width: 100%; margin-top: 10px; display: none;">
+				<thead>
+					<tr>
+						<th>Таблиця A</th>
+						<th>Поле A</th>
+						<th>Таблиця B</th>
+						<th>Поле B</th>
+						<th>✄️</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+		
+		<!-- Правий контейнер: всі кнопки вертикально, квадратні -->
+		<div style="display:flex; flex-direction:column; gap:12px; min-width:80px; align-items:center;">
+			<button onclick="addQueryRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				<div style="font-size:24px; line-height:1;">+</div>
+				<div>Додати<br>рядок</div>
+			</button>
+			<button onclick="addJoinRow()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				<div style="font-size:24px; line-height:1;">🔗</div>
+				<div style="font-size:9px;">Додати<br>зв'язок</div>
+			</button>
+			<button onclick="openRelationFromQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				<div style="font-size:20px; line-height:1;">🧩</div>
+				<div style="font-size:8px;">Конструктор<br>зв'язків</div>
+			</button>
+			<button onclick="generateSqlQuery()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				<div style="font-size:24px; line-height:1;">🚩️</div>
+				<div style="font-size:8px;">Зберегти<br>та виконати</div>
+			</button>
+			<button onclick="closeQueryModal()" style="width:64px; height:64px; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+				<div style="font-size:20px; line-height:1;">❌</div>
+				<div style="font-size:10px;">Скасувати</div>
+			</button>
 		</div>
 	</div>
+</div>
+
     <div id="sqlModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
          background-color: rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
     
@@ -633,7 +642,7 @@
 					<div style="font-size:20px;">🗑️</div>
 					<div>Видалити</div>
 				</button>
-				<button onclick="previewForm(true)" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+				<button onclick="previewForm(null,true)" style="width:64px; height:40px; font-size:12px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
 					<div style="font-size:20px;">👁️</div>
 					<div>Перегляд</div>
 				</button>

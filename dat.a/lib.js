@@ -156,6 +156,7 @@ function getCurrentFormNames() {
         // Зберігаємо форми
         localStorage.setItem(database.fileName + ".forms-data", JSON.stringify(database.forms || []));
         // Зберігаємо зв'язки
+        resetNonReadonlyRelations();
         console.log("Зберігаємо зв'язки: ",database.relations)
         localStorage.setItem(database.fileName + ".relations-data", JSON.stringify(database.relations || []));
         
@@ -658,6 +659,7 @@ function editData(tableName) {
     console.log("Edit=", tableName);
 
     if (isQueryTable) {
+        
         // 🔹 Для запиту — беремо результат із queries через SQLite
         const originalQueryName = tableName.substring(1);
         table = queries.results.find(t => t.name === originalQueryName);
@@ -674,13 +676,16 @@ function editData(tableName) {
             columns = table.schema.map(col => col.title);
 
             // Виконуємо SELECT для запиту
+            /*
             try {
                 const res = db.exec(table.query);
                 rows = res.length ? res[0].values : [];
             } catch (e) {
-                console.warn("Помилка виконання запиту:", e);
+                console.warn("Помилка виконання запиту:");
                 rows = table.data || [];
             }
+            */
+            rows = table.data 
         }
     } else {
         // 🔹 Для звичайної таблиці — беремо дані напряму з пам'яті
@@ -2193,12 +2198,22 @@ function closeDeleteModal() {
     document.getElementById("deleteModal").style.display = "none"; // Сховати
     dbToDelete = null; // Очистити значення
 }
-
+/**
+ * Залишаємо тільки зв'язки через FOREIGN KEY
+ **/ 
+function resetNonReadonlyRelations() {
+    if (!Array.isArray(database.relations)) return;
+    database.relations = database.relations.filter(r => r.readonly === true);
+    document.querySelectorAll("select.join-table-a, select.join-table-b").forEach(el => el.remove());
+   
+}
+ 
 /** 
  * Ініціалізує створення нового SQL-запиту 
  * Показує модальне вікно конструктора запиту
  **/
 function createQuery() {
+    resetNonReadonlyRelations();
     document.getElementById("queryName").value = "Новий_запит"; // Назва за замовчуванням
     document.getElementById("queryBody").innerHTML = ""; // Очистити старі рядки
     addQueryRow(); // Додати перший рядок
@@ -2300,7 +2315,9 @@ function deleteQueryRow(button) {
  **/
 function populateTableDropdowns() {
     const tableSelects = document.querySelectorAll(".query-table-select"); // Всі селекти таблиць
+    
     tableSelects.forEach(select => {
+        console.log("Заповнюється:", select.id);
         select.innerHTML = "<option value=''>Виберіть таблицю</option>"; // Початковий варіант
         database.tables.forEach(table => {
             const option = document.createElement("option");
@@ -2407,6 +2424,13 @@ function generateSqlQuery() {
     let selectFields = [];
     let groupByFields = [];
     let baseTable = null;
+    const fromTableEl = document.getElementById("fromTable");
+    
+    if (fromTableEl && fromTableEl.value.trim() !== "") {
+        baseTable = fromTableEl.value.trim();
+    } else {
+        baseTable = null;
+    }
     let joins = [];
     let whereClauses = [];
     let orderByClauses = [];
@@ -2571,12 +2595,12 @@ function generateSqlQuery() {
     if (orderByClauses.length) sql += `\nORDER BY ${orderByClauses.join(", ")}`;
 
     // --- save query ---
-    const queryDefinition = { name: queryName, config: queryConfig, joins, sql };
+    const queryDefinition = { name: queryName, baseTable: baseTable, config: queryConfig, joins, sql };
     const existingQueryIndex = queries.definitions.findIndex(q => q.name === queryName);
     if (existingQueryIndex !== -1) queries.definitions[existingQueryIndex] = queryDefinition;
     else queries.definitions.push(queryDefinition);
     saveDatabase();
-
+    console.log("queryConfig=",queryDefinition )
     document.getElementById("generatedSql").innerText = sql;
     document.getElementById("sqlModal").style.display = "flex";
 }
@@ -2628,63 +2652,6 @@ function generateSqlQuery() {
     }
     
 
-    function validateSqlQuery(sql) {
-        return true;
-        try {
-            const errors = [];
-    
-            // 1. Прибрати розриви рядків (у лапкованих назвах це може зламати аналіз)
-            sql = sql.replace(/\s+/g, ' ').trim();
-    
-            // 2. Побудова map таблиць -> полів
-            const tableMap = new Map();
-            database.tables.forEach(table => {
-                const fieldTitles = table.schema.map(col => col.title);
-                tableMap.set(table.name, fieldTitles);
-            });
-    
-            // 3. Отримати назву таблиці з FROM
-            const fromMatch = sql.match(/FROM\s+["'`](.*?)["'`]/i);
-            if (!fromMatch) {
-                Message("Не вказано таблицю в запиті.");
-                return false;
-            }
-            
-            const tableName = fromMatch[1].trim();
-            if (!tableMap.has(tableName)) {
-                Message(`Таблиця "${tableName}" не існує.`);
-                return false;
-            }
-    
-            const currentFields = tableMap.get(tableName);
-    
-            // 4. Витягнути всі лапковані поля, крім назви таблиці з FROM
-            const allMatches = [...sql.matchAll(/"([^"]+)"/g)].map(m => m[1]);
-    
-            // Видалити назву таблиці, бо вона теж лапкована, але не є полем
-            const fieldNames = allMatches.filter(name => name !== tableName);
-    
-            // 5. Уникнути дублювання полів (може бути одне й те саме поле в SELECT та WHERE)
-            const uniqueFieldNames = [...new Set(fieldNames)];
-    
-            for (const field of uniqueFieldNames) {
-                if (!currentFields.includes(field)) {
-                    errors.push(`Поле "${field}" не існує в таблиці "${tableName}".`);
-                }
-            }
-    
-            if (errors.length > 0) {
-                Message("Помилка в запиті:\n" + errors.join("\n"));
-                return false;
-            }
-    
-            return true;
-        } catch (err) {
-            Message("Неможливо проаналізувати запит: " + err.message);
-            return false;
-        }
-    }
-    
 function executeSqlQuery() {
     console.log("executeSqlQuery")
     sqlQuery = document.getElementById("generatedSql").innerText;
@@ -2846,7 +2813,7 @@ function populateQueryModal(queryDefinition) {
     const queryBody = document.getElementById("queryBody");
     queryBody.innerHTML = ""; // Очистити рядки полів
     document.getElementById("joinBody").querySelector("tbody").innerHTML = ""; // Очистити зв’язки
-
+    resetNonReadonlyRelations(); 
     // Відновлення рядків полів
     queryDefinition.config.forEach(item => {
         const row = document.createElement("tr");
@@ -2976,6 +2943,21 @@ function populateQueryModal(queryDefinition) {
         });
     }
 
+    // Відновлення базової таблиці (FROM)
+    const fromTableSelect = document.getElementById("fromTable");
+    if (fromTableSelect) {
+        // Спочатку очистити і заповнити варіанти
+        fromTableSelect.innerHTML = "<option value=''>Виберіть таблицю</option>";
+        database.tables.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.name;
+            opt.textContent = t.name;
+            fromTableSelect.appendChild(opt);
+        });
+    
+        // Встановити значення, якщо воно є
+        fromTableSelect.value = queryDefinition.baseTable || "";
+    }
     document.getElementById("queryModal").style.display = "flex";
 }
 
@@ -3081,7 +3063,7 @@ function populateQueryModal(queryDefinition) {
             }
         });
 
-        saveDatabase();
+        //saveDatabase();
         openRelationDesigner(() => {
             // callback після закриття конструктора — синхронізуємо з JOIN
             loadRelationsToJoinTable();
@@ -4317,87 +4299,9 @@ function previewSelecteForm() {
         }
 
         document.getElementById("savedFormsModal").style.display = "none";
-        previewSavedForm(form);
+        previewForm(form, true);
 }
 
-// Form Viewer
-function previewSavedForm(form) {
-        const previewModal = document.getElementById("formPreviewModal");
-        const previewCanvas = document.getElementById("formPreviewCanvas");
-
-        console.log("form =", form);
-        console.log("form.elements =", form.elements);
-        console.log(database.forms);
-
-        previewCanvas.innerHTML = "";
-        currentFormRecordIndex = 0;
-        document.getElementById("formPreviewTitle").innerText = `${form.name} — запис #1`;
-
-        const table = database.tables.find(t => t.name === form.table);
-        const record = table?.data?.[0] || [];
-
-        form.elements.forEach(el => {
-            if (el.type === "field") {
-                const table = database.tables.find(t => t.name === el.tableName);
-                const record = table?.data?.[currentFormRecordIndex] || [];
-                const colIndex = table?.schema.findIndex(c => c.title === el.fieldName);
-
-                const input = document.createElement("input");
-                input.type = "text";
-                input.style.position = "absolute";
-                input.style.left = el.left + "px";
-                input.style.top = el.top + "px";
-                input.style.width = el.width + "px";
-                input.style.height = el.height + "px";
-                input.style.fontFamily = el.fontFamily;
-                input.style.fontSize = el.fontSize;
-                input.style.fontWeight = el.fontWeight;
-                input.style.fontStyle = el.fontStyle;
-                input.style.textDecoration = el.textDecoration;
-                input.style.color = el.color;
-                input.style.background = "#ccc";
-                input.style.padding = "2px";
-                input.style.borderStyle = "inset";
-                input.style.borderWidth = "3px";
-                input.style.borderColor = "#888";
-                input.style.overflow = "hidden";
-                input.style.whiteSpace = "nowrap";
-
-                input.dataset.tableName = el.tableName;
-                input.dataset.fieldName = el.fieldName;
-                input.dataset.colIndex = colIndex;
-
-                input.value = colIndex !== -1 ? (record?.[colIndex] ?? "") : "Поле не знайдено";
-
-                previewCanvas.appendChild(input);
-            } else if (el.type === "label") {
-                const label = document.createElement("div");
-                label.innerText = el.text || "";
-                label.style.position = "absolute";
-                label.style.left = el.left + "px";
-                label.style.top = el.top + "px";
-                label.style.width = el.width + "px";
-                label.style.height = el.height + "px";
-                label.style.fontFamily = el.fontFamily;
-                label.style.fontSize = el.fontSize;
-                label.style.fontWeight = el.fontWeight;
-                label.style.fontStyle = el.fontStyle;
-                label.style.textDecoration = el.textDecoration;
-                label.style.color = el.color;
-                label.style.padding = "5px";
-                label.style.border = "none";
-                label.style.background = "transparent";
-                label.style.overflow = "hidden";
-                label.style.whiteSpace = "nowrap";
-                label.contentEditable = "false";
-
-                previewCanvas.appendChild(label);
-            }
-        });
-
-
-        previewModal.style.display = "flex";
-}
 function deleteSelectedForm() {
         if (!selectedFormName) {
             Message("Будь ласка, виберіть форму для видалення.");
@@ -4722,15 +4626,61 @@ function addScreenGrid() {
         screenGridVisible = !screenGridVisible;
 }    
 
-function previewForm(resetIndex = false) {
-    const formName = document.getElementById("formNameInput").value.trim();
+function previewForm(form = null, resetIndex = false) {
     const previewModal = document.getElementById("formPreviewModal");
     const previewCanvas = document.getElementById("formPreviewCanvas");
 
-    // обмежуємо індекс тільки по таблицях, які є у формі
-    const formTables = [...document.querySelectorAll("#formCanvas .form-field")]
-        .map(el => el.dataset.tableName)
-        .filter(Boolean);
+    previewCanvas.innerHTML = "";
+
+    let formName;
+    let elements = [];
+
+    if (form) {
+        // Виклик для збереженої форми
+        formName = form.name;
+        elements = form.elements.map(el => {
+            return { 
+                type: el.type,
+                left: el.left + "px",
+                top: el.top + "px",
+                width: el.width + "px",
+                height: el.height + "px",
+                fontFamily: el.fontFamily || 'Arial',
+                fontSize: el.fontSize || '16px',
+                fontWeight: el.fontWeight || 'normal',
+                fontStyle: el.fontStyle || 'normal',
+                textDecoration: el.textDecoration || '',
+                color: el.color || '#000',
+                tableName: el.tableName,
+                fieldName: el.fieldName,
+                text: el.text || ""
+            };
+        });
+    } else {
+        // Виклик для поточної форми з конструктора
+        formName = document.getElementById("formNameInput").value.trim();
+        elements = [...document.querySelectorAll("#formCanvas .form-label, #formCanvas .form-field")].map(el => {
+            return {
+                type: el.classList.contains("form-field") ? "field" : "label",
+                left: el.style.left,
+                top: el.style.top,
+                width: el.style.width,
+                height: el.style.height,
+                fontFamily: el.style.fontFamily || 'Arial',
+                fontSize: el.style.fontSize || '16px',
+                fontWeight: el.style.fontWeight || 'normal',
+                fontStyle: el.style.fontStyle || 'normal',
+                textDecoration: el.style.textDecoration || '',
+                color: el.style.color || '#000',
+                tableName: el.dataset.tableName,
+                fieldName: el.dataset.fieldName,
+                text: el.innerText?.trim() || ""
+            };
+        });
+    }
+
+    // ----------------- Логіка з currentFormRecordIndex -----------------
+    const formTables = elements.map(el => el.tableName).filter(Boolean);
     const maxRecordIndex = formTables.length > 0
         ? Math.max(...formTables.map(name => {
             const t = database.tables.find(tbl => tbl.name === name);
@@ -4738,52 +4688,45 @@ function previewForm(resetIndex = false) {
         })) - 1
         : 0;
 
-    if (resetIndex) {
-        currentFormRecordIndex = 0; // тільки при першому відкритті
-    }
-
-    // обмежуємо currentFormRecordIndex
+    if (resetIndex) currentFormRecordIndex = 0;
     currentFormRecordIndex = Math.min(currentFormRecordIndex, maxRecordIndex);
-
-    previewCanvas.innerHTML = "";
 
     const isLastRecord = currentFormRecordIndex === maxRecordIndex;
     document.getElementById("formPreviewTitle").innerText =
         `${formName} — запис #${currentFormRecordIndex + 1}${isLastRecord ? " (останній запис)" : ""}`;
 
-    const elements = [...document.querySelectorAll("#formCanvas .form-label, #formCanvas .form-field")];
-
+    // ----------------- Рендеринг -----------------
     elements.forEach(el => {
-        if (el.classList.contains("form-field")) {
-            const tableName = el.dataset.tableName;
-            const fieldName = el.dataset.fieldName;
-            const table = database.tables.find(t => t.name === tableName);
+        if (el.type === "field") {
+            const table = database.tables.find(t => t.name === el.tableName);
 
             const fieldContainer = document.createElement("div");
             fieldContainer.className = "form-field";
-            fieldContainer.style.position = "absolute";
-            fieldContainer.style.left = el.style.left;
-            fieldContainer.style.top = el.style.top;
-            fieldContainer.style.width = el.style.width;
-            fieldContainer.style.height = el.style.height;
-            fieldContainer.style.fontFamily = el.style.fontFamily || 'Arial';
-            fieldContainer.style.fontSize = el.style.fontSize || '16px';
-            fieldContainer.style.fontWeight = el.style.fontWeight || 'normal';
-            fieldContainer.style.fontStyle = el.style.fontStyle || 'normal';
-            fieldContainer.style.textDecoration = el.style.textDecoration || '';
-            fieldContainer.style.color = el.style.color || '#000000';            
-            fieldContainer.style.borderStyle = "inset";
-            fieldContainer.style.borderWidth = "4px";
-            fieldContainer.style.borderColor = "#888";
-            fieldContainer.style.overflow = "hidden";
-            fieldContainer.style.whiteSpace = "nowrap";
-            fieldContainer.style.background = "#f0f0f0";
-            fieldContainer.style.display = "flex";
-            fieldContainer.style.alignItems = "center";
-            fieldContainer.style.paddingLeft = "5px";
+            Object.assign(fieldContainer.style, {
+                position: "absolute",
+                left: el.left,
+                top: el.top,
+                width: el.width,
+                height: el.height,
+                fontFamily: el.fontFamily,
+                fontSize: el.fontSize,
+                fontWeight: el.fontWeight,
+                fontStyle: el.fontStyle,
+                textDecoration: el.textDecoration,
+                color: el.color,
+                borderStyle: "inset",
+                borderWidth: "4px",
+                borderColor: "#888",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                background: "#f0f0f0",
+                display: "flex",
+                alignItems: "center",
+                paddingLeft: "5px"
+            });
 
-            fieldContainer.dataset.tableName = tableName || "";
-            fieldContainer.dataset.fieldName = fieldName || "";
+            fieldContainer.dataset.tableName = el.tableName || "";
+            fieldContainer.dataset.fieldName = el.fieldName || "";
 
             let cellValue = "";
             let colSchema = null;
@@ -4794,7 +4737,7 @@ function previewForm(resetIndex = false) {
             } else if (table.data.length === 0) {
                 cellValue = "Таблиця порожня";
             } else {
-                colIndex = table.schema.findIndex(c => c.title === fieldName);
+                colIndex = table.schema.findIndex(c => c.title === el.fieldName);
                 if (colIndex !== -1) {
                     colSchema = table.schema[colIndex];
                     const record = table.data[Math.min(currentFormRecordIndex, table.data.length - 1)];
@@ -4810,7 +4753,7 @@ function previewForm(resetIndex = false) {
                     fieldContainer,
                     cellValue,
                     colSchema,
-                    table.data[Math.min(currentFormRecordIndex, table.data.length - 1)],
+                    table?.data?.[Math.min(currentFormRecordIndex, (table?.data.length ?? 1) - 1)],
                     colIndex,
                     false
                 );
@@ -4826,25 +4769,27 @@ function previewForm(resetIndex = false) {
 
             previewCanvas.appendChild(fieldContainer);
 
-        } else {
+        } else if (el.type === "label") {
             const label = document.createElement("div");
-            label.style.position = "absolute";
-            label.style.left = el.style.left;
-            label.style.top = el.style.top;
-            label.style.width = el.style.width;
-            label.style.height = el.style.height;
-            label.style.fontFamily = el.style.fontFamily || 'Arial';
-            label.style.fontSize = el.style.fontSize || '16px';
-            label.style.fontWeight = el.style.fontWeight || 'normal';
-            label.style.fontStyle = el.style.fontStyle || 'normal';
-            label.style.textDecoration = el.style.textDecoration || '';
-            label.style.color = el.style.color || '#000000';
-            label.style.padding = "5px";
-            label.style.border = "none";
-            label.style.background = "transparent";
-            label.style.overflow = "hidden";
-            label.style.whiteSpace = "nowrap";
-            label.innerText = el.innerText.trim();
+            Object.assign(label.style, {
+                position: "absolute",
+                left: el.left,
+                top: el.top,
+                width: el.width,
+                height: el.height,
+                fontFamily: el.fontFamily,
+                fontSize: el.fontSize,
+                fontWeight: el.fontWeight,
+                fontStyle: el.fontStyle,
+                textDecoration: el.textDecoration,
+                color: el.color,
+                padding: "5px",
+                border: "none",
+                background: "transparent",
+                overflow: "hidden",
+                whiteSpace: "nowrap"
+            });
+            label.innerText = el.text || "";
 
             previewCanvas.appendChild(label);
         }
@@ -4852,6 +4797,7 @@ function previewForm(resetIndex = false) {
 
     previewModal.style.display = "flex";
 }
+
 
 
 function saveFormChanges() {
