@@ -1,11 +1,4 @@
 /* noto-color-emoji-regular - emoji */
-@font-face {
-  font-display: swap;
-  font-family: 'Noto Color Emoji';
-  font-style: normal;
-  font-weight: 400;
-  src: url('fonts/noto-color-emoji-v35-emoji-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
-}
 
 .emoji {
     font-family: 'Noto Color Emoji', sans-serif;
