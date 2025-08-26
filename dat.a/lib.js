@@ -35,6 +35,7 @@
     let screenGridVisible = false; 
     let screenCanvas = null; 
     let isCreatingNewRecord = false;
+    let isOwnSQL = false;
     
     closeAllModals();
     
@@ -2656,12 +2657,15 @@ function executeSqlQuery() {
     console.log("executeSqlQuery")
     sqlQuery = document.getElementById("generatedSql").innerText;
     queryName = document.getElementById("queryName").value.trim();
+    isOwnSQL = false;
     runSqlQuery(sqlQuery, queryName); 
 }
 function executeOwnSQL() {
     sqlQuery = document.getElementById("ownSqlInput").value.trim();
     queryName = document.getElementById("ownSQLName").value.trim();
+    isOwnSQL = true;
     runSqlQuery(sqlQuery, queryName);
+    
 }    
 
 function runSqlQuery(sqlQuery, queryName) {
@@ -2681,6 +2685,60 @@ function runSqlQuery(sqlQuery, queryName) {
         }
     }
 
+
+function updateDatabaseTables() {
+    // Очистимо список, щоб не дублювати
+    database.tables = [];
+
+    const res = db.exec("SELECT name, sql FROM sqlite_master WHERE type='table';");
+    if (res.length > 0) {
+        const tableRows = res[0].values;
+        tableRows.forEach(([name]) => {
+            if (name.startsWith("sqlite_")) return;
+
+            const pragmaRes = db.exec(`PRAGMA table_info("${name}")`);
+            if (!pragmaRes.length) return;
+
+            const columns = pragmaRes[0].values;
+
+            // Зчитуємо зовнішні ключі
+            const fkRes = db.exec(`PRAGMA foreign_key_list("${name}")`);
+            const foreignKeys = fkRes.length ? fkRes[0].values.map(([id, seq, refTable, fromCol, toCol]) => ({
+                fromCol, refTable, toCol
+            })) : [];
+
+            // Формуємо схему
+            const schema = columns.map(([cid, title, type, notnull, dflt_value, pk]) => {
+                const fk = foreignKeys.find(f => f.fromCol === title);
+                return {
+                    title,
+                    type: type.toUpperCase() === "INTEGER" ? "Ціле число"
+                        : type.toUpperCase() === "REAL" ? "Дробове число"
+                        : type.toUpperCase().includes("TEXT") ? "Текст"
+                        : type.toUpperCase().includes("BOOL") ? "Так/Ні"
+                        : type,
+                    primaryKey: pk > 0,
+                    comment: pk > 0 ? "Первинний ключ" : "",
+                    foreignKey: !!fk,
+                    refTable: fk ? fk.refTable : null,
+                    refField: fk ? fk.toCol : null
+                };
+            });
+
+            // Зчитуємо дані
+            const selectRes = db.exec(`SELECT * FROM "${name}"`);
+            const dataRows = selectRes.length ? selectRes[0].values : [];
+
+            database.tables.push({
+                name: name,
+                schema: schema,
+                data: dataRows
+            });
+        });
+    }
+}
+
+
 function runFinalSqlQuery() {
     const internalQueryName = `запит "${pendingQueryName}"`;
     const menuDisplayName = `*${internalQueryName}`;
@@ -2688,6 +2746,11 @@ function runFinalSqlQuery() {
     try {
         const isAggregateQuery = /\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(pendingQueryText);
         const res = db.exec(pendingQueryText); 
+        
+        if (isOwnSQL) { // оновимо про всяк випадок таблиці та їх структури якщо запит "вручну"
+                    updateDatabaseTables();
+                    isOwnSQL = false;
+        }
         
         if (res.length > 0) {
             const columns = res[0].columns;
@@ -2731,9 +2794,17 @@ function runFinalSqlQuery() {
             Message("Запит виконано, але результат порожній.");
             closeSqlModal();
         }
+        updateQuickAccessPanel(
+                  getCurrentTableNames(),
+                  getCurrentQueryNames(),
+                  getCurrentReportNames(),
+                  getCurrentFormNames()
+                );  
     } catch (e) {
         Message(`Помилка виконання запиту: ${e.message}`);
     }
+    
+
 }
 
     
