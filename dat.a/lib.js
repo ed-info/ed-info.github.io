@@ -8,39 +8,39 @@
 
     };
 
-    // New structure for query definitions and results
-    let queries = {
+
+let SQL = null;
+let db = null;
+let dbToDelete = null;
+let selectedReportName = null;
+let currentEditTable = null;
+let selectedCell = null;
+let selectedQueryName = null;
+let selectedTableNameForEdit = null;
+let selectedTableNameForDelete = null;
+let selectedDbFile = null;
+let newDbFile = false; // змінна для фіксації створення нового файлу
+let editingTableName = "unnamed";
+let autoIncrement = null;
+let isNewTable = true;
+let isNewRecord = false;    
+let sqlQuery = null;
+let queryName = null;
+let constructorMode = null;
+let screenGridVisible = false; 
+let screenCanvas = null; 
+let isCreatingNewRecord = false;
+let isOwnSQL = false;
+let queries = {
         definitions: [], // Stores query configurations
         results: [] // Stores query result tables (virtual tables)
     };
 
-    let SQL = null;
-    let db = null;
-    let dbToDelete = null;
-    let selectedReportName = null;
-    let currentEditTable = null;
-    let selectedCell = null;
-    let selectedQueryName = null; // To keep track of the selected query in the saved queries dialog
-    let selectedTableNameForEdit = null; // To keep track of the selected table in the saved tables dialog for opening
-    let selectedTableNameForDelete = null; // To keep track of the selected table in the saved tables dialog for deletion
-    let selectedDbFile = null;
-    let newDbFile = false; // змінна для фіксації створення нового файлу
-    let editingTableName = "unnamed";
-    let autoIncrement = null;
-    let isNewTable = true;
-    let isNewRecord = false;    
-    let sqlQuery = null;
-    let queryName = null;
-    let constructorMode = null;
-    let screenGridVisible = false; 
-    let screenCanvas = null; 
-    let isCreatingNewRecord = false;
-    let isOwnSQL = false;
     
-    closeAllModals();
+closeAllModals();
     
-    // Завантаження SQL.js
-    initSqlJs({
+// Завантаження SQL.js
+initSqlJs({
         locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
     }).then(SQLLib => {
         SQL = SQLLib;
@@ -60,8 +60,8 @@ function getCurrentFormNames() {
       return (database.forms || []).map(f => f.name);
     }
        
-    // Завантаження БД з localStorage або створення нової
-    function loadDatabase() {
+// Завантаження БД з localStorage або створення нової
+function loadDatabase() {
         console.log("loadDatabase")        
         const name = database.fileName || "my_database";
         const saved = localStorage.getItem(name + ".db-data");
@@ -135,8 +135,8 @@ function getCurrentFormNames() {
     }
 
 
-    // Збереження БД у localStorage
-    function saveDatabase() {
+// Збереження БД у localStorage
+function saveDatabase() {
         console.log("Зберігаємо базу даних: ", database.fileName)        
         if (!db) return;
         const data = db.export();
@@ -171,7 +171,7 @@ function getCurrentFormNames() {
                 );                
                     
     }
-    //
+
 /**
  * очищуємо базу даних, меню даних та панель швидкого доступу
  **/
@@ -2660,9 +2660,16 @@ function executeSqlQuery() {
     isOwnSQL = false;
     runSqlQuery(sqlQuery, queryName); 
 }
+
+/**
+ * Виконати користувацький SQL-запит
+ **/ 
 function executeOwnSQL() {
     sqlQuery = document.getElementById("ownSqlInput").value.trim();
     queryName = document.getElementById("ownSQLName").value.trim();
+    if (!saveOwnSQLquery()) {
+        Message("Запит не збережено!")
+        }
     isOwnSQL = true;
     runSqlQuery(sqlQuery, queryName);
     
@@ -5942,18 +5949,18 @@ function showDatabaseInfo() {
     }
     
     
-    function saveOwnSQL() {
+function saveOwnSQLquery() {
         const sql = document.getElementById("ownSqlInput").value.trim();
         const name = document.getElementById("ownSQLName")?.value.trim();
     
         if (!sql) {
             Message("SQL-запит порожній.");
-            return;
+            return false;
         }
     
         if (!name) {
             Message("Введіть ім’я запиту у поле «Назва запиту».");
-            return;
+            return false;
         }
     
         // Формуємо об'єкт запиту
@@ -5968,18 +5975,25 @@ function showDatabaseInfo() {
         const existingIndex = queries.definitions.findIndex(q => q.name === name);
     
         if (existingIndex !== -1) {
-            if (!confirm("Запит з таким ім’ям вже існує. Перезаписати?")) return;
+            if (!confirm("Запит з таким ім’ям вже існує. Перезаписати?")) return false;
             queries.definitions[existingIndex] = query;
         } else {
             queries.definitions.push(query);
         }
     
         saveDatabase();
-        Message("Запит збережено.");
+        return true
     }
+
+function saveOwnSQL() {
+        if (saveOwnSQLquery()) {
+            Message("Запит збережено.");
+        }    
+    }
+
     
 
-    function showAboutModal() {
+function showAboutModal() {
         const modal = document.getElementById("aboutModal");
         modal.style.display = "flex";
     }
