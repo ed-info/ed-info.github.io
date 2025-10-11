@@ -5616,6 +5616,7 @@ function proceedCsvImport() {
 }
 
 // Обробка вибраного CSV-файлу
+// Обробка вибраного CSV-файлу
 function handleCsvFile(file) {
     if (!file) {
         Message("Файл не вибрано.");
@@ -5676,6 +5677,7 @@ function handleCsvFile(file) {
         }
 
         // Перевірка кількості стовпців у даних
+        console.log("expectedHeaders,dataRows=",expectedHeaders,dataRows)
         const invalidRow = dataRows.find(row => row.length !== expectedHeaders.length);
         if (invalidRow) {
             Message(`Рядок містить неправильну кількість стовпців: ${invalidRow.length} (очікується ${expectedHeaders.length}).`);
@@ -5713,8 +5715,18 @@ function handleCsvFile(file) {
                 db.run(sql);
             });
             db.run("COMMIT");
+            
+            // 🔄 ОНОВЛЕННЯ ДАНИХ У ПАМ'ЯТІ
+            try {
+                const res = db.exec(`SELECT * FROM "${tableName}"`);
+                table.data = res.length ? res[0].values : [];
+                console.log("Дані таблиці оновлено в пам'яті:", table.data.length, "записів");
+            } catch (e) {
+                console.warn("Не вдалося оновити дані в пам'яті:", e);
+            }
+            
             Message(`Імпортовано ${dataRows.length} записів у таблицю "${table.name}".`);
-            saveDatabase();
+            saveDatabase();           
         } catch (e) {
             db.run("ROLLBACK");
             Message("Помилка при вставці даних: " + e.message);
