@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html class="scrollbar" translate="no"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+<meta http-equiv="content-language" content="uk">
+<meta name="renderer" content="webkit">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="app:pageurl" content="/">
+<title>HTML Шпаргалка</title>
+<meta name="description" content="Ця HTML шпаргалка містить поширені теги HTML та HTML5 у зручному форматі.">
+<link rel="stylesheet" href="style.css">
+
+    <script data-cfasync="false">window.ramp=window.ramp||{},window.ramp.que=window.ramp.que||[]</script>
+    
+    <body class="bg-slate-100 dark:bg-slate-900">
+
+    
+    <div class="mx-auto flex flex-wrap md:py-5 flex-col md:flex-row items-center"><div class="flex flex-col w-full mx-auto text-center my-8"><div class="max-container w-full"><h1 class="text-5xl mb-4"> <span class="text-slate-700 dark:text-slate-300 font-light">HTML</span> <span class="text-slate-400 dark:text-slate-500 font-extralight hidden md:inline">шпаргалка</span></h1><div class="lg:w-3/5 mx-auto intro leading-relaxed text-slate-600"><p>Ця шпаргалка містить поширені теги HTML та HTML5 у зручному форматі.</p></div></div></div><div id="mdLayout" class="mdLayout w-full max-container"><div data-pw-desk="leaderboard_btf" id="pwDeskLbBtf1"></div><script type="text/javascript">window.ramp.que.push(function(){window.ramp.addTag("pwDeskLbBtf1")})</script> 
+<div class="toc-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 30px 0; padding: 20px;">
+    
+    <!-- Початок роботи -->
+    <div class="toc-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px;">
+            <a href="#getting-started" style="text-decoration: none; color: inherit;">📋 Початок роботи</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#hello-html" style="text-decoration: none; color: #475569;">→ hello.html</a></li>
+            <li style="margin: 8px 0;"><a href="#comment" style="text-decoration: none; color: #475569;">→ Коментар</a></li>
+            <li style="margin: 8px 0;"><a href="#paragraph" style="text-decoration: none; color: #475569;">→ Абзац</a></li>
+            <li style="margin: 8px 0;"><a href="#html-link" style="text-decoration: none; color: #475569;">→ HTML посилання</a></li>
+            <li style="margin: 8px 0;"><a href="#image-tag" style="text-decoration: none; color: #475569;">→ Тег зображення</a></li>
+            <li style="margin: 8px 0;"><a href="#text-formatting-tags" style="text-decoration: none; color: #475569;">→ Теги форматування тексту</a></li>
+            <li style="margin: 8px 0;"><a href="#headings" style="text-decoration: none; color: #475569;">→ Заголовки</a></li>
+            <li style="margin: 8px 0;"><a href="#section-divisions" style="text-decoration: none; color: #475569;">→ Розділи секцій</a></li>
+            <li style="margin: 8px 0;"><a href="#inline-frame" style="text-decoration: none; color: #475569;">→ Вбудований фрейм</a></li>
+            <li style="margin: 8px 0;"><a href="#javascript-in-html" style="text-decoration: none; color: #475569;">→ JavaScript в HTML</a></li>
+            <li style="margin: 8px 0;"><a href="#css-in-html" style="text-decoration: none; color: #475569;">→ CSS в HTML</a></li>
+        </ul>
+    </div>
+
+    <!-- HTML5 -->
+    <div class="toc-section" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #0369a1; padding-bottom: 10px;">
+            <a href="#html5-tags" style="text-decoration: none; color: inherit;">🚀 Теги HTML5</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#document" style="text-decoration: none; color: #475569;">→ Документ</a></li>
+            <li style="margin: 8px 0;"><a href="#header-navigation" style="text-decoration: none; color: #475569;">→ Навігація заголовка</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-tags-2" style="text-decoration: none; color: #475569;">→ Теги HTML5</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-video" style="text-decoration: none; color: #475569;">→ HTML5 відео</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-audio" style="text-decoration: none; color: #475569;">→ HTML5 аудіо</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-bdi" style="text-decoration: none; color: #475569;">→ HTML5 bdi</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-progress" style="text-decoration: none; color: #475569;">→ HTML5 прогрес</a></li>
+            <li style="margin: 8px 0;"><a href="#html5-mark" style="text-decoration: none; color: #475569;">→ HTML5 позначка</a></li>
+        </ul>
+    </div>
+
+    <!-- Таблиці -->
+    <div class="toc-section" style="background: #fef7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #ea580c; padding-bottom: 10px;">
+            <a href="#html-tables" style="text-decoration: none; color: inherit;">📊 HTML таблиці</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#table-example" style="text-decoration: none; color: #475569;">→ Приклад таблиці</a></li>
+            <li style="margin: 8px 0;"><a href="#html-table-tags" style="text-decoration: none; color: #475569;">→ Теги HTML таблиць</a></li>
+            <li style="margin: 8px 0;"><a href="#td-attributes" style="text-decoration: none; color: #475569;">→ Атрибути &lt;td&gt;</a></li>
+            <li style="margin: 8px 0;"><a href="#th-attributes" style="text-decoration: none; color: #475569;">→ Атрибути &lt;th&gt;</a></li>
+        </ul>
+    </div>
+
+    <!-- Списки -->
+    <div class="toc-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px;">
+            <a href="#html-lists" style="text-decoration: none; color: inherit;">📝 HTML списки</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#unordered-list" style="text-decoration: none; color: #475569;">→ Невпорядкований список</a></li>
+            <li style="margin: 8px 0;"><a href="#ordered-list" style="text-decoration: none; color: #475569;">→ Впорядкований список</a></li>
+            <li style="margin: 8px 0;"><a href="#definition-list" style="text-decoration: none; color: #475569;">→ Список визначень</a></li>
+        </ul>
+    </div>
+
+    <!-- Форми -->
+    <div class="toc-section" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #16a34a; padding-bottom: 10px;">
+            <a href="#html-forms" style="text-decoration: none; color: inherit;">📄 HTML форми</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#form-tags" style="text-decoration: none; color: #475569;">→ Теги форми</a></li>
+            <li style="margin: 8px 0;"><a href="#form-attribute" style="text-decoration: none; color: #475569;">→ Атрибути форми</a></li>
+            <li style="margin: 8px 0;"><a href="#label-tags" style="text-decoration: none; color: #475569;">→ Теги міток</a></li>
+            <li style="margin: 8px 0;"><a href="#input-tags" style="text-decoration: none; color: #475569;">→ Теги вводу</a></li>
+            <li style="margin: 8px 0;"><a href="#textarea-tags" style="text-decoration: none; color: #475569;">→ Теги текстової області</a></li>
+            <li style="margin: 8px 0;"><a href="#radio-buttons" style="text-decoration: none; color: #475569;">→ Радіокнопки</a></li>
+            <li style="margin: 8px 0;"><a href="#checkboxes" style="text-decoration: none; color: #475569;">→ Прапорці</a></li>
+            <li style="margin: 8px 0;"><a href="#select-tags" style="text-decoration: none; color: #475569;">→ Теги вибору</a></li>
+            <li style="margin: 8px 0;"><a href="#fieldset-tags" style="text-decoration: none; color: #475569;">→ Теги групи полів</a></li>
+            <li style="margin: 8px 0;"><a href="#datalist-tags-html5" style="text-decoration: none; color: #475569;">→ Теги списку даних</a></li>
+            <li style="margin: 8px 0;"><a href="#submit-and-reset-buttons" style="text-decoration: none; color: #475569;">→ Кнопки відправлення</a></li>
+        </ul>
+    </div>
+
+    <!-- Теги вводу -->
+    <div class="toc-section" style="background: #fef7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #ea580c; padding-bottom: 10px;">
+            <a href="#html-input-tags" style="text-decoration: none; color: inherit;">⌨️ Теги вводу HTML</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#input-attributes" style="text-decoration: none; color: #475569;">→ Атрибути вводу</a></li>
+            <li style="margin: 8px 0;"><a href="#input-types" style="text-decoration: none; color: #475569;">→ Типи вводу</a></li>
+            <li style="margin: 8px 0;"><a href="#input-css-selectors" style="text-decoration: none; color: #475569;">→ CSS селектори вводу</a></li>
+        </ul>
+    </div>
+
+    <!-- Мета-теги -->
+    <div class="toc-section" style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #7c3aed; padding-bottom: 10px;">
+            <a href="#html-meta-tags" style="text-decoration: none; color: inherit;">🏷️ Мета-теги HTML</a>
+        </h3>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin: 8px 0;"><a href="#meta-tags" style="text-decoration: none; color: #475569;">→ Мета-теги</a></li>
+            <li style="margin: 8px 0;"><a href="#open-graph" style="text-decoration: none; color: #475569;">→ Open Graph</a></li>
+            <li style="margin: 8px 0;"><a href="#twitter-cards" style="text-decoration: none; color: #475569;">→ Twitter Cards</a></li>
+            <li style="margin: 8px 0;"><a href="#geotagging" style="text-decoration: none; color: #475569;">→ Геотегування</a></li>
+        </ul>
+    </div>
+
+    <!-- Додатково -->
+    <div class="toc-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+        <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px;">
+            <a href="#also-see" style="text-decoration: none; color: inherit;">🔗 Також дивіться</a>
+        </h3>
+        <p style="margin: 15px 0; color: #475569; font-style: italic;">Додаткові ресурси та посилання</p>
+    </div>
+
+</div>  
+        <div class="h2-wrap">
+<h2 id="getting-started"><a class="h-anchor" href="#getting-started">#</a>Початок роботи</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap col-span-2 row-span-2">
+<h3 id="hello-html"><a class="h-anchor" href="#hello-html">#</a>hello.html</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-keyword">html</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"uk"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">"X-UA-Compatible"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"IE=edge"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"viewport"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"width=device-width, initial-scale=1.0"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Зразок HTML<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">h1</span>&gt;</span>Привіт світ, це HTML!<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span>
+</code></pre>
+<p>Або спробуйте на <a target="_blank" rel="noopener external nofollow noreferrer" href="https://codepad.app/edit/3um3qn4b">CodePad</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="comment"><a class="h-anchor" href="#comment">#</a>Коментар</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- це коментар --&gt;</span>
+
+<span class="hljs-comment">&lt;!--
+    Або ви можете закоментувати
+    велику кількість рядків.
+--&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="paragraph"><a class="h-anchor" href="#paragraph">#</a>Абзац</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Це абзац.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Це інший абзац.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p">Елемент абзацу</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html-link"><a class="h-anchor" href="#html-link">#</a>HTML покликання</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"https://yepython.pp.ua"</span>&gt;</span>ЄPython<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"mailto:iamjack@abc.com"</span>&gt;</span>Email<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"tel:+12345678"</span>&gt;</span>Дзвінок<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"sms:+12345678&amp;body=ха%20ха"</span>&gt;</span>Повідомлення<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+</code></pre>
+<hr>
+<table class="left-text">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><code>href</code></td>
+<td>URL, на який вказує гіперпосилання</td>
+</tr>
+<tr>
+<td></td>
+<td><code>rel</code></td>
+<td>Відношення пов'язаного URL</td>
+</tr>
+<tr>
+<td></td>
+<td><code>target</code></td>
+<td>Місце призначення посилання: <br><code>_self</code>, <code>_blank</code>, <code>_top</code>, <code>_parent</code></td>
+</tr>
+</tbody>
+</table>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a#attributes">Атрибути &lt;a&gt;</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="image-tag"><a class="h-anchor" href="#image-tag">#</a>Тег зображення</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">loading</span>=<span class="hljs-string">"lazy"</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://xxx.png"</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">"Опис зображення тут"</span> <span class="hljs-attr">width</span>=<span class="hljs-string">"400"</span> <span class="hljs-attr">height</span>=<span class="hljs-string">"400"</span>&gt;</span>
+</code></pre>
+<hr>
+<table class="left-text">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><code>src</code></td>
+<td>Обов'язковий, Розташування зображення <em>(URL | Шлях)</em></td>
+</tr>
+<tr>
+<td></td>
+<td><code>alt</code></td>
+<td>Опис зображення</td>
+</tr>
+<tr>
+<td></td>
+<td><code>width</code></td>
+<td>Ширина зображення</td>
+</tr>
+<tr>
+<td></td>
+<td><code>height</code></td>
+<td>Висота зображення</td>
+</tr>
+<tr>
+<td></td>
+<td><code>loading</code></td>
+<td>Як браузер повинен завантажувати</td>
+</tr>
+</tbody>
+</table>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img">Елемент вбудовування зображення</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="text-formatting-tags"><a class="h-anchor" href="#text-formatting-tags">#</a>Теги форматування тексту</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>Виділений текст<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">strong</span>&gt;</span>Цей текст важливий<span class="hljs-tag">&lt;/<span class="hljs-name">strong</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">i</span>&gt;</span>Курсивний текст<span class="hljs-tag">&lt;/<span class="hljs-name">i</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">em</span>&gt;</span>Цей текст виділений<span class="hljs-tag">&lt;/<span class="hljs-name">em</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">u</span>&gt;</span>Підкреслений текст<span class="hljs-tag">&lt;/<span class="hljs-name">u</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">pre</span>&gt;</span>Попередньо відформатований текст<span class="hljs-tag">&lt;/<span class="hljs-name">pre</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">code</span>&gt;</span>Вихідний код<span class="hljs-tag">&lt;/<span class="hljs-name">code</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">del</span>&gt;</span>Видалений текст<span class="hljs-tag">&lt;/<span class="hljs-name">del</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">mark</span>&gt;</span>Виділений текст (HTML5)<span class="hljs-tag">&lt;/<span class="hljs-name">mark</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">ins</span>&gt;</span>Вставлений текст<span class="hljs-tag">&lt;/<span class="hljs-name">ins</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">sup</span>&gt;</span>Робить текст верхнім індексом<span class="hljs-tag">&lt;/<span class="hljs-name">sup</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">sub</span>&gt;</span>Робить текст нижнім індексом<span class="hljs-tag">&lt;/<span class="hljs-name">sub</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">small</span>&gt;</span>Робить текст меншим<span class="hljs-tag">&lt;/<span class="hljs-name">small</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">kbd</span>&gt;</span>Ctrl<span class="hljs-tag">&lt;/<span class="hljs-name">kbd</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">blockquote</span>&gt;</span>Цитата тексту<span class="hljs-tag">&lt;/<span class="hljs-name">blockquote</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="headings"><a class="h-anchor" href="#headings">#</a>Заголовки</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">h1</span>&gt;</span> Заголовок H1 <span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h2</span>&gt;</span> Заголовок H2 <span class="hljs-tag">&lt;/<span class="hljs-name">h2</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h3</span>&gt;</span> Заголовок H3 <span class="hljs-tag">&lt;/<span class="hljs-name">h3</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h4</span>&gt;</span> Заголовок H4 <span class="hljs-tag">&lt;/<span class="hljs-name">h4</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h5</span>&gt;</span> Заголовок H5 <span class="hljs-tag">&lt;/<span class="hljs-name">h5</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h6</span>&gt;</span> Заголовок H6 <span class="hljs-tag">&lt;/<span class="hljs-name">h6</span>&gt;</span>
+</code></pre>
+<p>На сторінці має бути лише один h1</p>
+    <div style="font-size: 2em; font-weight: bold;margin-bottom: 15px;">&nbsp;Заголовок H1
+    </div>
+    <div style="font-size: 1.5em; font-weight: bold;margin-bottom: 10px;">&nbsp;Заголовок H2
+    </div>
+    <div style="font-size: 1.17em; font-weight: bold;margin-bottom: 10px;">&nbsp;Заголовок H3
+    </div>
+    <div style="font-size: 1em; font-weight: bold;margin-bottom: 10px;">&nbsp;Заголовок H4
+    </div>
+    <div style="font-size: 0.83em; font-weight: bold;">&nbsp;Заголовок H5
+    </div>
+    <div style="font-size: 0.67em; font-weight: bold;">&nbsp;Заголовок H6
+    </div>
+</div>
+
+</div>
+<div class="h3-wrap">
+<h3 id="section-divisions"><a class="h-anchor" href="#section-divisions">#</a>Розділи секцій</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;div&gt;&lt;/div&gt;</code></td>
+<td>Розділ або секція вмісту сторінки</td>
+</tr>
+<tr>
+<td><code>&lt;span&gt;&lt;/span&gt;</code></td>
+<td>Ділянка тексту в межах іншого вмісту</td>
+</tr>
+<tr>
+<td><code>&lt;p&gt;&lt;/p&gt;</code></td>
+<td>Абзац тексту</td>
+</tr>
+<tr>
+<td><code>&lt;br&gt;</code></td>
+<td>Розрив рядка</td>
+</tr>
+<tr>
+<td><code>&lt;hr&gt;</code></td>
+<td>Базова горизонтальна лінія</td>
+</tr>
+</tbody>
+</table>
+<p>Це теги, що використовуються для поділу сторінки на секції</p>
+</div>
+</div>
+<div class="h3-wrap row-span-2">
+<h3 id="inline-frame"><a class="h-anchor" href="#inline-frame">#</a>Вбудований фрейм</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">iframe</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"Нью-Йорк"</span>
+    <span class="hljs-attr">width</span>=<span class="hljs-string">"342"</span>
+    <span class="hljs-attr">height</span>=<span class="hljs-string">"306"</span>
+    <span class="hljs-attr">id</span>=<span class="hljs-string">"gmap_canvas"</span>
+    <span class="hljs-attr">src</span>=<span class="hljs-string">"https://maps.google.com/maps?q=2880%20Broadway,%20New%20York&amp;t=&amp;z=13&amp;ie=UTF8&amp;iwloc=&amp;output=embed"</span>
+    <span class="hljs-attr">scrolling</span>=<span class="hljs-string">"no"</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">iframe</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview"><a class="h-anchor" href="#↓-preview">#</a>↓ Попередній перегляд</h4>
+<iframe title="Нью-Йорк" width="342" height="306" id="gmap_canvas" src="https://maps.google.com/maps?q=2880%20Broadway,%20New%20York&amp;t=&amp;z=13&amp;ie=UTF8&amp;iwloc=&amp;output=embed" scrolling="no">
+</iframe>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe">Елемент вбудованого фрейму</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="javascript-in-html"><a class="h-anchor" href="#javascript-in-html">#</a>JavaScript в HTML</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text/javascript"</span>&gt;</span><span class="language-javascript">
+    <span class="hljs-keyword">let</span> text = <span class="hljs-string">"Приві, світ!"</span>;
+    <span class="hljs-title function_">alert</span>(text);
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre>
+<h4 id="external-javascript"><a class="h-anchor" href="#external-javascript">#</a>Зовнішній JavaScript</h4>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>
+    ...
+    
+    <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"app.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="css-in-html"><a class="h-anchor" href="#css-in-html">#</a>CSS в HTML</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">style</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text/css"</span>&gt;</span><span class="language-css">
+    <span class="hljs-selector-tag">h1</span> {
+        <span class="hljs-attribute">color</span>: purple;
+    }
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+</code></pre>
+<h4 id="external-stylesheet"><a class="h-anchor" href="#external-stylesheet">#</a>Зовнішня таблиця стилів</h4>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
+...
+<span class="hljs-tag">&lt;<span class="hljs-name">link</span> <span class="hljs-attr">rel</span>=<span class="hljs-string">"stylesheet"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"style.css"</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap">
+<h2 id="html5-tags"><a class="h-anchor" href="#html5-tags">#</a>Теги HTML5</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap">
+<h3 id="document"><a class="h-anchor" href="#document">#</a>Документ</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">header</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">nav</span>&gt;</span>...<span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">header</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">main</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">h1</span>&gt;</span>Хтось Робив<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">main</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">footer</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>©2025 Хтось Робив<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">footer</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="header-navigation"><a class="h-anchor" href="#header-navigation">#</a>Навігація заголовка</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">header</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">nav</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#"</span>&gt;</span>Редагувати сторінку<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#"</span>&gt;</span>Twitter<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#"</span>&gt;</span>Facebook<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">header</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap row-span-4">
+<h3 id="html5-tags-2"><a class="h-anchor" href="#html5-tags-2">#</a>Теги HTML5</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article">article</a></td>
+<td>Незалежний вміст</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside">aside</a></td>
+<td>Другорядний вміст</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio">audio</a></td>
+<td>Вбудовує звук або аудіопотік</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi">bdi</a></td>
+<td>Елемент двонаправленої ізоляції</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas">canvas</a></td>
+<td>Малює графіку через JavaScript</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data">data</a></td>
+<td>Вміст, що читається машиною</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist">datalist</a></td>
+<td>Набір попередньо визначених опцій</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details">details</a></td>
+<td>Додаткова інформація</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog">dialog</a></td>
+<td>Діалогове вікно або підвікно</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed">embed</a></td>
+<td>Вбудовує зовнішній додаток</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption">figcaption</a></td>
+<td>Підпис або легенда для фігури</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure">figure</a></td>
+<td>Проілюстрована фігура</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer">footer</a></td>
+<td>Нижній колонтитул або найменш важливий</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header">header</a></td>
+<td>Заголовок або важлива інформація</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main">main</a></td>
+<td>Основний вміст документа</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark">mark</a></td>
+<td>Виділений текст</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter">meter</a></td>
+<td>Скалярне значення в межах відомого діапазону</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav">nav</a></td>
+<td>Секція навігаційних посилань</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output">output</a></td>
+<td>Результат обчислення</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture">picture</a></td>
+<td>Контейнер для кількох джерел зображень</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress">progress</a></td>
+<td>Прогрес завершення завдання</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp">rp</a></td>
+<td>Надає резервні дужки</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt">rt</a></td>
+<td>Визначає вимову символу</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby">ruby</a></td>
+<td>Представляє рубі-анотацію</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section">section</a></td>
+<td>Група в серії пов'язаного вмісту</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source">source</a></td>
+<td>Ресурси для медіа-елементів</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary">summary</a></td>
+<td>Короткий опис для елемента &lt;details&gt;</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template">template</a></td>
+<td>Визначає фрагменти HTML</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time">time</a></td>
+<td>Час або дата</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track">track</a></td>
+<td>Текстові доріжки для медіа-елементів</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video">video</a></td>
+<td>Вбудовує відео</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr">wbr</a></td>
+<td>Можливість розриву рядка</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html5-video"><a class="h-anchor" href="#html5-video">#</a>HTML5 відео</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">video</span> <span class="hljs-attr">controls</span>=<span class="hljs-string">""</span> <span class="hljs-attr">width</span>=<span class="hljs-string">"100%"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">source</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"video/mp4"</span>&gt;</span>
+    Вибачте, ваш браузер не підтримує вбудовані відео.
+<span class="hljs-tag">&lt;/<span class="hljs-name">video</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-2"><a class="h-anchor" href="#↓-preview-2">#</a>↓ Попередній перегляд</h4>
+<video controls="controls" width="100%">
+    <source src="flower.mp4" type="video/mp4">
+    Вибачте, ваш браузер не підтримує вбудовані відео.
+</video>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html5-audio"><a class="h-anchor" href="#html5-audio">#</a>HTML5 аудіо</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">audio</span> <span class="hljs-attr">controls</span>
+    <span class="hljs-attr">src</span>=<span class="hljs-string">"https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"</span>&gt;</span>
+    Ваш браузер не підтримує аудіо-елемент.
+<span class="hljs-tag">&lt;/<span class="hljs-name">audio</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-3"><a class="h-anchor" href="#↓-preview-3">#</a>↓ Попередній перегляд</h4>
+<p><audio controls="controls" class="w-full" src="t-rex-roar.mp3">
+Ваш браузер не підтримує аудіо-елемент.
+</audio></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html5-bdi"><a class="h-anchor" href="#html5-bdi">#</a>HTML5 bdi</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Користувач <span class="hljs-tag">&lt;<span class="hljs-name">bdi</span>&gt;</span>Мина Мазайло<span class="hljs-tag">&lt;/<span class="hljs-name">bdi</span>&gt;</span>: 60 балів<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Користувач <span class="hljs-tag">&lt;<span class="hljs-name">bdi</span>&gt;</span>John Doe<span class="hljs-tag">&lt;/<span class="hljs-name">bdi</span>&gt;</span>: 80 балів<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Користувач <span class="hljs-tag">&lt;<span class="hljs-name">bdi</span>&gt;</span>إيان<span class="hljs-tag">&lt;/<span class="hljs-name">bdi</span>&gt;</span>: 90 балів<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-5"><a class="h-anchor" href="#↓-preview-5">#</a>↓ Попередній перегляд</h4>
+<ul>
+ <li>Користувач <bdi>Мина Мазайло</bdi>: 60 балів</li>
+ <li>Користувач <bdi>John Doe</bdi>: 80 балів</li>
+ <li style="border-bottom: medium;">Користувач <bdi>إيان</bdi>: 90 балів</li>
+</ul>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html5-progress"><a class="h-anchor" href="#html5-progress">#</a>HTML5 прогрес</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">progress</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"50"</span> <span class="hljs-attr">max</span>=<span class="hljs-string">"100"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">progress</span>&gt;</span>
+</code></pre>
+<p><progress value="50" max="100" class="w-full"></progress></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="html5-mark"><a class="h-anchor" href="#html5-mark">#</a>HTML5 позначка</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Я люблю <span class="hljs-tag">&lt;<span class="hljs-name">mark</span>&gt;</span>HTML<span class="hljs-tag">&lt;/<span class="hljs-name">mark</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>Я люблю <mark>HTML</mark></p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap">
+<h2 id="html-tables"><a class="h-anchor" href="#html-tables">#</a>HTML таблиці</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap row-span-2">
+<h3 id="table-example"><a class="h-anchor" href="#table-example">#</a>Приклад таблиці</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">table</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">thead</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>Автор<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>Кількість<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">thead</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">tbody</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>Іван Нечуй-Левицький<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>39<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>Степан Руданський<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>25<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">tbody</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span>
+</code></pre>
+<div>
+
+<table style="border: 1px solid black;">
+    <thead style="display: table-header-group;">
+        <tr>
+            <td style="border: 1px solid black;">Автор</td>
+            <td style="border: 1px solid black;">Кількість</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="border: 1px solid black;">Іван Нечуй-Левицький</td>
+            <td style="border: 1px solid black;">39</td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black;">Степан Руданський</td>
+            <td style="border: 1px solid black;">25</td>
+        </tr>
+    </tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div class="h3-wrap row-span-2">
+<h3 id="html-table-tags"><a class="h-anchor" href="#html-table-tags">#</a>Теги HTML таблиць</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th>Тег</th>
+<th>Опис</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table">&lt;table&gt;</a></td>
+<td>Визначає таблицю</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th">&lt;th&gt;</a></td>
+<td>Визначає заголовок комірки в таблиці</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr">&lt;tr&gt;</a></td>
+<td>Визначає рядок у таблиці</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td">&lt;td&gt;</a></td>
+<td>Визначає комірку в таблиці</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption">&lt;caption&gt;</a></td>
+<td>Визначає заголовок таблиці</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup">&lt;colgroup&gt;</a></td>
+<td>Визначає групу стовпців</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col">&lt;col&gt;</a></td>
+<td>Визначає стовпець у таблиці</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead">&lt;thead&gt;</a></td>
+<td>Групує вміст заголовка</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody">&lt;tbody&gt;</a></td>
+<td>Групує вміст тіла</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot">&lt;tfoot&gt;</a></td>
+<td>Групує вміст нижнього колонтитула</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="td-attributes"><a class="h-anchor" href="#td-attributes">#</a>Атрибути &lt;td&gt;</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th>Атрибут</th>
+<th>Опис</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>colspan</code></td>
+<td>Кількість стовпців, які має охоплювати комірка</td>
+</tr>
+<tr>
+<td><code>headers</code></td>
+<td>Один або кілька заголовків комірок, з якими пов'язана комірка</td>
+</tr>
+<tr>
+<td><code>rowspan</code></td>
+<td>Кількість рядків, які має охоплювати комірка</td>
+</tr>
+</tbody>
+</table>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td#attributes">td#Атрибути</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="th-attributes"><a class="h-anchor" href="#th-attributes">#</a>Атрибути &lt;th&gt;</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th>Атрибут</th>
+<th>Опис</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>colspan</code></td>
+<td>Кількість стовпців, які має охоплювати комірка</td>
+</tr>
+<tr>
+<td><code>headers</code></td>
+<td>Один або кілька заголовків комірок, з якими пов'язана комірка</td>
+</tr>
+<tr>
+<td><code>rowspan</code></td>
+<td>Кількість рядків, які має охоплювати комірка</td>
+</tr>
+<tr>
+<td><code>abbr</code></td>
+<td>Опис вмісту комірки</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attr-scope">scope</a></td>
+<td>Елемент заголовка, до якого відноситься</td>
+</tr>
+</tbody>
+</table>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th#attributes">th#Атрибути</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap">
+<h2 id="html-lists"><a class="h-anchor" href="#html-lists">#</a>HTML списки</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap">
+<h3 id="unordered-list"><a class="h-anchor" href="#unordered-list">#</a>Невпорядкований список</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це інший елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це ще інший елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul">Елемент невпорядкованого списку</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="ordered-list"><a class="h-anchor" href="#ordered-list">#</a>Впорядкований список</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">ol</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це перший елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це другий елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span>Це третій елемент<span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">ol</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol">Елемент впорядкованого списку</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="definition-list"><a class="h-anchor" href="#definition-list">#</a>Список визначень</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">dl</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">dt</span>&gt;</span>Термін<span class="hljs-tag">&lt;/<span class="hljs-name">dt</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">dd</span>&gt;</span>Визначення терміну<span class="hljs-tag">&lt;/<span class="hljs-name">dd</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">dt</span>&gt;</span>Інший термін<span class="hljs-tag">&lt;/<span class="hljs-name">dt</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">dd</span>&gt;</span>Визначення іншого терміну<span class="hljs-tag">&lt;/<span class="hljs-name">dd</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dl</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl">Елемент списку описів</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap">
+<h2 id="html-forms"><a class="h-anchor" href="#html-forms">#</a>HTML форми</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap row-span-2">
+<h3 id="form-tags"><a class="h-anchor" href="#form-tags">#</a>Теги форми</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">form</span> <span class="hljs-attr">method</span>=<span class="hljs-string">"POST"</span> <span class="hljs-attr">action</span>=<span class="hljs-string">"api/login"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"mail"</span>&gt;</span>Email: <span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"email"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"mail"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"mail"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">br</span>/&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"pw"</span>&gt;</span>Пароль: <span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"pw"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"pw"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">br</span>/&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"submit"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Увійти"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">br</span>/&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"checkbox"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"ck"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"ck"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"ck"</span>&gt;</span>Запам'ятати мене<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">form</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-6"><a class="h-anchor" href="#↓-preview-6">#</a>↓ Попередній перегляд</h4>
+<form method="POST" action="api/login" style="padding:20px">
+    <label for="email">Email: </label> 
+    <input type="email" id="email" name="email" class="border border-slate-400 mt-2">
+    <br>
+    <label for="pwd">Пароль: </label> 
+    <input type="password" id="pwd" name="pwd" class="border border-slate-400 mt-2">
+    <br>
+    <input type="submit" value="Увійти" class="mt-2">
+    <br>
+    <input type="checkbox" id="ck" name="ck" class="mt-2">
+    <label for="ck">Запам'ятати мене</label> 
+</form>
+<p>HTML елемент <code>&lt;form&gt;</code> використовується для збору та відправлення інформації до зовнішнього джерела.</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="form-attribute"><a class="h-anchor" href="#form-attribute">#</a>Атрибути форми</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th>Атрибут</th>
+<th>Опис</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Назва форми для скриптів</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>URL скрипту форми</td>
+</tr>
+<tr>
+<td><code>method</code></td>
+<td>HTTP метод, <code>POST</code> / <code>GET</code> <em>(за замовчуванням)</em></td>
+</tr>
+<tr>
+<td><code>enctype</code></td>
+<td>Тип медіа, див. <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/enctype">enctype</a></td>
+</tr>
+<tr>
+<td><code>onsubmit</code></td>
+<td>Запускається, коли форма була відправлена</td>
+</tr>
+<tr>
+<td><code>onreset</code></td>
+<td>Запускається, коли форма була скинута</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="label-tags"><a class="h-anchor" href="#label-tags">#</a>Теги міток</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- Вкладена мітка --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span>&gt;</span>Клацніть мене 
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"user"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- Атрибут 'for' --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"user"</span>&gt;</span>Клацніть мене<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"user"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span>/&gt;</span>
+</code></pre>
+<p><code>for</code> у мітці посилається на атрибут <code>id</code> поля вводу</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="input-tags"><a class="h-anchor" href="#input-tags">#</a>Теги вводу</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"Name"</span>&gt;</span>Ім'я:<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"Name"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">""</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-7"><a class="h-anchor" href="#↓-preview-7">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <label for="username">Ім'я користувача:</label>
+    <input type="text" name="username" id="username" class="border border-slate-400">
+</form>
+<p>Див: <a href="#html-input-tags">Теги вводу HTML</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="textarea-tags"><a class="h-anchor" href="#textarea-tags">#</a>Теги текстової області</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">textarea</span> <span class="hljs-attr">rows</span>=<span class="hljs-string">"2"</span> <span class="hljs-attr">cols</span>=<span class="hljs-string">"30"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"address"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"address"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">textarea</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-8"><a class="h-anchor" href="#↓-preview-8">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <textarea rows="2" cols="30" name="address" id="address" class="border border-slate-400" style="width:100%"></textarea>
+</form>
+<p>Textarea - це багаторядковий елемент керування введенням тексту</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="radio-buttons"><a class="h-anchor" href="#radio-buttons">#</a>Радіокнопки</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"radio"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"gender"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"m"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"m"</span>&gt;</span>Чоловік<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"radio"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"gender"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"f"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"f"</span>&gt;</span>Жінка<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-9"><a class="h-anchor" href="#↓-preview-9">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <input type="radio" name="gender" id="m">
+    <label for="m">Чоловік</label>
+    <input type="radio" name="gender" id="f">
+    <label for="f">Жінка</label>
+</form>
+<p>Радіокнопки використовуються, щоб дозволити користувачеві вибрати лише один варіант із пропонованих</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="checkboxes"><a class="h-anchor" href="#checkboxes">#</a>Прапорці</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"checkbox"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"s"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"soc"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"soc"</span>&gt;</span>Волейбол<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"checkbox"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"s"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"bas"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"bas"</span>&gt;</span>Баскетбол<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-10"><a class="h-anchor" href="#↓-preview-10">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <input type="checkbox" name="sports" id="soccer">
+    <label for="soccer">Волейбол</label>
+    <input type="checkbox" name="sports" id="baseball">
+    <label for="baseball">Баскетбол</label>
+</form>
+<p>Прапорці дозволяють користувачеві вибрати один або кілька варіантів з пропонованих</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="select-tags"><a class="h-anchor" href="#select-tags">#</a>Теги вибору</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"city"</span>&gt;</span>Місто:<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"city"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"city"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"1"</span>&gt;</span>Жмеринка<span class="hljs-tag">&lt;/<span class="hljs-name">option</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"2"</span>&gt;</span>Брацлав<span class="hljs-tag">&lt;/<span class="hljs-name">option</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"3"</span>&gt;</span>Козятин<span class="hljs-tag">&lt;/<span class="hljs-name">option</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-11"><a class="h-anchor" href="#↓-preview-11">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <label for="city">Місто:</label>
+    <select name="city" id="city" class="border border-slate-400">
+        <option value="1" selected="selected">Жмеринка</option>
+        <option value="2">Брацлав</option>
+        <option value="3">Козятин</option>
+    </select>
+</form>
+<p>Випадаючий список - це список опцій, що випадає</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="fieldset-tags"><a class="h-anchor" href="#fieldset-tags">#</a>Теги групи полів</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">fieldset</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">legend</span>&gt;</span>Ваша улюблена книга<span class="hljs-tag">&lt;/<span class="hljs-name">legend</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"radio"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"vas"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"vas"</span>&gt;</span>Таємничий острів<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">br</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"radio"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"sas"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"sas"</span>&gt;</span>Подорож до центру Землі<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">fieldset</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-12"><a class="h-anchor" href="#↓-preview-12">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <fieldset class="border border-slate-400" style="padding:20px">
+        <legend>Ваша улюблена книга</legend>
+        <input type="radio" id="vas" name="book">
+        <label for="vas">Таємничий острів</label><br>
+        <input type="radio" id="sas" name="book">
+        <label for="sas">Подорож до центру Землі</label>
+    </fieldset>
+</form>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="datalist-tags-html5"><a class="h-anchor" href="#datalist-tags-html5">#</a>Теги списку даних (HTML5)</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"b"</span>&gt;</span>Виберіть браузер: <span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">list</span>=<span class="hljs-string">"list"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"b"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"browser"</span>/&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">datalist</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"list"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Chrome"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Firefox"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Brave"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Opera"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Safari"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">option</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Microsoft Edge"</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">datalist</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-13"><a class="h-anchor" href="#↓-preview-13">#</a>↓ Попередній перегляд</h4>
+<form style="padding:20px">
+    <label for="myBrowser">Виберіть браузер:</label>
+    <input list="browsers" id="myBrowser" name="myBrowser" class="border border-slate-400">
+    <datalist id="browsers">
+      <option value="Chrome">
+      <option value="Firefox">
+      <option value="Brave">
+      <option value="Opera">
+      <option value="Safari">
+      <option value="Microsoft Edge">
+    </datalist>
+</form>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="submit-and-reset-buttons"><a class="h-anchor" href="#submit-and-reset-buttons">#</a>Кнопки відправлення та скидання</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">form</span> <span class="hljs-attr">action</span>=<span class="hljs-string">"register.php"</span> <span class="hljs-attr">method</span>=<span class="hljs-string">"post"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"foo"</span>&gt;</span>Ім'я:<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"foo"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"submit"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Надіслати"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"reset"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Скинути"</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">form</span>&gt;</span>
+</code></pre>
+<h4 id="↓-preview-14"><a class="h-anchor" href="#↓-preview-14">#</a>↓ Попередній перегляд</h4>
+<form action="register.php" method="post" style="padding:20px">
+    <label for="name">Ім'я:</label>
+    <input type="text" name="name" id="name" class="border border-slate-400">
+    <input type="submit" value="Надіслати">
+    <input type="reset" value="Скинути">
+</form>
+<p><code>Надіслати</code> дані на сервер; <code>Скинути</code> до значень за замовчуванням</p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap cols-2">
+<h2 id="html-input-tags"><a class="h-anchor" href="#html-input-tags">#</a>Теги вводу HTML</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap row-span-2">
+<h3 id="input-attributes"><a class="h-anchor" href="#input-attributes">#</a>Атрибути вводу</h3>
+<div class="section">
+<p>Тег input є порожнім елементом, що ідентифікує конкретний тип інформації поля для отримання від користувача.</p>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs wrap language-html"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"?"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"?"</span> <span class="hljs-attr">minlength</span>=<span class="hljs-string">"6"</span>	 <span class="hljs-attr">required</span> /&gt;</span>
+</code></pre>
+<hr>
+<table class="left-text">
+<thead>
+<tr>
+<th>-</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><code>type="…"</code></td>
+<td>Тип даних, що вводяться</td>
+</tr>
+<tr>
+<td></td>
+<td><code>value="…"</code></td>
+<td>Значення за замовчуванням</td>
+</tr>
+<tr>
+<td></td>
+<td><code>name="…"</code></td>
+<td>Використовується для опису цих даних у HTTP-запиті</td>
+</tr>
+<tr>
+<td></td>
+<td><code>id="…"</code></td>
+<td>Унікальний ідентифікатор, який використовують інші HTML-елементи</td>
+</tr>
+<tr>
+<td></td>
+<td><code>readonly</code></td>
+<td>Запобігає модифікації користувачем</td>
+</tr>
+<tr>
+<td></td>
+<td><code>disabled</code></td>
+<td>Запобігає будь-якій взаємодії</td>
+</tr>
+<tr>
+<td></td>
+<td><code>checked</code></td>
+<td>Чи вибрано радіокнопку або прапорець</td>
+</tr>
+<tr>
+<td></td>
+<td><code>required</code></td>
+<td>Обов'язковість заповнення, див. <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/required#example">required</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>placeholder="…"</code></td>
+<td>Додає тимчасовий текст, див. <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/CSS/::placeholder#examples">::placeholder</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>autocomplete="off"</code></td>
+<td>Вимкнути автозаповнення</td>
+</tr>
+<tr>
+<td></td>
+<td><code>autocapitalize="none"</code></td>
+<td>Вимкнути автоматичну капіталізацію</td>
+</tr>
+<tr>
+<td></td>
+<td><code>inputmode="…"</code></td>
+<td>Відобразити конкретну клавіатуру, див. <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inputmode">inputmode</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>list="…"</code></td>
+<td>ID пов'язаного <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist">datalist</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>maxlength="…"</code></td>
+<td>Максимальна кількість символів</td>
+</tr>
+<tr>
+<td></td>
+<td><code>minlength="…"</code></td>
+<td>Мінімальна кількість символів</td>
+</tr>
+<tr>
+<td></td>
+<td><code>min="…"</code></td>
+<td>Мінімальне числове значення для range &amp; number</td>
+</tr>
+<tr>
+<td></td>
+<td><code>max="…"</code></td>
+<td>Максимальне числове значення для range &amp; number</td>
+</tr>
+<tr>
+<td></td>
+<td><code>step="…"</code></td>
+<td>Як число буде збільшуватися в range &amp; number</td>
+</tr>
+<tr>
+<td></td>
+<td><code>pattern="…"</code></td>
+<td>Вказує регулярний вираз, див. <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/pattern">pattern</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>autofocus</code></td>
+<td>Бути у фокусі</td>
+</tr>
+<tr>
+<td></td>
+<td><code>spellcheck</code></td>
+<td>Виконувати перевірку орфографії</td>
+</tr>
+<tr>
+<td></td>
+<td><code>multiple</code></td>
+<td>Чи дозволити <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/multiple">multiple</a> значення</td>
+</tr>
+<tr>
+<td></td>
+<td><code>accept=""</code></td>
+<td>Очікуваний тип файлу в елементах керування <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file">file</a> завантаження</td>
+</tr>
+</tbody>
+</table>
+<p>Також див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#attributes">Атрибути для елемента &lt;input&gt;</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="input-types"><a class="h-anchor" href="#input-types">#</a>Типи вводу</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type="checkbox"</code></td>
+<td><input type="checkbox" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="radio"</code></td>
+<td><input type="radio" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="file"</code></td>
+<td><input type="file" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="hidden"</code></td>
+<td><input type="hidden" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="text"</code></td>
+<td><input type="text" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="password"</code></td>
+<td><input type="password" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="image"</code></td>
+<td><input type="image" src="login.png" width="70"></td>
+</tr>
+<tr>
+<td><code>type="reset"</code></td>
+<td><input type="reset" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="button"</code></td>
+<td><input type="button" class="border border-slate-400">Кнопка</td>
+</tr>
+<tr>
+<td><code>type="submit"</code></td>
+<td><input type="submit" class="border border-slate-400"></td>
+</tr>
+</tbody>
+</table>
+<h4 id="new-input-types-in-html5"><a class="h-anchor" href="#new-input-types-in-html5">#</a>Нові типи вводу в HTML5</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type="color"</code></td>
+<td><input type="color" value="#0fb881" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="date"</code></td>
+<td><input type="date" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="time"</code></td>
+<td><input type="time" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="month"</code></td>
+<td><input type="month" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="datetime-local"</code></td>
+<td><input type="datetime-local" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="week"</code></td>
+<td><input type="week" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="email"</code></td>
+<td><input type="email" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="tel"</code></td>
+<td><input type="tel" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="url"</code></td>
+<td><input type="url" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="number"</code></td>
+<td><input type="number" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="search"</code></td>
+<td><input type="search" class="border border-slate-400"></td>
+</tr>
+<tr>
+<td><code>type="range"</code></td>
+<td><input type="range" class="border border-slate-400" value="50"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="input-css-selectors"><a class="h-anchor" href="#input-css-selectors">#</a>CSS селектори вводу</h3>
+<div class="section">
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input:focus</code></td>
+<td>Коли отримує фокус клавіатури</td>
+</tr>
+</tbody>
+</table>
+<p>Див: <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes">Псевдокласи вводу</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap cols-2">
+<h2 id="html-meta-tags"><a class="h-anchor" href="#html-meta-tags">#</a>Мета-теги HTML</h2>
+<div class="h3-wrap-list">
+<div class="h3-wrap row-span-3">
+<h3 id="meta-tags"><a class="h-anchor" href="#meta-tags">#</a>Мета-теги</h3>
+<div class="section">
+<p>Мета-тег описує метадані в HTML-документі. Він пояснює додаткову інформацію про HTML.</p>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"utf-8"</span>&gt;</span>
+</code></pre>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- заголовок --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>···<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:title"</span>  <span class="hljs-attr">content</span>=<span class="hljs-string">"···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:title"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"···"</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- url --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">link</span> <span class="hljs-attr">rel</span>=<span class="hljs-string">"canonical"</span>       <span class="hljs-attr">href</span>=<span class="hljs-string">"https://···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:url"</span>  <span class="hljs-attr">content</span>=<span class="hljs-string">"https://···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:url"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://···"</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- опис --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"description"</span>         <span class="hljs-attr">content</span>=<span class="hljs-string">"···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:description"</span>  <span class="hljs-attr">content</span>=<span class="hljs-string">"···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:description"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"···"</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- зображення --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:image"</span>  <span class="hljs-attr">content</span>=<span class="hljs-string">"https://···"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:image"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://···"</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- ua --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">"X-UA-Compatible"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"IE=edge,chrome=1"</span>&gt;</span>
+</code></pre>
+<hr>
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-comment">&lt;!-- viewport --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"viewport"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"width=device-width"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"viewport"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"width=1024"</span>&gt;</span>
+</code></pre>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="open-graph"><a class="h-anchor" href="#open-graph">#</a>Open Graph</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:type"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"website"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:locale"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"uk_UA"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:title"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"HTML шпаргалка"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:url"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://yepython.pp.ua"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:image"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://freepng.com/uploads/images/202302/ree-vector-pink-pig-png_1020x.jpg"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:site_name"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"Назва вашого веб-сайту"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">property</span>=<span class="hljs-string">"og:description"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"Опис цієї сторінки"</span>&gt;</span>
+</code></pre>
+<p>Використовується Facebook, Instagram, Pinterest, LinkedIn тощо.</p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="twitter-cards"><a class="h-anchor" href="#twitter-cards">#</a>Twitter Cards</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:card"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"summary"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:site"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"@Yepython"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:title"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"HTML шпаргалка"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:url"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://yepython.pp.ua"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:description"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"Опис цієї сторінки"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"twitter:image"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"https://freepng.com/uploads/images/202302/ree-vector-pink-pig-png_1020x.jpg"</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://developer.twitter.com/en/docs/tweets/optimize-with-cards/overview/summary">Документація Twitter Card</a></p>
+</div>
+</div>
+<div class="h3-wrap">
+<h3 id="geotagging"><a class="h-anchor" href="#geotagging">#</a>Геотегування</h3>
+<div class="section">
+<pre style="position: relative;"><button class="bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2" style="opacity: 0;"><svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg></button><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"ICBM"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"45.416667,-75.7"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"geo.position"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"45.416667;-75.7"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"geo.region"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"ca-on"</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"geo.placename"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"Ottawa"</span>&gt;</span>
+</code></pre>
+<p>Див: <a target="_blank" rel="noopener external nofollow noreferrer" href="https://en.wikipedia.org/wiki/Geotagging#HTML_pages">Геотегування</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="h2-wrap">
+<h2 id="also-see"><a class="h-anchor" href="#also-see">#</a>Також дивіться</h2>
+<div class="h3-wrap-list">
+<ul>
+<li><a target="_blank" rel="noopener external nofollow noreferrer" href="https://www.w3.org/TR/REC-html40/cover.html#minitoc">Специфікація HTML 4.01</a> <em>(w3.org)</em></li>
+</ul>
+</div>
+</div>
+
+ 
+</script></footer><div id="carbon_container"><script type="text/javascript" src="carbon.js" id="_carbonads_js" async="true"></script></div><script src="main.js"></script><script>
+        // Get all pre > code elements
+        const codeBlocks = document.querySelectorAll('pre > code');
+        const initInnerHTML = '<svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path> </svg>';
+        const successInnerHTML = '<svg height="1em" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>';
+        codeBlocks.forEach(function (codeBlock) {
+            // Create a copy button element
+            const copyButton = document.createElement('button');
+            copyButton.className = 'bg-emerald-500 p-2 text-white fadeIn shadow-xl rounded flex items-center absolute top-2 right-2';
+            copyButton.innerHTML = initInnerHTML;
+            copyButton.style.opacity = "0";
+            const parent = codeBlock.parentNode;
+
+            parent.style = "position: relative;"
+            parent.insertBefore(copyButton, codeBlock);
+
+            // Add click event listener to copy button
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                    copyButton.innerHTML = successInnerHTML;
+                    setTimeout(() => {
+                        copyButton.innerHTML = initInnerHTML;
+                    }, 1000);
+                });
+            });
+
+            parent.addEventListener('mouseenter', () => {
+                copyButton.style.opacity = "1";
+            });
+            parent.addEventListener('mouseleave', () => {
+                copyButton.style.opacity = "0";
+            });
+        });
+    </script>
+</body></html>
