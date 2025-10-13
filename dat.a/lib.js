@@ -30,6 +30,7 @@ let constructorMode = null;
 let screenGridVisible = false; 
 let screenCanvas = null; 
 let isCreatingNewRecord = false;
+let currentPreviewForm = null;
 let isOwnSQL = false;
 let queries = {
         definitions: [], // Stores query configurations
@@ -156,6 +157,7 @@ function saveDatabase() {
         console.log("Зберігаємо звіти: ",database.reports)
         // Зберігаємо форми
         localStorage.setItem(database.fileName + ".forms-data", JSON.stringify(database.forms || []));
+        console.log("Зберігаємо форми: ",database.forms)
         // Зберігаємо зв'язки
         resetNonReadonlyRelations();
         console.log("Зберігаємо зв'язки: ",database.relations)
@@ -4124,8 +4126,24 @@ async function importDTA(file) {
 
     // 🆕 Форми
     if (zip.file("forms.json")) {
+        console.log("Знайдено форми")
         const formsText = await zip.file("forms.json").async("string");
         database.forms = JSON.parse(formsText);
+        // Валідація форм після імпорту
+        database.forms = database.forms.map(form => ({
+            ...form,
+            elements: form.elements.map(el => {
+                if (el.type === "field") {
+                    return {
+                        ...el,
+                        tableName: el.tableName || "",
+                        fieldName: el.fieldName || ""
+                    };
+                }
+                return el;
+            })
+        }));
+     console.log(database.forms)   
     } else {
         database.forms = [];
     }
@@ -4703,8 +4721,16 @@ function addScreenGrid() {
         }
         screenGridVisible = !screenGridVisible;
 }    
+function closeFormPreview() {
+    document.getElementById("formPreviewModal").style.display = "none";
+    currentPreviewForm = null; 
+}
 
 function previewForm(form = null, resetIndex = false) {
+    // Зберігаємо поточну форму для навігації
+    if (form) {
+        currentPreviewForm = form;
+    }
     const previewModal = document.getElementById("formPreviewModal");
     const previewCanvas = document.getElementById("formPreviewCanvas");
 
@@ -4765,7 +4791,7 @@ function previewForm(form = null, resetIndex = false) {
             return t ? t.data.length : 0;
         })) - 1
         : 0;
-
+    console.log("maxRecordIndex =",maxRecordIndex )
     if (resetIndex) currentFormRecordIndex = 0;
     currentFormRecordIndex = Math.min(currentFormRecordIndex, maxRecordIndex);
 
@@ -5363,12 +5389,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function goToFirstRecord() {
         currentFormRecordIndex = 0;
-        previewForm();
+        reviewForm(currentPreviewForm, false);
     }
 
     function goToPreviousRecord() {
         currentFormRecordIndex = Math.max(0, currentFormRecordIndex - 1);
-        previewForm();
+        previewForm(currentPreviewForm, false);
     }
 
     function goToNextRecord() {
@@ -5376,14 +5402,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const tables = database.tables;
         const maxLength = Math.max(...tables.map(t => t.data.length));
         currentFormRecordIndex = Math.min(maxLength - 1, currentFormRecordIndex + 1);
-        previewForm();
+        previewForm(currentPreviewForm, false);
     }
 
     function goToLastRecord() {
         const tables = database.tables;
         const maxLength = Math.max(...tables.map(t => t.data.length));
         currentFormRecordIndex = maxLength - 1;
-        previewForm();
+        previewForm(currentPreviewForm, false);
     }
 
 function createNewRecord() {
