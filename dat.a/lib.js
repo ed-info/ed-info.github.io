@@ -39,7 +39,6 @@ let queries = {
 
     
 closeAllModals();
-    
 // Завантаження SQL.js
 initSqlJs({
         locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
@@ -47,7 +46,14 @@ initSqlJs({
         SQL = SQLLib;
         //loadDatabase();
     });
-   
+/*
+initSqlJs({
+    locateFile: file => `lib/${file}`   // локальний шлях до sql-wasm.wasm
+}).then(SQLLib => {
+    SQL = SQLLib;
+    // loadDatabase();
+});
+*/   
 function getCurrentTableNames() {
       return Object.keys(database.tables || {});
     }
@@ -529,41 +535,48 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
             rowData[index] = Number(select.value);
         });
     }
-    // ===== DATE =====
+    // ===== DATE (замінено на кастомний віджет custom-date-picker) =====
     else if (typeStr === "дата" || typeStr === "date") {
-        const input = document.createElement("input");
-        input.type = "date";
+        console.log("cellData=",cellData)
+        // Створюємо кастомний віджет (припускається, що datepicker.js вже підключено)
+        const picker = document.createElement("custom-date-picker");
+
+        // Визначаємо початкове значення: якщо cellData у форматі YYYY-MM-DD — використовуємо його,
+        // інакше ставимо сьогоднішню дату (так само, як у попередній реалізації)
         const asStr = typeof cellData === "string" ? cellData : "";
-        const value = /^\d{4}-\d{2}-\d{2}$/.test(asStr) ? asStr : new Date().toISOString().split("T")[0];
-        input.value = value;
-        input.disabled = !!isReadOnly;
-        container.appendChild(input);
-        createdEl = input;
+        const defaultValue = /^\d{4}-\d{2}-\d{2}$/.test(asStr)
+            ? asStr
+            : new Date().toISOString().split("T")[0];
 
-        const isValidDate = dateStr => {
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-            const [y, m, d] = dateStr.split("-").map(Number);
-            if (m < 1 || m > 12) return false;
-            const daysInMonth = [
-                31, (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0) ? 29 : 28,
-                31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-            ];
-            return d >= 1 && d <= daysInMonth[m - 1];
-        };
+        // Встановлюємо value через атрибут (setter компонента також викличе change)
+        picker.setAttribute("value", defaultValue);
 
-        const checkDate = () => {
-            if (isValidDate(input.value)) {
-                input.style.backgroundColor = "";
-                input.style.color = "";
-            } else {
-                input.style.backgroundColor = "red";
-                input.style.color = "white";
-            }
-            rowData[index] = input.value;
-        };
+        // Відмітка для доступності / блокування взаємодії
+        if (isReadOnly) {
+            // Якщо ваш компонент підтримує атрибут disabled — можна встановити його.
+            // Багато веб-компонентів ігнорують 'disabled' автоматично, тому додатково блокуємо події.
+            picker.setAttribute("aria-disabled", "true");
+            picker.style.pointerEvents = "none";
+            picker.style.opacity = "0.6";
+        } else {
+            picker.setAttribute("aria-disabled", "false");
+            picker.style.pointerEvents = "";
+            picker.style.opacity = "";
+        }
 
-        input.addEventListener("input", checkDate);
-        checkDate();
+        // Ініціалізуємо rowData початковим значенням (такий же поведінковий ефект, як у оригінальному input)
+        rowData[index] = defaultValue;
+
+        // При зміні — оновлюємо рядок
+        picker.addEventListener("change", (e) => {
+            // Компонент повинен мати геттер value, який повертає YYYY-MM-DD або "".
+            // Якщо компонент повернув порожній рядок — зберігаємо порожнє значення.
+            const val = (typeof picker.value === "string") ? picker.value : (e?.target?.getAttribute?.("value") || "");
+            rowData[index] = val === "" ? "" : val;
+        });
+
+        container.appendChild(picker);
+        createdEl = picker;
     }
     // ===== TEXT / NUMBER (contentEditable) =====
     else { 
@@ -632,10 +645,6 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
 }
 
 
-
-
-
-
 /**
  * Функція editData
  * ------------------
@@ -647,6 +656,10 @@ function advDataInput(container, cellData, col, rowData, index, isReadOnly) {
  * - Якщо таблиці не існує — створює її, базуючись на схемі.
  * - Відображає дані у вигляді таблиці з можливістю редагування.
  **/
+/**
+ * Відкриває таблицю або результат запиту для редагування
+ * (оновлено для підтримки кастомного <custom-date-picker>)
+ */
 function editData(tableName) {
     let table = null;
     let isReadOnly = false;
@@ -662,36 +675,20 @@ function editData(tableName) {
     console.log("Edit=", tableName);
 
     if (isQueryTable) {
-        
-        // 🔹 Для запиту — беремо результат із queries через SQLite
         const originalQueryName = tableName.substring(1);
         table = queries.results.find(t => t.name === originalQueryName);
         isReadOnly = true;
 
         if (table) {
-            // Нормалізація схеми
             table.schema = (table.schema || []).map(f => ({
                 subst: !!f.subst,
                 autoInc: (f.autoInc ?? (f.primaryKey && /int/i.test(String(f.type)))),
                 ...f
             }));
-
             columns = table.schema.map(col => col.title);
-
-            // Виконуємо SELECT для запиту
-            /*
-            try {
-                const res = db.exec(table.query);
-                rows = res.length ? res[0].values : [];
-            } catch (e) {
-                console.warn("Помилка виконання запиту:");
-                rows = table.data || [];
-            }
-            */
-            rows = table.data 
+            rows = table.data;
         }
     } else {
-        // 🔹 Для звичайної таблиці — беремо дані напряму з пам'яті
         table = database.tables.find(t => t.name === tableName);
         isReadOnly = false;
 
@@ -701,7 +698,6 @@ function editData(tableName) {
                 autoInc: (f.autoInc ?? (f.primaryKey && /int/i.test(String(f.type)))),
                 ...f
             }));
-
             columns = table.schema.map(col => col.title);
             rows = table.data || [];
         }
@@ -818,7 +814,14 @@ function editData(tableName) {
             const td = document.createElement("td");
             const colSchema = table.schema[index];
 
-            advDataInput(td, cellData, colSchema, rowData, index, isQueryTable);
+            const el = advDataInput(td, cellData, colSchema, rowData, index, isQueryTable);
+
+            // 🔹 Спеціальна підтримка кастомного datepicker:
+            if (el && el.tagName === 'CUSTOM-DATE-PICKER') {
+                el.addEventListener("change", () => {
+                    rowData[index] = el.value || "";
+                });
+            }
 
             td.addEventListener("click", () => {
                 if (selectedCell?.parentElement) selectedCell.parentElement.classList.remove("selected-row");
@@ -838,19 +841,17 @@ function editData(tableName) {
 }
 
 
-
 /**
- * Додаємо рядок даних
- **/
+ * Додає новий рядок до таблиці
+ * (оновлено для підтримки кастомного <custom-date-picker>)
+ */
 function addDataRow() {
-    if (!currentEditTable || currentEditTable.name.startsWith('*')) return; // Заборонити додавання рядків до результатів запитів
-    
+    if (!currentEditTable || currentEditTable.name.startsWith('*')) return;
+
     const tbody = document.getElementById("editBody");
     const tr = document.createElement("tr");
 
-    // Створюємо новий масив даних для рядка
     const newRowData = currentEditTable.schema.map(() => null);
-
     let firstEditableCell = null;
 
     currentEditTable.schema.forEach((col, index) => {
@@ -860,8 +861,8 @@ function addDataRow() {
         td.dataset.colIndex = index;
 
         let defaultValue = null;
-        console.log("Автоінкремент=",col.autoInc )
-        // Автоінкремент для PK
+
+        // Автоінкремент
         if (col.primaryKey && col.type === "Ціле число" && col.autoInc === true) {
             let max = 0;
             currentEditTable.data.forEach(row => {
@@ -872,17 +873,20 @@ function addDataRow() {
             newRowData[index] = defaultValue;
         }
 
-        // Використовуємо advDataInput для створення елемента вводу
+        // Створюємо елемент введення
         const el = advDataInput(td, defaultValue, col, newRowData, index, false);
 
-        // Запам'ятовуємо першу редаговану комірку
-        if (!firstEditableCell && el && el !== td) {
-            firstEditableCell = el;
-        } else if (!firstEditableCell && td.isContentEditable) {
-            firstEditableCell = td;
+        // 🔹 Підтримка кастомного datepicker
+        if (el && el.tagName === 'CUSTOM-DATE-PICKER') {
+            el.addEventListener("change", () => {
+                newRowData[index] = el.value || "";
+            });
         }
 
-        // Запам'ятовуємо обрану комірку при кліку
+        // Вибір першої активної клітинки
+        if (!firstEditableCell && el && el !== td) firstEditableCell = el;
+        else if (!firstEditableCell && td.isContentEditable) firstEditableCell = td;
+
         td.addEventListener("click", () => {
             selectedCell = td;
             highlightRow(tr);
@@ -891,24 +895,17 @@ function addDataRow() {
         tr.appendChild(td);
     });
 
-    // Додаємо новий масив у дані таблиці
     currentEditTable.data.push(newRowData);
-
     tbody.appendChild(tr);
 
-    // Виділяємо новий рядок
     highlightRow(tr);
 
-    // Стаємо курсором у першу редаговану комірку
     if (firstEditableCell) {
-        if (firstEditableCell.focus) {
-            firstEditableCell.focus();
-        }
-        if (firstEditableCell.select) {
-            firstEditableCell.select();
-        }
+        if (firstEditableCell.focus) firstEditableCell.focus();
+        if (firstEditableCell.select) firstEditableCell.select();
     }
 }
+
 
 // Допоміжна функція для виділення рядка
 function highlightRow(tr) {
@@ -1028,13 +1025,11 @@ function saveTableData() {
 
     const rows = document.querySelectorAll("#editBody tr");
 
-    // Масив PK-стовпців
     const pkCols = currentEditTable.schema
         .filter(col => col.primaryKey)
         .map(col => col.title);
 
     if (pkCols.length > 0) {
-        // Перевірка дублювання PK у введених даних
         const seenPKs = new Set();
         for (let row of rows) {
             const cells = row.querySelectorAll("td");
@@ -1048,27 +1043,27 @@ function saveTableData() {
                     val = select.value;
                     if (val === "empty") val = "";
                 } else {
-                    const input = cell.querySelector("input[type='date']");
-                    if (input) {
-                        val = input.value;
+                    const picker = cell.querySelector("custom-date-picker");
+                    if (picker) {
+                        val = picker.value ?? "";
                     } else {
                         val = cell.innerText.trim();
                     }
                 }
+
                 return val;
             }).join("||");
 
             if (pkValueCombo.trim() !== "") {
                 if (seenPKs.has(pkValueCombo)) {
                     Message(`Помилка: знайдено повторювані значення первинного ключа: ${pkValueCombo}`);
-                    return; // зупиняємо збереження
+                    return;
                 }
                 seenPKs.add(pkValueCombo);
             }
         }
     }
 
-    // збереження
     rows.forEach(row => {
         const cells = row.querySelectorAll("td");
         const valuesObj = {};
@@ -1083,9 +1078,9 @@ function saveTableData() {
                 val = select.value;
                 if (val === "empty") val = "";
             } else {
-                const input = cell.querySelector("input[type='date']");
-                if (input) {
-                    val = input.value;
+                const picker = cell.querySelector("custom-date-picker");
+                if (picker) {
+                    val = picker.value ?? "";
                 } else {
                     val = cell.innerText.trim();
                 }
@@ -6668,6 +6663,13 @@ function openDataView(tableName) {
 
     document.getElementById("dataViewTitle").textContent = `Таблиця: ${tableName}`;
     document.getElementById("dataViewModal").style.display = "flex";
+    document.getElementById("secondFilterContainer").style.display = "none";
+    document.getElementById("logicalOperator").selectedIndex = 0;
+    document.getElementById("dataFilterInput1").value= "" ;
+    document.getElementById("dataFilterInput2").value= "" ;
+    document.getElementById("dataFilterCondition1").selectedIndex = 0;
+    document.getElementById("dataFilterCondition2").selectedIndex = 0;
+    
 }
 
 function renderDataViewTable(columns, rows) {
@@ -6710,39 +6712,90 @@ function sortDataTable() {
     renderDataViewTable(currentDataView.columns, currentDataView.rows);
 }
 
+function toggleSecondFilter() {
+    const logicalOp = document.getElementById("logicalOperator").value;
+    const container = document.getElementById("secondFilterContainer");
+    if (logicalOp === "AND" || logicalOp === "OR") {
+        container.style.display = "flex";
+    } else {
+        container.style.display = "none";
+    }
+}
+
+function clearFilterInputOnEmpty(selectElement, inputId) {
+    if (selectElement.value === "") {
+        document.getElementById(inputId).value = "";
+    }
+}
+
+
+
 function applyDataFilter() {
-    const mask = document.getElementById("dataFilterInput").value.trim();
-    const condition = document.getElementById("dataFilterCondition").value;
-    
-    if (!mask || !condition) {
+    const condition1 = document.getElementById("dataFilterCondition1").value;
+    const mask1 = document.getElementById("dataFilterInput1").value.trim();
+
+    const logicalOp = document.getElementById("logicalOperator").value;
+    const condition2 = document.getElementById("dataFilterCondition2").value;
+    const mask2 = document.getElementById("dataFilterInput2").value.trim();
+
+    const field = document.getElementById("dataFieldSelect").value;
+    const colIndex = currentDataView.columns.indexOf(field);
+    if (colIndex === -1) {
         renderDataViewTable(currentDataView.columns, currentDataView.rows);
         return;
     }
 
-    const field = document.getElementById("dataFieldSelect").value;
-    const colIndex = currentDataView.columns.indexOf(field);
-    if (colIndex === -1) return;
+    // Функція для оцінки одного фільтра
+    function evaluateFilter(value, condition, mask) {
+        if (!condition || !mask) return true; // якщо фільтр не заданий — пропускаємо
 
-    // Маска в RegExp
-    const regex = maskToRegex(mask);
+        const strValue = String(value);
 
-    const filtered = currentDataView.rows.filter(r => {
-        const cellValue = String(r[colIndex]);
+        if (condition === "=" || condition === "!=") {
+            const regex = maskToRegex(mask);
+            const matches = regex.test(strValue);
+            return condition === "=" ? matches : !matches;
+        } else {
+            // Числове порівняння
+            const numValue = parseFloat(strValue);
+            const numMask = parseFloat(mask);
+            if (isNaN(numValue) || isNaN(numMask)) return false;
 
-        // Порівняння по умові
-        switch (condition) {
-            case "=":
-                return regex.test(cellValue);
-            case "!=":
-                return !regex.test(cellValue);
-            case ">":
-                return cellValue > mask;
-            case "<":
-                return cellValue < mask;
-            default:
-                return true;
+            switch (condition) {
+                case ">":  return numValue > numMask;
+                case "<":  return numValue < numMask;
+                case ">=": return numValue >= numMask;
+                case "<=": return numValue <= numMask;
+                default:   return true;
+            }
         }
-    });
+    }
+
+    let filtered = currentDataView.rows;
+
+    // Якщо обрано "+" або немає другого фільтра — використовуємо лише перший
+    if (!logicalOp || !(condition2 && mask2)) {
+        if (!condition1 || !mask1) {
+            renderDataViewTable(currentDataView.columns, currentDataView.rows);
+            return;
+        }
+        filtered = currentDataView.rows.filter(row =>
+            evaluateFilter(row[colIndex], condition1, mask1)
+        );
+    } else {
+        // Обидва фільтри активні
+        filtered = currentDataView.rows.filter(row => {
+            const pass1 = evaluateFilter(row[colIndex], condition1, mask1);
+            const pass2 = evaluateFilter(row[colIndex], condition2, mask2);
+
+            if (logicalOp === "AND") {
+                return pass1 && pass2;
+            } else if (logicalOp === "OR") {
+                return pass1 || pass2;
+            }
+            return pass1; // fallback
+        });
+    }
 
     renderDataViewTable(currentDataView.columns, filtered);
 }
