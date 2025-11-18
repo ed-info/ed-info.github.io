@@ -264,275 +264,262 @@ function GetParam(kwa,args) {
 }
 
 // plot **********************************************
-  var plot = function(kwa) {
-	
-//
+var plot = function(kwa) {
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
-    GetParam(kwa,args);
-	
- 	charts_type ="line";
- 	chart$ = new $chart();
-				chart$.label = ""; 
-				chart$.data = ydata[chartsNum]; 				// дані осі OY
-				chart$.backgroundColor = barColors;	// заповнення маркерів або стовпчиків
-				chart$.borderColor = borderColor;	// колір лінії
-				chart$.borderWidth = linewidth;		// ширина лінії
-				chart$.borderDash = lineDash;		// штрихована лінія
-				chart$.fill = false;				// заповнення під лінією
-				chart$.pointStyle = marker;      	// стиль маркера
-				chart$.pointRadius = markerSize; 	// розмір маркера
-				chart$.tension = 0.0;				// згладжування		
-		Charts[chartsNum] = chart$;
-		chartsNum++;		
-	    var result = [];
+    GetParam(kwa, args);
+
+    charts_type = "line"; // це все ще може бути, але використовується лише для зворотної сумісності
+    chart$ = new $chart();
+    chart$.label = "";
+    chart$.data = ydata[chartsNum];
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+    chart$.type = "line"; // <<< Додано: тип графіка для цього dataset
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
+    var result = [];
     return new Sk.builtins.tuple(result);
-  };
+};
 plot.co_kwargs = true;
 mod.plot = new Sk.builtin.func(plot);
 
-
-// bar  **********************************************
-  var bar = function(kwa) {
-
-//
+// bar **********************************************
+var bar = function(kwa) {
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
-    GetParam(kwa,args);
+    GetParam(kwa, args);
     console.log("bar:");
- //   plot.update(kwargs);
-	charts_type ="bar";
- 	chart$ = new $chart();
-				chart$.label = ""; 
-				chart$.data = ydata[chartsNum]; 	// дані осі OY
-				chart$.backgroundColor = barColors;	// заповнення маркерів або стовпчиків
-				chart$.borderColor = borderColor;	// колір лінії
-				chart$.borderWidth = linewidth;		// ширина лінії
-				chart$.borderDash = lineDash;		// штрихована лінія
-				chart$.fill = false;				// заповнення під лінією
-				chart$.pointStyle = marker;      	// стиль маркера
-				chart$.pointRadius = markerSize; 	// розмір маркера
-				chart$.tension = 0.0;				// згладжування		
-		Charts[chartsNum] = chart$;
-		chartsNum++;		
+
+    charts_type = "bar"; // залишаємо для зворотної сумісності, якщо використовується десь
+    chart$ = new $chart();
+    chart$.label = "";
+    chart$.data = ydata[chartsNum];
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+    chart$.type = "bar"; // <<< Додано: тип графіка для цього dataset
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
     var result = [];
     return new Sk.builtins.tuple(result);
-  };
+};
 bar.co_kwargs = true;
 mod.bar = new Sk.builtin.func(bar);
 
 // barh **********************************************
-  var barh = function(kwa) {
-
-//
+var barh = function(kwa) {
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
-    GetParam(kwa,args);
- //   plot.update(kwargs);
-	charts_type ="horizontalBar";
-	 	chart$ = new $chart();
-				chart$.label = ""; 
-				chart$.data = ydata[chartsNum]; 	// дані осі OY
-				chart$.backgroundColor = barColors;	// заповнення маркерів або стовпчиків
-				chart$.borderColor = borderColor;	// колір лінії
-				chart$.borderWidth = linewidth;		// ширина лінії
-				chart$.borderDash = lineDash;		// штрихована лінія
-				chart$.fill = false;				// заповнення під лінією
-				chart$.pointStyle = marker;      	// стиль маркера
-				chart$.pointRadius = markerSize; 	// розмір маркера
-				chart$.tension = 0.0;				// згладжування		
-		Charts[chartsNum] = chart$;
-		chartsNum++;	
+    GetParam(kwa, args);
+
+    charts_type = "horizontalBar";
+    chart$ = new $chart();
+    chart$.label = "";
+    chart$.data = ydata[chartsNum];
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+    chart$.type = "horizontalBar"; // <<< Додано: тип графіка
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
     var result = [];
     return new Sk.builtins.tuple(result);
-  };
+};
 barh.co_kwargs = true;
 mod.barh = new Sk.builtin.func(barh);
 
 // scatter **********************************************
-  var scatter = function(kwa) {
-//
-   function toScatter(x,y){
-		return {x:x,
-			y:y}
-		}
+var scatter = function(kwa) {
+    function toScatter(x, y) {
+        return { x: x, y: y };
+    }
+
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
-    GetParam(kwa,args);
+    GetParam(kwa, args);
 
-	for(let i=0;i<ydata[chartsNum].length;i++){
-		scatterData[i]=toScatter(xdata[chartsNum][i],ydata[chartsNum][i])
-		}
+    for (let i = 0; i < ydata[chartsNum].length; i++) {
+        scatterData[i] = toScatter(xdata[chartsNum][i], ydata[chartsNum][i]);
+    }
 
-	console.log("scatterData=",scatterData)
+    console.log("scatterData=", scatterData);
 
-	charts_type ="scatter";
-	 	chart$ = new $chart();
-				chart$.label = ""; 
-				chart$.data = scatterData; 	// дані осі OY
-				chart$.backgroundColor = barColors;	// заповнення маркерів або стовпчиків
-				chart$.borderColor = borderColor;	// колір лінії
-				chart$.borderWidth = linewidth;		// ширина лінії
-				chart$.borderDash = lineDash;		// штрихована лінія
-				chart$.fill = false;				// заповнення під лінією
-				chart$.pointStyle = marker;      	// стиль маркера
-				chart$.pointRadius = markerSize; 	// розмір маркера
-				chart$.tension = 0.0;				// згладжування	
-				 	
-		Charts[chartsNum] = chart$;
-		chartsNum++;	
+    charts_type = "scatter";
+    chart$ = new $chart();
+    chart$.label = "";
+    chart$.data = scatterData;
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+    chart$.type = "scatter"; // <<< Додано: тип графіка
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
     var result = [];
-    console.log(">>scatterData=",chart$.data);
-    
+    console.log(">>scatterData=", chart$.data);
+
     return new Sk.builtins.tuple(result);
-  };
+};
 scatter.co_kwargs = true;
 mod.scatter = new Sk.builtin.func(scatter);
 
 // pie **********************************************
-  var pie = function(kwa) {
-
-//
+var pie = function(kwa) {
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
-    GetParam(kwa,args);
+    GetParam(kwa, args);
 
-	charts_type ="pie";
-	xLabelView=false;
-	yLabelView=false;
-	 	chart$ = new $chart();
-				chart$.label = ""; 
-				chart$.data = ydata[chartsNum]; 	// дані осі OY
-				chart$.backgroundColor = barColors;	// заповнення маркерів або стовпчиків
-				chart$.borderColor = borderColor;	// колір лінії
-				chart$.borderWidth = linewidth;		// ширина лінії
-				chart$.borderDash = lineDash;		// штрихована лінія
-				chart$.fill = false;				// заповнення під лінією
-				chart$.pointStyle = marker;      	// стиль маркера
-				chart$.pointRadius = markerSize; 	// розмір маркера
-				chart$.tension = 0.0;				// згладжування		
-		Charts[chartsNum] = chart$;
-		chartsNum++;	
+    charts_type = "pie";
+    xLabelView = false;
+    yLabelView = false;
+
+    chart$ = new $chart();
+    chart$.label = "";
+    chart$.data = ydata[chartsNum];
+    chart$.backgroundColor = barColors;
+    chart$.borderColor = borderColor;
+    chart$.borderWidth = linewidth;
+    chart$.borderDash = lineDash;
+    chart$.fill = false;
+    chart$.pointStyle = marker;
+    chart$.pointRadius = markerSize;
+    chart$.tension = 0.0;
+    chart$.type = "pie"; // <<< Додано: тип графіка
+
+    Charts[chartsNum] = chart$;
+    chartsNum++;
     var result = [];
     return new Sk.builtins.tuple(result);
-  };
+};
 pie.co_kwargs = true;
 mod.pie = new Sk.builtin.func(pie);
    
 // Show charts by type ------------------------
 mod.show = new Sk.builtin.func(function() {
-	
-	var xValues = xdata[0];
-	
-	// JS - Destroy exiting Chart Instance to reuse <canvas> element
-	let chartStatus = Chart.getChart("myChart"); // <canvas> id
-	if (chartStatus != undefined) {
-		chartStatus.destroy();
-	}
-	//-- End of chart destroy   
-	
-	var chartCanvas = $('#myChart'); //<canvas> id
-	var $div_canvas =  $('#' + Sk.canvas);
+    // JS - Destroy exiting Chart Instance to reuse <canvas> element
+    let chartStatus = Chart.getChart("myChart");
+    if (chartStatus != undefined) {
+        chartStatus.destroy();
+    }
+    //-- End of chart destroy   
+
+    var chartCanvas = $('#myChart');
+    var $div_canvas = $('#' + Sk.canvas);
     $div_canvas.show();
 
-	var yAxis = true;
-	var xAxis = true;
-	if (charts_type==="pie"){
-		yAxis = false;
-		xAxis = false;
-	}
-	$indexAxis="x";
-    var xbz = { 			 display:xAxis,
-							 beginAtZero: false,
-							 title: {
-									display: xLabelView,
-									text: xLabel,
-									font: { size: 16 } 
-									},
-							grid: 	{
-									display: gridXview,
-									drawOnChartArea: true,
-									drawTicks: true,
-									}			
-							}
-    var bAzero = false;
-    if (charts_type==="hist"){
-        bAzero = true;
-        charts_type="bar"
-    }
-	if (charts_type==="horizontalBar"){
-		$indexAxis="y";
-		charts_type="bar";
-	}
-	myDataSets = Charts;
-	if (charts_type==="scatter"){
-			myDataSets = [{
-						label: "",
-						backgroundColor: barColors,
-						data:Charts[0].data
-						}]
-		}
+    // Визначаємо, чи є хоча б один "bar" — тоді основний тип буде "bar"
+    var hasBar = Charts.some(ds => ds.type === "bar");
+    var mainChartType = hasBar ? "bar" : "line";
 
-	new Chart(myChart, {
-		type: charts_type,
-		data : 
-		{
-					labels: xdata[0],
-					datasets: myDataSets
-							
-		}, 
-		options: 
-		{ 
-			indexAxis: $indexAxis,
-			scales: {
-						y: {
-							 display:yAxis,
-							 beginAtZero: bAzero,
-							 title: {
-									display: yLabelView,
-									text: yLabel,
-									font: { size: 16 } 
-									},
-							grid: 	{
-									display: gridYview,
-									drawOnChartArea: true,
-									drawTicks: true,
-									}		
-							},
-						x: {
-							 display:xAxis,
-							 beginAtZero: false,
-							 title: {
-									display: xLabelView,
-									text: xLabel,
-									font: { size: 16 } 
-									},
-							grid: 	{
-									display: gridXview,
-									drawOnChartArea: true,
-									drawTicks: true,
-									}			
-							}	
-			}, 
-		    responsive: true,
-			plugins: {
-				legend: {
-					display: false,
-				},
-				title: {
-					display: true,
-					text: chart_title ,
-					font: { size: 16 } 
-				}
-			},
-			layout: {
-				padding: 30
-			}
-		}
-	 
-	});
-	console.log('end show');
- });
+    var yAxis = true;
+    var xAxis = true;
+    if (mainChartType === "pie") {
+        yAxis = false;
+        xAxis = false;
+    }
+    var $indexAxis = "x";
+    if (mainChartType === "horizontalBar") {
+        $indexAxis = "y";
+        mainChartType = "bar";
+    }
+
+    // Тепер кожен dataset може мати свій тип
+    var myDataSets = Charts.map(ds => ({
+        ...ds,
+        type: ds.type // явно вказуємо тип для кожного dataset
+    }));
+
+    if (mainChartType === "scatter" && Charts.length === 1) {
+        myDataSets = [{
+            label: Charts[0].label || "",
+            backgroundColor: Charts[0].backgroundColor,
+            borderColor: Charts[0].borderColor,
+            borderWidth: Charts[0].borderWidth,
+            data: Charts[0].data
+        }];
+    }
+
+    new Chart(myChart, {
+        type: mainChartType, // основний тип
+        data: {
+            labels: xdata[0] || [],
+            datasets: myDataSets
+        },
+        options: {
+            indexAxis: $indexAxis,
+            scales: {
+                y: {
+                    display: yAxis,
+                    beginAtZero: (mainChartType === "hist"),
+                    title: {
+                        display: yLabelView,
+                        text: yLabel,
+                        font: { size: 16 }
+                    },
+                    grid: {
+                        display: gridYview,
+                        drawOnChartArea: true,
+                        drawTicks: true,
+                    }
+                },
+                x: {
+                    display: xAxis,
+                    beginAtZero: false,
+                    title: {
+                        display: xLabelView,
+                        text: xLabel,
+                        font: { size: 16 }
+                    },
+                    grid: {
+                        display: gridXview,
+                        drawOnChartArea: true,
+                        drawTicks: true,
+                    }
+                }
+            },
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                title: {
+                    display: true,
+                    text: chart_title,
+                    font: { size: 16 }
+                }
+            },
+            layout: {
+                padding: 30
+            }
+        }
+    });
+    console.log('end show');
+});
 // ----------------------------------------------------------
 var title_f = function(label, fontdict, loc) {
     Sk.builtin.pyCheckArgs("title", arguments, 1, 3);
