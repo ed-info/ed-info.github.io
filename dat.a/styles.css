@@ -1,0 +1,517 @@
+/* noto-color-emoji-regular - emoji */
+
+.emoji {
+    font-family: 'Noto Color Emoji', sans-serif;
+}
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Головне меню */
+    .menu-bar {
+      background-color: #2c3e50;
+      color: white;
+      display: flex;
+      padding: 0;
+    }
+
+    .menu-item {
+      position: relative;
+      padding: 14px 20px;
+      cursor: pointer;
+    }
+
+    .menu-item:hover {
+      background-color: #34495e;
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background-color: white;
+      color: black;
+      min-width: 200px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px;
+      text-decoration: none;
+      color: black;
+    }
+
+    .dropdown a:hover {
+      background-color: #f1f1f1;
+    }
+
+    .menu-item:hover .dropdown {
+      display: block;
+    }
+
+    /* Для заголовка вікна */
+    .title-bar {
+      background-color: #ecf0f1;
+      padding: 20px;
+      font-size: 24px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+    }
+    
+    #title-image {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      margin-right: 20px;
+      display: none;
+    }
+    
+    #editTable td,
+    #editTable th {
+      min-width: 100px;
+      max-width: 150px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      height: 30px;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    #editTable td {
+      background-color: #fff;
+    }
+
+    #editTable th {
+      background-color: #eee;
+      font-weight: bold;
+    }
+
+    #editTable th.pk,
+    #editTable td.pk {
+      max-width: 60px;
+      min-width: 60px;
+      width: 60px;
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+    #editBody td {
+        font-weight: normal;
+    }
+    .center-image {
+      text-align: center;
+      margin-top: 5%;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+
+    .modal-content {
+      background: Aqua;
+      padding: 1.5em;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      min-width: 280px;
+      max-width: 800px;
+    }
+    .alert-modal-content {
+      background: Tomato;
+      padding: 1.5em;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      min-width: 280px;
+      max-width: 400px;
+      border: 3px solid red; /* 🔴 Червона рамка */
+    }
+    /* Styles for query modal */
+    #queryModal .query-table th,
+    #queryModal .query-table td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    #queryModal .query-table th {
+      background-color: #f2f2f2;
+    }
+
+    #queryModal .query-table select,
+    #queryModal .query-table input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    /* Styles for Report Creator */
+    #reportCanvas {
+      border: 1px solid #ccc;
+      min-height: 400px;
+      background-color: #f9f9f9;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-element {
+      position: absolute;
+      border: 1px dashed #999;
+      background-color: transparent;
+      padding: 5px;
+      box-sizing: border-box;      
+      cursor: grab;
+      touch-action: none;   /* вимикає нативний скрол під час жестів */
+      user-select: none;    /* щоб не виділявся текст */
+    }
+
+    /* Активний елемент — суцільна синя рамка */
+    .report-element.selected {
+      border: 2px solid blue;
+      outline: none;
+    }
+    /* Показуємо маркери тільки для виділеного */
+    .report-element.selected .resize-handle {
+      display: block;
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: blue;
+      border: 1px solid white;
+      z-index: 10;
+    }
+
+    /* Ховаємо маркери за замовчуванням 
+    .resize-handle {
+      display: none;
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: blue;
+      border: 1px solid white;
+      z-index: 10;
+    }
+*/
+
+ 
+    /* Стиль тексту поля */
+    .report-field .field-text {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* Grid for reportCanvas */
+    #reportCanvas.grid-visible {
+      background-image:
+        /* Horizontal dashed lines */
+        repeating-linear-gradient(0deg, #ccc 0, #ccc 1px, transparent 1px, transparent 19px, #ccc 19px, #ccc 20px),
+        /* Vertical dashed lines */
+        repeating-linear-gradient(90deg, #ccc 0, #ccc 1px, transparent 1px, transparent 19px, #ccc 19px, #ccc 20px);
+      background-size: 20px 20px;
+      /* Changed from 10px 10px to 20px 20px */
+    }
+
+    /* Text Options Modal specific styles */
+    #textOptionsModal .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 350px;
+      text-align: left;
+    }
+
+    #textOptionsModal label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    #textOptionsModal select,
+    #textOptionsModal input[type="number"],
+    #textOptionsModal input[type="color"] {
+      width: calc(100% - 10px);
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    #textOptionsModal .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    #textOptionsModal .checkbox-group label {
+      font-weight: normal;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #textOptionsModal .button-group {
+      text-align: right;
+      margin-top: 20px;
+    }
+
+    #textOptionsModal button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+    }
+
+    #textOptionsModal button:hover {
+      background-color: #0056b3;
+    }
+
+    td.selected {
+      background-color: #cce5ff;
+      border: 2px solid #3399ff;
+    }
+
+    #relationCanvas svg {
+      position: absolute;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .relation-table {
+      position: absolute;
+      z-index: 1;
+    }
+
+    .form-element {
+      border: 1px dashed #999;
+      position: absolute;
+      background-color: transparent;
+      padding: 5px;
+      box-sizing: border-box;
+      cursor: grab;
+      touch-action: none;   /* вимикає нативний скрол під час жестів */
+      user-select: none;    /* щоб не виділявся текст */
+    }
+
+    .form-element.selected {
+      border: 2px solid blue;
+    }
+
+    .form-element .resize-handle {
+      display: none;
+    }
+
+    .selection-border {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 2px solid blue;
+      pointer-events: none;
+      z-index: 1; /* Менше, ніж у маркерів */
+      box-sizing: border-box;
+    }
+
+
+    .form-element.selected .resize-handle {
+      display: block;
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: blue;
+      border: 1px solid white;
+      z-index: 10;
+    }
+
+    .resize-handle.top-left {
+      top: -5px;
+      left: -5px;
+      cursor: nwse-resize;
+    }
+
+    .resize-handle.top-right {
+      top: -5px;
+      right: -5px;
+      cursor: nesw-resize;
+    }
+
+    .resize-handle.bottom-left {
+      bottom: -5px;
+      left: -5px;
+      cursor: nesw-resize;
+    }
+
+    .resize-handle.bottom-right {
+      bottom: -5px;
+      right: -5px;
+      cursor: nwse-resize;
+    }
+
+  .quick-section h3 {
+      margin-bottom: 10px;
+    }
+    .quick-icons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .quick-icon {
+      width: 110px;
+      height: 80px;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 5px;
+    }
+    .quick-icon:hover {
+      background-color: #e0e0e0;
+    }
+    .quick-icon .icon {
+      font-size: 24px;
+    }
+    
+  .menu-icon {
+    width: 96px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .menu-icon img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+  }
+
+  .menu-icon div {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  
+  .modal-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.modal-icon {
+  width: 96px;
+  height: 120px;
+  text-align: center;
+  cursor: pointer;
+  font-family: sans-serif;
+}
+
+.modal-icon .icon {
+  font-size: 48px;
+  line-height: 96px;
+}
+
+.modal-icon .label {
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+select {
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-family: sans-serif;
+  border-radius: 5px; /* Закруглення кутів */
+}
+ .square-btn {
+    width: 64px;
+    height: 64px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: sans-serif;
+    text-align: center;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .square-btn:hover {
+    background-color: #e0e0e0;
+  }
+
+  .square-btn .icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .square-btn .label {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+input[type="date"] {
+    border: none;         /* Прибирає рамку */
+    outline: none;        /* Прибирає рамку при фокусі */
+    background: transparent; /* повністю прозоре тло */
+    appearance: none;  /* Для більшості браузерів */
+    -webkit-appearance: none; /* Для Chrome/Safari */
+    -moz-appearance: none;    /* Для Firefox */
+}
+
+.selected-row {
+  outline: 2px solid #3399FF; /* блакитна рамка */
+  outline-offset: -2px; /* щоб рамка була зсередини */
+}
+.query-alias-input {
+  margin-top: 4px;
+  display: block;
+  width: 100%;
+  height:1.5em;
+}
+
+#dbStructurePanel ul { list-style: none; padding-left: 8px; margin: 6px 0; }
+.db-table { margin-bottom:10px; border-bottom:1px solid #efefef; padding-bottom:8px; }
+.db-table .table-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+.db-field { display:flex; justify-content:space-between; padding:4px 2px; font-size:13px; color:#222; }
+.db-field .field-name { cursor:pointer; }
+.db-field small { color:#666; }
+#ownSqlModal {
+  pointer-events: none; /* не ловить кліки */
+}
+
+#ownSqlModal > div {
+  pointer-events: auto; /* але всередині — активне */
+}
