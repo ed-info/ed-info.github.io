@@ -8,36 +8,20 @@
      * Припускає, що ваш скрипт має функцію doGet(e).
      */
     function runScript() {
-        const statusMessage = document.getElementById('status-message');
-        
-        statusMessage.textContent = 'Запуск скрипта...';
-        statusMessage.style.color = 'blue';
+  const filename = document.getElementById('sheet-filename').value.trim();
+  if (!filename) {
+    alert('Будь ласка, введіть назву файлу Google Sheet');
+    return;
+  }
 
-        // Виконуємо простий GET-запит
-        fetch(WEB_APP_URL, {
-            method: 'GET',
-            mode: 'cors' // Важливо для крос-доменних запитів
-        })
-        .then(response => {
-            if (response.ok) {
-                // Якщо скрипт повертає текст (наприклад, ContentService.createTextOutput)
-                return response.text();
-            }
-            // Якщо є помилка на стороні сервера Apps Script
-            throw new Error(`Помилка: ${response.status} ${response.statusText}`);
-        })
-        .then(result => {
-            // Скрипт успішно виконано
-            statusMessage.textContent = '✅ Скрипт успішно виконано! Відповідь: ' + result;
-            statusMessage.style.color = 'green';
-        })
-        .catch(error => {
-            // Помилка мережі або виконання
-            statusMessage.textContent = '❌ Помилка запуску: ' + error.message;
-            statusMessage.style.color = 'red';
-            console.error('Fetch error:', error);
-        });
-    }
+  // Використовуємо повний URL вашого Web App
+  const webAppUrl = 'https://script.google.com/macros/s/AKfycbzKrdQQNC4dxjOSnbPuStTfYmB9OUAtgYNghJfTRorIh1Z8wHWH4kNITsmyr_ZaguAi-w/exec';
+  const url = webAppUrl + '?filename=' + encodeURIComponent(filename);
+
+  // Відкриваємо у новій вкладці
+  window.open(url, '_blank');
+}
+</script>
 </script>
 <h3>Створення тесту Google Form з таблиці Google Sheet</h3>
 <p>1. У таблицях Google створіть таблицю за наданим нижче шаблоном. Рядок заголовків є обов'язковим! Відповіді позначаються як A, B, C, D у стовпчику Correct Option.</p>
