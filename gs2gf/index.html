@@ -8,15 +8,9 @@
      * Припускає, що ваш скрипт має функцію doGet(e).
      */
     function runScript() {
-  const filename = document.getElementById('sheet-filename').value.trim();
-  if (!filename) {
-    alert('Будь ласка, введіть назву файлу Google Sheet');
-    return;
-  }
 
-  // Використовуємо повний URL вашого Web App
   const webAppUrl = 'https://script.google.com/macros/s/AKfycbzKrdQQNC4dxjOSnbPuStTfYmB9OUAtgYNghJfTRorIh1Z8wHWH4kNITsmyr_ZaguAi-w/exec';
-  const url = webAppUrl + '?filename=' + encodeURIComponent(filename);
+  const url = webAppUrl;
 
   // Відкриваємо у новій вкладці
   window.open(url, '_blank');
