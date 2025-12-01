@@ -1,0 +1,84 @@
+<html>
+<script>
+    // URL розгорнутого вебзастосунку
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyPnf8E-1EvJlSp4efYdD1R8RPPpDJKC0yHRQlRJSg32MkGWbl3Uy0i0poci8_ZUdcJdQ/exec';
+
+    /**
+     * Функція для асинхронного виклику Apps Script.
+     * Припускає, що ваш скрипт має функцію doGet(e).
+     */
+    function runScript() {
+        const statusMessage = document.getElementById('status-message');
+        
+        statusMessage.textContent = 'Запуск скрипта...';
+        statusMessage.style.color = 'blue';
+
+        // Виконуємо простий GET-запит
+        fetch(WEB_APP_URL, {
+            method: 'GET',
+            mode: 'cors' // Важливо для крос-доменних запитів
+        })
+        .then(response => {
+            if (response.ok) {
+                // Якщо скрипт повертає текст (наприклад, ContentService.createTextOutput)
+                return response.text();
+            }
+            // Якщо є помилка на стороні сервера Apps Script
+            throw new Error(`Помилка: ${response.status} ${response.statusText}`);
+        })
+        .then(result => {
+            // Скрипт успішно виконано
+            statusMessage.textContent = '✅ Скрипт успішно виконано! Відповідь: ' + result;
+            statusMessage.style.color = 'green';
+        })
+        .catch(error => {
+            // Помилка мережі або виконання
+            statusMessage.textContent = '❌ Помилка запуску: ' + error.message;
+            statusMessage.style.color = 'red';
+            console.error('Fetch error:', error);
+        });
+    }
+</script>
+<h3>Створення тесту Google Form з таблиці Google Sheet</h3>
+<p>1. У таблицях Google створіть таблицю за наданим нижче шаблоном. Рядок заголовків є обов'язковим! Відповіді позначаються як A, B, C, D у стовпчику Correct Option.</p>
+<table border="1">
+<tbody>
+<tr>
+<td>Question</td>
+<td>Option 1</td>
+<td>Option 2</td>
+<td>Option 3</td>
+<td>Option 4</td>
+<td>Correct Option</td>
+</tr>
+<tr>
+<td>столиця</td>
+<td>city</td>
+<td>capytal</td>
+<td>capital</td>
+<td>country</td>
+<td>C</td>
+</tr>
+<tr>
+<td>Фарадей</td>
+<td>фізик</td>
+<td>музикант</td>
+<td>хімік</td>
+<td>спортсмен</td>
+<td>A,C</td>
+</tr>
+</tbody>
+</table>
+<p>2. Збережіть таблицю, запам'ятавши назву файлу.</p>
+<p>3. У цьому вікні натисніть кнопку "Запустити скрипт".</p>
+<p>4. Введіть ім'я файл з таблицею питань і відповідей</p>
+<p>5. Натисніть кнопку "Виконати"</p>
+<p>По закінченню створення тесту перейдіть за наданим покликанням та відредагуйте тест - змініть назву, тему. тощо.</p>
+
+<button type="button" onclick="runScript()">Запустити скрипт</button>
+
+<p id="status-message" style="margin-top: 15px;"></p>
+
+</html>
+
+
