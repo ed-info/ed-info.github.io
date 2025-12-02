@@ -11587,6 +11587,7 @@ var textActions = canvas.textActions = function() {
     },
     setInputElem: function(elem) {
       textinput = elem;
+      console.log("textinput = ",elem)
 //      $(textinput).blur(hideCursor);
     },
     clear: function() {
@@ -17501,6 +17502,7 @@ MD.Panel = function(){
       if (elem === "multiselected") return $('#multiselected_panel').show();
 
       const tagName = elem.tagName;
+      console.log("Show:",elem)
       $("#" + tagName + "_panel").show();
       const strokeWidth = elem.getAttribute("stroke") && !elem.getAttribute("stroke-width") ? 1 : elem.getAttribute("stroke-width") || 0;
       $('#stroke_width').val(strokeWidth);
@@ -17547,6 +17549,7 @@ MD.Panel = function(){
     }
 
     function updateContextPanel(elems) {
+	  console.log("updateContextPanel=",elems)
       if (!elems) elems = editor.selected;
       var elem = elems[0] || editor.selected[0];
       const isNode = svgCanvas.pathActions.getNodePoint()
@@ -17715,7 +17718,7 @@ MD.Panel = function(){
            var cleanFontFamily = font_family.split(",")[0].replace(/'/g, "");
            var select = document.getElementById("font_family_dropdown");
            const axis = 
-           $('#text_panel').css("display", "inline");  
+           //$('#text_panel').css("display", "inline");  
            $('#font_family').val(font_family);
            $(select).find(`option[value='${cleanFontFamily}']`).prop("selected", true);
            $('#font_size').val(elem.getAttribute("font-size"));
@@ -18835,11 +18838,15 @@ MD.Modal = function(config){
   item.classList.add("modal-item");
   el.appendChild(item);
 
-  el.addEventListener("click", close);
-  
-  item.addEventListener("click", function(e){
-    e.stopPropagation();
-  });
+  //el.addEventListener("click", close);  
+  //item.addEventListener("click", function(e){
+  //  e.stopPropagation();
+  //});
+  el.addEventListener("click", function(e) {
+  if (e.target === el) {
+			close();
+		}
+	});
 
   document.body.appendChild(el);
 
@@ -23841,8 +23848,11 @@ editor.modal = {
     html: `
       <h1>About this application</h1>
       <p>Method Draw is a simple <a href="https://github.com/methodofaction/Method-Draw">open source</a> vector drawing application. Method Draw was forked from <a href="https://github.com/SVG-Edit/svgedit">SVG-Edit</a> several years ago with the goal of improving and modernizing the interface.</p>
-      <p>At this time (2021), the author (<a href="http://method.ac/writing">Mark MacKay</a>) is working on improving stability and improving the codebase, which contains a lot of legacy practices. The goal is to create a vector editor suitable for simple graphic design tasks.</p>
-      `
+      <p>At this time (2021), the author (<a href="http://method.ac/writing">Mark MacKay</a>) is working on improving stability and improving the codebase, which contains a lot of legacy practices. The goal is to create a vector editor suitable for simple graphic design tasks.</p> `
+   ,
+    js: function(el){
+      el.children[0].classList.add("modal-item-wide");
+    }  
   }),
   source: new MD.Modal({
     html: `

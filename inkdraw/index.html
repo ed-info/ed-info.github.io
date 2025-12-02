@@ -27,7 +27,11 @@
 </div>
 
 <div id="menu_bar">
-  <a class="menu">
+	
+
+	
+  <!-- Логотип — залишаємо SVG -->
+  <a class="menu" >
     <div class="menu_title" id="logo">
       <svg viewBox="0 0 16 16" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
         <path d="M-.1 16.1L16 .04V16.1H-.1z"></path>
@@ -43,27 +47,31 @@
     </div>
   </a>
 
-  <div class="menu">
-    <div class="menu_title">Файл</div>
-    <div class="menu_list inverted-undo" id="file_menu"> 
+  <!-- Файл -->
+  <a class="menu">
+    <div class="menu_title" title="Файл">
+      <img src="images/files.png" width="24" height="30" alt="Файл">
+    </div>
+    <div class="menu_list inverted-undo" id="file_menu">
       <div data-action="clear" id="tool_clear" class="menu_item">Новий</div>
-      
       <div id="tool_open" class="menu_item">
         <input type="file" accept="image/svg+xml" id="tool_open_input" />
         Відкрити SVG... <span class="shortcut" style="display: none;">⌘O</span>
       </div>
-      
       <div id="tool_import" class="menu_item">
-        <input type="file" accept="image/*"  id="tool_import_input" />
+        <input type="file" accept="image/*" id="tool_import_input" />
         Відкрити зображення... <span class="shortcut" style="display: none;">⌘K</span>
       </div>
       <div data-action="save" id="tool_save" class="menu_item">Зберегти зображення... <span class="shortcut">⌘S</span></div>
       <div data-action="export" id="tool_export" class="menu_item">Експортувати як PNG</div>
     </div>
-  </div>
+  </a>
 
-  <div class="menu">
-    <div class="menu_title">Зміни</div>
+  <!-- Зміни -->
+  <a class="menu">
+    <div class="menu_title" title="Зміни">
+      <img src="images/edit.png" width="24" height="30" alt="Зміни">
+    </div>
     <div class="menu_list inverted-undo" id="edit_menu">
       <div data-action="undo" class="menu_item" id="tool_undo">Скасувати <span class="shortcut">⌘Z</span></div>
       <div data-action="redo" class="menu_item" id="tool_redo">Повернути <span class="shortcut">⌘Y</span></div>
@@ -74,10 +82,13 @@
       <div data-action="duplicateSelected" class="menu_item action_selected disabled" id="tool_clone">Дублювати <span class="shortcut">⌘D</span></div>
       <div data-action="deleteSelected" class="menu_item action_selected disabled" id="tool_delete">Вилучити <span>⌫</span></div>
     </div>
-  </div>
-  
-  <div class="menu">
-    <div class="menu_title">Об'єкт</div>
+  </a>
+
+  <!-- Об'єкт -->
+  <a class="menu">
+    <div class="menu_title" title="Об'єкт">
+      <img src="images/layers.png" width="24" height="30" alt="Об'єкт">
+    </div>
     <div class="menu_list inverted-undo" id="object_menu">
       <div class="menu_item action_selected disabled" id="tool_move_top">Передній план <span class="shortcut">⌘⇧↑</span></div>
       <div class="menu_item action_selected disabled" id="tool_move_up">Наперед <span class="shortcut">⌘↑</span></div>
@@ -90,24 +101,41 @@
       <div class="menu_item action_path_convert_selected disabled" id="tool_topath">Перетворити в контур</div>
       <div class="menu_item action_path_selected disabled" id="tool_reorient">Змінити контур</div>
     </div>
-  </div>
+  </a>
 
-  <div class="menu">
-    <div class="menu_title">Вигляд</div>
-    <div class="menu_list inverted-undo" id="view_menu">
-        <div class="menu_item push_button_pressed" id="tool_rulers">Показати лінійки <span class="shortcut">⇧R</span></div>
-        <div class="menu_item" id="tool_wireframe">Показати тільки контури</div>
-        <div class="separator"></div>
-        <div class="menu_item" id="tool_source" data-action="source">Джерело... <span class="shortcut">⌘U</span></div>
+  <!-- Вигляд -->
+  <a class="menu">
+    <div class="menu_title" title="Вигляд">
+      <img src="images/view.png" width="24" height="30" alt="Вигляд">
     </div>
-  </div>
-  <div class="menu-right">
-  <button class="menu-icon" id="darkmode-button">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path d="M17.66 7.93L12 2.27 6.34 7.93c-3.12 3.12-3.12 8.19 0 11.31C7.9 20.8 9.95 21.58 12 21.58c2.05 0 4.1-.78 5.66-2.34 3.12-3.12 3.12-8.19 0-11.31zM12 19.59c-1.6 0-3.11-.62-4.24-1.76C6.62 16.69 6 15.19 6 13.59s.62-3.11 1.76-4.24L12 5.1v14.49z"></path></svg>
-  </button>
-</div>
-</div>
+    <div class="menu_list inverted-undo" id="view_menu">
+      <div class="menu_item push_button_pressed" id="tool_rulers">Показати лінійки <span class="shortcut">⇧R</span></div>
+      <div class="menu_item" id="tool_wireframe">Показати тільки контури</div>
+      <div class="separator"></div>
+      <div class="menu_item" id="tool_source" data-action="source">Джерело... <span class="shortcut">⌘U</span></div>
+    </div>
+  </a>
 
+
+	  
+
+	  
+  <!-- Права частина (без змін) -->
+  <div class="menu-right">	  
+	  
+	  
+    <button class="menu-icon" id="toggle-panels-button" title="Показати/сховати панель властивостей">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+        <path d="M3 19h18v-6H3v6zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
+      </svg>
+    </button>
+    <button class="menu-icon" id="darkmode-button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+        <path d="M17.66 7.93L12 2.27 6.34 7.93c-3.12 3.12-3.12 8.19 0 11.31C7.9 20.8 9.95 21.58 12 21.58c2.05 0 4.1-.78 5.66-2.34 3.12-3.12 3.12-8.19 0-11.31zM12 19.59c-1.6 0-3.11-.62-4.24-1.76C6.62 16.69 6 15.19 6 13.59s.62-3.11 1.76-4.24L12 5.1v14.49z"/>
+      </svg>
+    </button>
+  </div>
+</div>
 <div id="panels" class="tools_panel">
 
   <div id="canvas_panel" class="context_panel">
@@ -337,7 +365,7 @@
     <h4>Текст</h4>
     <div class="draginputs">
       <label class="draginput twocol textcontent hidden" data-title="Change Content">
-        <input id="text" type="text" autocomplete="off"/>
+        
         <span>Вміст</span>
       </label>
       <label>
@@ -626,11 +654,11 @@
   <div class="tool_button" id="tool_text" data-mode="text" title="Text Tool [T]">
     <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="2 2 20 20" width="27" height="27"><path d="M5 4v3h5.5v12h3V7H19V4z"/></svg>
   </div>
-
+<!--
   <div class="tool_button" id="tool_zoom" data-mode="zoom" title="Zoom Tool [Z]">
     <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="2 2 20 20" width="27"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
   </div>
-
+-->
   <div class="tool_button" id="tool_eyedropper" data-mode="eyedropper" title="Eyedropper Tool [E]">
     <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="2 2 20 20" width="27" style="transform: scale(-1, 1)"><path d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>
   </div>
@@ -655,11 +683,15 @@
           </div>
         </div>
   </div>
+  
+  
+  
 </div> <!-- tools_left -->
 
 <div id="tools_bottom" class="tools_panel">
 
-    <!-- Zoom buttons -->
+
+		      <!-- Zoom buttons -->
   <select id="zoom_select">
     <option value="6">6%</option>
     <option value="12">12%</option>
@@ -684,6 +716,7 @@
       <input id="zoom" value="100%" type="text" readonly="readonly" />
     </div>
   </div>
+
   
   <div id="palette" title="Click to change fill color, shift-click to change stroke color"></div>
 </div>
@@ -718,6 +751,144 @@
   <div id="shape_buttons"></div>
 </div>
   <script src="loading.js?t=1683303572863"></script>
+<script>
+(function() {
+  if (!('ontouchstart' in window)) return;
+
+  const svgCanvas = document.getElementById('svgcanvas');
+  if (!svgCanvas) return;
+
+  function emulateMouseEvent(type, touch) {
+    return new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      screenX: touch.screenX,
+      screenY: touch.screenY,
+      view: window,
+      button: 0,
+      buttons: type === 'mouseup' ? 0 : 1,
+    });
+  }
+
+  function isInsideSvgCanvas(el) {
+    return el === svgCanvas || svgCanvas.contains(el);
+  }
+
+  function onTouchStart(e) {
+    if (!isInsideSvgCanvas(e.target)) return;
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    e.target.dispatchEvent(emulateMouseEvent('mousedown', touch));
+  }
+
+  function onTouchMove(e) {
+    if (!isInsideSvgCanvas(e.target)) return;
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    e.target.dispatchEvent(emulateMouseEvent('mousemove', touch));
+  }
+
+  function onTouchEnd(e) {
+    if (e.changedTouches.length === 0) return;
+    const touch = e.changedTouches[0];
+    const initialTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!isInsideSvgCanvas(initialTarget) && !isInsideSvgCanvas(e.target)) {
+      return;
+    }
+    e.preventDefault();
+    const target = document.elementFromPoint(touch.clientX, touch.clientY) || svgCanvas;
+    target.dispatchEvent(emulateMouseEvent('mouseup', touch));
+  }
+
+  document.addEventListener('touchstart', onTouchStart, { passive: false });
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', onTouchEnd, { passive: false });
+
+  // --- Емуляція click для UI (меню, кнопки) ---
+  document.addEventListener('touchend', function(e) {
+    if (e.changedTouches.length !== 1) return;
+    const touch = e.changedTouches[0];
+    let target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target) return;
+
+    // Пропускаємо не-елементи
+    if (target.nodeType !== Node.ELEMENT_NODE) {
+      if (target.nodeType === Node.TEXT_NODE) {
+        target = target.parentElement;
+      } else {
+        return;
+      }
+    }
+    if (!target || target.nodeType !== Node.ELEMENT_NODE) return;
+
+    // Емулюємо click ТІЛЬКИ поза областю малювання
+    if (!isInsideSvgCanvas(target)) {
+      if (!target.hasAttribute('data-touch-click-emitted')) {
+        target.setAttribute('data-touch-click-emitted', '1');
+        setTimeout(() => {
+          target.removeAttribute('data-touch-click-emitted');
+        }, 500);
+        if (typeof target.click === 'function') {
+          target.click();
+        }
+      }
+    }
+  }, { passive: true });
+})();
+</script>
+<!-- Invisible text input for SVG-edit text mode -->
+<input id="text" type="text" autocomplete="off" style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;" /> 
   <script src="all.js?t=1683303572863"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let isDrawing = false;
+
+  // Відстежуємо початок малювання: клік у холсті з активним інструментом (не Select)
+  document.addEventListener('mousedown', function(e) {
+    if (e.target.closest('#svgcanvas')) {
+      const activeTool = document.querySelector('#tools_left .tool_button.active');
+      if (activeTool && activeTool.id !== 'tool_select') {
+        isDrawing = true;
+      }
+    }
+  });
+
+  // Після відпускання — через короткий час скидаємо
+  document.addEventListener('mouseup', () => {
+    setTimeout(() => isDrawing = false, 150);
+  });
+
+  // Тепер перехоплюємо подію "selected" від svgCanvas
+  const originalTrigger = $.SvgCanvas.prototype.call;
+  $.SvgCanvas.prototype.call = function(event, ...args) {
+    if (event === 'selected' && isDrawing) {
+      // Ігноруємо автоматичне виділення під час малювання
+      return;
+    }
+    return originalTrigger.apply(this, arguments);
+  };
+});
+</script>
+  
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+  const toggleButton = document.getElementById('toggle-panels-button');
+  const app = document.getElementById('method-draw');
+  const panels = document.getElementById('panels');
+
+  toggleButton.addEventListener('click', function () {
+    const isOpen = panels.classList.toggle('open');
+    app.classList.toggle('panels-open', isOpen);
+    toggleButton.title = isOpen ? 'Сховати панель властивостей' : 'Показати панель властивостей';
+  });
+}); 
+</script>
+
 </body>
 </html>

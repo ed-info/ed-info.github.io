@@ -1786,7 +1786,7 @@ body.inverted.dragging .draginput .angle {
   height: var(--x4);
   top: var(--x8);
   left: var(--x12);
-  right: calc(var(--panel-width) + var(--x4));;
+  right: 0; /* повний екран, коли панель схована */
   overflow: hidden;
   border-radius: var(--x2);
 }
@@ -2136,19 +2136,19 @@ body.inverted.dragging .draginput .angle {
   position: relative;
   border-radius: var(--x1);
   padding: var(--x12);
-  max-width: 600px;
+  max-width: 100%;
   margin: 32px;
 }
 
 .modal-item.modal-item-wide {
   max-width: none;
-  width: 900px;
+  width: 100%;
 }
 
 .modal-item.modal-item-source {
-  height: 504px;
+  height: 80%;
   max-width: none;
-  width: 704px;
+  width: 100%;
 }
 
 .modal h1:first-child {
@@ -2156,13 +2156,13 @@ body.inverted.dragging .draginput .angle {
 }
 #svg_source_editor {
   position: relative;
-  width: 800px;
-  height: 600px;
-  margin: -48px;
+  width: 100%;
+  height: 100%;
+  margin: 0px;
 }
 
 #svg_source_container {
-  width: 800px;
+  width: 100%;
   position: relative;
   height: 100%;
 }
@@ -2179,14 +2179,13 @@ body.inverted.dragging .draginput .angle {
 }
 
 #svg_source_textarea {
-  width: calc(100% - 64px);
-  height: calc(100% - 64px);
+  width: 100%;
+  height: 100%;
   line-height: 140%;
   font-family: var(--mono-font);
   font-size: 14px;
   color: var(--z4);
   border: none;
-  padding: 32px;
   background-color: transparent;
 }
 
@@ -2554,16 +2553,40 @@ body.dragging * {
   box-shadow: 0 0 0 1px var(--accent7);
 
 }
- #panels {
+#panels {
   position: absolute;
   box-sizing: border-box;
   width: var(--panel-width);
   right: var(--x1);
   top: var(--x5);
   bottom: 0;
-  border-bottom: none;
   overflow: auto;
   padding: 0;
+
+  /* Початкове положення: прихована */
+  transform: translateX(100%);
+  visibility: hidden; /* ← ДОДАНО */
+  pointer-events: none; /* ← ДОДАНО — не реагувати на кліки */
+  transition: transform 0.3s ease, visibility 0s 0.3s;
+}
+
+#panels.open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.3s ease, visibility 0s 0s;
+}
+
+
+/* За замовчуванням — панель прихована → робоча область на всю ширину */
+#workarea {
+  right: var(--x4); /* або 0, якщо не потрібен правий відступ */
+  transition: right 0.3s ease; /* плавна зміна ширини */
+}
+
+/* Коли панель відкрита — звужуємо робочу область */
+.panels-open #workarea {
+  right: calc(var(--panel-width) + var(--x4));
 }
 
 .context_panel {
@@ -2865,12 +2888,11 @@ body.dragging * {
 #zoom_panel,
 #zoom_select {
   padding: var(--x2) 0;
-  right: calc(var(--panel-width) + var(--x2));
-  position: absolute;
-  cursor:  pointer;
-  width:  100px;
+  left: 1%;
+  position: fixed;
+  cursor: pointer;
+  width: 32px;
 }
-
 #zoom_label:after {
   content: '';
 }
@@ -2915,18 +2937,20 @@ body.dragging * {
 #zoom_label input {
   -webkit-appearance: none;
   color: var(--z10);
-  font-size: 13px;
+  font-size: 12px;
   height: auto;
   width: var(--x12);
   padding: 0;
   cursor: default;
   position: absolute;
-  background:  transparent;
-  border:  none;
-  top:  2px;
-  left:  var(--x6);
+  background: transparent;
+  border: none;
+  top: 2px;
+  left: 16px;
   pointer-events: none;
+
 }
+
 
 #zoom_label select {
   -webkit-appearance: none;
@@ -2984,7 +3008,23 @@ body.dragging * {
   transform:  translate(-50%, -50%);
   opacity: 0.7;
 }
+#workarea,
+#svgcanvas,
+#svgroot {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 
-
-
-
+  /* Заборонити "натяг" сторінки на iOS/Android */
+  touch-action: none;
+}
+#svgcanvas, #workarea {
+  touch-action: none;
+}
+#workarea {
+  pointer-events: auto; /* має бути auto, а не none! */
+}
