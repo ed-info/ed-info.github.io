@@ -2423,7 +2423,7 @@ $.fn.dragInput = function(cfg){
     var step = this.dragCfg.step
     var area = (max - min > 0) ?  (max - min) / step : 200;
     var scale = area/cursorHeight * step;
-    var lastY = 0;
+    //var lastY = null;
     var attr = this.getAttribute("data-attr");
     var completed = true //for mousewheel
     var $cursor = (area && this.dragCfg.cursor)
@@ -2433,41 +2433,42 @@ $.fn.dragInput = function(cfg){
     if ($cursor && !isNaN(this.dragCfg.start)) $cursor.css("top", (this.dragCfg.start*-1)/scale+cursorHeight)
    
     //this is where all the magic happens  
-    this.adjustValue = function(i, completed = false){
-      var v;
-      i = parseFloat(i);
-      if(isNaN(this.value)) {
-        v = this.dragCfg.reset;
-      } else if($.isFunction(this.dragCfg.stepfunc)) {
-        v = this.dragCfg.stepfunc(this, i);
-      } else {
-        v = Number((Number(this.value) + Number(i)).toFixed(5));
-      }
-      if (max !== null) v = Math.min(v, max);
-      if (min !== null) v = Math.max(v, min);
-      if ($cursor) this.updateCursor(v);
-      this.value = v;
-      this.dragCfg.callback(attr, v, completed);
-    };
+this.adjustValue = function(i, completed = false) {
+ 
+  i = parseFloat(i);
+  if (!isFinite(i)) i = 0;
+
+  let v;
+  if (isNaN(parseFloat(this.value))) {
+    v = this.dragCfg.start || 0;
+   
+  } else if ($.isFunction(this.dragCfg.stepfunc)) {
+    v = this.dragCfg.stepfunc(this, i);
+   
+  } else {
+    v = Number((Number(this.value) + Number(i)).toFixed(5));
+    
+  }
+
+  if (this.dragCfg.max !== null) v = Math.min(v, this.dragCfg.max);
+  if (this.dragCfg.min !== null) v = Math.max(v, this.dragCfg.min);
+  if (!isFinite(v)) v = this.dragCfg.start || 0;
+
+ 
+
+  if (this.$cursor) this.updateCursor(v);
+  this.value = v;
+  this.dragCfg.callback(this.dragCfg.attr, v, completed);
+};
           
     $label.toggleClass("draginput", $label.is("label"))
     
-    // when the mouse is down and moving
-    this.move = function(e, oy, val) {
-      // just got started let's save for undo purposes
-      if (lastY === 0) {
-        lastY = oy;
-      }
-      var deltaY = (e.pageY - lastY) *-1
-      lastY = e.pageY;
-      val = (deltaY * scale) * dragAdjust
-      var fixed = (step < 1) ? 1 : 0
-      this.adjustValue(val.toFixed(fixed))  //no undo true
-    };
     
     //when the mouse is released
     this.stop = function() {
+	
       var selectedElems = svgCanvas.getSelectedElems();
+      this._lastY = undefined;
       $('body').removeClass('dragging');
       $label.removeClass("active");
       completed = true;
@@ -2486,18 +2487,33 @@ $.fn.dragInput = function(cfg){
       $cursor.css("top", pos);
     }
     
-    this.launch = function(e) {
+	this.launch = function(e) {
       var selectedElems = svgCanvas.getSelectedElems();
-      var oy = e.pageY;
-      var val = this.value;
       var el = this;
+      this._lastY = e.pageY;
+      // ✅ Ініціалізуємо lastY **один раз** на початку drag
+      lastY = e.pageY;
+      
+    
       if (attr && selectedElems.length) svgCanvas.undoMgr.beginUndoableChange(attr, selectedElems)
       $('body').addClass('dragging');
       $label.addClass('active');
-      $(window).bind("mousemove.draginput touchmove.draginput", function(e){el.move(e, oy, parseFloat(val))})
-      $(window).bind("mouseup.draginput touchend.draginput", function(e){el.stop()})
+	$(window).bind("mousemove.draginput", (ev) => this.move(ev));
+	$(window).bind("mouseup.draginput", function(e){el.stop()})
       $("input").blur();
     }
+
+
+this.move = function(e) {
+  if (this._lastY === undefined) return;
+  var deltaY = (e.pageY - this._lastY) * -1;
+  this._lastY = e.pageY; // ✅ оновлюємо
+  var val = (deltaY * scale) * dragAdjust;
+  var fixed = (step < 1) ? 1 : 0;
+  this.adjustValue(val.toFixed(fixed));
+  
+};
+
     
     const delta = 2;
     let startX;
@@ -2510,8 +2526,8 @@ $.fn.dragInput = function(cfg){
       .attr("data-cursor", ($cursor !== false))
           
     .bind("mousedown touchstart", function(e){
-      startX = event.pageX;
-      startY = event.pageY;
+      startX = e.pageX;  // ✅ використовуйте аргумент e
+      startY = e.pageY;
       this.blur();
       this.launch(e);
     })
@@ -8684,7 +8700,13 @@ var getRefElem = this.getRefElem = function(attrVal) {
 // preventUndo - Boolean indicating whether the action should be undoable or not
 this.setRotationAngle = function(val, preventUndo) {
   // ensure val is the proper type
-  val = parseFloat(val);
+  console.log("setRotationAngle=",val)
+  val = parseFloat(val);  
+  // Додайте цю перевірку:
+  if (!isFinite(val)) {
+    console.warn("setRotationAngle: received invalid angle value:", val);
+    return;
+  }
   var elem = selectedElements[0];
   if (!elem) return;
   var oldTransform = elem.getAttribute("transform");
@@ -16960,7 +16982,7 @@ MD.Editor = function(){
     const indicator = document.getElementById("tool_angle_indicator");
     const reorient = document.getElementById("tool_reorient");
     const preventUndo = true;
-
+    console.log("changeRotationAngle=",ctl,val,indicator,reorient) 
     svgCanvas.setRotationAngle(val, preventUndo);
     indicator.style.transform = 'rotate('+ val + 'deg)'
     reorient.classList.toggle("disabled", val === 0);
@@ -23418,6 +23440,7 @@ MD.Eyedropper = function() {
             clearTimeout(id);
         };
 }());
+//
 
 /**
  *  Copyright (c) 2011 Zauber S.A. <http://www.zaubersoftware.com/>

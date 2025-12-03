@@ -758,80 +758,102 @@
   const svgCanvas = document.getElementById('svgcanvas');
   if (!svgCanvas) return;
 
-  function emulateMouseEvent(type, touch) {
-    return new MouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      view: window,
-      button: 0,
-      buttons: type === 'mouseup' ? 0 : 1,
-    });
+function emulateMouseEvent(type, touch) {
+  const { clientX, clientY } = touch;
+  const scrollX = window.scrollX || window.pageXOffset;
+  const scrollY = window.scrollY || window.pageYOffset;
+  const pageX = clientX + scrollX;
+  const pageY = clientY + scrollY;
+  const screenX = touch.screenX || clientX;
+  const screenY = touch.screenY || clientY;
+
+  // Створюємо подію
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: clientX,
+    clientY: clientY,
+    screenX: screenX,
+    screenY: screenY,
+    view: window,
+    button: 0,
+    buttons: type === 'mouseup' ? 0 : 1,
+  });
+
+  // 🔥 КРИТИЧНО: явно встановлюємо pageX/pageY, бо конструктор може їх ігнорувати
+  try {
+    Object.defineProperty(event, 'pageX', { value: pageX, writable: false });
+    Object.defineProperty(event, 'pageY', { value: pageY, writable: false });
+  } catch (e) {
+    // Якщо не вдається (на дуже старих браузерах), просто присвоюємо
+    event.pageX = pageX;
+    event.pageY = pageY;
   }
 
-  function isInsideSvgCanvas(el) {
-    return el === svgCanvas || svgCanvas.contains(el);
+  event.originalEvent = touch;
+  return event;
+}
+
+  // 🔹 Нова функція: чи потрібно емулювати на цьому елементі?
+  function shouldEmulate(el) {
+	  console.log("shouldEmulate=",el)
+    // 1. У холсті (як раніше)
+    if (el === svgCanvas || svgCanvas.contains(el)) return true;
+    // 2. У будь-якому .draginput (включаючи #tool_angle)
+    if (el.closest && el.closest('.draginput')) return true;
+    return false;
   }
 
   function onTouchStart(e) {
-    if (!isInsideSvgCanvas(e.target)) return;
     if (e.touches.length !== 1) return;
+    const target = e.target;
+    if (!shouldEmulate(target)) return;
     e.preventDefault();
     const touch = e.touches[0];
-    e.target.dispatchEvent(emulateMouseEvent('mousedown', touch));
+    target.dispatchEvent(emulateMouseEvent('mousedown', touch));
   }
 
   function onTouchMove(e) {
-    if (!isInsideSvgCanvas(e.target)) return;
     if (e.touches.length !== 1) return;
+    // Для mousemove ми надсилаємо подію на той самий елемент,
+    // що й mousedown (як у справжньої миші)
+    // Але для простоти — просто перевіряємо, чи є хоча б один активний draginput чи холст під пальцем
+    const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+    if (!shouldEmulate(target)) return;
     e.preventDefault();
     const touch = e.touches[0];
-    e.target.dispatchEvent(emulateMouseEvent('mousemove', touch));
+    target.dispatchEvent(emulateMouseEvent('mousemove', touch));
   }
 
   function onTouchEnd(e) {
     if (e.changedTouches.length === 0) return;
     const touch = e.changedTouches[0];
-    const initialTarget = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!isInsideSvgCanvas(initialTarget) && !isInsideSvgCanvas(e.target)) {
-      return;
-    }
-    e.preventDefault();
     const target = document.elementFromPoint(touch.clientX, touch.clientY) || svgCanvas;
+    if (!shouldEmulate(target)) return;
+    e.preventDefault();
     target.dispatchEvent(emulateMouseEvent('mouseup', touch));
   }
 
+  // Прослуховувачі залишаються глобальні
   document.addEventListener('touchstart', onTouchStart, { passive: false });
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', onTouchEnd, { passive: false });
 
-  // --- Емуляція click для UI (меню, кнопки) ---
+  // --- Емуляція click для решти UI (як у вас) ---
   document.addEventListener('touchend', function(e) {
     if (e.changedTouches.length !== 1) return;
     const touch = e.changedTouches[0];
     let target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!target) return;
-
-    // Пропускаємо не-елементи
-    if (target.nodeType !== Node.ELEMENT_NODE) {
-      if (target.nodeType === Node.TEXT_NODE) {
-        target = target.parentElement;
-      } else {
-        return;
-      }
-    }
     if (!target || target.nodeType !== Node.ELEMENT_NODE) return;
 
-    // Емулюємо click ТІЛЬКИ поза областю малювання
-    if (!isInsideSvgCanvas(target)) {
+    // Не емулюємо click, якщо це draginput (це вже обробляється через mouse events)
+    if (target.closest && target.closest('.draginput')) return;
+
+    // Емулюємо click лише поза холстом і поза draginput
+    if (!(svgCanvas.contains(target) || target === svgCanvas)) {
       if (!target.hasAttribute('data-touch-click-emitted')) {
         target.setAttribute('data-touch-click-emitted', '1');
-        setTimeout(() => {
-          target.removeAttribute('data-touch-click-emitted');
-        }, 500);
+        setTimeout(() => target.removeAttribute('data-touch-click-emitted'), 500);
         if (typeof target.click === 'function') {
           target.click();
         }
@@ -840,6 +862,7 @@
   }, { passive: true });
 })();
 </script>
+
 <!-- Invisible text input for SVG-edit text mode -->
 <input id="text" type="text" autocomplete="off" style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;" /> 
   <script src="all.js?t=1683303572863"></script>
@@ -889,6 +912,27 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 }); 
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const angleInput = document.getElementById('angle');
+  const angleIndicator = document.getElementById('tool_angle_indicator');
+  
+  if (!angleInput || !angleIndicator) return;
 
+  function updateAngleIndicator() {
+	console.log("updateAngleIndicator")  
+    const val = parseFloat(angleInput.value);
+    const deg = isFinite(val) ? val : 0;
+    angleIndicator.style.transform = `rotate(${deg}deg)`;
+  }
+
+  // Оновлювати при зміні через dragInput, клавіатуру, або інші способи
+  angleInput.addEventListener('input', updateAngleIndicator);
+  angleInput.addEventListener('change', updateAngleIndicator);
+
+  // Ініціалізувати спочатку
+  updateAngleIndicator();
+});
+</script>
 </body>
 </html>
