@@ -26,18 +26,13 @@
 </div>
 </div>
 
-<div id="menu_bar">
-	
-
-	
+<div id="menu_bar">	
   <!-- Логотип — залишаємо SVG -->
   <a class="menu" >
-    <div class="menu_title" id="logo">
-      <svg viewBox="0 0 16 16" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
-        <path d="M-.1 16.1L16 .04V16.1H-.1z"></path>
-        <path d="M0 16.1V.1l16 16H0z" fill="var(--z7)"></path>
-      </svg>
+    <div  class="menu_title">
+		<img src="images/logo.png" alt="Based on MethodDraw" style="margin-top: 6px;"> 
     </div>
+<!--
     <div class="menu_list inverted-undo">
       <div id="modal_about" class="menu_item" data-action="about">Про застосунок...</div>
       <div class="separator"></div>
@@ -45,6 +40,7 @@
       <div id="modal_shortcuts" class="menu_item" data-action="shortcuts">Клавіатурні скоротки...</div>
       <div id="modal_donate" class="menu_item" data-action="donate">Donate or sponsor...</div>
     </div>
+-->
   </a>
 
   <!-- Файл -->
@@ -66,7 +62,17 @@
       <div data-action="export" id="tool_export" class="menu_item">Експортувати як PNG</div>
     </div>
   </a>
-
+  <!-- Швидкі дії: Скасувати / Вилучити -->
+  <!-- Кнопка "Скасувати" -->
+  <button title="Скасувати" style="background: transparent !important; border: none !important;" 
+        onclick="editor.undo()"> 
+    <img src="images/undo.png" alt="Скасувати">
+  </button>
+  
+  <!-- Кнопка "Вилучити" -->
+  <button title="Вилучити" style="background: transparent !important; border: none !important;" onclick="editor.deleteSelected()">
+    <img src="images/delete.png" alt="Вилучити">
+  </button>
   <!-- Зміни -->
   <a class="menu">
     <div class="menu_title" title="Зміни">
@@ -103,7 +109,7 @@
     </div>
   </a>
 
-  <!-- Вигляд -->
+  <!-- Вигляд
   <a class="menu">
     <div class="menu_title" title="Вигляд">
       <img src="images/view.png" width="24" height="30" alt="Вигляд">
@@ -115,15 +121,13 @@
       <div class="menu_item" id="tool_source" data-action="source">Джерело... <span class="shortcut">⌘U</span></div>
     </div>
   </a>
-
+ -->
 
 	  
 
 	  
   <!-- Права частина (без змін) -->
   <div class="menu-right">	  
-	  
-	  
     <button class="menu-icon" id="toggle-panels-button" title="Показати/сховати панель властивостей">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
         <path d="M3 19h18v-6H3v6zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
@@ -136,6 +140,7 @@
     </button>
   </div>
 </div>
+
 <div id="panels" class="tools_panel">
 
   <div id="canvas_panel" class="context_panel">
@@ -621,11 +626,13 @@
   <div class="tool_button" id="tool_fhpath" data-mode="fhpath" title="Pencil Tool [P]">
     <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style="transform: scale(-1,1)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
   </div>
+<!--
   <div class="tool_button" id="tool_line" data-mode="line" title="Line Tool [L]">
     <svg viewBox="0 0 27 27" xmlns="http://www.w3.org/2000/svg" width="24" height="24" >
       <path d="M 3 1 L 26 24 L 24 26 L 1 3 L 3 1 Z"></path>
     </svg>
   </div>
+-->
   <div class="tool_button" id="tool_rect" data-mode="rect" title="Square/Rect Tool [R]">
     <svg viewBox="0 0 27 27" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
       <path d="M 0 8 L 0 24 L 24 24 L 25 8 L 0 8 Z"/>
@@ -934,5 +941,6 @@ document.addEventListener('DOMContentLoaded', function () {
   updateAngleIndicator();
 });
 </script>
+
 </body>
 </html>
