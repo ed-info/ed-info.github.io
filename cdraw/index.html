@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Canvas Draw</title>
+<style>
+body {
+    margin: 0;
+    background: #eee;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Верхня панель */
+.top-toolbar {
+    background: #333;
+    color: white;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Основний контент */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+/* Модальне вікно */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.modal-canvas {
+    border: 1px solid #999;
+    background: white;
+    max-width: 100%;
+    max-height: 60vh; /* обмежуємо висоту canvas */
+    display: block;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+/* Бічна панель */
+.side-toolbar {
+    background: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    min-width: 70px;
+    flex-shrink: 0; /* ← не стискати! */
+}
+
+/* Іконки на верхній панелі */
+.top-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.top-icon-btn:hover {
+    background: #555;
+}
+
+.top-icon-btn img {
+    width: 32px;
+    height: 32px;
+    display: block;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.toolbar-button {
+    padding: 6px;
+    cursor: pointer;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    border: none;
+    color: white;
+}
+
+.toolbar-button img {
+    width: 48px;
+    height: 48px;
+    display: block;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.toolbar-button.active {
+    background: #ffcc00;
+    border-radius: 4px;
+}
+
+/* === ВЕРХНЯ ПАНЕЛЬ (операції) === */
+.top-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.top-icon-btn:hover {
+    background: #555;
+}
+
+.top-icon-btn img {
+    width: 48px;
+    height: 48px;
+    display: block;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: crisp-edges;
+}
+/* Контейнер для canvas */
+.canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    background: #ddd; /* фон навколо canvas */
+}
+
+canvas {
+    background: white;
+    border: 1px solid #999;
+    display: block;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.selection-only {
+    display: none; /* за замовчуванням приховано */
+}
+</style>
+</head>
+<body>
+<!-- Верхня панель -->
+<div class="top-toolbar">
+    <input type="color" id="colorPicker" value="#000000">
+   
+	<button id="openBtn" class="top-icon-btn">
+		<img src="images/open.png" alt="Open">
+	</button>
+	<button id="saveBtn" class="top-icon-btn">
+		<img src="images/save.png" alt="Save">
+	</button>
+    <button onclick="undo()" class="top-icon-btn">
+        <img src="images/undo.png" alt="Undo">
+    </button>
+    <button onclick="redo()" class="top-icon-btn">
+        <img src="images/redo.png" alt="Redo">
+    </button>
+
+	<input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <div class="brush-controls" style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+      <img src="images/brush_w.png" alt="Brush size" width="32" height="32">
+      <input type="range" id="brushSize" min="1" max="50" value="2" style="width:80px;">
+      <span id="brushSizeLabel">2</span>
+    </div>
+    
+    <div class="eraser-controls" style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+      <img src="images/eraser_w.png" alt="Eraser size" width="32" height="32">
+      <input type="range" id="eraserSize" min="2" max="50" value="20" style="width:80px;">
+      <span id="eraserSizeLabel">20</span>
+    </div>
+
+    <button id="rotateBtn" class="top-icon-btn selection-only">
+        <img src="images/rotate.png" alt="Rotate">
+    </button>
+    <button id="pixelsBtn" class="top-icon-btn selection-only">
+        <img src="images/pixels.png" alt="Pixels">
+    </button>
+    <button id="copyBtn" class="top-icon-btn selection-only" onclick="copySelection()">
+        <img src="images/copy.png" alt="Copy">
+    </button>
+    <button id="pasteBtn" class="top-icon-btn selection-only" onclick="pasteSelection()">
+        <img src="images/paste.png" alt="Paste">
+    </button>
+    <button id="deleteBtn" class="top-icon-btn selection-only" onclick="deleteSelection()">
+        <img src="images/delete.png" alt="Delete">
+    </button>
+    <button id="vmirrorBtn" class="top-icon-btn selection-only">
+      <img src="images/vmirror.png" alt="Vertical Mirror">
+    </button>
+    <button id="hmirrorBtn" class="top-icon-btn selection-only">
+      <img src="images/hmirror.png" alt="Horizontal Mirror">
+    </button>    
+
+</div>
+
+<!-- Основний контент -->
+<div class="main-content">
+    <!-- Бічна панель -->
+	<div class="side-toolbar">
+        <button id="brushBtn" class="toolbar-button active">
+            <img src="images/brush.png" alt="Пензель">
+        </button>
+        <button id="eraserBtn" class="toolbar-button">
+            <img src="images/eraser.png" alt="Гумка">
+        </button>
+        <button id="lineBtn" class="toolbar-button">
+            <img src="images/line.png" alt="Лінія">
+        </button>
+        <button id="rectBtn" class="toolbar-button">
+            <img src="images/rect.png" alt="Прямокутник">
+        </button>
+        <button id="ellipseBtn" class="toolbar-button">
+            <img src="images/ellipse.png" alt="Еліпс">
+        </button>
+        <button id="selectBtn" class="toolbar-button">
+            <img src="images/select.png" alt="Виділення">
+        </button>
+        <button id="fillBtn" class="toolbar-button">
+            <img src="images/fill.png" alt="Заповнення">
+        </button>
+        <button id="textBtn" class="toolbar-button">
+			<img src="images/text.png" alt="Текст">
+		</button>
+		<button id="eyedropperBtn" class="toolbar-button">
+			<img src="images/eyedropper.png" alt="Піпетка">
+		</button>
+		<button id="clearBtn" class="toolbar-button" >
+			<img src="images/clear.png" alt="Clear">
+		</button>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-container">
+        <canvas id="canvas" width="900" height="600" draggable="false"></canvas>
+    </div>
+</div>
+
+<div id="eraserCursor"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+/* -------- STATE -------- */
+let tool = 'brush';
+let isDrawing = false;
+let isSelecting = false;
+let isDraggingLayer = false;
+
+let startX = 0, startY = 0;
+
+let selectionRect = null;
+let floatingLayer = null;
+let clipboardData = null;
+
+let history = [];
+let historyIndex = -1;
+
+let dashOffset = 0;
+let isDraggingFloating = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let currentShape = null; // {type: 'rect'|'ellipse', x,y,w,h, color}
+let currentBrushPath = []; // [{x,y}, ...]
+let isResizing = false;
+let resizeHandle = null; // 'nw', 'ne', 'sw', 'se'
+let originalClipboard = null; // зберігаємо оригінал
+let transformMode = 'scale'; // 'scale' або 'rotate'
+let isRotating = false;
+let startAngle = 0;
+let brushClickStart = null; // {x, y} першої точки для лінії
+let wasDragged = false;     // чи був рух під час натискання
+let eraserSize = 20; // Глобальна змінна для розміру гумки
+let brushSize = 2;
+const eraserCursor = document.getElementById('eraserCursor');
+let lineStart = null; // {x, y} — поточна початкова точка
+let mousePos = { x: 0, y: 0 };
+let textContent = '';
+let textPosition = null;
+let isEditingText = false;
+let cursorVisible = true;
+let cursorBlinkInterval = null;
+
+
+
+/* -------- INIT -------- */
+ctx.fillStyle = "#fff";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+saveState();
+animateAnts();
+
+/* -------- TOOLS -------- */
+['brush','rect','ellipse','select','fill','eraser','line','text','eyedropper'].forEach(t=>{
+    if (document.getElementById(t+'Btn')) {
+        document.getElementById(t+'Btn').onclick=()=>setTool(t);
+    }
+});
+document.getElementById('rotateBtn').onclick = () => {
+    const rotateBtnImg = document.getElementById('rotateBtn').querySelector('img');
+    
+    if (transformMode === 'scale') {
+        transformMode = 'rotate';
+        rotateBtnImg.src = 'images/scale.png'; // Показуємо іконку "Scale"
+        rotateBtnImg.alt = 'Scale';
+    } else {
+        transformMode = 'scale';
+        rotateBtnImg.src = 'images/rotate.png'; // Показуємо іконку "Rotate"
+        rotateBtnImg.alt = 'Rotate';
+    }
+    render(); // оновити відображення маркерів
+};
+document.getElementById('clearBtn').onclick = clearCanvas;
+// Оновлюємо розмір при зміні слайдера
+document.getElementById('eraserSize').oninput = (e) => {
+    eraserSize = parseInt(e.target.value);
+    document.getElementById('eraserSizeLabel').textContent = eraserSize;
+};
+document.getElementById('brushSize').oninput = (e) => {
+    brushSize = parseInt(e.target.value);
+    document.getElementById('brushSizeLabel').textContent = brushSize;
+};
+// Вертикальне дзеркало
+document.getElementById('vmirrorBtn').onclick = () => {
+  if (!floatingLayer) return;
+  mirrorFloatingLayer(true, false);
+};
+
+// Горизонтальне дзеркало
+document.getElementById('hmirrorBtn').onclick = () => {
+  if (!floatingLayer) return;
+  mirrorFloatingLayer(false, true);
+};
+// Вимикаємо drag-and-drop для canvas
+canvas.ondragstart = () => false;
+
+function setTool(t){
+  tool = t;
+  document.querySelectorAll('.toolbar-button').forEach(b => b.classList.remove('active'));
+  document.getElementById(t+'Btn').classList.add('active');
+  canvas.style.cursor = (t === 'eyedropper') ? 'crosshair' : 'default'; // 👈
+  // Скидаємо стани...
+  selectionRect = null;
+  floatingLayer = null;
+  brushClickStart = null;
+  lineStart = null;
+  if (isEditingText) {
+    finishTextEditing();
+  }
+  render();
+  updateSelectionButtons();
+  // Показуємо/ховаємо слайдери розміру
+  const brushControls = document.querySelector('.brush-controls');
+  const eraserControls = document.querySelector('.eraser-controls');
+  if (brushControls && eraserControls) {
+    brushControls.style.display = (tool === 'brush') ? 'flex' : 'none';
+    eraserControls.style.display = (tool === 'eraser') ? 'flex' : 'none';
+  }  
+}
+
+function clearCanvas() {
+  if (confirm('Очистити все полотно?')) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    selectionRect = null;
+    floatingLayer = null;
+    saveState(); // ← додає чистий стан до історії, не видаляючи минуле
+    render();
+    updateSelectionButtons();
+  }
+}
+
+function updateSelectionButtons() {
+    const hasSelection = selectionRect !== null || floatingLayer !== null;
+    const buttons = document.querySelectorAll('.selection-only');
+    
+    buttons.forEach(btn => {
+        btn.style.display = hasSelection ? 'flex' : 'none';
+    });
+}
+/* -------- HISTORY -------- */
+function saveState(){
+    history=history.slice(0,historyIndex+1);
+    history.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    historyIndex++;
+}
+function undo(){
+    if(historyIndex>0){
+        historyIndex--;
+        ctx.putImageData(history[historyIndex],0,0);
+        selectionRect=null;
+        floatingLayer=null;
+    }
+}
+function redo(){
+    if(historyIndex<history.length-1){
+        historyIndex++;
+        ctx.putImageData(history[historyIndex],0,0);
+        selectionRect=null;
+        floatingLayer=null;
+    }
+}
+/* --------------- */
+
+function floodFill(ctx, x, y, fillColorHex, tolerance = 32) {
+    const canvas = ctx.canvas;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    // Перетворення кольору
+    const hexToRgb = (hex) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return { r, g, b };
+    };
+
+    const getColor = (x, y) => {
+        const i = (y * width + x) * 4;
+        return {
+            r: data[i],
+            g: data[i + 1],
+            b: data[i + 2],
+            a: data[i + 3]
+        };
+    };
+
+    const setColor = (x, y, color) => {
+        const i = (y * width + x) * 4;
+        data[i] = color.r;
+        data[i + 1] = color.g;
+        data[i + 2] = color.b;
+        data[i + 3] = 255;
+    };
+
+    const targetColor = getColor(x, y);
+    const replacementColor = hexToRgb(fillColorHex);
+
+    // Якщо клікнули на контур або прозорий піксель — нічого не робимо
+    if (targetColor.a < 255 || 
+        (targetColor.r === replacementColor.r &&
+         targetColor.g === replacementColor.g &&
+         targetColor.b === replacementColor.b)) {
+        return;
+    }
+
+    // Відстань між кольорами (евклідова)
+    const colorDistance = (c1, c2) => {
+        const dr = c1.r - c2.r;
+        const dg = c1.g - c2.g;
+        const db = c1.b - c2.b;
+        return Math.sqrt(dr * dr + dg * dg + db * db);
+    };
+
+    const visited = new Uint8Array(width * height); // ефективніше за Set
+
+    const stack = [{ x, y }];
+    visited[y * width + x] = 1;
+
+    while (stack.length > 0) {
+        const { x, y } = stack.pop();
+        setColor(x, y, replacementColor);
+
+        const neighbors = [
+            [x + 1, y],
+            [x - 1, y],
+            [x, y + 1],
+            [x, y - 1]
+        ];
+
+        for (const [nx, ny] of neighbors) {
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+
+            const idx = ny * width + nx;
+            if (visited[idx]) continue;
+
+            const neighborColor = getColor(nx, ny);
+            if (neighborColor.a < 255) continue; // не заливаємо прозорі
+
+            // Якщо колір **дуже відрізняється** — це "бар’єр" (контур)
+            if (colorDistance(neighborColor, targetColor) > tolerance) {
+                continue;
+            }
+
+            visited[idx] = 1;
+            stack.push({ x: nx, y: ny });
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+/* -------- CANVAS EVENTS -------- */
+canvas.onmousedown = e => {
+   const x = e.offsetX;
+   const y = e.offsetY;
+
+   // 🔍 Піпетка: отримати колір з canvas
+   if (tool === 'eyedropper') {
+    const pixel = ctx.getImageData(x, y, 1, 1).data;
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+    document.getElementById('colorPicker').value = hex;   
+    return;
+   }
+   // 👉 якщо є floating layer і клік по ньому (але не по маркеру!)
+   if (floatingLayer &&
+        x >= floatingLayer.x &&
+        x <= floatingLayer.x + floatingLayer.w &&
+        y >= floatingLayer.y &&
+        y <= floatingLayer.y + floatingLayer.h
+    ) {
+        // Перевірка, чи не клік по маркеру (виконається далі)
+    }
+	if (tool === 'fill') {
+		const x = e.offsetX;
+		const y = e.offsetY;
+		// Зберігаємо поточний стан перед заливкою
+		renderBaseOnly(); // відновлюємо без overlay
+		floodFill(ctx, x, y, colorPicker.value, 64);
+		saveState();
+		render(); // поновити (хоча overlay порожній)
+		return;
+	}
+	
+    if (tool === 'text') {
+        // Якщо вже редагуємо текст — завершуємо
+        if (isEditingText) {
+            finishTextEditing();
+        }
+        
+        // Починаємо новий текст
+        textPosition = { x, y };
+        textContent = '';
+        isEditingText = true;
+        startCursorBlink();
+        render();
+        return;
+    }
+	
+    // 🔹 перевірка маркерів
+    if (tool === 'select' && selectionRect && floatingLayer && transformMode === 'scale') {
+        const handleSize = 8;
+        const hx = x;
+        const hy = y;
+        const { x: sx, y: sy, w, h } = selectionRect;
+        const tolerance = handleSize;
+
+        if (Math.abs(hx - sx) <= tolerance && Math.abs(hy - sy) <= tolerance) {
+            isResizing = true;
+            resizeHandle = 'nw';
+            startX = hx;
+            startY = hy;
+            return;
+        }
+        if (Math.abs(hx - (sx + w)) <= tolerance && Math.abs(hy - sy) <= tolerance) {
+            isResizing = true;
+            resizeHandle = 'ne';
+            startX = hx;
+            startY = hy;
+            return;
+        }
+        if (Math.abs(hx - sx) <= tolerance && Math.abs(hy - (sy + h)) <= tolerance) {
+            isResizing = true;
+            resizeHandle = 'sw';
+            startX = hx;
+            startY = hy;
+            return;
+        }
+        if (Math.abs(hx - (sx + w)) <= tolerance && Math.abs(hy - (sy + h)) <= tolerance) {
+            isResizing = true;
+            resizeHandle = 'se';
+            startX = hx;
+            startY = hy;
+            return;
+        }
+    }
+
+	// Обробка обертання (у режимі rotate)
+	if (tool === 'select' && selectionRect && floatingLayer && transformMode === 'rotate') {
+		const handleRadius = 8;
+		const hx = e.offsetX;
+		const hy = e.offsetY;
+		const { x, y, w, h } = selectionRect;
+
+		const corners = [
+			{ x: x,           y: y           }, // nw
+			{ x: x + w,       y: y           }, // ne
+			{ x: x,           y: y + h       }, // sw
+			{ x: x + w,       y: y + h       }  // se
+		];
+
+		for (const corner of corners) {
+			const dx = hx - corner.x;
+			const dy = hy - corner.y;
+			if (Math.sqrt(dx * dx + dy * dy) <= handleRadius) {
+				// Клік по маркеру → почати обертання
+				isRotating = true;
+				const centerX = x + w / 2;
+				const centerY = y + h / 2;
+				const mouseAngle = Math.atan2(hy - centerY, hx - centerX);
+				startAngle = mouseAngle - floatingLayer.rotation;
+				return;
+			}
+		}
+	}
+    // 👉 якщо клік по тілу floating layer (але не по маркеру)
+    if (floatingLayer &&
+        x >= floatingLayer.x &&
+        x <= floatingLayer.x + floatingLayer.w &&
+        y >= floatingLayer.y &&
+        y <= floatingLayer.y + floatingLayer.h
+    ) {
+        isDraggingFloating = true;
+        dragOffsetX = x - floatingLayer.x;
+        dragOffsetY = y - floatingLayer.y;
+        return;
+    }
+
+    startX = x;
+    startY = y;
+
+    if (tool === 'brush') {
+        isDrawing = true;
+        wasDragged = false; // скидаємо прапорець руху
+        startX = x;
+        startY = y;
+    
+        // Якщо раніше була перша точка — ігноруємо (має обробитись при mouseup)
+        // Початок нового шляху
+        currentBrushPath = [{ x: startX, y: startY }];
+    }
+    
+    if (tool === 'eraser') {
+        isDrawing = true;
+        wasDragged = false;
+        startX = x;
+        startY = y;
+        currentBrushPath = [{ x, y }];
+    
+        // Малюємо білий
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    
+        // Показуємо HTML-курсор
+        eraserCursor.style.width = eraserSize + 'px';
+        eraserCursor.style.height = eraserSize + 'px';
+        eraserCursor.style.left = (canvas.offsetLeft + x) + 'px';
+        eraserCursor.style.top = (canvas.offsetTop + y) + 'px';
+        eraserCursor.style.display = 'block';
+    }
+
+	if(tool==='rect' || tool==='ellipse'){
+		isDrawing=true;
+		currentShape={type: tool, x:startX, y:startY, w:0, h:0, color: colorPicker.value};
+	}
+
+    if (tool === 'select') {
+        isSelecting = true;
+        selectionRect = { x: startX, y: startY, w: 0, h: 0 };
+        updateSelectionButtons();
+    }
+    
+    if (tool === 'line') {
+        if (lineStart === null) {
+            lineStart = { x, y };
+        }
+        render();
+        return;
+    }    
+};
+
+
+canvas.onmousemove = e => {
+    mousePos.x = e.offsetX;
+    mousePos.y = e.offsetY;
+    const x = e.offsetX;
+    const y = e.offsetY;
+
+    if (isResizing && floatingLayer) {
+		const dx = e.offsetX - startX;
+		const dy = e.offsetY - startY;
+
+		const newX = floatingLayer.x;
+		const newY = floatingLayer.y;
+		let newW = floatingLayer.w;
+		let newH = floatingLayer.h;
+
+    switch (resizeHandle) {
+        case 'nw':
+            newW -= dx;
+            newH -= dy;
+            floatingLayer.x += dx;
+            floatingLayer.y += dy;
+            break;
+        case 'ne':
+            newW += dx;
+            newH -= dy;
+            floatingLayer.y += dy;
+            break;
+        case 'sw':
+            newW -= dx;
+            newH += dy;
+            floatingLayer.x += dx;
+            break;
+        case 'se':
+            newW += dx;
+            newH += dy;
+            break;
+		}
+
+		// Забороняємо негативний розмір
+		if (newW < 5) newW = 5;
+		if (newH < 5) newH = 5;
+
+		floatingLayer.w = newW;
+		floatingLayer.h = newH;
+		selectionRect.x = floatingLayer.x;
+		selectionRect.y = floatingLayer.y;
+		selectionRect.w = floatingLayer.w;
+		selectionRect.h = floatingLayer.h;
+
+		render();
+		startX = e.offsetX;
+		startY = e.offsetY;
+		return;
+	}
+
+	if (isRotating && floatingLayer) {
+		const hx = e.offsetX;
+		const hy = e.offsetY;
+		const { x, y, w, h } = selectionRect;
+		const centerX = x + w / 2;
+		const centerY = y + h / 2;
+
+		const mouseAngle = Math.atan2(hy - centerY, hx - centerX);
+		floatingLayer.rotation = mouseAngle - startAngle;
+
+		// Нормалізація кута не обов’язкова, але можна
+		// floatingLayer.rotation = ((floatingLayer.rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+		render();
+		return;
+	}
+
+    if (isDraggingFloating) {
+        floatingLayer.x = x - dragOffsetX;
+        floatingLayer.y = y - dragOffsetY;
+        selectionRect.x = floatingLayer.x;
+        selectionRect.y = floatingLayer.y;
+        render();
+        return;
+    }
+
+
+    if (tool === 'brush'  && isDrawing) {
+        wasDragged = true;
+        currentBrushPath.push({ x: e.offsetX, y: e.offsetY });
+        render(); // оновлює попередній перегляд
+    }
+
+
+    if (tool === 'eraser' && isDrawing) {
+        const currX = e.offsetX;
+        const currY = e.offsetY;
+    
+        // Малюємо білий на canvas
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = eraserSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        const last = currentBrushPath[currentBrushPath.length - 1];
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(currX, currY);
+        ctx.stroke();
+        ctx.restore();
+    
+        wasDragged = true;
+        currentBrushPath.push({ x: currX, y: currY });
+    
+        // Оновлюємо HTML-курсор
+        eraserCursor.style.left = (canvas.offsetLeft + currX) + 'px';
+        eraserCursor.style.top = (canvas.offsetTop + currY) + 'px';
+    }
+    
+           
+    
+	if(isDrawing && (tool==='rect'||tool==='ellipse')){
+		currentShape.w = x - startX;
+		currentShape.h = y - startY;
+		render();
+	}
+
+
+    if (tool === 'select' && isSelecting) {
+        selectionRect.w = x - startX;
+        selectionRect.h = y - startY;
+        render();
+    }
+    
+
+};
+
+
+canvas.onmouseup = () => {
+    if (isDraggingFloating) {
+        isDraggingFloating = false;
+        return;
+    }
+    
+    if (tool === 'line' && lineStart !== null) {
+        const endX = mousePos.x;
+        const endY = mousePos.y;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(lineStart.x, lineStart.y);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = colorPicker.value;
+        ctx.lineWidth = brushSize;
+        ctx.stroke();
+        ctx.restore();
+        
+        saveState();
+        lineStart = { x: endX, y: endY };
+        render();
+        return;
+    }
+    if (tool === 'eraser' && isDrawing) {
+        isDrawing = false;
+        saveState();
+        currentBrushPath = [];
+        eraserCursor.style.display = 'none'; // 👈 ховаємо
+    }
+    
+    if (tool === 'brush' && isDrawing) {
+        isDrawing = false;
+    
+
+         // 👉 Пензель: залишаємо як є (але теж має фіксувати зміни)
+         ctx.save();
+         ctx.strokeStyle = colorPicker.value;
+         ctx.lineWidth = brushSize;
+         ctx.lineCap = 'round';
+         ctx.lineJoin = 'round';
+         ctx.beginPath();
+         ctx.moveTo(currentBrushPath[0].x, currentBrushPath[0].y);
+         for (let i = 1; i < currentBrushPath.length; i++) {
+                ctx.lineTo(currentBrushPath[i].x, currentBrushPath[i].y);
+         }
+         ctx.stroke();
+         ctx.restore();
+   
+    
+        saveState(); // 🔑 ОБОВ’ЯЗКОВО!
+        currentBrushPath = []; // 🔑 Очистити — щоб курсор зник
+        if (tool !== 'brush') brushClickStart = null;
+    }
+
+	if(isDrawing && (tool==='rect'||tool==='ellipse')){
+		isDrawing=false;
+		drawShape(currentShape, true); // true = commit to bitmap
+		currentShape=null;
+		saveState();
+	}
+
+
+    if (tool === 'select' && isSelecting) {
+        isSelecting = false;
+        normalizeSelection();
+        render();
+    }
+    if (isResizing) {
+		isResizing = false;
+		resizeHandle = null;
+		// НЕ зберігаємо в історію — це ще floating state
+		return;
+	}
+	if (isRotating) {
+		isRotating = false;
+		return;
+	}
+};
+
+canvas.ondblclick = () => {
+    if (tool === 'line') {
+        lineStart = null;
+        render();
+    } else {
+        commitFloatingLayer();
+    }
+    brushClickStart = null;
+};
+
+// Обробка клавіатури для текстового режиму
+window.addEventListener('keydown', (e) => {
+    if (!isEditingText) return;
+
+    e.preventDefault(); // запобігає прокрутці сторінки
+
+    if (e.key === 'Enter') {
+        finishTextEditing();
+    } else if (e.key === 'Backspace') {
+        textContent = textContent.slice(0, -1);
+        render();
+    } else if (e.key.length === 1) {
+        textContent += e.key;
+        render();
+    }
+});
+
+function startCursorBlink() {
+    cursorVisible = true;
+    if (cursorBlinkInterval) clearInterval(cursorBlinkInterval);
+    cursorBlinkInterval = setInterval(() => {
+        cursorVisible = !cursorVisible;
+        render();
+    }, 500);
+}
+
+function finishTextEditing() {
+    if (textContent.trim() !== '') {
+        // 👉 Спочатку відновлюємо canvas без курсора
+        renderBaseOnly(); // ця функція вже є у вас
+        
+        // 👉 Тепер малюємо ТІЛЬКИ текст
+        ctx.save();
+        ctx.fillStyle = colorPicker.value;
+        ctx.font = `${brushSize * 12}px Arial`;
+        ctx.fillText(textContent, textPosition.x, textPosition.y);
+        ctx.restore();
+        
+        saveState();
+    }
+    
+    // Скидаємо стан
+    isEditingText = false;
+    textContent = '';
+    textPosition = null;
+    if (cursorBlinkInterval) {
+        clearInterval(cursorBlinkInterval);
+        cursorBlinkInterval = null;
+    }
+    render(); // оновити (без курсора)
+}
+
+
+
+function commitFloatingLayer() {
+    if (!floatingLayer) return;
+
+    // Тимчасовий canvas для рендеру обернутого зображення
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = floatingLayer.original.width;
+    tempCanvas.height = floatingLayer.original.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.putImageData(floatingLayer.original, 0, 0);
+
+    // Створюємо canvas для остаточного результату (згідно з selectionRect)
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = canvas.width;
+    finalCanvas.height = canvas.height;
+    const finalCtx = finalCanvas.getContext('2d');
+
+    // Відновлюємо основний фон
+    if (historyIndex >= 0) {
+        finalCtx.putImageData(history[historyIndex], 0, 0);
+    }
+
+    // Малюємо обернутий фрагмент
+    const { x, y, w, h, rotation } = floatingLayer;
+    const centerX = x + w / 2;
+    const centerY = y + h / 2;
+
+    finalCtx.save();
+    finalCtx.translate(centerX, centerY);
+    finalCtx.rotate(rotation);
+    finalCtx.drawImage(tempCanvas, -w / 2, -h / 2, w, h);
+    finalCtx.restore();
+
+    // Очищаємо основний canvas і зберігаємо
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(finalCanvas, 0, 0);
+
+    floatingLayer = null;
+    selectionRect = null;
+    saveState();
+    render();
+    updateSelectionButtons();
+}
+
+
+
+function renderBaseOnly() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (historyIndex >= 0) {
+        ctx.putImageData(history[historyIndex], 0, 0);
+    }
+}
+
+
+/* -------- SELECTION -------- */
+function normalizeSelection(){
+    if(!selectionRect)return;
+    if(selectionRect.w<0){selectionRect.x+=selectionRect.w;selectionRect.w*=-1;}
+    if(selectionRect.h<0){selectionRect.y+=selectionRect.h;selectionRect.h*=-1;}
+    if(selectionRect.w<5||selectionRect.h<5) selectionRect=null;
+    updateSelectionButtons();
+}
+
+/* -------- COPY / PASTE -------- */
+function copySelection() {
+    if (!selectionRect || historyIndex < 0) return;
+
+    const src = history[historyIndex];
+    const { x: sx, y: sy, w, h } = selectionRect;
+
+    // Створюємо ImageData для буфера
+    clipboardData = new ImageData(w, h);
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const srcIndex = ((sy + y) * src.width + (sx + x)) * 4;
+            const dstIndex = (y * w + x) * 4;
+
+            const r = src.data[srcIndex];
+            const g = src.data[srcIndex + 1];
+            const b = src.data[srcIndex + 2];
+            const a = src.data[srcIndex + 3];
+
+            // Копіюємо піксель
+            clipboardData.data[dstIndex]     = r;
+            clipboardData.data[dstIndex + 1] = g;
+            clipboardData.data[dstIndex + 2] = b;
+            clipboardData.data[dstIndex + 3] = a;
+
+            // Якщо піксель — білий (і не прозорий), робимо його прозорим
+            if (r === 255 && g === 255 && b === 255 && a === 255) {
+                clipboardData.data[dstIndex + 3] = 0; // α = 0 → прозорий
+            }
+        }
+    }
+	updateSelectionButtons();
+}
+
+function pasteSelection(){
+    if (!clipboardData) return;
+    originalClipboard = clipboardData;
+    floatingLayer = {
+        x: 20,
+        y: 20,
+        w: clipboardData.width,
+        h: clipboardData.height,
+        original: clipboardData,
+        rotation: 0 // у радіанах
+    };
+    selectionRect = { x: 20, y: 20, w: clipboardData.width, h: clipboardData.height };
+    render();
+	updateSelectionButtons();
+}
+
+
+function deleteSelection() {
+    // Випадок 1: є floatingLayer (вставлений фрагмент) → видаляємо його
+    if (floatingLayer) {
+        floatingLayer = null;
+        selectionRect = null;
+        render();
+        return;
+    }
+
+    // Випадок 2: є виділена область (selectionRect) → заливаємо її кольором тла
+    if (selectionRect) {
+        // Зберігаємо стан перед зміною
+        renderBaseOnly(); // відновлюємо canvas без overlay
+
+        // Колір тла (у вашому випадку — білий, як при ініціалізації)
+        const bgColor = "#ffffff";
+
+        // Створюємо тимчасовий ImageData з кольором тла
+        const { x, y, w, h } = selectionRect;
+        const imageData = ctx.createImageData(w, h);
+        const data = imageData.data;
+        const bgR = 255, bgG = 255, bgB = 255, bgA = 255;
+
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = bgR;     // R
+            data[i + 1] = bgG; // G
+            data[i + 2] = bgB; // B
+            data[i + 3] = bgA; // A
+        }
+
+        // Накладаємо "чистий" блок на canvas
+        ctx.putImageData(imageData, x, y);
+
+        // Зберігаємо в історію
+        saveState();
+
+        // Скидаємо виділення
+        selectionRect = null;
+        render(); // оновити (без selection overlay)
+    }
+	updateSelectionButtons();
+}
+
+//
+function drawShape(shape, commit=false){
+    if(!shape) return;
+
+    if(!commit){
+        ctx.save();
+    }
+
+    if(shape.type==='rect'){
+        ctx.fillStyle=shape.color;
+        ctx.fillRect(shape.x, shape.y, shape.w, shape.h);
+        ctx.strokeStyle='#000';
+        ctx.strokeRect(shape.x, shape.y, shape.w, shape.h);
+    }else if(shape.type==='ellipse'){
+        ctx.beginPath();
+        ctx.ellipse(shape.x+shape.w/2, shape.y+shape.h/2, Math.abs(shape.w/2), Math.abs(shape.h/2),0,0,2*Math.PI);
+        ctx.fillStyle=shape.color;
+        ctx.fill();
+        ctx.strokeStyle='#000';
+        ctx.stroke();
+    }
+
+    if(!commit){
+        ctx.restore();
+    }
+}
+
+/* -------- RENDER -------- */
+function render(){
+    // 🔑 Не відновлюємо canvas з історії під час активного малювання пензлем або гумкою
+    if ((tool === 'brush' || tool === 'eraser') && isDrawing) {
+        // Лише оновлюємо overlay: курсор, floating layer тощо
+    } else {
+        // Відновлюємо основне зображення з історії
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (historyIndex >= 0) {
+            ctx.putImageData(history[historyIndex], 0, 0);
+        }
+    }
+
+    // Малюємо floatingLayer з обертанням
+    if (floatingLayer) {
+        const { x, y, w, h, original, rotation } = floatingLayer;
+        const centerX = x + w / 2;
+        const centerY = y + h / 2;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = original.width;
+        tempCanvas.height = original.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(original, 0, 0);
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(rotation);
+        ctx.drawImage(tempCanvas, -w / 2, -h / 2, w, h);
+        ctx.restore();
+    }
+
+    // Малюємо тимчасові фігури (прямокутник, еліпс)
+    if (currentShape) {
+        drawShape(currentShape, false);
+    }
+
+    // 👁️ Малюємо КУРСОР гумки або слід пензля (тільки overlay!)
+    if (currentBrushPath.length > 0) {
+        if (tool === 'eraser' && isDrawing) {
+        } else if (tool === 'brush' && isDrawing) {
+            // Показуємо попередній перегляд пензля
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = brushSize;
+            ctx.beginPath();
+            ctx.moveTo(currentBrushPath[0].x, currentBrushPath[0].y);
+            for (let i = 1; i < currentBrushPath.length; i++) {
+                ctx.lineTo(currentBrushPath[i].x, currentBrushPath[i].y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    // Тимчасова лінія
+    if (tool === 'line' && lineStart !== null) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(lineStart.x, lineStart.y);
+        ctx.lineTo(mousePos.x, mousePos.y);
+        ctx.strokeStyle = colorPicker.value;
+        ctx.lineWidth = brushSize;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Текстовий курсор
+    if (isEditingText && textPosition) {
+        ctx.save();
+        ctx.fillStyle = colorPicker.value;
+        ctx.font = `${brushSize * 12}px Arial`;
+        
+        // Малюємо текст
+        ctx.fillText(textContent, textPosition.x, textPosition.y);
+        
+        // Малюємо мигаючий курсор
+        if (cursorVisible) {
+            const textWidth = ctx.measureText(textContent).width;
+            const cursorX = textPosition.x + textWidth;
+            const cursorY = textPosition.y;
+            const cursorHeight = brushSize * 12;
+            
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cursorX, cursorY - cursorHeight + 4);
+            ctx.lineTo(cursorX, cursorY + 4);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }    
+    
+    
+    // Малюємо рамку виділення ("мурашки")
+    drawSelection();
+}
+
+
+function drawSelection(){
+    if (!selectionRect) return;
+    const { x, y, w, h } = selectionRect;
+
+    ctx.save();
+    // Пунктирна рамка
+    ctx.setLineDash([6, 4]);
+    ctx.lineDashOffset = -dashOffset;
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(x, y, w, h);
+
+    // Малюємо маркери залежно від режиму
+    const corners = [
+        { x: x,           y: y           }, // nw
+        { x: x + w,       y: y           }, // ne
+        { x: x,           y: y + h       }, // sw
+        { x: x + w,       y: y + h       }  // se
+    ];
+
+    if (transformMode === 'scale') {
+        // Блакитні квадрати
+        const size = 8;
+        ctx.fillStyle = "#00aaff";
+        corners.forEach(pt => {
+            ctx.fillRect(pt.x - size / 2, pt.y - size / 2, size, size);
+        });
+    } else if (transformMode === 'rotate') {
+        // Червоні кола
+        const radius = 5;
+        ctx.fillStyle = "#ff0000";
+        corners.forEach(pt => {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    ctx.restore();
+}
+
+/* -------- ANTS -------- */
+function animateAnts(){
+    dashOffset++;
+    render();
+    requestAnimationFrame(animateAnts);
+}
+// ------- PIXEL EDITOR -------
+document.getElementById('pixelsBtn').onclick = showPixelEditor;
+
+function showPixelEditor() {
+    if (!selectionRect || historyIndex < 0) {
+        alert("Спочатку виділіть фрагмент!");
+        return;
+    }
+
+    normalizeSelection();
+    if (!selectionRect || selectionRect.w < 1 || selectionRect.h < 1) return;
+
+    const { x, y, w, h } = selectionRect;
+    const zoom = 4;
+
+    // Створюємо модальне вікно
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modal.appendChild(modalContent);
+
+    // ✅ Canvas завжди повного розміру (без обмежень)
+    const editCanvas = document.createElement('canvas');
+    editCanvas.className = 'modal-canvas';
+    editCanvas.width = w * zoom;
+    editCanvas.height = h * zoom;
+    const editCtx = editCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Зчитуємо оригінальний фрагмент
+    const srcData = history[historyIndex];
+    const fragment = new ImageData(w, h);
+    for (let sy = 0; sy < h; sy++) {
+        for (let sx = 0; sx < w; sx++) {
+            const srcIdx = ((y + sy) * srcData.width + (x + sx)) * 4;
+            const dstIdx = (sy * w + sx) * 4;
+            fragment.data[dstIdx]     = srcData.data[srcIdx];
+            fragment.data[dstIdx + 1] = srcData.data[srcIdx + 1];
+            fragment.data[dstIdx + 2] = srcData.data[srcIdx + 2];
+            fragment.data[dstIdx + 3] = srcData.data[srcIdx + 3];
+        }
+    }
+
+    // Малюємо фрагмент у збільшеному вигляді
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.putImageData(fragment, 0, 0);
+    editCtx.imageSmoothingEnabled = false;
+    editCtx.drawImage(tempCanvas, 0, 0, w, h, 0, 0, w * zoom, h * zoom);
+
+    modalContent.appendChild(editCanvas);
+
+    // Color picker та кнопки
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    colorPicker.value = '#000000';
+    modalContent.appendChild(colorPicker);
+
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'modal-buttons';
+
+    const applyBtn = document.createElement('button');
+    applyBtn.textContent = '✅';
+    applyBtn.style.color = 'green';
+    applyBtn.style.fontWeight = 'bold';
+    applyBtn.onclick = () => {
+        // ✅ Читаємо дані з повного canvas
+        const scaledData = editCtx.getImageData(0, 0, w * zoom, h * zoom);
+        const newFragment = new ImageData(w, h);
+
+        for (let sy = 0; sy < h; sy++) {
+            for (let sx = 0; sx < w; sx++) {
+                const srcIdx = ((sy * zoom) * (w * zoom) + (sx * zoom)) * 4;
+                const dstIdx = (sy * w + sx) * 4;
+                newFragment.data[dstIdx]     = scaledData.data[srcIdx];
+                newFragment.data[dstIdx + 1] = scaledData.data[srcIdx + 1];
+                newFragment.data[dstIdx + 2] = scaledData.data[srcIdx + 2];
+                newFragment.data[dstIdx + 3] = scaledData.data[srcIdx + 3];
+            }
+        }
+
+        renderBaseOnly();
+        ctx.putImageData(newFragment, x, y);
+        saveState();
+        document.body.removeChild(modal);
+    };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '❌';
+    cancelBtn.style.color = 'red';
+    cancelBtn.onclick = () => {
+        document.body.removeChild(modal);
+    };
+
+    buttonsDiv.appendChild(cancelBtn);
+    buttonsDiv.appendChild(applyBtn);
+    modalContent.appendChild(buttonsDiv);
+
+    // Пензель для малювання у модальному вікні
+    let isDrawingEdit = false;
+    let lastX, lastY;
+
+    editCanvas.onmousedown = (e) => {
+        isDrawingEdit = true;
+        const rect = editCanvas.getBoundingClientRect();
+        lastX = Math.floor((e.clientX - rect.left));
+        lastY = Math.floor((e.clientY - rect.top));
+        drawPixel(lastX, lastY);
+    };
+
+    editCanvas.onmousemove = (e) => {
+        if (!isDrawingEdit) return;
+        const rect = editCanvas.getBoundingClientRect();
+        const currX = Math.floor((e.clientX - rect.left));
+        const currY = Math.floor((e.clientY - rect.top));
+        drawLine(lastX, lastY, currX, currY, colorPicker.value, editCtx, zoom);
+        lastX = currX;
+        lastY = currY;
+    };
+
+    editCanvas.onmouseup = () => isDrawingEdit = false;
+    editCanvas.onmouseleave = () => isDrawingEdit = false;
+
+    function drawPixel(px, py) {
+        const size = zoom;
+        const x = Math.floor(px / zoom) * zoom;
+        const y = Math.floor(py / zoom) * zoom;
+        editCtx.fillStyle = colorPicker.value;
+        editCtx.fillRect(x, y, zoom, zoom);
+    }
+
+    function drawLine(x0, y0, x1, y1, color, context, blockSize) {
+        const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / blockSize;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = Math.round(x0 + t * (x1 - x0));
+            const y = Math.round(y0 + t * (y1 - y0));
+            const gridX = Math.floor(x / blockSize) * blockSize;
+            const gridY = Math.floor(y / blockSize) * blockSize;
+            context.fillStyle = color;
+            context.fillRect(gridX, gridY, blockSize, blockSize);
+        }
+    }
+}
+// Функції
+function openImage() {
+    document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            if (img.width > canvas.width || img.height > canvas.height) {
+                alert(`Зображення завелике!\nМаксимальний розмір: ${canvas.width}×${canvas.height}\nВаше зображення: ${img.width}×${img.height}`);
+                return;
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            saveState();
+            selectionRect = null;
+            floatingLayer = null;
+            render();
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+function saveImage() {
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+    const exportCtx = exportCanvas.getContext('2d');
+    
+    if (historyIndex >= 0) {
+        exportCtx.putImageData(history[historyIndex], 0, 0);
+    } else {
+        exportCtx.drawImage(canvas, 0, 0);
+    }
+    
+    const link = document.createElement('a');
+    link.download = 'canvas-image.png';
+    link.href = exportCanvas.toDataURL('image/png');
+    link.click();
+}
+//
+function mirrorFloatingLayer(vertical = false, horizontal = false) {
+  if (!floatingLayer) return;
+
+  const { original } = floatingLayer;
+  const w = original.width;
+  const h = original.height;
+  const mirrored = new ImageData(w, h);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const srcX = horizontal ? w - 1 - x : x;
+      const srcY = vertical ? h - 1 - y : y;
+      const srcIdx = (srcY * w + srcX) * 4;
+      const dstIdx = (y * w + x) * 4;
+
+      mirrored.data[dstIdx]     = original.data[srcIdx];
+      mirrored.data[dstIdx + 1] = original.data[srcIdx + 1];
+      mirrored.data[dstIdx + 2] = original.data[srcIdx + 2];
+      mirrored.data[dstIdx + 3] = original.data[srcIdx + 3];
+    }
+  }
+
+  floatingLayer.original = mirrored;
+  render();
+}
+
+// Обробники
+document.getElementById('openBtn').onclick = openImage;
+document.getElementById('saveBtn').onclick = saveImage;
+// Ініціалізація видимості контролів
+document.querySelector('.brush-controls').style.display = 'flex';
+document.querySelector('.eraser-controls').style.display = 'none';
+// Фокусуємо canvas для отримання подій клавіатури
+canvas.tabIndex = 0;
+canvas.focus();
+
+// При кліку на canvas — фокусуємо
+canvas.addEventListener('click', () => {
+    canvas.focus();
+});
+</script>
+</body>
+</html>
