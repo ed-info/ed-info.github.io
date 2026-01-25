@@ -31,11 +31,10 @@
   padding: 8px;
   margin: 0;
   min-height: 60px;
-  max-height: 200px;      /* за потреби обмежити висоту */
+  max-width:400px;
   overflow-y: auto;       /* прокрутка по вертикалі, якщо багато рядків */
   align-items: flex-start;
 }
-
 .assets-item {
   display: flex;
   flex-direction: column;
@@ -164,17 +163,17 @@
     </div>
   </div>
      <!-- Права частина -->
-     <div id="rightBar" style="width: 500px;">
-		 <div class="container" id="splashImg" style="margin-left: 10px;margin-top: 20px; display: flex;justify-content: center;align-items: center; ;width: auto;height: 95.5%; border-radius: 10px;background:#140b20;margin-right: 20px;">
+     <div id="rightBar" style="width: 20%;flex: 1; display: flex; flex-direction: column; min-width: 0;max-width:480px; background-color: #2a2a2a;margin-bottom: 20px;margin-right:20px;margin-top: 20px;">
+		 <div class="container" id="splashImg" style="margin-left: 10px; display: flex;justify-content: center;align-items: center;height:100%;border-radius: 10px;background:#140b20;margin-bottom: -20px;">
 			<img src="./media/splash.png" alt="" width="90%">
 		</div>
         <iframe src="./pgz-handbook.html" id="handbook" 
-					style="width:95%; height:95%; border:none; border-radius:10px;margin-top: 20px;margin-left: 10px;display: none;"
+					style="display: none; margin-left: 10px; justify-content: center;align-items: center;height:100%;border-radius: 10px;background:#140b20;margin-bottom: -20px;"
 					title="Посібник з Pygame Zero">
 		</iframe>;
 
 <!-- Галерея ресурсів -->
-<div id="resourceGallery" style="display: none; margin-top: -5px;">
+<div id="resourceGallery" style="display: none; margin-top: -20px;">
   <div class="frame" id="imagesFrame">
     <h3>🖼️ Зображення</h3>
     <div id="imagesList" class="assets-items-scroll"></div>
@@ -214,6 +213,19 @@
       </span>
     </div>
   </div>
+ <!-- 
+    <div class="frame" id="fontsFrame">
+    <h3>🔤 Шрифти</h3>
+    <div id="fontsList" class="assets1-items-scroll"></div>
+    <div class="controls-bar">
+      <button onclick="addFile('font')" title="Додати шрифт">➕</button>
+      <span class="controls-bar" id="fontControls" style="display:none;">
+        <button onclick="renameSelected('font')" title="Перейменувати">✏️</button>
+        <button onclick="deleteSelected('font')" title="Видалити">🗑️</button>
+      </span>
+    </div>
+  </div>
+-->
 </div>
     </div>
  </div>
