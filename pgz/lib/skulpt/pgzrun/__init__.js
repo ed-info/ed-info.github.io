@@ -194,8 +194,55 @@ if (typeof window.jsfs === 'undefined') {
     
 	var loadedAssets = {}; // Тут Завантажені ресурси
     console.log("ASSETS=",assets)
-// --------------
+// -Завантаження зображень--
+function loadImage(name) {
+    return new Promise(function(resolve, reject) {
+        var jsName = Sk.ffi.remapToJs(name);
+        var file_name = "/images/" + jsName + ".png";
 
+        jsfs.read(file_name)
+            .then(function(image_data) {
+                // Перевірка валідності Data URL
+                if (typeof image_data !== 'string' || !image_data.startsWith('data:image/')) {
+                    throw new Error("Invalid image data for " + jsName);
+                }
+
+                var img = new Image();
+                img.name = jsName;
+                img.onload = function () {
+                    loadedAssets[img.name] = {
+                        image: img,
+                        name: img.name,
+                        type: "image",
+                        width: img.width,
+                        height: img.height
+                    };
+                    assets.images[jsName] = {
+                        src: img.src,
+                        width: img.width,
+                        height: img.height
+                    };
+                    console.log("Loaded image:", jsName);
+                    resolve(img);
+                };
+                img.onerror = function () {
+                    console.error("Image load error:", jsName);
+                    PythonIDE.showHint("Помилка: зображення '" + jsName + "' не завантажено!");
+                    reject(new Error("Failed to load image: " + jsName));
+                };
+                img.src = image_data;
+            })
+            .catch(function(err) {
+                if (!jsName.startsWith("$")) {
+                    console.error("Failed to load image:", file_name, err);
+                    PythonIDE.showHint("Помилка: зображення '" + jsName + "' не знайдено!");
+                    PythonIDE.showHint("Помилка: зображення '" + jsName + "' не знайдено!");
+                }
+                reject(err);
+            });
+    });
+}
+//
 	var promises = [];
 	
 	var animations = {};
@@ -371,46 +418,60 @@ if (typeof window.jsfs === 'undefined') {
 			case 'pos':				
 				a.x = pos[0] - self.anchorVal.x;
 				a.y = pos[1] - self.anchorVal.y;
-			break;			
+			break;
+			case 'flip_x':
+				a.flip_x = !!Sk.ffi.remapToJs(value);
+			break;
+			case 'flip_y':
+				a.flip_y = !!Sk.ffi.remapToJs(value);
+			break;
+			case 'fps':
+				self.fps = Math.max(0.1, Sk.ffi.remapToJs(value)); // avoid zero or negative
+			break;
+			case 'direction':
+				self.direction = Sk.ffi.remapToJs(value);
+			break;
+            case 'images':
+                var newImages = Sk.ffi.remapToJs(value);
+                self.images = newImages;
+                self.image_index = 0;
+            
+                if (newImages.length > 0) {
+                    // Завантажуємо всі зображення зі списку (паралельно)
+                    var loadPromises = newImages.map(function(imgName) {
+                        return loadImage(imgName).catch(function(err) {
+                            // Не ламаємо весь процес, якщо одне зображення не знайдено
+                            console.warn("Failed to load image in 'images' list:", imgName, err);
+                            return null;
+                        });
+                    });
+            
+                    // Після завантаження хоча б першого — встановлюємо його
+                    Promise.all(loadPromises).then(function(results) {
+                        if (newImages.length > 0 && loadedAssets[newImages[0]]) {
+                            a.image = newImages[0];
+                            updateRectFromXY(self);
+                        } else {
+                            console.warn("No valid image loaded from 'images' list");
+                        }
+                    });
+                } else {
+                    a.image = null;
+                }
+                break;			
             case 'image':
-                a.image = value;
-                console.log("IMG:",value)
                 var jsName = Sk.ffi.remapToJs(value);
+                a.image = jsName;
+            
                 if (!loadedAssets[jsName]) {
-                    var file_name = "/images/" + jsName + ".png";
-                    
-                    jsfs.read(file_name)
-                        .then(function(image_data) {
-                            var img = new Image();
-                            img.name = jsName;
-                            img.onload = function () {
-                                loadedAssets[img.name] = {
-                                    image: img,
-                                    name: img.name,
-                                    type: "image",
-                                    width: img.width,
-                                    height: img.height
-                                };
-                                assets.images[jsName] = {
-                                    src: img.src,
-                                    width: img.width,
-                                    height: img.height
-                                };
-                                updateRectFromXY(self); 
-                            };
-                            img.onerror = function () {
-                                console.error("Image load error:", jsName);
-                                PythonIDE.showHint("Помилка: зображення '" + jsName + "' не завантажено!");
-                            };
-                            img.src = image_data;
+                    loadImage(jsName)
+                        .then(function(img) {
+                            updateRectFromXY(self);
                         })
                         .catch(function(err) {
-							if (!jsName.startsWith("$")) {
-								console.error("Failed to load image:", file_name, err);
-								PythonIDE.showHint("Помилка: зображення '" + jsName + "' не знайдено!");
-							}	
+                            console.warn("Failed to load image via 'image' attribute:", jsName, err);
                         });
-                } else {                   
+                } else {
                     updateRectFromXY(self);
                 }
                 break;
@@ -849,9 +910,14 @@ var init = function(kwa, self, name, pos) {
         angle: 0,
         scale: 1,
         opacity: 1,
-        image: Sk.ffi.remapToJs(name)
-        
+        flip_x: false,
+        flip_y: false,
+        image: Sk.ffi.remapToJs(name)        
     };
+    self.direction = 0; // за замовчуванням — праворуч
+    self.fps = 5; // default FPS for animation
+    self.image_index = 0;
+	self.images = []; // список назв зображень для анімації
     self.others = {};
     self.others._surf = Sk.misceval.callsim(Surface, self);
 
@@ -875,78 +941,181 @@ var init = function(kwa, self, name, pos) {
     var jsName = Sk.ffi.remapToJs(name);
     var file_name = "/images/" + jsName + ".png";
 
-    // Завантажуємо зображення асинхронно
-    jsfs.read(file_name)
-        .then(function(image_data) {
-            // Перевіряємо, що це валідний Data URL
-            if (typeof image_data !== 'string' || !image_data.startsWith('data:image/')) {
-                throw new Error("Invalid image data");
-            }
-
-            var img = new Image();
-            img.name = jsName;
-            img.onload = function () {
-                loadedAssets[img.name] = {
-                    image: img,
-                    name: img.name,
-                    type: "image",
-                    width: img.width,
-                    height: img.height
-                };
-                assets.images[jsName] = {
-                    src: img.src,
-                    width: img.width,
-                    height: img.height
-                };
-                console.log("LoadedAssets = ", loadedAssets);
-                
-					self.attributes.width = img.width;
-					self.attributes.height = img.height;					
-					updateRectFromXY(self);
-				    console.log("W/H=",self.attributes.width ,self.attributes.height)
-				   
-
-            };
-            img.onerror = function () {
-                console.error("Image load error:", jsName);
-                PythonIDE.showHint("Помилка: зображення '" + jsName + "' не завантажено!");
-                btnAssetColor = '#ff0000';
-            };
-            img.src = image_data;
-            
-			
-
-        })
-        .catch(function(err) {
-			if (!jsName.startsWith("$")) {
-				console.error("Failed to load image:", file_name, err);
-				PythonIDE.showHint("Помилка: зображення '" + jsName + "' не знайдено!");
-			}	
-            btnAssetColor = '#ff0000';
-        });
+// Завантажуємо зображення через спільну функцію
+loadImage(jsName)
+    .then(function(img) {
+        self.attributes.width = img.width;
+        self.attributes.height = img.height;
+        updateRectFromXY(self);
+        console.log("W/H=", self.attributes.width, self.attributes.height);
+    })
+    .catch(function(err) {
+        // Помилки вже оброблені в loadImage, але можна додати fallback
+        console.warn("Image loading failed:", err);
+    });
 };
 
 init.co_kwargs = true;
 $loc.__init__ = new Sk.builtin.func(init);
 
-		$loc.draw = new Sk.builtin.func(function(self) {
-			if(loadedAssets[self.attributes.image]) {
-				updateRectFromXY(self);
-				var i = loadedAssets[self.attributes.image];
-				var a = self.attributes;
-				var radians = a.angle * Math.PI / 180;				
-				cx.save();
-				cx.globalAlpha = a.opacity; // прозорість			
-				cx.translate(a.x + self.anchorVal.x, a.y + self.anchorVal.y);
-				cx.rotate(-radians);
-				cx.translate(-a.x - self.anchorVal.x, -a.y - self.anchorVal.y);
-				cx.drawImage(i.image, a.x, a.y, a.width*a.scale, a.height*a.scale);
-				cx.restore();
-			} else {
-				//console.log(self.name + " not loaded yet...");
-			}
-		});
-		
+$loc.draw = new Sk.builtin.func(function(self) {
+    if (!loadedAssets[self.attributes.image]) {
+        return;
+    }
+    updateRectFromXY(self);
+    var i = loadedAssets[self.attributes.image];
+    var a = self.attributes;
+    var w = a.width * a.scale;
+    var h = a.height * a.scale;
+    var radians = a.angle * Math.PI / 180;
+    cx.save();
+    cx.globalAlpha = a.opacity;
+    // Переносимо до точки прив'язки (anchor point)
+    cx.translate(a.x + self.anchorVal.x, a.y + self.anchorVal.y);
+    // Обертання навколо anchor point
+    if (a.angle !== 0) {
+        cx.rotate(-radians);
+    }
+    // Дзеркальне відображення
+    if (a.flip_x || a.flip_y) {
+        cx.scale(a.flip_x ? -1 : 1, a.flip_y ? -1 : 1);
+        // Малюємо з урахуванням масштабу та віддзеркалення
+        cx.drawImage(i.image, a.flip_x ? -w : 0, a.flip_y ? -h : 0, w, h);
+    } else {
+        cx.drawImage(i.image, 0, 0, w, h);
+    }
+    cx.restore();
+});
+$loc.next_image = new Sk.builtin.func(function(self) {
+    if (self.images.length === 0) {
+        return Sk.builtin.none.none$;
+    }
+    self.image_index = (self.image_index + 1) % self.images.length;
+    self.attributes.image = self.images[self.image_index];
+    updateRectFromXY(self); // оновлюємо розміри, якщо нове зображення іншого розміру
+    return Sk.builtin.none.none$;
+});
+$loc.animate = new Sk.builtin.func(function(self) {
+    if (!self.images || self.images.length === 0) {
+        return Sk.builtin.none.none$;
+    }
+    // Ініціалізуємо лічильник кадрів, якщо ще не існує
+    if (self.frame_counter === undefined) {
+        self.frame_counter = 0;
+    }
+    self.frame_counter += 1;
+    // Обчислюємо інтервал у кадрах: 60 FPS / self.fps
+    var interval = 60 / self.fps;
+    if (self.frame_counter >= interval) {
+        // Перемикаємо зображення
+        self.image_index = (self.image_index + 1) % self.images.length;
+        self.attributes.image = self.images[self.image_index];
+        updateRectFromXY(self);
+        self.frame_counter = 0; // скидаємо лічильник
+    }
+    return Sk.builtin.none.none$;
+});
+$loc.move_forward = new Sk.builtin.func(function(self, distance) {
+    var d = Sk.ffi.remapToJs(distance);
+    var angleRad = self.attributes.angle * Math.PI / 180;
+    self.attributes.x += d * Math.cos(angleRad);
+    self.attributes.y += d * Math.sin(angleRad);
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
+
+$loc.move_back = new Sk.builtin.func(function(self, distance) {
+    var d = Sk.ffi.remapToJs(distance);
+    var angleRad = self.attributes.angle * Math.PI / 180;
+    self.attributes.x -= d * Math.cos(angleRad);
+    self.attributes.y -= d * Math.sin(angleRad);
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
+
+$loc.move_right = new Sk.builtin.func(function(self, distance) {
+    var d = Sk.ffi.remapToJs(distance);
+    var angleRad = (self.attributes.angle + 90) * Math.PI / 180; // 90° to the right of forward
+    self.attributes.x += d * Math.cos(angleRad);
+    self.attributes.y += d * Math.sin(angleRad);
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
+
+$loc.move_left = new Sk.builtin.func(function(self, distance) {
+    var d = Sk.ffi.remapToJs(distance);
+    var angleRad = (self.attributes.angle - 90) * Math.PI / 180; // 90° to the left of forward
+    self.attributes.x += d * Math.cos(angleRad);
+    self.attributes.y += d * Math.sin(angleRad);
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});		
+$loc.move_in_direction = new Sk.builtin.func(function(self, distance) {
+    var d = Sk.ffi.remapToJs(distance);
+    var angleRad = self.direction * Math.PI / 180;
+    self.attributes.x += d * Math.cos(angleRad);
+    self.attributes.y += d * Math.sin(angleRad);
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
+$loc.distance_to = new Sk.builtin.func(function(self, other) {
+    Sk.builtin.pyCheckArgs("distance_to", 2, 2);
+    // Отримуємо центри обох акторів
+    var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+    var other_center = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
+    var dx = other_center[0] - self_center[0];
+    var dy = other_center[1] - self_center[1];
+    var distance = Math.sqrt(dx * dx + dy * dy);
+    return Sk.ffi.remapToPy(distance);
+});
+
+$loc.direction_to = new Sk.builtin.func(function(self, other) {
+    Sk.builtin.pyCheckArgs("direction_to", 2, 2);
+    // Отримуємо центри обох акторів
+    var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+    var other_center = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
+    var dx = other_center[0] - self_center[0];
+    var dy = other_center[1] - self_center[1];
+    // atan2(dy, dx) дає кут від осі X, з урахуванням квадранту
+    // У системі canvas: Y зростає вниз → це вже враховано
+    var angleRad = Math.atan2(dy, dx);
+    var angleDeg = angleRad * 180 / Math.PI;
+    return Sk.ffi.remapToPy(angleDeg);
+});
+$loc.move_towards = new Sk.builtin.func(function(self, target, distance) {
+    Sk.builtin.pyCheckArgs("move_towards", 3, 3);
+    var dist = Sk.ffi.remapToJs(distance);
+    // Отримуємо центри обох акторів
+    var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+    var target_center = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("center")));
+    var dx = target_center[0] - self_center[0];
+    var dy = target_center[1] - self_center[1];
+    var length = Math.sqrt(dx * dx + dy * dy);
+    if (length === 0) {
+        // Ціль у тій самій точці — нічого не робимо
+        return Sk.builtin.none.none$;
+    }
+    // Нормалізований вектор, помножений на відстань
+    var stepX = (dx / length) * dist;
+    var stepY = (dy / length) * dist;
+    self.attributes.x += stepX;
+    self.attributes.y += stepY;
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
+
+$loc.point_towards = new Sk.builtin.func(function(self, target) {
+    Sk.builtin.pyCheckArgs("point_towards", 2, 2);
+    // Отримуємо центри обох акторів
+    var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+    var target_center = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("center")));
+    var dx = target_center[0] - self_center[0];
+    var dy = target_center[1] - self_center[1];
+    var angleRad = Math.atan2(dy, dx);
+    self.attributes.angle = angleRad * 180 / Math.PI;
+    updateRectFromXY(self);
+    return Sk.builtin.none.none$;
+});
 		$loc.__repr__ = new Sk.builtin.func(function(self) {
 
 			return Sk.ffi.remapToPy(self.attributes.image + " (x:" + (self.attributes.x + self.anchorVal.x) + "," + (self.attributes.y + self.anchorVal.y) + ")");
