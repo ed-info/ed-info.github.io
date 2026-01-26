@@ -671,3 +671,123 @@ async function importGallery() {
 
   input.click();
 }
+
+function normalizePgzUrl(input) {
+  input = input.trim();
+  if (input.startsWith('http://') || input.startsWith('https://')) {
+    return input;
+  }
+   if (input.startsWith('//')) {
+    return 'https:' + input;
+  }
+  if (!input.includes('/') && !input.includes('.')) {
+
+    throw new Error('Некоректна адреса проєкту');
+  }
+  return 'https://' + input;
+}
+
+// === ЗАВАНТАЖЕННЯ ПРОЄКТУ З URL ===
+async function loadProjectFromUrl(rawUrl) {
+  let pgzUrl;
+  try {
+    pgzUrl = normalizePgzUrl(rawUrl);
+  } catch (e) {
+    await message('', 'Некоректна адреса проєкту:\n' + rawUrl);
+    return;
+  }
+
+  try {
+    const response = await fetch(pgzUrl);
+    if (!response.ok) {
+      throw new Error(`Помилка завантаження: ${response.status} ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const zip = await JSZip.loadAsync(blob);
+
+    // --- my_pgz.py ---
+    const codeEntry = zip.file('my_pgz.py');
+    if (codeEntry) {
+      const code = await codeEntry.async('text');
+      if (typeof PythonIDE !== 'undefined') {
+        PythonIDE.files['my_pgz.py'] = code;
+        PythonIDE.currentFile = 'my_pgz.py';
+        PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
+        PythonIDE.updateFileTabs();
+        PythonIDE.editor.refresh();
+        console.log('Код my_pgz.py завантажено.');
+      }
+    }
+
+    const allFiles = Object.keys(zip.files).filter(name => !name.endsWith('/'));
+    console.log("allFiles =",allFiles)
+    // --- images/ ---
+      for (const path of allFiles) {
+        if (path.startsWith('images/')) {
+          const filename = path.substring('images/'.length);
+          const fileEntry = zip.file(path);
+          if (!fileEntry) continue;
+
+          const b64 = await fileEntry.async('base64');
+          const extMatch = path.toLowerCase().match(/\.([a-z0-9]+)$/);
+          const ext = extMatch ? extMatch[1] : 'png';
+          const mimeTypes = {
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            png: 'image/png',
+            gif: 'image/gif',
+            webp: 'image/webp',
+            svg: 'image/svg+xml'
+          };
+          const mime = mimeTypes[ext] || 'image/png';
+          const dataUrl = `data:${mime};base64,${b64}`;
+          await fs.write(`/images/${filename}`, dataUrl);
+          console.log("Імпортовано зображення:", filename);
+        }
+      }
+    // --- sounds/ ---
+    for (const path of allFiles) {
+      if (path.startsWith('sounds/')) {
+        const filename = path.substring('sounds/'.length);
+        const fileEntry = zip.file(path);
+        if (!fileEntry) continue;
+        const arrayBuffer = await fileEntry.async('arraybuffer');
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        const dataUrl = await new Promise(r => {
+          const reader = new FileReader();
+          reader.onload = () => r(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        await fs.write(`/sounds/${filename}`, dataUrl);
+      }
+    }
+    // --- music/ ---
+    for (const path of allFiles) {
+      if (path.startsWith('music/')) {
+        const filename = path.substring('music/'.length);
+        const fileEntry = zip.file(path);
+        if (!fileEntry) continue;
+        const arrayBuffer = await fileEntry.async('arraybuffer');
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        const dataUrl = await new Promise(r => {
+          const reader = new FileReader();
+          reader.onload = () => r(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        await fs.write(`/music/${filename}`, dataUrl);
+      }
+    }
+    document.getElementById('topPanel').style.display = 'none';
+    document.getElementById('mainLayout').style.display = 'none';
+    document.getElementById('gameModal').style.background = '#222';
+    document.getElementById('closeGameBtn').style.display = 'none';
+    document.getElementById('cgb').style.display = 'block';
+ 
+    await message('', 'Натисніть "Ok" для старту');
+	PythonIDE.runCode();
+
+  } catch (err) {
+    console.error('Помилка:', err);
+    await message('', 'Не вдалося завантажити проєкт:\n' + (err.message || err.toString()));
+  }
+}
