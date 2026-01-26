@@ -109,9 +109,9 @@
     <script src="./lib/jszip.min.js"></script>
     <script src="./lib/FileSaver.min.js"></script>
 
-<div id="pgz-playground">
+<div id="pgz-playground" >
 <!-- Верхня панель -->
-<div id="topPanel">
+<div id="topPanel" style="display: none;">
   <!-- Ліва частина: кнопки (інструменти) -->
   <div id="toolPanel" class="toolPanel">
     <img title="Виконати" data-i18n-title="run_title" alt="Натисніть, щоб виконати код" data-i18n-alt="run_alt" id="btn_run" class="toolButton" src="./media/play.png">
@@ -151,7 +151,7 @@
 </div>
 
 <!-- Основний макет -->
-<div id="mainLayout" style="display: flex; height: calc(100vh - 60px);background-color: #2a2a2a;">
+<div id="mainLayout" style="display: none; height: calc(100vh - 60px);background-color: #2a2a2a;">
   <!-- ліва частина -->
   <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;background-color: #2a2a2a;margin-bottom: 20px;">
     <div id="editorContainer" style="flex: 1; min-height: 0; border: 1px solid #444; background-color: #fff;position: relative;margin-top: 20px;margin-left: 10px;border-radius: 12px;">
@@ -601,6 +601,7 @@
     ">
       <div style="width: 28px;"></div>
       <span id="gameTitle">Pygame Zero</span>
+      <div id="cgb" style="display: none; width: 28px;"></div>
       <button id="closeGameBtn" style="
           background: #ff0000;
           color: white;
@@ -780,8 +781,16 @@ async function input(title, text) {
 <!-- Прихований input для завантаження файлів (потрібен для lib.js) -->
 <input type="file" id="file-btn" hidden> 
 <script>
-	window.addEventListener("load", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const rawUrl = urlParams.get('run') || urlParams.get('pgz');	
+  window.addEventListener('load', async () => {
 		document.getElementById("page-loader")?.remove();
+		if (!rawUrl) {
+			    document.getElementById('topPanel').style.display = 'block';
+				document.getElementById('mainLayout').style.display = 'flex';
+			} else {
+				await loadProjectFromUrl(rawUrl);
+				}
 	});
     document.getElementById('projectNameInput').value = generateProjectName();
 </script>
