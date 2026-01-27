@@ -792,10 +792,12 @@ async function input(title, text) {
 		if (!rawUrl) {
 			    document.getElementById('topPanel').style.display = 'block';
 				document.getElementById('mainLayout').style.display = 'flex';
+				document.getElementById('playGameBtn').style.display = 'none';
 			} else {
 				await loadProjectFromUrl(rawUrl);
 				}
 	});
+	
     document.getElementById('projectNameInput').value = generateProjectName();
 </script>
 </body>
