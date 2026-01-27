@@ -459,7 +459,7 @@ var PythonIDE = {
 			if(PythonIDE.runningTests)
 				return;
             
-			var c = document.getElementById('consoleOut');
+			var c = document.getElementById('output'); //'consoleOut
 
 			if (!c) {
 				console.error(text);
