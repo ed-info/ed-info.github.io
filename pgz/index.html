@@ -110,9 +110,26 @@
     <script src="./lib/FileSaver.min.js"></script>
 
 <div id="pgz-playground" >
-<!-- Верхня панель -->
+
+  <!-- кнопка запуску гри для standalone-mode-->
+  <button id="playGameBtn" style="
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        background: url('./media/play-game.png') no-repeat center center;
+        background-size: contain;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.3s ease;
+        z-index: 10;
+    "></button>	
+<!-- верхня панель -->
 <div id="topPanel" style="display: none;">
-  <!-- Ліва частина: кнопки (інструменти) -->
+  <!-- ліва частина: кнопки (інструменти) -->
   <div id="toolPanel" class="toolPanel">
     <img title="Виконати" data-i18n-title="run_title" alt="Натисніть, щоб виконати код" data-i18n-alt="run_alt" id="btn_run" class="toolButton" src="./media/play.png">
     <img title="Припинити" class="toolButton" src="./media/stop.png" id="btn_stopRunning" style="display:none;">
@@ -131,7 +148,7 @@
    
   </div>
   <div id="hintBar" data-i18n="hint_bar" style="left:50px;margin-top:20px;font-size: 14px;z-index: 3500;color: #FFF;"></div>
-  <!-- Права частина: поле назви проєкту -->
+  <!-- права частина: поле назви проєкту -->
   <input type="text" id="projectNameInput" 
          placeholder="Назва проєкту" 
          maxlength="32"
@@ -150,7 +167,7 @@
          ">
 </div>
 
-<!-- Основний макет -->
+<!-- основний макет -->
 <div id="mainLayout" style="display: none; height: calc(100vh - 60px);background-color: #2a2a2a;">
   <!-- ліва частина -->
   <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;background-color: #2a2a2a;margin-bottom: 20px;">
@@ -162,7 +179,7 @@
 		<div id="output"></div>		
     </div>
   </div>
-     <!-- Права частина -->
+     <!-- права частина -->
      <div id="rightBar" style="width: 20%;flex: 1; display: flex; flex-direction: column; min-width: 0;max-width:480px; background-color: #2a2a2a;margin-bottom: 20px;margin-right:20px;margin-top: 20px;">
 		 <div class="container" id="splashImg" style="margin-left: 10px; display: flex;justify-content: center;align-items: center;height:100%;border-radius: 10px;background:#140b20;margin-bottom: -20px;">
 			<img src="./media/splash.png" alt="" width="90%">
@@ -172,7 +189,7 @@
 					title="Посібник з Pygame Zero">
 		</iframe>;
 
-<!-- Галерея ресурсів -->
+<!-- галерея ресурсів -->
 <div id="resourceGallery" style="display: none; margin-top: -20px;">
   <div class="frame" id="imagesFrame">
     <h3>🖼️ Зображення</h3>
@@ -294,13 +311,10 @@
     <script src="./lib/customfile.js"></script>
     <script src="./lib/translations.js"></script>
     
-    <!-- Дані проєкту -->
+    <!-- дані проєкту -->
     <div id="myfilename.txt"></div>    
     <div id="recover" title="Відновлення коду" style="display:none"></div>
-    <div id="dlg" title="my_pgz.py" data-i18n-title="file_tab_name_title" style="display:none">
-        <div id="p5Sketch"></div>        
-        <canvas id="myChart" style="width:100%;max-width:600px;max-height:800px;background-color: #CCC;display:none"></canvas>
-        
+    <div id="dlg" title="my_pgz.py" data-i18n-title="file_tab_name_title" style="display:none">       
     </div>
     <div id="save" title="Файли - збереження, отримання, відновлення" style="display:none;">
         <fieldset>
@@ -313,7 +327,6 @@
                 <h3><i class="fa fa-keyboard-o"></i> Ctrl + Alt + S</h3>
             </div>
         </fieldset>
-
         <fieldset>
             <legend data-i18n="load_file">Отримати файл:</legend>            
 				<input type="file" id="file-btn" hidden>
@@ -336,7 +349,6 @@
             </div>	   
 	   </fieldset>
     </div>
-
     <div id="project_settings" title="Проєкт" style="display:none">
         <p data-i18n="project_rename_help">Перейменування проєкту допоможе вам упорядкувати збережений код</p>
         <label for="txt_project_name" data-i18n="project_name_label">Назва проєкту:</label><input id="txt_project_name" name="txt_project_name"
@@ -413,7 +425,7 @@
     <script src="./lib/addfuncs.js"></script> 
     <script src="./lib/main.js"></script>
 
-    <!-- === ГАЛЕРЕЯ РЕСУРСІВ === -->
+    <!--Галерея ресурсів -->
     <script src="./lib/assets-gallery.js"></script>
     <script>
 
@@ -559,8 +571,7 @@
     return "my" + randomName + "Game";
 }
 	</script>
-	
-<!-- Модальне вікно для гри  -->
+
 <!-- Модальне вікно для гри     background: rgba(64, 64, 64, 0.6);
     backdrop-filter: blur(8px); 
     -webkit-backdrop-filter: blur(8px); /* для Safari */-->
@@ -571,7 +582,6 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-
     z-index: 3000;
     justify-content: center;
     align-items: center;
@@ -587,7 +597,7 @@
       border: solid 1px #222;
       overflow: hidden;
   ">
-    <!-- Заголовок з кнопкою -->
+    <!-- заголовок з кнопкою -->
     <div style="
         display: flex;
         justify-content: space-between;
@@ -710,13 +720,8 @@ pgzrun.go()
         } else {
           console.warn('PythonIDE недоступний — код не завантажено.');
         }
-
-
-    // 2. Згенерувати і встановити назву проєкту
     const newName = generateProjectName();
     document.getElementById('projectNameInput').value = newName;
-
-    // 3. Очистити теки ресурсів у файловій системі
     clearProjectResources()
 }
 // керування модальним вікном для message/confirm/input
