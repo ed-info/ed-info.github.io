@@ -795,6 +795,7 @@ async function input(title, text) {
 				document.getElementById('mainLayout').style.display = 'flex';
 				document.getElementById('playGameBtn').style.display = 'none';
 			} else {
+			    document.getElementById('playGameBtn').style.display = 'block';
 				await loadProjectFromUrl(rawUrl);
 				}
 	});
@@ -803,4 +804,5 @@ async function input(title, text) {
 </script>
 </body>
 </html>
+
 
