@@ -782,9 +782,14 @@ async function loadProjectFromUrl(rawUrl) {
     document.getElementById('gameModal').style.background = '#222';
     document.getElementById('closeGameBtn').style.display = 'none';
     document.getElementById('cgb').style.display = 'block';
- 
-    await message('', 'Натисніть "Ok" для старту');
-	PythonIDE.runCode();
+	
+	document.getElementById('playGameBtn').addEventListener('click', function() {
+    // Приховуємо кнопку при запуску гри
+    this.style.display = 'none';
+    PythonIDE.runCode();
+
+});
+
 
   } catch (err) {
     console.error('Помилка:', err);
