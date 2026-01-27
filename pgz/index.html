@@ -791,7 +791,7 @@ async function input(title, text) {
   window.addEventListener('load', async () => {
 		document.getElementById("page-loader")?.remove();
 		if (!rawUrl) {
-			    document.getElementById('topPanel').style.display = 'block';
+			    document.getElementById('topPanel').style.display = 'flex';
 				document.getElementById('mainLayout').style.display = 'flex';
 				document.getElementById('playGameBtn').style.display = 'none';
 			} else {
@@ -804,5 +804,6 @@ async function input(title, text) {
 </script>
 </body>
 </html>
+
 
 
