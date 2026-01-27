@@ -1169,43 +1169,39 @@ var $builtinmodule = function(name) {
 			return Sk.ffi.remapToPy(self.attributes.image + " (x:" + (self.attributes.x + self.anchorVal.x) + "," + (self.attributes.y + self.anchorVal.y) + ")");
 		});
 	}, 'Actor', [Sk.globals.Rect]);
-
-	var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
-
-		$loc.__init__ = new Sk.builtin.func(function(self, enumName, key, value) {
-			self.enumName = enumName;
-			self.key = key;
-			self.value = value;
-		});
-
-		$loc.__str__ = new Sk.builtin.func(function(self) {
-			return new Sk.builtin.str(self.enumName + "." + self.key);
-		});
-
-		$loc.__getattr__ = new Sk.builtin.func(function(self, a) {
-			switch (Sk.ffi.remapToJs(a)) {
-				case 'name':
-					return Sk.ffi.remapToPy(self.key);
-					break;
-				case 'value':
-					return Sk.ffi.remapToPy(self.value);
-					break;
-			}
-		});
-
-		$loc.__int__ = new Sk.builtin.func(function(self) {
-			return Sk.ffi.remapToPy(self.value);
-		});
-
-		$loc.__eq__ = new Sk.builtin.func(function(self, other) {
-			var cmpTo = Sk.ffi.remapToJs(other);
-			if (other.value !== undefined) {
-				cmpTo = other.value;
-			}
-			return Sk.ffi.remapToPy(Sk.ffi.remapToJs(self.value) == cmpTo);
-		});
-
-	}, 'enum', []);
+var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
+    $loc.__init__ = new Sk.builtin.func(function(self, enumName, key, value) {
+        self.enumName = enumName;
+        self.key = key;
+        self.value = value;
+    });
+    $loc.__str__ = new Sk.builtin.func(function(self) {
+        return new Sk.builtin.str(self.enumName + "." + self.key);
+    });
+    // 
+    $loc.__repr__ = new Sk.builtin.func(function(self) {
+        return new Sk.builtin.str("<" + self.enumName + "." + self.key + ": " + self.value + ">");
+    });
+    //
+    $loc.__getattr__ = new Sk.builtin.func(function(self, a) {
+        switch (Sk.ffi.remapToJs(a)) {
+            case 'name':
+                return Sk.ffi.remapToPy(self.key);
+            case 'value':
+                return Sk.ffi.remapToPy(self.value);
+        }
+    });
+    $loc.__int__ = new Sk.builtin.func(function(self) {
+        return Sk.ffi.remapToPy(self.value);
+    });
+    $loc.__eq__ = new Sk.builtin.func(function(self, other) {
+        var cmpTo = Sk.ffi.remapToJs(other);
+        if (other.value !== undefined) {
+            cmpTo = Sk.ffi.remapToJs(other.value);
+        }
+        return Sk.ffi.remapToPy(Sk.ffi.remapToJs(self.value) == cmpTo);
+    });
+}, 'enum', []);
 
 	var Enum = Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.__init__ = new Sk.builtin.func(function(self, name) {
@@ -1369,115 +1365,281 @@ var $builtinmodule = function(name) {
 			cx.closePath();
 			cx.fill();
 		});
+//		
+        var textbox = function(kwa, self, text, box) {        
+            Sk.builtin.pyCheckArgs("textbox", arguments, 3, 4);
+            var jsText = Sk.ffi.remapToJs(text);
+            var props = {};
+            for (var i = 0; i < kwa.length; i += 2) {
+                var key = Sk.ffi.remapToJs(kwa[i]);
+                props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
+            }
 
-		var text = function(kwa, self, text, pos) {
-			Sk.builtin.pyCheckArgs("text", arguments, 2, 4);
-			var jsText = Sk.ffi.remapToJs(text);
+            props.fontname  ??= "Arial";
+            props.color     ??= "white";
+            props.align     ??= "center";
+            props.valign    ??= "middle";
+            props.lineheight ??= 1.2;
+            props.alpha     ??= 1.0;
 
-			var props = {};
-			for (var i = 0; i < kwa.length; i += 2) {
-				var key = Sk.ffi.remapToJs(kwa[i]);
-				var val = kwa[i + 1];
-				props[key] = Sk.ffi.remapToJs(val);
-			}
+            var boxRect;
+        
+            if (box && box.coords) {
+                boxRect = {
+                    x: box.coords.x1,
+                    y: box.coords.y1,
+                    width:  box.coords.x2 - box.coords.x1,
+                    height: box.coords.y2 - box.coords.y1
+                };
+            } else {
+                //var jsBox = Sk.ffi.remapToJs(box.v);
+                boxRect = {
+                    x: box.v[0].v,
+                    y: box.v[1].v,
+                    width: box.v[2].v,
+                    height: box.v[3].v 
+                };
+            }
 
-			if (props.fontname === undefined) {
-				props.fontname = "Arial";
-			}
-			if (props.fontsize === undefined) {
-				props.fontsize = 18;
-			}
-			if (props.color === undefined) {
-				props.color = 'white';
+            const SCALE = 0.7;   // pygame-like scale
+        
+            let low = 1;
+            let high = boxRect.height;
+            let bestSize = 1;
+            let bestLines = [];
+            let bestWidths = [];
+            let bestHeight = 0;
+        
+            while (low <= high) {
+        
+                let size = Math.floor((low + high) / 2);
+        
+                cx.font = (size * SCALE) + "px " + props.fontname;
+        
+                let lines = wrapLines(cx, jsText, boxRect.width);
+        
+                let lineHeight = size * props.lineheight;
+                let totalHeight = lines.length * lineHeight;
+        
+                let widths = lines.map(l => cx.measureText(l).width);
+                let maxWidth = Math.max(...widths, 0);
+        
+                if (maxWidth <= boxRect.width && totalHeight <= boxRect.height) {
+                    bestSize = size;
+                    bestLines = lines;
+                    bestWidths = widths;
+                    bestHeight = totalHeight;
+                    low = size + 1;
+                } else {
+                    high = size - 1;
+                }
+            }
+        
+            cx.font = "bold " +(bestSize * SCALE) + "px " + props.fontname;
 
-			}
-			if (props.background) {
-				cx.fillStyle = getColor(props.background);
-				cx.fillRect(props.x, props.y, size.width, size.height);
-			}
-			if (props.ocolor === undefined) {
-				props.ocolor = "#000";
-			}
-			if (props.owidth === undefined) {
-				props.owidth = 0;
-			}
-			if (props.align === undefined) {
-				props.align = "center";
-			}
-			if (props.angle === undefined) {
-				props.angle = 0;
-			}
-
-			cx.fillStyle = getColor(props.color);
-
-			cx.shadowOffsetX = 0;
-			cx.shadowOffsetY = 0;
-			if (props.scolor) {
-				// Specify the shadow offset.
-				cx.shadowOffsetX = 2;
-				cx.shadowOffsetY = 2;
-				cx.shadowColor = props.scolor;
-			}
-
-			cx.font = 'bold ' + props.fontsize + "px " + props.fontname;
-			var lines = jsText.split("\n");
-			var size = {
-				height: cx.measureText("M").width * lines.length,
-				width: cx.measureText(lines[0]).width,
-				lineWidths: []
-			}
-			for (var i = 0; i < lines.length; i++) {
-				var w = cx.measureText(lines[i]).width;
-				size.lineWidths[i] = w;
-				if (w > size.width) {
-					size.width = w;
+            let lineHeight = bestSize * SCALE * props.lineheight;
+        
+            let startY = boxRect.y;
+        
+            if (props.valign === "middle")
+                startY += (boxRect.height - bestHeight) / 2;
+            else if (props.valign === "bottom")
+                startY += boxRect.height - bestHeight;
+        
+            cx.textBaseline = "top";
+        
+            for (let i = 0; i < bestLines.length; i++) {
+        
+                let line = bestLines[i];
+                let lineWidth = bestWidths[i];
+        
+                let x = boxRect.x;
+        
+                if (props.align === "center")
+                    x += (boxRect.width - lineWidth) / 2;
+                else if (props.align === "right")
+                    x += boxRect.width - lineWidth;
+        
+                let y = startY + i * lineHeight;
+        
+                cx.save();
+        
+                if (props.owidth) {
+                    cx.strokeStyle = getColor(props.ocolor ?? "#000");
+                    cx.lineWidth = props.owidth * 2;
+                    cx.strokeText(line, x, y);
+                }
+                if (props.background) {
+					cx.fillStyle = getColor(props.background);
+					cx.fillRect(boxRect.x, boxRect.y, boxRect.width, boxRect.height* 2 / 3);
 				}
-			}
+				cx.globalAlpha = props.alpha;
+                cx.fillStyle = getColor(props.color);
+                cx.fillText(line, x, y);
+        
+                cx.restore();
+            }
+        };        
+        textbox.co_kwargs = true;
+        $loc.textbox = new Sk.builtin.func(textbox);
+        	
+//
 
-			updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
-			cx.textBaseline = "top";
+        /*   Word wrap helper  */
+        function wrapLines(ctx, text, maxWidth) {
+            if (!maxWidth) return text.split("\n");
+        
+            const result = [];
+            const paragraphs = text.split("\n");
+        
+            for (let p of paragraphs) {
+                const words = p.split(" ");
+                let line = "";
+        
+                for (let w of words) {
+                    const test = line ? line + " " + w : w;
+        
+                    if (ctx.measureText(test).width > maxWidth && line) {
+                        result.push(line);
+                        line = w;
+                    } else {
+                        line = test;
+                    }
+                }
+        
+                result.push(line);
+            }
+        
+            return result;
+        }
+        
+        
+        /* screen.draw.text  */
+        var text = function(kwa, self, text, pos) {
+        
+            Sk.builtin.pyCheckArgs("text", arguments, 2, 4);
+        
+            var jsText = Sk.ffi.remapToJs(text);
+        
+            /* ---------- kwargs ---------- */
+            var props = {};
+            for (var i = 0; i < kwa.length; i += 2) {
+                var key = Sk.ffi.remapToJs(kwa[i]);
+                props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
+            }
+        
+            /* ---------- defaults ---------- */
+            props.fontname  ??= "Arial";
+            props.fontsize  ??= 18;
+            props.color     ??= "white";
+            props.ocolor    ??= "#000";
+            props.owidth    ??= 0;
+            props.align     ??= "center";
+            props.angle     ??= 0;
+            props.alpha     ??= 1.0;
+            props.lineheight ??= 1.0;
+        
+            const PYGAME_FONT_SCALE = 0.75;
+			cx.font = "bold " +(props.fontsize * PYGAME_FONT_SCALE) + "px " + props.fontname;
 
-			for (var i = 0; i < lines.length; i++) {
-				var x = props.x;
-				var yy = props.y;
-				switch (props.align) {
-					case 'center':
-						x += (size.width - size.lineWidths[i]) / 2;
-						break;
-					case 'right':
-						x += (size.width - size.lineWidths[i]);
-						break;
-				}
-
-				cx.save();
-				if (props.gcolor) {
-					const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
-					grad.addColorStop(0, props.color);
-					grad.addColorStop(1, props.gcolor);
-					cx.fillStyle = grad;
-				}
-				y = yy + (i * size.height) / 2;
-				if (props.alpha) {
-					cx.globalAlpha = props.alpha;
-				}
-				cx.translate(x, y);
-				cx.rotate(-props.angle * Math.PI / 180);
-				if (props.owidth) {
-					cx.strokeStyle = getColor(props.ocolor);
-					cx.lineJoin = "round";
-					cx.lineWidth = props.owidth * 2;
-					cx.strokeText(lines[i], 0, 0);
-				}
-				cx.fillText(lines[i], 0, 0);
-				cx.restore();
-			}
-		};
-
-		text.co_kwargs = true;
-		$loc.text = new Sk.builtin.func(text);
+            cx.textBaseline = "top";
+        
+            var maxWidth = props.width || null;
+        
+            if (props.widthem) {
+                maxWidth = props.widthem * props.fontsize;
+            }
+        
+            var lines = wrapLines(cx, jsText, maxWidth);
+        
+            var lineHeight = props.lineheight * props.fontsize;
+        
+            var size = {
+                width: 0,
+                height: lineHeight * lines.length,
+                lineWidths: []
+            };
+        
+            for (var i = 0; i < lines.length; i++) {
+                var w = cx.measureText(lines[i]).width;
+                size.lineWidths.push(w);
+                if (w > size.width) size.width = w;
+            }
+        
+            /* ---------- coords ---------- */
+            updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
+        
+            if (props.background) {
+                cx.fillStyle = getColor(props.background);
+                cx.fillRect(props.x, props.y, size.width, size.height);
+            }
+        
+            /* ---------- shadow ---------- */
+            cx.shadowOffsetX = 0;
+            cx.shadowOffsetY = 0;
+        
+            if (props.scolor) {
+                cx.shadowOffsetX = 2;
+                cx.shadowOffsetY = 2;
+                cx.shadowColor = props.scolor;
+            }
+        
+            /* =================================
+               DRAW
+            ================================= */
+            for (var i = 0; i < lines.length; i++) {
+        
+                var x = props.x;
+                var y = props.y + i * lineHeight;
+        
+                /* align */
+                switch (props.align) {
+                    case "center":
+                        x += (size.width - size.lineWidths[i]) / 2;
+                        break;
+        
+                    case "right":
+                        x += (size.width - size.lineWidths[i]);
+                        break;
+                }
+        
+                cx.save();
+        
+                cx.translate(x, y);
+                cx.rotate(-props.angle * Math.PI / 180);
+                cx.globalAlpha = props.alpha;
+        
+                /* gradient */
+                if (props.gcolor) {
+                    const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
+                    grad.addColorStop(0, getColor(props.color));
+                    grad.addColorStop(1, getColor(props.gcolor));
+                    cx.fillStyle = grad;
+                } else {
+                    cx.fillStyle = getColor(props.color);
+                }
+        
+                /* outline */
+                if (props.owidth) {
+                    cx.strokeStyle = getColor(props.ocolor);
+                    cx.lineJoin = "round";
+                    cx.lineWidth = props.owidth * 2;
+                    cx.strokeText(lines[i], 0, 0);
+                }
+        
+                cx.fillText(lines[i], 0, 0);
+        
+                cx.restore();
+            }
+        };
+        
+        text.co_kwargs = true;
+        $loc.text = new Sk.builtin.func(text);
+        
 	}, 'pgzero.screen.SurfacePainter', []);
 
 	var Clock = Sk.misceval.buildClass(s, function($gbl, $loc) {
+		console.log("clock")
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.callbacks = {};
 		});
@@ -1535,7 +1697,7 @@ var $builtinmodule = function(name) {
 
 		$loc.tick = $loc.each_tick;
 	}, 'pgzero.clock', []);
-
+    Sk.globals.clock = Sk.misceval.callsim(Clock);
 
 	var Screen = Sk.misceval.buildClass(s, function($gbl, $loc) {
 		$loc.clear = new Sk.builtin.func(function(self) {
@@ -2384,69 +2546,45 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 			});
 		}
+//
+if (Sk.globals.on_mouse_move) {
+    var px = -1;
+    var py;
+    jqCanvas.on('mousemove', function(e) {
+        // 1. Формуємо масив натиснутих кнопок через БІТОВУ МАСКУ
+        var buttonsList = [];
+        if (e.buttons & 1) buttonsList.push(Sk.globals.mouse.LEFT);   // ліва (біт 0)
+        if (e.buttons & 2) buttonsList.push(Sk.globals.mouse.RIGHT);  // права (біт 1)
+        if (e.buttons & 4) buttonsList.push(Sk.globals.mouse.MIDDLE); // середня (біт 2)
+        
+        // 2. Створюємо Python-множину через 'new' з масивом
+        var pyButtonsSet = new Sk.builtin.set(buttonsList);
 
-		if (Sk.globals.on_mouse_move) {
-			var px = -1;
-			var py;
-			jqCanvas.on('mousemove', function(e) {
-				var mouseButton = 0;
-				if (e.buttons === 1) {
-					mouseButton = Sk.globals.mouse.LEFT
-				}
-				if (e.buttons === 4) {
-					mouseButton = Sk.globals.mouse.MIDDLE
-				}
-				if (e.buttons === 2) {
-					mouseButton = Sk.globals.mouse.RIGHT
-				}
+        // 3. Позиція та відносний рух
+        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+        if (px < 0) {
+            px = pos.v[0];
+            py = pos.v[1];
+        }
+        var rel = new Sk.builtin.tuple([pos.v[0] - px, pos.v[1] - py]);
+        px = pos.v[0];
+        py = pos.v[1];
 
-				var arg = [0, 0, 0];
-				var params = Sk.globals.on_mouse_move.func_code.co_varnames;
+        // 4. Підготовка аргументів за іменами параметрів
+        var params = Sk.globals.on_mouse_move.func_code.co_varnames || [];
+        var args = [];
+        for (var i = 0; i < params.length; i++) {
+            switch (params[i]) {
+                case 'pos':     args.push(pos); break;
+                case 'rel':     args.push(rel); break;
+                case 'buttons': args.push(pyButtonsSet); break;
+                default:        args.push(Sk.builtin.none.none$);
+            }
+        }
 
-				function getParams() {
-					if (params.indexOf('pos') > -1) {
-						arg[params.indexOf('pos')] = pos;
-					}
-					if (params.indexOf('rel') > -1) {
-						arg[params.indexOf('rel')] = rel;
-					}
-					if (params.indexOf('buttons') > -1) {
-						arg[params.indexOf('buttons')] = mouseButton;
-					}
-				}
-
-				var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-
-				if (px < 0) {
-					px = pos.v[0];
-					px = pos.v[1];
-				}
-
-				var rel = new Sk.builtin.tuple([pos.v[0] - px, pos.v[1] - py]);
-				px = pos.v[0];
-				py = pos.v[1];
-
-				if (!params) {
-					params = [];
-				}
-
-				if (params.length === 3) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0], arg[1], arg[2]);
-				} else
-				if (params.length === 2) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0], arg[1]);
-				} else
-				if (params.length === 1) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, arg[0]);
-				} else {
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move);
-				}
-
-			});
-		}
+        Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, ...args);
+    });
+}
 
 
 		// wait for assets to load
