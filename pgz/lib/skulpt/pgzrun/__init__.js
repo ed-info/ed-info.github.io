@@ -722,12 +722,12 @@ var $builtinmodule = function(name) {
 				args.push(arguments[i]);
 			}
 			var other = Sk.misceval.callsim(Sk.globals.Rect, ...args);
-			return Sk.ffi.remapToPy(
-				self.coords.x1 < other.coords.x2 &&
+			var collide = self.coords.x1 < other.coords.x2 &&
 				self.coords.y1 < other.coords.y2 &&
 				self.coords.x2 > other.coords.x1 &&
 				self.coords.y2 > other.coords.y1
-			);
+			console.log("Collide:",collide)
+			return Sk.ffi.remapToPy(collide);
 		});
 
 		$loc.collidelist = new Sk.builtin.func(function(self, others) {
@@ -909,68 +909,109 @@ var $builtinmodule = function(name) {
 		$loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
 		//-----------------------------------
 
-		//
-		var init = function(kwa, self, name, pos) {
-			Sk.builtin.pyCheckArgs("_init_", 2, 2);
-			self.id = idCount++;
+var init = function(kwa, self, name, posArg) {
+    Sk.builtin.pyCheckArgs("_init_", 2, 3);
 
-			self.attributes = {
-				x: 0,
-				y: 0,
-				angle: 0,
-				scale: 1,
-				opacity: 1,
-				flip_x: false,
-				flip_y: false,
-				image: Sk.ffi.remapToJs(name)
-			};
-			self.direction = 0; // за замовчуванням — праворуч
-			self.fps = 5; // default FPS for animation
-			self.image_index = 0;
-			self.images = []; // список назв зображень для анімації
-			self.others = {};
-			self.others._surf = Sk.misceval.callsim(Surface, self);
+    self.id = idCount++;
 
-			self.anchor = ['center', 'center'];
-			var args = unpackKWA(kwa);
+    self.attributes = {
+        x: 0,
+        y: 0,
+        angle: 0,
+        scale: 1,
+        opacity: 1,
+        flip_x: false,
+        flip_y: false,
+        image: Sk.ffi.remapToJs(name)
+    };
 
-			if (args.anchor) {
-				self.anchor = args.anchor;
-			}
-			if (pos) {
-				pos = Sk.ffi.remapToJs(pos);
-			} else {
-				if (args.pos) {
-					pos = args.pos;
-				} else {
-					pos = [-55555, 0];
-				}
-			}
+    self.direction = 0;
+    self.fps = 5;
+    self.image_index = 0;
+    self.images = [];
+    self.others = {};
+    self.others._surf = Sk.misceval.callsim(Surface, self);
 
-			self.anchorVal = {
-				x: 0,
-				y: 0
-			};
-			var jsName = Sk.ffi.remapToJs(name);
-			var file_name = "/images/" + jsName + ".png";
+    self.anchor = ['center', 'center'];
+    self.anchorVal = { x: 0, y: 0 };
 
-			// Завантажуємо зображення через спільну функцію
-			loadImage(jsName)
-				.then(function(img) {
-					self.attributes.width = img.width;
-					self.attributes.height = img.height;
-					updateRectFromXY(self);
-					console.log("W/H=", self.attributes.width, self.attributes.height);
-				})
-				.catch(function(err) {
-					// Помилки вже оброблені в loadImage, але можна додати fallback
-					console.warn("Image loading failed:", err);
-				});
-		};
+    var args = unpackKWA(kwa);
 
-		init.co_kwargs = true;
-		$loc.__init__ = new Sk.builtin.func(init);
+    if (args.anchor) {
+        self.anchor = args.anchor;
+    }
 
+    // позиція
+    var desiredX = 0, desiredY = 0;
+
+    var pos = posArg ?? args.pos;
+    if (pos) {
+        pos = Sk.ffi.remapToJs(pos);
+        desiredX = pos[0];
+        desiredY = pos[1];
+    }
+
+    self._loaded = false;
+
+    var jsName = Sk.ffi.remapToJs(name);
+
+    var promise = loadImage(jsName)
+        .then(function(img) {
+
+            self.attributes.width = img.width;
+            self.attributes.height = img.height;
+
+            updateAnchor(self);
+
+            self.attributes.x = desiredX - self.anchorVal.x;
+            self.attributes.y = desiredY - self.anchorVal.y;
+
+            updateRectFromXY(self);
+
+            self._loaded = true;
+
+            // ❗ НІЧОГО НЕ ПОВЕРТАЄМО
+        })
+        .catch(function(err) {
+			throw new Sk.builtin.KeyError("Image '" + jsName + "' not found or invalid.");
+            console.warn("Image loading failed:", err);
+
+            self.attributes.width = 0;
+            self.attributes.height = 0;
+
+            updateAnchor(self);
+
+            self.attributes.x = desiredX - self.anchorVal.x;
+            self.attributes.y = desiredY - self.anchorVal.y;
+
+            updateRectFromXY(self);
+
+            self._loaded = true;
+
+            // ❗ теж нічого
+        });
+
+    // ✅ повертаємо suspension (це дозволено)
+    return Sk.misceval.promiseToSuspension(promise);
+};
+
+init.co_kwargs = true;
+$loc.__init__ = new Sk.builtin.func(init);
+
+
+    // width / height як геттери
+    Object.defineProperty($loc, 'width', {
+        get: function() { return this.attributes.width; }
+    });
+    Object.defineProperty($loc, 'height', {
+        get: function() { return this.attributes.height; }
+    });
+
+
+
+
+
+//
 		$loc.draw = new Sk.builtin.func(function(self) {
 			if (!loadedAssets[self.attributes.image]) {
 				return;
@@ -984,7 +1025,7 @@ var $builtinmodule = function(name) {
 			cx.save();
 			cx.globalAlpha = a.opacity;
 			// Переносимо до точки прив'язки (anchor point)
-			cx.translate(a.x + self.anchorVal.x, a.y + self.anchorVal.y);
+			cx.translate(a.x , a.y );
 			// Обертання навколо anchor point
 			if (a.angle !== 0) {
 				cx.rotate(-radians);
@@ -1365,121 +1406,135 @@ var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
 			cx.closePath();
 			cx.fill();
 		});
-//		
-        var textbox = function(kwa, self, text, box) {        
-            Sk.builtin.pyCheckArgs("textbox", arguments, 3, 4);
-            var jsText = Sk.ffi.remapToJs(text);
-            var props = {};
-            for (var i = 0; i < kwa.length; i += 2) {
-                var key = Sk.ffi.remapToJs(kwa[i]);
-                props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
-            }
+//
+function fitSize(text, fontname, bold, width, height, lineheight, strip) {
 
-            props.fontname  ??= "Arial";
-            props.color     ??= "white";
-            props.align     ??= "center";
-            props.valign    ??= "middle";
-            props.lineheight ??= 1.2;
-            props.alpha     ??= 1.0;
+    function fits(size) {
 
-            var boxRect;
-        
-            if (box && box.coords) {
-                boxRect = {
-                    x: box.coords.x1,
-                    y: box.coords.y1,
-                    width:  box.coords.x2 - box.coords.x1,
-                    height: box.coords.y2 - box.coords.y1
-                };
-            } else {
-                //var jsBox = Sk.ffi.remapToJs(box.v);
-                boxRect = {
-                    x: box.v[0].v,
-                    y: box.v[1].v,
-                    width: box.v[2].v,
-                    height: box.v[3].v 
-                };
-            }
+        cx.font = (bold ? "bold " : "") + size + "px " + fontname;
 
-            const SCALE = 0.7;   // pygame-like scale
-        
-            let low = 1;
-            let high = boxRect.height;
-            let bestSize = 1;
-            let bestLines = [];
-            let bestWidths = [];
-            let bestHeight = 0;
-        
-            while (low <= high) {
-        
-                let size = Math.floor((low + high) / 2);
-        
-                cx.font = (size * SCALE) + "px " + props.fontname;
-        
-                let lines = wrapLines(cx, jsText, boxRect.width);
-        
-                let lineHeight = size * props.lineheight;
-                let totalHeight = lines.length * lineHeight;
-        
-                let widths = lines.map(l => cx.measureText(l).width);
-                let maxWidth = Math.max(...widths, 0);
-        
-                if (maxWidth <= boxRect.width && totalHeight <= boxRect.height) {
-                    bestSize = size;
-                    bestLines = lines;
-                    bestWidths = widths;
-                    bestHeight = totalHeight;
-                    low = size + 1;
-                } else {
-                    high = size - 1;
-                }
-            }
-        
-            cx.font = "bold " +(bestSize * SCALE) + "px " + props.fontname;
+        const lines = wrapLines(cx, text, width, strip);
 
-            let lineHeight = bestSize * SCALE * props.lineheight;
-        
-            let startY = boxRect.y;
-        
-            if (props.valign === "middle")
-                startY += (boxRect.height - bestHeight) / 2;
-            else if (props.valign === "bottom")
-                startY += boxRect.height - bestHeight;
-        
-            cx.textBaseline = "top";
-        
-            for (let i = 0; i < bestLines.length; i++) {
-        
-                let line = bestLines[i];
-                let lineWidth = bestWidths[i];
-        
-                let x = boxRect.x;
-        
-                if (props.align === "center")
-                    x += (boxRect.width - lineWidth) / 2;
-                else if (props.align === "right")
-                    x += boxRect.width - lineWidth;
-        
-                let y = startY + i * lineHeight;
-        
-                cx.save();
-        
-                if (props.owidth) {
-                    cx.strokeStyle = getColor(props.ocolor ?? "#000");
-                    cx.lineWidth = props.owidth * 2;
-                    cx.strokeText(line, x, y);
-                }
-                if (props.background) {
-					cx.fillStyle = getColor(props.background);
-					cx.fillRect(boxRect.x, boxRect.y, boxRect.width, boxRect.height* 2 / 3);
-				}
-				cx.globalAlpha = props.alpha;
-                cx.fillStyle = getColor(props.color);
-                cx.fillText(line, x, y);
-        
-                cx.restore();
-            }
-        };        
+        const widths = lines.map(l => cx.measureText(l).width);
+        const w = Math.max(...widths, 0);
+
+        // 🔥 pygame-style height calculation
+        const metrics = cx.measureText("Mg");
+
+        const fontHeight =
+            metrics.actualBoundingBoxAscent +
+            metrics.actualBoundingBoxDescent;
+
+        const lineSize = fontHeight * lineheight;
+
+        const h = Math.round((lines.length - 1) * lineSize) + fontHeight;
+
+        return w <= width && h <= height;
+    }
+
+    let a = 1, b = 256;
+
+    if (!fits(a)) return a;
+    if (fits(b)) return b;
+
+    while (b - a > 1) {
+        const c = (a + b) >> 1;
+        if (fits(c)) a = c;
+        else b = c;
+    }
+
+    return a;
+}
+
+//	
+var textbox = function(kwa, self, text, box) {
+
+    Sk.builtin.pyCheckArgs("textbox", arguments, 3, 4);
+
+    const jsText = Sk.ffi.remapToJs(text);
+
+    const props = {};
+    for (let i = 0; i < kwa.length; i += 2)
+        props[Sk.ffi.remapToJs(kwa[i])] = Sk.ffi.remapToJs(kwa[i + 1]);
+
+    props.fontname ??= "Arial";
+    props.color ??= "white";
+    props.lineheight ??= 1.0;     // pygame default
+    props.align ??= "center";
+    props.valign ??= "middle";
+
+    const rect = box.coords ? {
+        x: box.coords.x1,
+        y: box.coords.y1,
+        width: box.coords.x2 - box.coords.x1,
+        height: box.coords.y2 - box.coords.y1
+    } : {
+        x: box.v[0].v,
+        y: box.v[1].v,
+        width: box.v[2].v,
+        height: box.v[3].v
+    };
+
+    const fontsize = fitSize(
+        jsText,
+        props.fontname,
+        true,                // bold
+        rect.width,
+        rect.height,
+        props.lineheight,
+        true
+    );
+
+	cx.save();
+
+	if (props.background) {
+		cx.fillStyle = getColor(props.background);
+		cx.fillRect(rect.x, rect.y, rect.width, rect.height);
+	}
+
+
+
+    cx.font = "bold " + fontsize + "px " + props.fontname;
+    cx.textBaseline = "top";
+    cx.fillStyle = getColor(props.color);
+
+    const lines = wrapLines(cx, jsText, rect.width, true);
+
+    const metrics = cx.measureText("Mg");
+    const fontHeight =
+        metrics.actualBoundingBoxAscent +
+        metrics.actualBoundingBoxDescent;
+
+    const lineSize = fontHeight * props.lineheight;
+
+    let totalHeight = (lines.length - 1) * lineSize + fontHeight;
+
+    let y = rect.y;
+
+    if (props.valign === "middle")
+        y += (rect.height - totalHeight) / 2;
+    else if (props.valign === "bottom")
+        y += rect.height - totalHeight;
+
+    for (let line of lines) {
+
+        const w = cx.measureText(line).width;
+
+        let x = rect.x;
+
+        if (props.align === "center")
+            x += (rect.width - w) / 2;
+        else if (props.align === "right")
+            x += rect.width - w;
+
+        cx.fillText(line, x, y);
+
+        y += lineSize;
+    }
+
+    cx.restore();
+};
+   
         textbox.co_kwargs = true;
         $loc.textbox = new Sk.builtin.func(textbox);
         	
@@ -1513,128 +1568,160 @@ var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
             return result;
         }
         
-        
-        /* screen.draw.text  */
-        var text = function(kwa, self, text, pos) {
-        
-            Sk.builtin.pyCheckArgs("text", arguments, 2, 4);
-        
-            var jsText = Sk.ffi.remapToJs(text);
-        
-            /* ---------- kwargs ---------- */
-            var props = {};
-            for (var i = 0; i < kwa.length; i += 2) {
-                var key = Sk.ffi.remapToJs(kwa[i]);
-                props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
-            }
-        
-            /* ---------- defaults ---------- */
-            props.fontname  ??= "Arial";
-            props.fontsize  ??= 18;
-            props.color     ??= "white";
-            props.ocolor    ??= "#000";
-            props.owidth    ??= 0;
-            props.align     ??= "center";
-            props.angle     ??= 0;
-            props.alpha     ??= 1.0;
-            props.lineheight ??= 1.0;
-        
-            const PYGAME_FONT_SCALE = 0.75;
-			cx.font = "bold " +(props.fontsize * PYGAME_FONT_SCALE) + "px " + props.fontname;
+/* screen.draw.text */ 
+var text = function(kwa, self, text, pos) {
 
-            cx.textBaseline = "top";
-        
-            var maxWidth = props.width || null;
-        
-            if (props.widthem) {
-                maxWidth = props.widthem * props.fontsize;
-            }
-        
-            var lines = wrapLines(cx, jsText, maxWidth);
-        
-            var lineHeight = props.lineheight * props.fontsize;
-        
-            var size = {
-                width: 0,
-                height: lineHeight * lines.length,
-                lineWidths: []
-            };
-        
-            for (var i = 0; i < lines.length; i++) {
-                var w = cx.measureText(lines[i]).width;
-                size.lineWidths.push(w);
-                if (w > size.width) size.width = w;
-            }
-        
-            /* ---------- coords ---------- */
-            updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
-        
-            if (props.background) {
-                cx.fillStyle = getColor(props.background);
-                cx.fillRect(props.x, props.y, size.width, size.height);
-            }
-        
-            /* ---------- shadow ---------- */
-            cx.shadowOffsetX = 0;
-            cx.shadowOffsetY = 0;
-        
-            if (props.scolor) {
-                cx.shadowOffsetX = 2;
-                cx.shadowOffsetY = 2;
-                cx.shadowColor = props.scolor;
-            }
-        
-            /* =================================
-               DRAW
-            ================================= */
-            for (var i = 0; i < lines.length; i++) {
-        
-                var x = props.x;
-                var y = props.y + i * lineHeight;
-        
-                /* align */
-                switch (props.align) {
-                    case "center":
-                        x += (size.width - size.lineWidths[i]) / 2;
-                        break;
-        
-                    case "right":
-                        x += (size.width - size.lineWidths[i]);
-                        break;
-                }
-        
-                cx.save();
-        
-                cx.translate(x, y);
-                cx.rotate(-props.angle * Math.PI / 180);
-                cx.globalAlpha = props.alpha;
-        
-                /* gradient */
-                if (props.gcolor) {
-                    const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
-                    grad.addColorStop(0, getColor(props.color));
-                    grad.addColorStop(1, getColor(props.gcolor));
-                    cx.fillStyle = grad;
-                } else {
-                    cx.fillStyle = getColor(props.color);
-                }
-        
-                /* outline */
-                if (props.owidth) {
-                    cx.strokeStyle = getColor(props.ocolor);
-                    cx.lineJoin = "round";
-                    cx.lineWidth = props.owidth * 2;
-                    cx.strokeText(lines[i], 0, 0);
-                }
-        
-                cx.fillText(lines[i], 0, 0);
-        
-                cx.restore();
-            }
-        };
-        
-        text.co_kwargs = true;
-        $loc.text = new Sk.builtin.func(text);
+    Sk.builtin.pyCheckArgs("text", arguments, 2, 4);
+
+    var jsText = Sk.ffi.remapToJs(text);
+    // ---------- kwargs ---------- 
+    var props = {};
+    for (var i = 0; i < kwa.length; i += 2) {
+        var key = Sk.ffi.remapToJs(kwa[i]);
+        props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
+    }
+    // ---------- defaults ---------- 
+    props.fontname  ??= "Arial";
+    props.fontsize  ??= 24;
+    props.color     ??= "white";
+    props.ocolor    ??= "#000";
+    props.owidth    ??= 0;
+    props.align     ??= "center";
+    props.angle     ??= 0;
+    props.alpha     ??= 1.0;
+    props.lineheight ??= 1.0;
+
+    const PYGAME_FONT_SCALE = 0.70;
+    cx.font = "bold " + (props.fontsize * PYGAME_FONT_SCALE) + "px " + props.fontname;
+    cx.textBaseline = "top";
+
+    var maxWidth = props.width || null;
+
+    if (props.widthem) {
+        maxWidth = props.widthem * props.fontsize;
+    }
+
+    var lines = wrapLines(cx, jsText, maxWidth);
+    var lineHeight = props.lineheight * props.fontsize;
+    var size = {
+        width: 0,
+        height: lineHeight * lines.length,
+        lineWidths: []
+    };
+
+    for (var i = 0; i < lines.length; i++) {
+        var w = cx.measureText(lines[i]).width;
+        size.lineWidths.push(w);
+        if (w > size.width) size.width = w;
+    }
+    // визначаємо точку позиціонування (якір) до виклику updateCoordsFromProps 
+    var anchorPoint = null;    
+    // Перевіряємо всі можливі параметри позиціонування
+    if (props.center) {
+        anchorPoint = { x: props.center[0], y: props.center[1] };
+    } else if (props.centerx !== undefined && props.centery !== undefined) {
+        anchorPoint = { x: props.centerx, y: props.centery };
+    } else if (props.topleft) {
+        anchorPoint = { x: props.topleft[0], y: props.topleft[1] };
+    } else if (props.topright) {
+        anchorPoint = { x: props.topright[0], y: props.topright[1] };
+    } else if (props.bottomleft) {
+        anchorPoint = { x: props.bottomleft[0], y: props.bottomleft[1] };
+    } else if (props.bottomright) {
+        anchorPoint = { x: props.bottomright[0], y: props.bottomright[1] };
+    } else if (props.midtop) {
+        anchorPoint = { x: props.midtop[0], y: props.midtop[1] };
+    } else if (props.midleft) {
+        anchorPoint = { x: props.midleft[0], y: props.midleft[1] };
+    } else if (props.midbottom) {
+        anchorPoint = { x: props.midbottom[0], y: props.midbottom[1] };
+    } else if (props.midright) {
+        anchorPoint = { x: props.midright[0], y: props.midright[1] };
+    } else if (props.left !== undefined && props.top !== undefined) {
+        anchorPoint = { x: props.left, y: props.top };
+    } else if (props.right !== undefined && props.top !== undefined) {
+        anchorPoint = { x: props.right, y: props.top };
+    } else if (props.left !== undefined && props.bottom !== undefined) {
+        anchorPoint = { x: props.left, y: props.bottom };
+    } else if (props.right !== undefined && props.bottom !== undefined) {
+        anchorPoint = { x: props.right, y: props.bottom };
+    } else if (props.centerx !== undefined && props.top !== undefined) {
+        anchorPoint = { x: props.centerx, y: props.top };
+    } else if (props.left !== undefined && props.centery !== undefined) {
+        anchorPoint = { x: props.left, y: props.centery };
+    } else if (props.centerx !== undefined && props.bottom !== undefined) {
+        anchorPoint = { x: props.centerx, y: props.bottom };
+    } else if (props.right !== undefined && props.centery !== undefined) {
+        anchorPoint = { x: props.right, y: props.centery };
+    }
+    //  coords (обчислює props.x, props.y - верхній лівий кут) 
+    updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
+    // якщо точка позиціонування не була визначена, використовуємо верхній лівий кут
+    if (!anchorPoint) {
+        anchorPoint = { x: props.x, y: props.y };
+    }
+
+    if (props.background) {
+        cx.fillStyle = getColor(props.background);
+        cx.fillRect(props.x, props.y, size.width, size.height);
+    }
+
+    cx.shadowOffsetX = 0;
+    cx.shadowOffsetY = 0;
+
+    if (props.scolor) {
+        cx.shadowOffsetX = 2;
+        cx.shadowOffsetY = 2;
+        cx.shadowColor = props.scolor;
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+        var x = props.x;
+        var y = props.y + i * lineHeight * 0.8;
+        // align для кожного рядка
+        switch (props.align) {
+            case "center":
+                x += (size.width - size.lineWidths[i]) / 2;
+                break;
+            case "right":
+                x += (size.width - size.lineWidths[i]);
+                break;
+        }
+        cx.save();
+
+        // обертання навколо точки позиціонування (якоря)
+        if (props.angle !== 0) {
+            cx.translate(anchorPoint.x, anchorPoint.y);
+            cx.rotate(-props.angle * Math.PI / 180);
+            cx.translate(x - anchorPoint.x, y - anchorPoint.y);
+        } else {
+            // Без обертання - просто переносимо в позицію рядка
+            cx.translate(x, y);
+        }
+        cx.globalAlpha = props.alpha;
+
+        if (props.gcolor) {
+            const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
+            grad.addColorStop(0, getColor(props.color));
+            grad.addColorStop(0.8, getColor(props.gcolor));
+            cx.fillStyle = grad;
+        } else {
+            cx.fillStyle = getColor(props.color);
+        }
+
+        if (props.owidth) {
+            cx.strokeStyle = getColor(props.ocolor);
+            cx.lineJoin = "round";
+            cx.lineWidth = props.owidth * props.fontsize/10;
+            cx.strokeText(lines[i], 0, 0);
+        }
+        cx.fillText(lines[i], 0, 0);
+        cx.restore();
+    }
+};
+
+text.co_kwargs = true;
+$loc.text = new Sk.builtin.func(text);
         
 	}, 'pgzero.screen.SurfacePainter', []);
 
@@ -2375,10 +2462,7 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 		}
 
-
-		console.log("Canvas: ", width, height)
-		let canvas = document.getElementById('gameCanvas');
-		console.log("canvas: ", canvas)
+let canvas = document.getElementById('gameCanvas');
 		const modalContainer = document.querySelector('#gameModal > div'); // внутрішній контейнер
 
 		if (modalContainer && document.getElementById('gameCanvas')) {
@@ -2392,175 +2476,156 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 		canvas.style.width = width + 'px';
 		canvas.style.height = height + 'px';
 
-		// -----------------------	   
-
 		document.activeElement.blur();
-
-		var jqCanvas = $('#gameCanvas');
-		canvas = jqCanvas[0];
 		cx = canvas.getContext("2d");
 		document.addEventListener('contextmenu', event => event.preventDefault());
-		var lastUpdate = new Date().getTime()
+var lastUpdate = new Date().getTime();
+var firstRun = true;
 
-		function update() {
-			var tasks = [];
-			// process animations
-			for (var id in animations) {
-				var a = animations[id];
-				var now = Date.now();
-				var elapsed = now - a.startTime;
-				var progress = elapsed / a.duration;
+function update() {
+/*
+	if (firstRun) {
+        firstRun = false;
+        lastUpdate = Date.now();
+        setTimeout(() => window.requestAnimationFrame(update), 200);
+        return;
+	} */
+    var tasks = [];
+    // process animations
+    for (var id in animations) {
+        var a = animations[id];
+        var now = Date.now();
+        var elapsed = now - a.startTime;
+        var progress = elapsed / a.duration;
+        if (progress >= 1) {
+            progress = 1;
+            // Встановити кінцеві значення
+            for (var key in a.targets) {
+                updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(a.targets[key].end));
+            }
+            // Виклик on_finished
+            if (a.onFinished) {
+                setTimeout(function() {
+                    Sk.misceval.asyncToPromise(() => Sk.misceval.callsim(a.onFinished))
+                        .catch(window.onerror);
+                }, 0);
+            }
+            // Видалити анімацію
+            for (var key in a.targets) {
+                delete animations[a.object.id + "_" + key];
+            }
+            continue;
+        }
+        // Інтерполяція через easing
+        var eased = a.tween(progress);
+        for (var key in a.targets) {
+            var t = a.targets[key];
+            var newVal = t.start + (t.end - t.start) * eased;
+            updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(newVal));
+        }
+    }
+    if (Sk.globals.update !== undefined) {
+        if (Sk.globals.update.func_code.co_argcount > 0) {
+            var newTime = new Date().getTime();
+            var dt = (newTime - lastUpdate) / 1000;
+            lastUpdate = new Date().getTime();
+            tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, new Sk.ffi.remapToPy(dt)));
+        } else {
+            tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update));
+        }
+    }
+    if (Sk.globals.draw) {
+        tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.draw));
+    }
+    var p = Promise.all(tasks).then(function() {
+        window.requestAnimationFrame(update);
+    }, function(e) {
+        PythonIDE.handleError(e);
+    }).catch(function(e) {
+        PythonIDE.handleError(e);
+    });
+    return p;
+}
 
-				if (progress >= 1) {
-					progress = 1;
-					// Встановити кінцеві значення
-					for (var key in a.targets) {
-						updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(a.targets[key].end));
-					}
-					// Виклик on_finished
+// add event handlers
+if (Sk.globals.on_mouse_down) {
+    canvas.addEventListener('mousedown', function(e) {
+        var arg = [0, 0];
+        var mouseButton = 0;
+        if (e.buttons === 1) {
+            mouseButton = Sk.globals.mouse.LEFT;
+        }
+        if (e.buttons === 4) {
+            mouseButton = Sk.globals.mouse.MIDDLE;
+        }
+        if (e.buttons === 2) {
+            mouseButton = Sk.globals.mouse.RIGHT;
+        }
+        var params = Sk.globals.on_mouse_down.func_code.co_varnames;
+        function getParams() {
+            if (params.indexOf('pos') > -1) {
+                arg[params.indexOf('pos')] = pos;
+            }
+            if (params.indexOf('button') > -1) {
+                arg[params.indexOf('button')] = mouseButton;
+            }
+        }
+        if (!params) {
+            params = [];
+        }
+        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+        if (params.length === 2) {
+            getParams();
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0], arg[1]);
+        } else if (params.length === 1) {
+            getParams();
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0]);
+        } else {
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down);
+        }
+    });
+}
 
-					if (a.onFinished) {
-						// Запускаємо колбек у наступному фреймі
-						setTimeout(function() {
-							Sk.misceval.asyncToPromise(() => Sk.misceval.callsim(a.onFinished))
-								.catch(window.onerror);
-						}, 0);
-					}
-					// Видалити анімацію
-					for (var key in a.targets) {
-						delete animations[a.object.id + "_" + key];
-					}
-					continue;
-				}
+if (Sk.globals.on_mouse_up) {
+    canvas.addEventListener('mouseup', function(e) {
+        var arg = [0, 0];
+        var mouseButton = 1;
+        var params = Sk.globals.on_mouse_up.func_code.co_varnames;
+        function getParams() {
+            if (params.indexOf('pos') > -1) {
+                arg[params.indexOf('pos')] = pos;
+            }
+            if (params.indexOf('button') > -1) {
+                arg[params.indexOf('button')] = mouseButton;
+            }
+        }
+        if (!params) {
+            params = [];
+        }
+        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+        if (params.length === 2) {
+            getParams();
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0], arg[1]);
+        } else if (params.length === 1) {
+            getParams();
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0]);
+        } else {
+            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up);
+        }
+    });
+}
 
-				// Інтерполяція через easing
-				var eased = a.tween(progress);
-				for (var key in a.targets) {
-					var t = a.targets[key];
-					var newVal = t.start + (t.end - t.start) * eased;
-					updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(newVal));
-				}
-			}
-
-			if (Sk.globals.update !== undefined) {
-				if (Sk.globals.update.func_code.co_argcount > 0) {
-					var newTime = new Date().getTime();
-					var dt = (newTime - lastUpdate) / 1000;
-					lastUpdate = new Date().getTime();
-					tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, new Sk.ffi.remapToPy(dt)));
-				} else {
-					tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update));
-				}
-			}
-
-			if (Sk.globals.draw) {
-				tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.draw));
-			}
-
-			var p = Promise.all(tasks).then(function() {
-				window.requestAnimationFrame(update);
-				//update();
-			}, function(e) {
-				PythonIDE.handleError(e);
-			}).catch(function(e) {
-				PythonIDE.handleError(e);
-			});
-			return p;
-
-		}
-
-		// add event handlers
-		if (Sk.globals.on_mouse_down) {
-			jqCanvas.on('mousedown', function(e) {
-				var arg = [0, 0];
-				var mouseButton = 0;
-				if (e.buttons === 1) {
-					mouseButton = Sk.globals.mouse.LEFT
-				}
-				if (e.buttons === 4) {
-					mouseButton = Sk.globals.mouse.MIDDLE
-				}
-				if (e.buttons === 2) {
-					mouseButton = Sk.globals.mouse.RIGHT
-				}
-				var params = Sk.globals.on_mouse_down.func_code.co_varnames;
-
-				function getParams() {
-					if (params.indexOf('pos') > -1) {
-						arg[params.indexOf('pos')] = pos;
-					}
-					if (params.indexOf('button') > -1) {
-						arg[params.indexOf('button')] = mouseButton;
-					}
-				}
-
-				if (!params) {
-					params = [];
-				}
-				var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-
-				if (params.length === 2) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0], arg[1]);
-				} else
-				if (params.length === 1) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0]);
-				} else {
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down); //no param
-				}
-
-			});
-		}
-
-		if (Sk.globals.on_mouse_up) {
-			jqCanvas.on('mouseup', function(e) {
-				var arg = [0, 0];
-				var mouseButton = 1;
-				var params = Sk.globals.on_mouse_up.func_code.co_varnames;
-
-				function getParams() {
-					if (params.indexOf('pos') > -1) {
-						arg[params.indexOf('pos')] = pos;
-					}
-					if (params.indexOf('button') > -1) {
-						arg[params.indexOf('button')] = mouseButton;
-					}
-				}
-
-				if (!params) {
-					params = [];
-				}
-				var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-
-				if (params.length === 2) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0], arg[1]);
-				} else
-				if (params.length === 1) {
-					getParams();
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0]);
-				} else {
-					Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up); //no param
-				}
-
-			});
-		}
-//
 if (Sk.globals.on_mouse_move) {
     var px = -1;
     var py;
-    jqCanvas.on('mousemove', function(e) {
-        // 1. Формуємо масив натиснутих кнопок через БІТОВУ МАСКУ
+    canvas.addEventListener('mousemove', function(e) {
         var buttonsList = [];
-        if (e.buttons & 1) buttonsList.push(Sk.globals.mouse.LEFT);   // ліва (біт 0)
-        if (e.buttons & 2) buttonsList.push(Sk.globals.mouse.RIGHT);  // права (біт 1)
-        if (e.buttons & 4) buttonsList.push(Sk.globals.mouse.MIDDLE); // середня (біт 2)
+        if (e.buttons & 1) buttonsList.push(Sk.globals.mouse.LEFT);
+        if (e.buttons & 2) buttonsList.push(Sk.globals.mouse.RIGHT);
+        if (e.buttons & 4) buttonsList.push(Sk.globals.mouse.MIDDLE);
         
-        // 2. Створюємо Python-множину через 'new' з масивом
         var pyButtonsSet = new Sk.builtin.set(buttonsList);
-
-        // 3. Позиція та відносний рух
+        
         var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
         if (px < 0) {
             px = pos.v[0];
@@ -2569,8 +2634,7 @@ if (Sk.globals.on_mouse_move) {
         var rel = new Sk.builtin.tuple([pos.v[0] - px, pos.v[1] - py]);
         px = pos.v[0];
         py = pos.v[1];
-
-        // 4. Підготовка аргументів за іменами параметрів
+        
         var params = Sk.globals.on_mouse_move.func_code.co_varnames || [];
         var args = [];
         for (var i = 0; i < params.length; i++) {
@@ -2581,7 +2645,6 @@ if (Sk.globals.on_mouse_move) {
                 default:        args.push(Sk.builtin.none.none$);
             }
         }
-
         Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, ...args);
     });
 }
