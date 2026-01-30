@@ -157,6 +157,7 @@ async function importSelectedImage() {
 
     await message('Імпорт файлу','Файл успішно імпортовано!');
     await refreshGallery();
+    await showGallery();
     closeImportModal();
   } catch (err) {
     await message('','Помилка імпорту:\n' + err.message);
