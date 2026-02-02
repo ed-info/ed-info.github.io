@@ -44,7 +44,35 @@ var $builtinmodule = function(name) {
 			} else {
 				return TWEEN_FUNCTIONS.bounce_end(p - 1.0) * 0.5 + 0.5;
 			}
-		}
+		},
+		in_elastic: function(n) {
+            var p = 0.3;
+            var s = p / 4.0;
+            var q = n;
+            if (q === 1) return 1.0;
+            q -= 1.0;
+            return -(Math.pow(2, 10 * q) * Math.sin((q - s) * (2 * Math.PI) / p));
+        },        
+        out_elastic: function(n) {
+            var p = 0.3;
+            var s = p / 4.0;
+            var q = n;
+            if (q === 1) return 1.0;
+            return Math.pow(2, -10 * q) * Math.sin((q - s) * (2 * Math.PI) / p) + 1.0;
+        },        
+        in_out_elastic: function(n) {
+            var p = 0.3 * 1.5;
+            var s = p / 4.0;
+            var q = n * 2;
+            if (q === 2) return 1.0;
+            if (q < 1) {
+                q -= 1.0;
+                return -0.5 * (Math.pow(2, 10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p));
+            } else {
+                q -= 1.0;
+                return Math.pow(2, -10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p) * 0.5 + 1.0;
+            }
+        }
 	};
 
 	var handlers = {
@@ -248,80 +276,304 @@ var $builtinmodule = function(name) {
 	var promises = [];
 	var animations = {};
 
-	var animate = function(kwa, object) {
-		Sk.builtin.pyCheckArgs("animate", 1, 1);
-		var props = unpackKWA(kwa);
-		console.log("Props received:", props);
-		var duration = props.duration !== undefined ? Sk.ffi.remapToJs(props.duration) : 1;
-		var onFinished = props.on_finished;
-		var tweenName = props.tween || 'linear';
-		var tweenFunc = TWEEN_FUNCTIONS[tweenName];
-		if (!tweenFunc) {
-			throw new Sk.builtin.ValueError("Unknown tween: " + tweenName);
-		}
 
-		var anim = {
-			object: object,
-			targets: {},
-			startTime: Date.now(),
-			duration: duration * 1000,
-			tween: tweenFunc,
-			onFinished: onFinished,
-			id: object.id
-		};
+function get_XY(key,x1,y1,w, h) {
+	var coordXY;
+    switch (key) {
+		case 'x':
+		case 'y':
+            coordsXY = [x1, y1];
+            break;
+        case 'pos':
+        case 'topleft':
+            coordsXY = [x1, y1];
+            break;
+        case 'topright':
+            coordsXY = [x1 - w, y1];
+            break;
+        case 'bottomleft':
+            coordsXY = [x1, y1 - h];
+            break;
+        case 'bottomright':
+            coordsXY = [x1 - w, y1 - h];
+            break;
+        case 'midtop':
+            coordsXY = [x1 - w / 2, y1];
+            break;
+        case 'midbottom':
+            coordsXY = [x1 - w / 2, y1 - h];
+            break;
+        case 'midleft':
+            coordsXY = [x1, y1 - h / 2];
+            break;
+        case 'midright':
+            coordsXY = [x1 - w, y1 - h / 2];
+            break;
+        case 'center':
+            coordsXY = [x1 - w / 2, y1 - h / 2];
+            break;
+        default:
+            coordsXY = [x1, y1];
+    }
+    return coordsXY;
+ }  
 
-		for (var key in props) {
-			if (['tween', 'duration', 'on_finished'].includes(key)) continue;
 
-			var pyVal = props[key];
-			var startVal = Sk.ffi.remapToJs(getActorAttribute(object, Sk.ffi.remapToPy(key)));
+// Отримати поточні значення атрибута як список (1 або 2 елементи)
+function getCurrentValues(obj, attr) {	
+    let rawValue;
+    
+    if (obj.coords && !obj.attributes?.image) { // Rect
+        // Для Rect читаємо напряму з coords з урахуванням прив'язки
+        const x1 = obj.coords.x1, y1 = obj.coords.y1;
+        const x2 = obj.coords.x2, y2 = obj.coords.y2;
+        const w = x2 - x1, h = y2 - y1;
+        const ax = obj.anchorVal?.x || 0, ay = obj.anchorVal?.y || 0;
+        
+        switch (attr) {
+            case 'x': rawValue = x1 + w * ax; break;
+            case 'y': rawValue = y1 + h * ay; break;
+            case 'width': rawValue = w; break;
+            case 'height': rawValue = h; break;
+            case 'left': rawValue = x1; break;
+            case 'top': rawValue = y1; break;
+            case 'right': rawValue = x2; break;
+            case 'bottom': rawValue = y2; break;
+            default: rawValue = 0;
+        }
+    } else { // Actor
+        // Для Actor використовуємо існуючу функцію отримання атрибута
+        const pyAttr = Sk.ffi.remapToPy(attr);
+        rawValue = Sk.ffi.remapToJs(getActorAttribute(obj, pyAttr));
+    }
+    
+    // Формуємо список результатів через push() — без припущень про ключ
+    const result = [];
+    
+    if (Array.isArray(rawValue)) {
+        // Якщо отримали масив/кортеж — беремо елементи (максимум 2)
+        if (rawValue.length >= 1) result.push(Number(rawValue[0]));
+        if (rawValue.length >= 2) result.push(Number(rawValue[1]));
+    } else {
+        // Якщо отримали число — один елемент
+        result.push(Number(rawValue));
+    }
+    
+    return result; // завжди список з 1 або 2 елементами
+}
 
-			if (key === 'pos') {
+// Застосувати значення до атрибута (універсально)
+function applyValues(obj, attr, values) {
+    if (obj.coords && !obj.attributes?.image) { // Rect
+        // Для Rect оновлюємо напряму через існуючі функції
+        updateRectAttribute(obj, attr, values[0]);
+        // Якщо значень більше одного і атрибут підтримує другий компонент (наприклад, 'pos' → 'y')
+        // це буде оброблено окремими анімаціями для кожного атрибута
+    } else { // Actor
+        // Для Actor формуємо правильний тип даних
+        let pyValue;
+        if (values.length === 1) {
+            pyValue = Sk.ffi.remapToPy(values[0]);
+        } else {
+            // Для двох значень створюємо кортеж
+            pyValue = new Sk.builtin.tuple([
+                Sk.ffi.remapToPy(values[0]),
+                Sk.ffi.remapToPy(values[1])
+            ]);
+        }
+        updateActorAttribute(obj, Sk.ffi.remapToPy(attr), pyValue);
+    }
+}
+//ANIMATION CLASS 
+var Animation = Sk.misceval.buildClass(s, function($gbl, $loc) {
+    $loc.__init__ = new Sk.builtin.func(function(self, object, tween, duration, onFinished, targets) {
+        Sk.builtin.pyCheckArgs("__init__", 2, 6);
+        
+        self.object = object;
+        self.tween = tween || 'linear';
+        self.duration = duration !== undefined ? duration : 1.0;
+        self.onFinished = onFinished || null;
+        self.targets = targets || {};
+        self.startTime = Date.now();
+        self._running = true;
+        self._tweenFunc = TWEEN_FUNCTIONS[self.tween] || TWEEN_FUNCTIONS.linear;
+        
+        // Зберігаємо початкові значення для кожного атрибута
+        self.startValues = {};
+        self.endValues = {};
+        self.deltas = {};
+        
+        for (var attr in self.targets) {
+            // Отримуємо початкові значення
+            var startVals = getCurrentValues(self.object, attr);
+            var endRaw = Sk.ffi.remapToJs(self.targets[attr]);
+             
+            // Формуємо кінцеві значення
+            var endVals = [];
+            if (Array.isArray(endRaw)) {
+                if (endRaw.length >= 1) endVals.push(Number(endRaw[0]));
+                if (endRaw.length >= 2 && startVals.length >= 2) endVals.push(Number(endRaw[1]));
+            } else {
+                endVals.push(Number(endRaw));
+                if (startVals.length >= 2) {
+                    endVals.push(Number(endRaw));
+                }
+            }
+            
+            // Обчислюємо дельти
+            var deltas = [];
+            for (var i = 0; i < startVals.length; i++) {
+                var end = i < endVals.length ? endVals[i] : endVals[0] || 0;
+                deltas.push(end - startVals[i]);
+            }
+            
+            self.startValues[attr] = startVals;
+            self.endValues[attr] = endVals;
+            self.deltas[attr] = deltas;
+        }
+        
+        // Скасовуємо попередні анімації для цих атрибутів
+        for (var attr in self.targets) {
+            var animKey = self.object.id + "_" + attr;
+            if (animations[animKey]) {
+                animations[animKey].stop(false);
+            }
+            animations[animKey] = self;
+        }
+        
+    });
+    
+    // Метод stop(complete=False)
+    $loc._stop = new Sk.builtin.func(function(self, complete) {
+        Sk.builtin.pyCheckArgs("stop", 1, 2);
+        var doComplete = complete !== undefined ? Sk.ffi.remapToJs(complete) : false;
+        
+        self._running = false;
+        
+        // Якщо complete=True, встановлюємо кінцеві значення
+        if (doComplete) {
+            for (var attr in self.targets) {
+                applyValues(self.object, attr, self.endValues[attr]);
+            }
+        }
+        
+        // Видаляємо анімацію з глобального об'єкта
+        for (var attr in self.targets) {
+            var animKey = self.object.id + "_" + attr;
+            if (animations[animKey] === self) {
+                delete animations[animKey];
+            }
+        }
+        
+        return Sk.builtin.none.none$;
+    });
+    
+    // Властивість running
+    Object.defineProperty($loc, 'running', {
+        get: function() {
+            return Sk.ffi.remapToPy(this._running);
+        }
+    });
+    
+    // Властивість on_finished (геттер та сеттер)
+    Object.defineProperty($loc, 'on_finished', {
+        get: function() {
+            return this.onFinished;
+        },
+        set: function(value) {
+            this.onFinished = value;
+        }
+    });
+    
+    // Внутрішній метод для оновлення анімації
+$loc._update = new Sk.builtin.func(function(self, now) {
+    if (!self._running) {
+        return false;
+    }
 
-				if (!Array.isArray(pyVal) || pyVal.length < 2) {
-					anim.targets.x = {
-						start: Sk.ffi.remapToJs(getActorAttribute(object, Sk.ffi.remapToPy("x"))),
-						end: pyVal.v[0]
-					};
-					anim.targets.y = {
-						start: Sk.ffi.remapToJs(getActorAttribute(object, Sk.ffi.remapToPy("y"))),
-						end: pyVal.v[1]
-					};
+    var elapsed = now - self.startTime;
+    var progress = Math.min(elapsed / (self.duration * 1000), 1);
 
-				} else {
-					anim.targets.x = {
-						start: Sk.ffi.remapToJs(getActorAttribute(object, Sk.ffi.remapToPy("x"))),
-						end: pyVal[0]
-					};
-					anim.targets.y = {
-						start: Sk.ffi.remapToJs(getActorAttribute(object, Sk.ffi.remapToPy("y"))),
-						end: pyVal[1]
-					};
-				}
-				anim.id += "_pos";
-			} else if (object.attributes && object.attributes[key] !== undefined) {
-				anim.targets[key] = {
-					start: startVal,
-					end: pyVal
-				};
-				anim.id += "_" + key;
-			}
-		}
-		// Скасувати старі анімації на ті самі атрибути
-		for (var attr in anim.targets) {
-			var oldKey = object.id + "_" + attr;
-			if (animations[oldKey]) {
-				delete animations[oldKey];
-			}
-		}
-		// Зареєструвати нову анімацію
-		for (var attr in anim.targets) {
-			animations[object.id + "_" + attr] = anim;
-		}
-	};
-	animate.co_kwargs = true;
-	Sk.globals.animate = new Sk.builtin.func(animate);
+    var eased = self._tweenFunc(progress);
 
+    for (var attr in self.targets) {
+        var currentVals = [];
+        for (var i = 0; i < self.startValues[attr].length; i++) {
+            currentVals.push(self.startValues[attr][i] + self.deltas[attr][i] * eased);
+        }
+        applyValues(self.object, attr, currentVals);
+    }
+
+    if (progress >= 1) {
+        self.stop(true);
+
+        if (self.onFinished) {
+            setTimeout(function() {
+                Sk.misceval.asyncToPromise(() =>
+                    Sk.misceval.callsim(self.onFinished)
+                ).catch(window.onerror);
+            }, 0);
+        }
+
+        return false;
+    }
+
+    return true;
+});
+
+}, 'Animation', []);
+Animation.prototype.update = function(now) {
+    return Sk.ffi.remapToJs(
+        Sk.misceval.callsim(this._update, this, now)
+    );
+};
+Animation.prototype.stop = function(complete) {
+    return Sk.ffi.remapToJs(
+        Sk.misceval.callsim(this._stop, this, complete)
+    );
+};
+
+Sk.globals.Animation = Animation;
+
+// animate()
+var animate = function(kwa, object) {
+    Sk.builtin.pyCheckArgs("animate", 1, 1);
+    var props = unpackKWA(kwa);
+    
+    if (!object.id) {
+        object.id = 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    // Витягуємо спеціальні параметри
+    var duration = props.duration !== undefined ? props.duration : 1.0;
+    var tweenName = props.tween !== undefined ? props.tween : 'linear';
+    var onFinished = props.on_finished;
+    
+    // Витягуємо цільові атрибути (усі, крім спеціальних)
+    var targets = {};
+    for (var key in props) {
+        if (!['tween', 'duration', 'on_finished'].includes(key)) {
+            targets[key] = props[key];
+        }
+    }
+    
+    // Створюємо та повертаємо екземпляр Animation
+    var animation = Sk.misceval.callsim(
+        Animation,
+        object,
+        tweenName,
+        duration,
+        onFinished,
+        targets
+    );
+    
+    return animation;
+};
+
+animate.co_kwargs = true;
+Sk.globals.animate = new Sk.builtin.func(animate);
+
+//
 	function updateRectFromXY(self) {
 		var i = loadedAssets[self.attributes.image];
 		if (i == undefined) {
@@ -347,7 +599,59 @@ var $builtinmodule = function(name) {
 			y2: a.bottom
 		}
 	}
-
+//
+	var updateRectAttribute = function(self, key, newVal) {
+		Sk.builtin.pyCheckArgs("__setattr__", 3, 3);	
+		
+		   switch(key) {
+            case 'x': case 'left':
+                var w = self.coords.x2 - self.coords.x1;
+                self.coords.x1 = newVal;
+                self.coords.x2 = self.coords.x1 + w;
+                break;
+            case 'y': case 'top':
+                var h = self.coords.y2 - self.coords.y1;
+                self.coords.y1 = newVal;
+                self.coords.y2 = self.coords.y1 + h;
+                break;
+            case 'right':
+                var w = self.coords.x2 - self.coords.x1;
+                self.coords.x2 = newVal;
+                self.coords.x1 = self.coords.x2 - w;
+                break;
+            case 'bottom':
+                var h = self.coords.y2 - self.coords.y1;
+                self.coords.y2 = newVal;
+                self.coords.y1 = self.coords.y2 - h;
+                break;
+            case 'width':
+                self.coords.x2 = newVal + self.coords.x1;
+                break;
+            case 'height':
+                self.coords.y2 = newVal + self.coords.y1;
+                break;
+            case 'pos':
+				var centerX = newVal[0];
+				var centerY = newVal[1];
+				var w = self.coords.x2 - self.coords.x1;
+				var h = self.coords.y2 - self.coords.y1;
+				self.coords.x1 = centerX - w / 2;
+				self.coords.x2 = centerX + w / 2;
+				self.coords.y1 = centerY - h / 2;
+				self.coords.y2 = centerY + h / 2;
+			break;    
+        }
+        // Оновлюємо attributes для синхронізації
+         self.attributes.x = self.coords.x1;
+         self.attributes.y = self.coords.y1;
+         self.attributes.width = self.coords.x2 - self.coords.x1;
+         self.attributes.height = self.coords.y2 - self.coords.y1;
+         self.attributes.left = self.coords.x1;
+         self.attributes.top = self.coords.y1;
+         self.attributes.right = self.coords.x2;
+         self.attributes.bottom = self.coords.y2;		
+	};
+//
 	var updateActorAttribute = function(self, name, value) {
 		Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
 		name = Sk.ffi.remapToJs(name);
@@ -417,6 +721,13 @@ var $builtinmodule = function(name) {
 				a.x = pos[0] - self.anchorVal.x;
 				a.y = pos[1] - self.anchorVal.y;
 				break;
+			case 'anchor':
+				self.anchor = Sk.ffi.remapToJs(value);
+				updateAnchor(self);  
+				// Оновлюємо позицію з урахуванням нового якоря
+				a.x = a.x - self.anchorVal.x;
+				a.y = a.y - self.anchorVal.y;
+				break;				
 			case 'flip_x':
 				a.flip_x = !!Sk.ffi.remapToJs(value);
 				break;
@@ -429,6 +740,9 @@ var $builtinmodule = function(name) {
 			case 'direction':
 				self.direction = Sk.ffi.remapToJs(value);
 				break;
+			case 'angle':
+				self.angle = Sk.ffi.remapToJs(value);
+				break;	
 			case 'images':
 				var newImages = Sk.ffi.remapToJs(value);
 				self.images = newImages;
@@ -488,12 +802,13 @@ var $builtinmodule = function(name) {
 		if (name === 'pos') {
 			name = 'center';
 		}
-
 		switch (name) {
 			case 'x':
 				return Sk.ffi.remapToPy(self.attributes.x + self.anchorVal.x);
 			case 'y':
 				return Sk.ffi.remapToPy(self.attributes.y + self.anchorVal.y);
+			case 'centery':				
+				return Sk.ffi.remapToPy((self.coords.y1 + self.coords.y2) / 2 );	
 			case 'center':
 				return new Sk.builtin.tuple(Sk.ffi.remapToPy([
 					(self.coords.x1 + self.coords.x2) / 2,
@@ -519,6 +834,18 @@ var $builtinmodule = function(name) {
 	var idCount = 0;
 
 	Sk.globals.ZRect = Sk.globals.Rect = Sk.misceval.buildClass(s, function($gbl, $loc) {
+		
+		function updateRectFromXY(self) {
+			self.attributes.width = self.coords.x2 - self.coords.x1;
+			self.attributes.height = self.coords.y2 - self.coords.y1;
+			self.attributes.x = self.coords.x1;
+			self.attributes.y = self.coords.y1;
+			self.attributes.left = self.coords.x1;
+			self.attributes.top = self.coords.y1;
+			self.attributes.right = self.coords.x2;
+			self.attributes.bottom = self.coords.y2;
+			
+		}
 		$loc.__repr__ = new Sk.builtin.func(function(self) {
 			var x = self.coords.x1;
 			var y = self.coords.y1;
@@ -536,8 +863,18 @@ var $builtinmodule = function(name) {
 				y2: 0
 			}
 
-			self.attributes = {};
-
+			self.attributes = {
+				x: 0,
+				y: 0,
+				width: 0,
+				height: 0,
+				left: 0,
+				top: 0,
+				right: 0,
+				bottom: 0
+			};
+			self.anchorVal = { x: 0, y: 0 };  // Прямокутники завжди мають якір у лівому верхньому куті
+			
 			switch (arguments.length) {
 				case 2:
 					// either a 4-tuple or rect like object
@@ -586,6 +923,8 @@ var $builtinmodule = function(name) {
 
 					break;
 			}
+		// Синхронізуємо attributes з coords
+		updateRectFromXY(self);
 
 		});
 
@@ -600,13 +939,18 @@ var $builtinmodule = function(name) {
 			if (jsName === 'pos') {
 				jsName = 'center';
 			}
-			console.log('GetAttr:', jsName);
+			if (jsName === 'w') {
+				jsName = 'width';
+			}
+			if (jsName === 'h') {
+				jsName = 'height';
+			}
 			switch (jsName) {
 				case 'centerx':
 					return Sk.ffi.remapToPy((self.coords.x1 + self.coords.x2) / 2);
 					break;
 
-				case 'centery':
+				case 'centery':				   
 					return Sk.ffi.remapToPy((self.coords.y1 + self.coords.y2) / 2);
 					break;
 
@@ -630,6 +974,13 @@ var $builtinmodule = function(name) {
 					return Sk.ffi.remapToPy(self.coords.y2);
 					break;
 
+				case 'width':
+					return Sk.ffi.remapToPy(self.coords.x2 - self.coords.x1);
+					break;
+		        case 'height':
+					return Sk.ffi.remapToPy(self.coords.y2 - self.coords.y1);
+					break;
+					
 				case 'bottomleft':
 					return new Sk.builtin.tuple(Sk.ffi.remapToPy([self.coords.x1, self.coords.y2]));
 					break;
@@ -642,6 +993,10 @@ var $builtinmodule = function(name) {
 				case 'topright':
 					return new Sk.builtin.tuple(Sk.ffi.remapToPy([self.coords.x2, self.coords.y1]));
 					break;
+				case 'x':
+					return Sk.ffi.remapToPy(self.attributes.x || self.coords.x1);
+				case 'y':
+					return Sk.ffi.remapToPy(self.attributes.y || self.coords.y1);	
 
 				default:
 					if (self.attributes[jsName]) {
@@ -660,7 +1015,13 @@ var $builtinmodule = function(name) {
 			if (jsName === 'y') {
 				jsName = 'top';
 			}
-			console.log('SetAttr:', jsName);
+			if (jsName === 'w') {
+				jsName = 'width';
+			}
+			if (jsName === 'h') {
+				jsName = 'height';
+			}
+
 			switch (jsName) {
 				case 'center':
 					var oX = jsVal[0] - ((self.coords.x2 - self.coords.x1) / 2) - self.coords.x1;
@@ -695,7 +1056,7 @@ var $builtinmodule = function(name) {
 					self.coords.x1 = self.coords.x2 - w;
 					break;
 
-				case 'top':
+				case 'top':				
 					var h = self.coords.y2 - self.coords.y1;
 					self.coords.y1 = jsVal;
 					self.coords.y2 = self.coords.y1 + h;
@@ -706,7 +1067,12 @@ var $builtinmodule = function(name) {
 					self.coords.y2 = jsVal;
 					self.coords.y1 = self.coords.y2 - h;
 					break;
-
+				case 'width':
+					self.coords.x2 = jsVal + self.coords.x1;
+					break;
+		        case 'height':
+					self.coords.y2 = jsVal + self.coords.y1;
+					break;
 
 				default:
 					self.attributes[jsName] = value;
@@ -714,6 +1080,7 @@ var $builtinmodule = function(name) {
 						throw new Sk.builtin.NotImplemented("Rect property " + jsName + " not implemented yet");
 					break;*/
 			}
+			updateRectFromXY(self);
 		});
 
 		$loc.colliderect = new Sk.builtin.func(function(self) {
@@ -725,10 +1092,46 @@ var $builtinmodule = function(name) {
 			var collide = self.coords.x1 < other.coords.x2 &&
 				self.coords.y1 < other.coords.y2 &&
 				self.coords.x2 > other.coords.x1 &&
-				self.coords.y2 > other.coords.y1
-			console.log("Collide:",collide)
+				self.coords.y2 > other.coords.y1			
 			return Sk.ffi.remapToPy(collide);
 		});
+
+$loc.collidepoint = new Sk.builtin.func(function(self) {
+    Sk.builtin.pyCheckArgs("collidepoint", 2, 3);
+    
+    var x, y;
+    if (arguments.length === 3) {
+        // collidepoint(x, y)
+        x = Sk.ffi.remapToJs(arguments[1]);
+        y = Sk.ffi.remapToJs(arguments[2]);
+    } else {
+        // collidepoint((x, y)) або інший об'єкт з координатами
+        var arg = arguments[1];
+        if (arg.tp$name === 'tuple' || (arg.v && arg.v.length >= 2)) {
+            // Кортеж або список
+            var coords = Sk.ffi.remapToJs(arg);
+            x = coords[0];
+            y = coords[1];
+        } else if (arg.x !== undefined || arg.y !== undefined) {
+            // Об'єкт з атрибутами x/y (наприклад, інший Rect)
+            x = Sk.ffi.remapToJs(arg.x !== undefined ? arg.x : arg.left);
+            y = Sk.ffi.remapToJs(arg.y !== undefined ? arg.y : arg.top);
+        } else {
+            throw new Sk.builtin.TypeError(
+                "collidepoint() argument must be (x, y) tuple or object with x/y attributes"
+            );
+        }
+    }
+    
+    // Перевірка: точка всередині прямокутника (включно з лівою/верхньою межею,
+    // але НЕ включно з правою/нижньою — як у оригінального Pygame)
+    var collide = (x >= self.coords.x1 && 
+                   x < self.coords.x2 && 
+                   y >= self.coords.y1 && 
+                   y < self.coords.y2);
+    return Sk.ffi.remapToPy(collide);
+});
+
 
 		$loc.collidelist = new Sk.builtin.func(function(self, others) {
 			Sk.builtin.pyCheckArgs("collidelist", 2, 2);
@@ -745,6 +1148,117 @@ var $builtinmodule = function(name) {
 			}
 			return Sk.ffi.remapToPy(-1);
 		});
+
+$loc.collidelistall = new Sk.builtin.func(function(self, others) {
+    Sk.builtin.pyCheckArgs("collidelistall", 2, 2);
+    var result = [];
+    if (others && others.v && others.v.length) {
+        for (var i = 0; i < others.v.length; i++) {
+            var other = others.v[i];
+            if (self.coords.x1 < other.coords.x2 &&
+                self.coords.y1 < other.coords.y2 &&
+                self.coords.x2 > other.coords.x1 &&
+                self.coords.y2 > other.coords.y1) {
+                result.push(i);
+            }
+        }
+    }
+    return Sk.ffi.remapToPy(result);
+});
+
+$loc.contains = new Sk.builtin.func(function(self, other) {
+    Sk.builtin.pyCheckArgs("contains", 2, 2);
+    // Переконуємось, що other — це Rect
+    var otherRect = other;
+    if (other.tp$name !== 'Rect') {
+        // Спробуємо конвертувати з кортежу
+        otherRect = Sk.misceval.callsim(Sk.globals.Rect, other);
+    }
+    var result = (self.coords.x1 <= otherRect.coords.x1 &&
+                  self.coords.y1 <= otherRect.coords.y1 &&
+                  self.coords.x2 >= otherRect.coords.x2 &&
+                  self.coords.y2 >= otherRect.coords.y2);
+    return Sk.ffi.remapToPy(result);
+});
+
+// Метод inflate(dx, dy) або inflate((dx, dy)) — повертає новий збільшений прямокутник
+$loc.inflate = new Sk.builtin.func(function(self) {
+    Sk.builtin.pyCheckArgs("inflate", 2, 3);
+    
+    var dx, dy;
+    if (arguments.length === 3) {
+        // Два аргументи: inflate(dx, dy)
+        dx = Sk.ffi.remapToJs(arguments[1]);
+        dy = Sk.ffi.remapToJs(arguments[2]);
+    } else {
+        // Один аргумент-кортеж: inflate((dx, dy))
+        var arg = Sk.ffi.remapToJs(arguments[1]);
+        if (Array.isArray(arg) && arg.length >= 2) {
+            dx = arg[0];
+            dy = arg[1];
+        } else {
+            throw new Sk.builtin.TypeError(
+                "inflate() argument must be (dx, dy) tuple or two separate arguments"
+            );
+        }
+    }
+    
+    // Обчислюємо нові координати (збільшуємо навколо центру)
+    var cx = (self.coords.x1 + self.coords.x2) / 2;
+    var cy = (self.coords.y1 + self.coords.y2) / 2;
+    var newWidth = (self.coords.x2 - self.coords.x1) + dx;
+    var newHeight = (self.coords.y2 - self.coords.y1) + dy;
+    
+    var newX1 = cx - newWidth / 2;
+    var newY1 = cy - newHeight / 2;
+    var newX2 = cx + newWidth / 2;
+    var newY2 = cy + newHeight / 2;
+    
+    // Створюємо новий Rect
+    var newRect = Sk.misceval.callsim(Sk.globals.Rect,
+        Sk.ffi.remapToPy(newX1),
+        Sk.ffi.remapToPy(newY1),
+        Sk.ffi.remapToPy(newWidth),
+        Sk.ffi.remapToPy(newHeight)
+    );
+    return newRect;
+});
+
+// Метод inflate_ip(dx, dy) або inflate_ip((dx, dy)) — змінює прямокутник "на місці"
+$loc.inflate_ip = new Sk.builtin.func(function(self) {
+    Sk.builtin.pyCheckArgs("inflate_ip", 2, 3);
+    
+    var dx, dy;
+    if (arguments.length === 3) {
+        dx = Sk.ffi.remapToJs(arguments[1]);
+        dy = Sk.ffi.remapToJs(arguments[2]);
+    } else {
+        var arg = Sk.ffi.remapToJs(arguments[1]);
+        if (Array.isArray(arg) && arg.length >= 2) {
+            dx = arg[0];
+            dy = arg[1];
+        } else {
+            throw new Sk.builtin.TypeError(
+                "inflate_ip() argument must be (dx, dy) tuple or two separate arguments"
+            );
+        }
+    }
+    
+    // Обчислюємо нові координати
+    var cx = (self.coords.x1 + self.coords.x2) / 2;
+    var cy = (self.coords.y1 + self.coords.y2) / 2;
+    var newWidth = (self.coords.x2 - self.coords.x1) + dx;
+    var newHeight = (self.coords.y2 - self.coords.y1) + dy;
+    
+    self.coords.x1 = cx - newWidth / 2;
+    self.coords.y1 = cy - newHeight / 2;
+    self.coords.x2 = cx + newWidth / 2;
+    self.coords.y2 = cy + newHeight / 2;
+    
+    updateRectFromXY(self); // оновлюємо атрибути x, y, width, height
+    
+    return Sk.builtin.none.none$;
+});		
 
 	}, "Rect", []);
 
@@ -787,9 +1301,33 @@ var $builtinmodule = function(name) {
 		$loc.__init__ = new Sk.builtin.func(function(self, actor) {
 			self.actor = actor;
 		});
+		
+	$loc.set_at = new Sk.builtin.func(function(self, pos, color) {
+        Sk.builtin.pyCheckArgs("set_at", 3, 3);
+        // Отримуємо координати
+        var jsPos = Sk.ffi.remapToJs(pos);
+        var x = Math.round(jsPos[0]);
+        var y = Math.round(jsPos[1]);
+        // Конвертуємо колір у RGBA
+        var jsColor = Sk.ffi.remapToJs(color);
+        var rgba = getColor(jsColor);
+        // Використовуємо глобальний контекст
+        cx.save();
+        cx.fillStyle = rgba;
+        cx.fillRect(x, y, 1, 1);
+        cx.restore();
+        return Sk.builtin.none.none$;
+    });
+		
 	});
 
-
+function updateAnchor(self) {
+    var i = loadedAssets[self.attributes.image];
+    if (i) {
+        self.anchorVal.x = calculateAnchor(self.anchor[0], 'x', i.width);
+        self.anchorVal.y = calculateAnchor(self.anchor[1], 'y', i.height);
+    }
+}
 	Sk.globals.Actor = Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 		$loc.distance_to = new Sk.builtin.func(function(self, target) {
@@ -938,7 +1476,8 @@ var init = function(kwa, self, name, posArg) {
     var args = unpackKWA(kwa);
 
     if (args.anchor) {
-        self.anchor = args.anchor;
+        self.anchor[0] = args.anchor.v[0].v;
+        self.anchor[1] = args.anchor.v[1].v;
     }
 
     // позиція
@@ -950,7 +1489,7 @@ var init = function(kwa, self, name, posArg) {
         desiredX = pos[0];
         desiredY = pos[1];
     }
-
+		
     self._loaded = false;
 
     var jsName = Sk.ffi.remapToJs(name);
@@ -1012,34 +1551,47 @@ $loc.__init__ = new Sk.builtin.func(init);
 
 
 //
-		$loc.draw = new Sk.builtin.func(function(self) {
-			if (!loadedAssets[self.attributes.image]) {
-				return;
-			}
-			updateRectFromXY(self);
-			var i = loadedAssets[self.attributes.image];
-			var a = self.attributes;
-			var w = a.width * a.scale;
-			var h = a.height * a.scale;
-			var radians = a.angle * Math.PI / 180;
-			cx.save();
-			cx.globalAlpha = a.opacity;
-			// Переносимо до точки прив'язки (anchor point)
-			cx.translate(a.x , a.y );
-			// Обертання навколо anchor point
-			if (a.angle !== 0) {
-				cx.rotate(-radians);
-			}
-			// Дзеркальне відображення
-			if (a.flip_x || a.flip_y) {
-				cx.scale(a.flip_x ? -1 : 1, a.flip_y ? -1 : 1);
-				// Малюємо з урахуванням масштабу та віддзеркалення
-				cx.drawImage(i.image, a.flip_x ? -w : 0, a.flip_y ? -h : 0, w, h);
-			} else {
-				cx.drawImage(i.image, 0, 0, w, h);
-			}
-			cx.restore();
-		});
+$loc.draw = new Sk.builtin.func(function(self) { 
+    if (!loadedAssets[self.attributes.image]) {
+        return;
+    }
+    updateRectFromXY(self);
+
+    var i = loadedAssets[self.attributes.image];
+    var a = self.attributes;
+
+    var w = a.width * a.scale;
+    var h = a.height * a.scale;
+
+    var radians = a.angle * Math.PI / 180;
+    // ✅ центр актора
+    var cx0 = a.x + w / 2;
+    var cy0 = a.y + h / 2;
+
+    cx.save();
+    cx.globalAlpha = a.opacity;
+    // 1️⃣ перенос у центр
+    cx.translate(cx0, cy0);
+    // 2️⃣ обертання
+    if (a.angle !== 0) {
+        cx.rotate(-radians);
+    }
+    // 3️⃣ flip
+    var sx = a.flip_x ? -1 : 1;
+    var sy = a.flip_y ? -1 : 1;
+    cx.scale(sx, sy);
+    // 4️⃣ малювання від центра
+    cx.drawImage(
+        i.image,
+        -w / 2,
+        -h / 2,
+        w,
+        h
+    );
+
+    cx.restore();
+});
+
 		$loc.next_image = new Sk.builtin.func(function(self) {
 			if (self.images.length === 0) {
 				return Sk.builtin.none.none$;
@@ -1258,21 +1810,44 @@ var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
 	var keysPressed = {
 
 	}
-
+	
+	var keysCodePressed = new Set();
+	
 	function isKeyPressed(key) {
 		return new Sk.builtin.bool(keysPressed[key.toLowerCase()] == true);
 	}
 
-	var Keyboard = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		$loc.__getattr__ = new Sk.builtin.func(function(self, name) {
-			var key = Sk.ffi.remapToJs(name);
-			if (key.match(/__/)) {
-				return;
-			}
-			return isKeyPressed(key);
-		});
-	}, 'pgzero.keyboard.Keyboard', []);
-	Sk.globals.keyboard = Sk.misceval.callsim(Keyboard);
+
+var Keyboard = Sk.misceval.buildClass(s, function($gbl, $loc) {
+
+    $loc.__init__ = new Sk.builtin.func(function(self) {
+
+        
+    });
+
+    $loc.__getattr__ = new Sk.builtin.func(function(self, name) {
+        var key = Sk.ffi.remapToJs(name);
+        
+      if (key === "_pressed") {
+            var codesArray = [];
+            keysCodePressed.forEach(function(code) {
+                codesArray.push(new Sk.builtin.int_(code));
+            });
+            return new Sk.builtin.set(codesArray);
+        }
+        if (key.match(/__/)) return;
+        return isKeyPressed(key);
+    });
+
+    // keyboard[key]
+    $loc.__getitem__ = new Sk.builtin.func(function(self, key) {
+        key = Sk.ffi.remapToJs(key);
+        return isKeyPressed(key);
+    });
+
+}, 'pgzero.keyboard.Keyboard', []);
+
+Sk.globals.keyboard = Sk.misceval.callsim(Keyboard);
 
 	var mouse = Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var id = 1;
@@ -1290,41 +1865,245 @@ var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
 
 	Sk.globals.mouse = Sk.misceval.callsim(mouse, 'mouse');
 
-	var keys = Sk.misceval.buildClass(s, function($gbl, $loc) {
+var keys = Sk.misceval.buildClass(s, function($gbl, $loc) {
+    var values = {
+        // Special keys
+        BACKSPACE: 8,
+        TAB: 9,
+        CLEAR: 12,
+        RETURN: 13,
+        ENTER: 13,
+        PAUSE: 19,
+        ESCAPE: 27,
+        SPACE: 32,
+        
+        // Arrow keys
+        LEFT: 37,
+        UP: 38,
+        RIGHT: 39,
+        DOWN: 40,
+        
+        // Modifier keys
+        SHIFT: 16,
+        LSHIFT: 16,
+        RSHIFT: 16,
+        CTRL: 17,
+        LCTRL: 17,
+        RCTRL: 17,
+        ALT: 18,
+        LALT: 18,
+        RALT: 18,
+        META: 91,
+        LMETA: 91,
+        RMETA: 92,
+        
+        // Function keys
+        F1: 112,
+        F2: 113,
+        F3: 114,
+        F4: 115,
+        F5: 116,
+        F6: 117,
+        F7: 118,
+        F8: 119,
+        F9: 120,
+        F10: 121,
+        F11: 122,
+        F12: 123,
+        F13: 124,
+        F14: 125,
+        F15: 126,
+        
+        // Navigation keys
+        HOME: 36,
+        END: 35,
+        PAGEUP: 33,
+        PAGEDOWN: 34,
+        INSERT: 45,
+        DELETE: 46,
+        
+        // Lock keys
+        CAPSLOCK: 20,
+        NUMLOCK: 144,
+        SCROLLOCK: 145,
+        
+        // Numeric keypad
+        KP0: 96,
+        KP1: 97,
+        KP2: 98,
+        KP3: 99,
+        KP4: 100,
+        KP5: 101,
+        KP6: 102,
+        KP7: 103,
+        KP8: 104,
+        KP9: 105,
+        KP_PERIOD: 110,
+        KP_DIVIDE: 111,
+        KP_MULTIPLY: 106,
+        KP_MINUS: 109,
+        KP_PLUS: 107,
+        KP_ENTER: 108,
+        KP_EQUALS: 187,
+        
+        // Letters
+        A: 65,
+        B: 66,
+        C: 67,
+        D: 68,
+        E: 69,
+        F: 70,
+        G: 71,
+        H: 72,
+        I: 73,
+        J: 74,
+        K: 75,
+        L: 76,
+        M: 77,
+        N: 78,
+        O: 79,
+        P: 80,
+        Q: 81,
+        R: 82,
+        S: 83,
+        T: 84,
+        U: 85,
+        V: 86,
+        W: 87,
+        X: 88,
+        Y: 89,
+        Z: 90,
+        
+        // Numbers (main keyboard)
+        K_0: 48,
+        K_1: 49,
+        K_2: 50,
+        K_3: 51,
+        K_4: 52,
+        K_5: 53,
+        K_6: 54,
+        K_7: 55,
+        K_8: 56,
+        K_9: 57,
+        
+        // Symbols
+        EXCLAIM: 49,      // '!'
+        QUOTEDBL: 222,    // '"'
+        HASH: 51,         // '#'
+        DOLLAR: 52,       // '$'
+        AMPERSAND: 55,    // '&'
+        QUOTE: 222,       // "'"
+        LEFTPAREN: 57,    // '('
+        RIGHTPAREN: 48,   // ')'
+        ASTERISK: 56,     // '*'
+        PLUS: 187,        // '+'
+        COMMA: 188,       // ','
+        MINUS: 189,       // '-'
+        PERIOD: 190,      // '.'
+        SLASH: 191,       // '/'
+        COLON: 186,       // ':'
+        SEMICOLON: 186,   // ';'
+        LESS: 188,        // '<'
+        EQUALS: 187,      // '='
+        GREATER: 190,     // '>'
+        QUESTION: 191,    // '?'
+        AT: 50,           // '@'
+        LEFTBRACKET: 219, // '['
+        BACKSLASH: 220,   // '\'
+        RIGHTBRACKET: 221,// ']'
+        CARET: 54,        // '^'
+        UNDERSCORE: 189,  // '_'
+        BACKQUOTE: 192,   // '`'
+        
+        // Additional keys
+        HELP: 47,
+        PRINT: 42,
+        SYSREQ: 124,
+        BREAK: 19,
+        MENU: 93,
+        POWER: 0,
+        EURO: 0,
+        LAST: 0
+    };
 
-		var values = {
-			SPACE: 32,
-			RETURN: 13,
-			LEFT: 37,
-			RIGHT: 39,
-			UP: 38,
-			DOWN: 40
-		}
+    for (var key in values) {
+        $loc[key] = Sk.misceval.callsim(EnumValue, "keys", key, values[key]);
+    }
 
-		for (var key in values) {
-			$loc[key] = Sk.misceval.callsim(EnumValue, "keys", key, values[key]);
-		}
-
-	}, 'keys', [Enum]);
-	Sk.globals.keys = Sk.misceval.callsim(keys, 'keys');
+}, 'keys', [Enum]);
+Sk.globals.keys = Sk.misceval.callsim(keys, 'keys');
 
 	var SurfacePainter = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		var line = function(kwa, self, coord1, coord2, color) {
-			var jsCoord1 = Sk.ffi.remapToJs(coord1);
-			var jsCoord2 = Sk.ffi.remapToJs(coord2);
-			var jsColor = Sk.ffi.remapToJs(color);
-			var props = unpackKWA(kwa);
-			cx.strokeStyle = getColor(jsColor);
-			var lineWidth = props.width !== undefined ? props.width : 1;
-			cx.lineWidth = lineWidth;
-			cx.beginPath();
-			cx.moveTo(jsCoord1[0], jsCoord1[1]);
-			cx.lineTo(jsCoord2[0], jsCoord2[1]);
-			cx.stroke();
+var line = function(kwa, self, coord1, coord2, color) {
+    var jsColor = "black";
+    var x1, y1, x2, y2;
 
-		}
-		line.co_kwargs = true;
-		$loc.line = new Sk.builtin.func(line);
+    var jsCoord1 = Sk.ffi.remapToJs(coord1);
+    var jsCoord2 = coord2 !== undefined ? Sk.ffi.remapToJs(coord2) : undefined;
+    var jsColorArg = color !== undefined ? Sk.ffi.remapToJs(color) : undefined;
+   
+    // line((x1, y1, x2, y2), color, ...)
+    // coord1 - масив з 4 елементів
+    if (Array.isArray(jsCoord1) && jsCoord1.length === 4) {
+        x1 = jsCoord1[0];
+        y1 = jsCoord1[1];
+        x2 = jsCoord1[2];
+        y2 = jsCoord1[3];
+        
+        // Якщо другий аргумент - рядок, це колір
+        if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
+            jsColor = jsCoord2;
+        }
+    }
+    // line(((x1, y1), (x2, y2)), color, ...)
+    // coord1 - масив з 2 елементів, кожен з яких масив
+    else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && 
+             Array.isArray(jsCoord1[0]) && Array.isArray(jsCoord1[1])) {
+        x1 = jsCoord1[0][0];
+        y1 = jsCoord1[0][1];
+        x2 = jsCoord1[1][0];
+        y2 = jsCoord1[1][1];
+        
+        // Якщо другий аргумент - рядок, це колір
+        if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
+            jsColor = jsCoord2;
+        }
+    }
+    // line((x1, y1), (x2, y2), color, ...)
+    // coord1 і coord2 - окремі масиви з 2 елементів
+    else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && 
+             Array.isArray(jsCoord2) && jsCoord2.length === 2) {
+        x1 = jsCoord1[0];
+        y1 = jsCoord1[1];
+        x2 = jsCoord2[0];
+        y2 = jsCoord2[1];
+        
+        // Якщо третій аргумент - рядок, це колір
+        if (jsColorArg !== undefined && typeof jsColorArg === 'string') {
+            jsColor = jsColorArg;
+        }
+    }
+    else {
+        // Невідомий формат - помилка
+        throw new Error("Invalid line coordinates format. Expected: (x1,y1,x2,y2) or ((x1,y1),(x2,y2)) or (x1,y1),(x2,y2)");
+    }
+    
+    // Обробка kwargs (може перевизначити колір)
+    var props = unpackKWA(kwa);
+    if (props.color) {
+        jsColor = Sk.ffi.remapToJs(props.color);
+    }
+    
+    cx.strokeStyle = getColor(jsColor);
+    var lineWidth = props.width !== undefined ? props.width : 1;
+    cx.lineWidth = lineWidth;
+    cx.beginPath();
+    cx.moveTo(x1, y1);
+    cx.lineTo(x2, y2);
+    cx.stroke();
+}
+line.co_kwargs = true;
+$loc.line = new Sk.builtin.func(line);
 
 		var circle = function(kwa, self, coords, radius, color) {
 			Sk.builtin.pyCheckArgs("circle", 3, 3);
@@ -1342,40 +2121,53 @@ var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
 		circle.co_kwargs = true;
 		$loc.circle = new Sk.builtin.func(circle);
 
-		var rect = function(kwa, self, coord, color) {
-			// 1. rect((x, y, w, h), color, width=...)
-			// 2. rect((x, y), (w, h), color, width=...)        
-			var jsCoords = Sk.ffi.remapToJs(coord);
-			var jsColor = Sk.ffi.remapToJs(color);
-			cx.strokeStyle = getColor(jsColor);
-			var props = unpackKWA(kwa);
-			var lineWidth = props.width !== undefined ? props.width : 1;
-			cx.lineWidth = Sk.ffi.remapToJs(lineWidth);
-			var x, y, w, h;
-			// rect((x, y, w, h), color, ...)
-			if (jsCoords.length === 4) {
-				x = jsCoords[0];
-				y = jsCoords[1];
-				w = jsCoords[2];
-				h = jsCoords[3];
-			}
-			// rect((x, y), (w, h), color, ...)
-			else if (jsCoords.length === 2) {
-				x = jsCoords[0][0];
-				y = jsCoords[0][1];
-				w = jsCoords[1][0];
-				h = jsCoords[1][1];
-			} else {
-				throw new Sk.builtin.TypeError(
-					"rect() takes either (left, top, width, height) or ((left, top), (width, height))"
-				);
-			}
-			cx.beginPath();
-			cx.rect(x, y, w, h);
-			cx.stroke();
-		};
-		rect.co_kwargs = true;
-		$loc.rect = new Sk.builtin.func(rect);
+var rect = function(kwa, self, coord, color) {
+    // 1. rect(Rect object, color, width=...)
+    // 2. rect((x, y, w, h), color, width=...)
+    // 3. rect((x, y), (w, h), color, width=...)
+    var jsColor = Sk.ffi.remapToJs(color);
+    cx.strokeStyle = getColor(jsColor);
+    var props = unpackKWA(kwa);
+    var lineWidth = props.width !== undefined ? props.width : 1;
+    cx.lineWidth = Sk.ffi.remapToJs(lineWidth);
+    var x, y, w, h;
+    
+    // Перевіряємо, чи це об'єкт Rect
+    if (coord && coord.coords) {
+        // Rect object
+        x = coord.coords.x1;
+        y = coord.coords.y1;
+        w = coord.coords.x2 - coord.coords.x1;
+        h = coord.coords.y2 - coord.coords.y1;
+    } else {
+        // Звичайний кортеж
+        var jsCoords = Sk.ffi.remapToJs(coord);
+        // rect((x, y, w, h), color, ...)
+        if (jsCoords.length === 4) {
+            x = jsCoords[0];
+            y = jsCoords[1];
+            w = jsCoords[2];
+            h = jsCoords[3];
+        }
+        // rect((x, y), (w, h), color, ...)
+        else if (jsCoords.length === 2) {
+            x = jsCoords[0][0];
+            y = jsCoords[0][1];
+            w = jsCoords[1][0];
+            h = jsCoords[1][1];
+        } else {
+            throw new Sk.builtin.TypeError(
+                "rect() takes either Rect object, (left, top, width, height) or ((left, top), (width, height))"
+            );
+        }
+    }
+    
+    cx.beginPath();
+    cx.rect(x, y, w, h);
+    cx.stroke();
+};
+rect.co_kwargs = true;
+$loc.rect = new Sk.builtin.func(rect);
 
 		$loc.filled_rect = new Sk.builtin.func(function(self, rect, color) {
 			Sk.builtin.pyCheckArgs("filled_rect", 3, 3);
@@ -1725,8 +2517,7 @@ $loc.text = new Sk.builtin.func(text);
         
 	}, 'pgzero.screen.SurfacePainter', []);
 
-	var Clock = Sk.misceval.buildClass(s, function($gbl, $loc) {
-		console.log("clock")
+	var Clock = Sk.misceval.buildClass(s, function($gbl, $loc) {		
 		$loc.__init__ = new Sk.builtin.func(function(self) {
 			self.callbacks = {};
 		});
@@ -1770,7 +2561,7 @@ $loc.text = new Sk.builtin.func(text);
 			var id = self.callbacks[callback];
 			if (id !== undefined) {
 				clearTimeout(id);
-				clearInterval(id); // безпечно викликати обидва
+				clearInterval(id); 
 				delete self.callbacks[callback];
 			}
 		});
@@ -1833,7 +2624,8 @@ $loc.blit = new Sk.builtin.func(function(self, image, ccoords) {
 				Sk.ffi.remapToPy(width),
 				Sk.ffi.remapToPy(height)
 			);
-		});
+		});		
+
 
 	}, 'pgzero.screen.Screen', []);
 
@@ -2139,7 +2931,7 @@ var Sound = Sk.misceval.buildClass(s, function ($gbl, $loc) {
 Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 
-	// === TONE GENERATOR ===
+// === TONE GENERATOR (IMPROVED) ===
 
 	var ToneGenerator = Sk.misceval.buildClass(s, function($gbl, $loc) {
 		var audioContext = null;
@@ -2227,7 +3019,37 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 			return baseFreq * Math.pow(2, octave);
 		}
 
-		// Generate tone buffer
+		// ADSR envelope function
+		function applyADSREnvelope(t, duration) {
+			// Адаптивні параметри ADSR залежно від тривалості ноти
+			var attackTime = Math.min(0.005, duration * 0.05);    // дуже швидкий атак
+			var decayTime = Math.min(0.03, duration * 0.15);      // короткий decay
+			var sustainLevel = 0.7;                                // помірний sustain
+			var releaseTime = Math.min(0.2, duration * 0.4);      // плавний release
+			
+			var envelope = 0.0;
+
+			if (t < attackTime) {
+				// Експоненційний атак для плавності
+				envelope = Math.pow(t / attackTime, 0.5);
+			} else if (t < attackTime + decayTime) {
+				// Плавний decay до sustain рівня
+				var decayProgress = (t - attackTime) / decayTime;
+				envelope = 1.0 - (1.0 - sustainLevel) * decayProgress;
+			} else if (t < duration - releaseTime) {
+				// Sustain фаза
+				envelope = sustainLevel;
+			} else {
+				// Експоненційне затухання (release)
+				var releaseProgress = (t - (duration - releaseTime)) / releaseTime;
+				releaseProgress = Math.max(0, Math.min(releaseProgress, 1));
+				envelope = sustainLevel * Math.exp(-5.0 * releaseProgress);
+			}
+
+			return envelope;
+		}
+
+		// Generate tone buffer with harmonics
 		function generateToneBuffer(frequency, duration) {
 			var ctx = getAudioContext();
 			if (!ctx) return null;
@@ -2237,35 +3059,28 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 			var buffer = ctx.createBuffer(1, length, sampleRate);
 			var data = buffer.getChannelData(0);
 
-			// Параметри envelope (можна налаштувати)
-			var attackTime = Math.min(0.01, duration * 0.1); // швидкий атак
-			var decayTime = Math.min(0.05, duration * 0.2); // короткий decay
-			var sustainLevel = 0.8; // високий sustain
-			var releaseTime = Math.min(0.3, duration * 0.5); // довший, м'який release
+			// Гармоніки для більш насиченого звуку (як у реальних інструментів)
+			var harmonics = [
+				{ freq: 1.0, amp: 1.0 },      // Основна частота
+				{ freq: 2.0, amp: 0.3 },      // Октава
+				{ freq: 3.0, amp: 0.15 },     // Квінта + октава
+				{ freq: 4.0, amp: 0.08 },     // Дві октави
+				{ freq: 5.0, amp: 0.04 }      // Терція + дві октави
+			];
 
 			for (var i = 0; i < length; i++) {
 				var t = i / sampleRate;
-				var envelope = 0.0;
-
-				if (t < attackTime) {
-					// Лінійний атак (або експоненційний, але лінійний достатній)
-					envelope = (t / attackTime);
-				} else if (t < attackTime + decayTime) {
-					// Decay до sustain рівня
-					envelope = 1.0 - (1.0 - sustainLevel) * ((t - attackTime) / decayTime);
-				} else if (t < duration - releaseTime) {
-					// Sustain
-					envelope = sustainLevel;
-				} else {
-					// ЕКСПОНЕНЦІЙНЕ ЗАТУХАННЯ (release)
-					var releaseProgress = (t - (duration - releaseTime)) / releaseTime; // 0 → 1
-					// Уникнути log(0) — clamp до [0.001, 1]
-					releaseProgress = Math.min(Math.max(releaseProgress, 0), 0.999);
-					var decayFactor = 4.0; // регулює "крутість" затухання
-					envelope = sustainLevel * Math.exp(-decayFactor * releaseProgress);
+				var envelope = applyADSREnvelope(t, duration);
+				
+				// Сума гармонік
+				var sample = 0.0;
+				for (var h = 0; h < harmonics.length; h++) {
+					var harmonic = harmonics[h];
+					sample += Math.sin(2 * Math.PI * frequency * harmonic.freq * t) * harmonic.amp;
 				}
-
-				data[i] = Math.sin(2 * Math.PI * frequency * t) * envelope;
+				
+				// Нормалізація та застосування огинаючої
+				data[i] = (sample / 1.57) * envelope; // 1.57 ≈ сума амплітуд гармонік
 			}
 
 			return buffer;
@@ -2310,7 +3125,15 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 			var source = ctx.createBufferSource();
 			source.buffer = buffer;
-			source.connect(ctx.destination);
+			
+			// Додаємо легкий low-pass фільтр для м'якості
+			var filter = ctx.createBiquadFilter();
+			filter.type = 'lowpass';
+			filter.frequency.value = Math.min(8000, frequency * 6); // Обрізаємо високі частоти
+			filter.Q.value = 0.5;
+			
+			source.connect(filter);
+			filter.connect(ctx.destination);
 			source.start();
 
 			// Clean up after playback
@@ -2320,6 +3143,7 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 					activeSources.splice(index, 1);
 				}
 				source.disconnect();
+				filter.disconnect();
 			};
 
 			activeSources.push(source);
@@ -2370,7 +3194,15 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 				var source = ctx.createBufferSource();
 				source.buffer = buffer;
-				source.connect(ctx.destination);
+				
+				// Додаємо low-pass фільтр
+				var filter = ctx.createBiquadFilter();
+				filter.type = 'lowpass';
+				filter.frequency.value = Math.min(8000, self.frequency * 6);
+				filter.Q.value = 0.5;
+				
+				source.connect(filter);
+				filter.connect(ctx.destination);
 				source.start();
 
 				// Clean up after playback
@@ -2380,6 +3212,7 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 						activeSources.splice(index, 1);
 					}
 					source.disconnect();
+					filter.disconnect();
 				};
 
 				activeSources.push(source);
@@ -2431,9 +3264,110 @@ Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
 
 	// Create global tone object
 	Sk.globals.tone = Sk.misceval.callsim(ToneGenerator);
-	//
-	s.go = new Sk.builtin.func(function() {
-		console.log("Go");
+	
+
+// STORAGE ================================
+
+var STORAGE_KEY = "pgzero_storage_" + (window.location.pathname || "game");
+
+var Storage = Sk.misceval.buildClass(s, function($gbl, $loc) {
+
+
+    $loc.__init__ = new Sk.builtin.func(function(self) {
+        self._data = {};
+        self.path = Sk.ffi.remapToPy(STORAGE_KEY);
+        self._load();
+        return Sk.builtin.none.none$;
+    });
+
+    $loc._save = new Sk.builtin.func(function(self) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+        return Sk.builtin.none.none$;
+    });
+
+    $loc._load = new Sk.builtin.func(function(self) {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        self._data = raw ? JSON.parse(raw) : {};
+        return Sk.builtin.none.none$;
+    });
+
+
+    // dict behaviour
+
+    $loc.__getitem__ = new Sk.builtin.func(function(self, key) {
+        key = Sk.ffi.remapToJs(key);
+
+        if (!(key in self._data)) {
+            throw new Sk.builtin.KeyError(key);
+        }
+
+        return Sk.ffi.remapToPy(self._data[key]);
+    });
+
+    $loc.__setitem__ = new Sk.builtin.func(function(self, key, value) {
+        key = Sk.ffi.remapToJs(key);
+        self._data[key] = Sk.ffi.remapToJs(value);
+
+        // autosave як у pgzero
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.setdefault = new Sk.builtin.func(function(self, key, defaultVal) {
+        key = Sk.ffi.remapToJs(key);
+
+        if (!(key in self._data)) {
+            self._data[key] = Sk.ffi.remapToJs(defaultVal);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+        }
+
+        return Sk.ffi.remapToPy(self._data[key]);
+    });
+
+    $loc.get = new Sk.builtin.func(function(self, key, defaultVal) {
+        key = Sk.ffi.remapToJs(key);
+
+        if (key in self._data) {
+            return Sk.ffi.remapToPy(self._data[key]);
+        }
+
+        return defaultVal !== undefined ? defaultVal : Sk.builtin.none.none$;
+    });
+
+    $loc.clear = new Sk.builtin.func(function(self) {
+        self._data = {};
+        localStorage.removeItem(STORAGE_KEY);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.save = new Sk.builtin.func(function(self) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.load = new Sk.builtin.func(function(self) {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        self._data = raw ? JSON.parse(raw) : {};
+        return Sk.builtin.none.none$;
+    });
+
+}, "Storage", []);
+
+Storage.prototype._save = function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this._data));
+};
+
+Storage.prototype._load = function() {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    this._data = raw ? JSON.parse(raw) : {};
+};
+
+Sk.globals.storage = Sk.misceval.callsim(Storage);
+	
+	
+	//--------------------------------------------------------
+	s.go = new Sk.builtin.func(function() {		
 		// create globals
 		Sk.globals.screen = Sk.misceval.callsim(Screen);
 
@@ -2466,11 +3400,11 @@ let canvas = document.getElementById('gameCanvas');
 		const modalContainer = document.querySelector('#gameModal > div'); // внутрішній контейнер
 
 		if (modalContainer && document.getElementById('gameCanvas')) {
-			// Встановлюємо розміри контейнера (заголовок + canvas)
+			// встановлюємо розміри контейнера (заголовок + canvas)
 			modalContainer.style.width = width + 'px';
 			modalContainer.style.height = (height + 30) + 'px';
 		}
-		// Встановлюємо фактичні розміри canvas (буфер)
+		// встановлюємо фактичні розміри canvas
 		canvas.width = width;
 		canvas.height = height;
 		canvas.style.width = width + 'px';
@@ -2479,177 +3413,202 @@ let canvas = document.getElementById('gameCanvas');
 		document.activeElement.blur();
 		cx = canvas.getContext("2d");
 		document.addEventListener('contextmenu', event => event.preventDefault());
-var lastUpdate = new Date().getTime();
-var firstRun = true;
 
+
+var lastUpdate = new Date().getTime();
+//  update() 
 function update() {
-/*
-	if (firstRun) {
-        firstRun = false;
-        lastUpdate = Date.now();
-        setTimeout(() => window.requestAnimationFrame(update), 200);
-        return;
-	} */
-    var tasks = [];
-    // process animations
-    for (var id in animations) {
-        var a = animations[id];
-        var now = Date.now();
-        var elapsed = now - a.startTime;
-        var progress = elapsed / a.duration;
-        if (progress >= 1) {
-            progress = 1;
-            // Встановити кінцеві значення
-            for (var key in a.targets) {
-                updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(a.targets[key].end));
-            }
-            // Виклик on_finished
-            if (a.onFinished) {
-                setTimeout(function() {
-                    Sk.misceval.asyncToPromise(() => Sk.misceval.callsim(a.onFinished))
-                        .catch(window.onerror);
-                }, 0);
-            }
-            // Видалити анімацію
-            for (var key in a.targets) {
-                delete animations[a.object.id + "_" + key];
-            }
-            continue;
-        }
-        // Інтерполяція через easing
-        var eased = a.tween(progress);
-        for (var key in a.targets) {
-            var t = a.targets[key];
-            var newVal = t.start + (t.end - t.start) * eased;
-            updateActorAttribute(a.object, Sk.ffi.remapToPy(key), Sk.ffi.remapToPy(newVal));
-        }
+    const now = Date.now();
+    const tasks = [];
+    
+    // Обробка анімацій
+    for (const animKey in animations) {
+        const anim = animations[animKey];        
+        // викликаємо внутрішній метод _update
+        anim.update(now);
     }
+    
+    // Виклик користувацьких функцій update/draw
     if (Sk.globals.update !== undefined) {
-        if (Sk.globals.update.func_code.co_argcount > 0) {
-            var newTime = new Date().getTime();
-            var dt = (newTime - lastUpdate) / 1000;
-            lastUpdate = new Date().getTime();
-            tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, new Sk.ffi.remapToPy(dt)));
+        const newTime = Date.now();
+        const dt = (newTime - lastUpdate) / 1000;
+        lastUpdate = newTime;
+        
+        const func = Sk.globals.update;
+        const argCount = func.func_code ? func.func_code.co_argcount : 0;
+        const varNames = func.func_code ? func.func_code.co_varnames : [];
+        
+        if (argCount > 0 || varNames.length > 0) {
+            tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update, Sk.ffi.remapToPy(dt)));
         } else {
             tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.update));
         }
     }
+    
     if (Sk.globals.draw) {
         tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.draw));
     }
-    var p = Promise.all(tasks).then(function() {
-        window.requestAnimationFrame(update);
-    }, function(e) {
-        PythonIDE.handleError(e);
-    }).catch(function(e) {
-        PythonIDE.handleError(e);
-    });
-    return p;
+    
+    return Promise.all(tasks)
+        .then(() => window.requestAnimationFrame(update))
+        .catch(PythonIDE.handleError);
 }
 
 // add event handlers
 if (Sk.globals.on_mouse_down) {
-    canvas.addEventListener('mousedown', function(e) {
-        var arg = [0, 0];
-        var mouseButton = 0;
-        if (e.buttons === 1) {
-            mouseButton = Sk.globals.mouse.LEFT;
+    canvas.addEventListener('mousedown', function (e) {
+        //  визначаємо кнопку миші
+        let mouseButton = 0;
+
+        if (e.buttons === 1)  mouseButton = Sk.globals.mouse.LEFT;
+        if (e.buttons === 2)  mouseButton = Sk.globals.mouse.RIGHT;
+        if (e.buttons === 4)  mouseButton = Sk.globals.mouse.MIDDLE;
+        //створюємо POS
+        const pos = new Sk.builtin.tuple([
+            new Sk.builtin.int_(Math.round(e.offsetX)),
+            new Sk.builtin.int_(Math.round(e.offsetY))
+        ]);
+        const button = new Sk.builtin.int_(mouseButton);
+        // отримуємо параметри Python-функції
+        let params = [];
+
+        if (Sk.globals.on_mouse_down.func_code &&
+            Sk.globals.on_mouse_down.func_code.co_varnames) {
+            params = Sk.globals.on_mouse_down.func_code.co_varnames;
         }
-        if (e.buttons === 4) {
-            mouseButton = Sk.globals.mouse.MIDDLE;
-        }
-        if (e.buttons === 2) {
-            mouseButton = Sk.globals.mouse.RIGHT;
-        }
-        var params = Sk.globals.on_mouse_down.func_code.co_varnames;
-        function getParams() {
-            if (params.indexOf('pos') > -1) {
-                arg[params.indexOf('pos')] = pos;
-            }
-            if (params.indexOf('button') > -1) {
-                arg[params.indexOf('button')] = mouseButton;
-            }
-        }
-        if (!params) {
-            params = [];
-        }
-        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+        // виклик з потрібною кількістю аргументів
         if (params.length === 2) {
-            getParams();
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0], arg[1]);
-        } else if (params.length === 1) {
-            getParams();
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down, arg[0]);
-        } else {
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_down);
+            // def on_mouse_down(pos, button)
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_down,
+                pos,
+                button
+            );
+        }
+        else if (params.length === 1) {
+            // def on_mouse_down(pos)
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_down,
+                pos
+            );
+        }
+        else {
+            // def on_mouse_down()
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_down
+            );
         }
     });
 }
+
 
 if (Sk.globals.on_mouse_up) {
-    canvas.addEventListener('mouseup', function(e) {
-        var arg = [0, 0];
-        var mouseButton = 1;
-        var params = Sk.globals.on_mouse_up.func_code.co_varnames;
-        function getParams() {
-            if (params.indexOf('pos') > -1) {
-                arg[params.indexOf('pos')] = pos;
-            }
-            if (params.indexOf('button') > -1) {
-                arg[params.indexOf('button')] = mouseButton;
-            }
+    canvas.addEventListener('mouseup', function (e) {
+        //визначаємо кнопку миші
+        let mouseButton = 0;
+
+        if (e.button === 0) mouseButton = Sk.globals.mouse.LEFT;
+        if (e.button === 1) mouseButton = Sk.globals.mouse.MIDDLE;
+        if (e.button === 2) mouseButton = Sk.globals.mouse.RIGHT;
+        //
+        const pos = new Sk.builtin.tuple([
+            new Sk.builtin.int_(Math.round(e.offsetX)),
+            new Sk.builtin.int_(Math.round(e.offsetY))
+        ]);
+        const button = new Sk.builtin.int_(mouseButton);
+        // параметри функції 
+        let params = [];
+        if (Sk.globals.on_mouse_up.func_code &&
+            Sk.globals.on_mouse_up.func_code.co_varnames) {
+            params = Sk.globals.on_mouse_up.func_code.co_varnames;
         }
-        if (!params) {
-            params = [];
-        }
-        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
+        // виклик 
         if (params.length === 2) {
-            getParams();
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0], arg[1]);
-        } else if (params.length === 1) {
-            getParams();
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up, arg[0]);
-        } else {
-            Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_up);
+            // def on_mouse_up(pos, button)
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_up,
+                pos,
+                button
+            );
+        }
+        else if (params.length === 1) {
+            // def on_mouse_up(pos)
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_up,
+                pos
+            );
+        }
+        else {
+            // def on_mouse_up()
+            Sk.misceval.callsimAsync(
+                handlers,
+                Sk.globals.on_mouse_up
+            );
         }
     });
 }
 
+
 if (Sk.globals.on_mouse_move) {
-    var px = -1;
-    var py;
-    canvas.addEventListener('mousemove', function(e) {
-        var buttonsList = [];
-        if (e.buttons & 1) buttonsList.push(Sk.globals.mouse.LEFT);
-        if (e.buttons & 2) buttonsList.push(Sk.globals.mouse.RIGHT);
-        if (e.buttons & 4) buttonsList.push(Sk.globals.mouse.MIDDLE);
-        
-        var pyButtonsSet = new Sk.builtin.set(buttonsList);
-        
-        var pos = new Sk.builtin.tuple([Math.round(e.offsetX), Math.round(e.offsetY)]);
-        if (px < 0) {
-            px = pos.v[0];
-            py = pos.v[1];
+    // зберігаємо попередні координати як JS числа
+    let px = null;
+    let py = null;
+    canvas.addEventListener('mousemove', function (e) {
+        const x = Math.round(e.offsetX);
+        const y = Math.round(e.offsetY);
+        //POS
+        const pos = new Sk.builtin.tuple([
+            new Sk.builtin.int_(x),
+            new Sk.builtin.int_(y)
+        ]);
+        //REL
+        if (px === null) {
+            px = x;
+            py = y;
         }
-        var rel = new Sk.builtin.tuple([pos.v[0] - px, pos.v[1] - py]);
-        px = pos.v[0];
-        py = pos.v[1];
-        
-        var params = Sk.globals.on_mouse_move.func_code.co_varnames || [];
-        var args = [];
-        for (var i = 0; i < params.length; i++) {
-            switch (params[i]) {
+        const rel = new Sk.builtin.tuple([
+            new Sk.builtin.int_(x - px),
+            new Sk.builtin.int_(y - py)
+        ]);
+        px = x;
+        py = y;
+        //BUTTONS
+        const buttonsList = [];
+
+        if (e.buttons & 1) buttonsList.push(new Sk.builtin.int_(Sk.globals.mouse.LEFT));
+        if (e.buttons & 2) buttonsList.push(new Sk.builtin.int_(Sk.globals.mouse.RIGHT));
+        if (e.buttons & 4) buttonsList.push(new Sk.builtin.int_(Sk.globals.mouse.MIDDLE));
+
+        const pyButtonsSet = new Sk.builtin.set(buttonsList);
+        //PARAMS
+        let params = [];
+        if (Sk.globals.on_mouse_move.func_code &&
+            Sk.globals.on_mouse_move.func_code.co_varnames) {
+            params = Sk.globals.on_mouse_move.func_code.co_varnames;
+        }
+        // ARGS
+        const args = [];
+        for (let name of params) {
+            switch (name) {
                 case 'pos':     args.push(pos); break;
                 case 'rel':     args.push(rel); break;
                 case 'buttons': args.push(pyButtonsSet); break;
                 default:        args.push(Sk.builtin.none.none$);
             }
         }
-        Sk.misceval.callsimAsync(handlers, Sk.globals.on_mouse_move, ...args);
+        //CALL
+        Sk.misceval.callsimAsync(
+            handlers,
+            Sk.globals.on_mouse_move,
+            ...args
+        );
     });
 }
-
-
 		// wait for assets to load
 		Promise.all(promises).then(function() {
 			update();
@@ -2658,37 +3617,62 @@ if (Sk.globals.on_mouse_move) {
 		}).catch(PythonIDE.handleError);
 
 
-		PythonIDE.keyHandlers.push(function(e) {
-			var key = e.key.replace("Arrow", "").toLowerCase();
-			switch (key) {
-				case " ":
-					key = "space";
-					break;
-				case "enter":
-					key = "return";
-					break;
-			}
+PythonIDE.keyHandlers.push(function(e) {
+    var key = e.key.replace("Arrow", "").toLowerCase();
+    switch (key) {
+        case " ":
+            key = "space";
+            break;
+        case "enter":
+            key = "return";
+            break;
+    }
 
-			if (e.type == "keydown") {
-				keysPressed[key] = true;
-				if (Sk.globals.on_key_down) {
-					var pyKey = Sk.misceval.callsim(EnumValue, "keys", key.toUpperCase(), e.keyCode);
-					if (Sk.globals.on_key_down.func_code.length > 0) {
-						Sk.misceval.callsimAsync(handlers, Sk.globals.on_key_down, pyKey).then(function success(r) {}, function fail(e) {
-							window.onerror(e);
-						});
-					} else {
-						Sk.misceval.callsimAsync(handlers, Sk.globals.on_key_down).then(function success(r) {}, function fail(e) {
-							window.onerror(e);
-						});
-					}
-
-				}
-			}
-			if (e.type == "keyup") {
-				keysPressed[key] = false;
-			}
-		});
+    // створюємо об'єкт клавіші для передачі в функції
+    var pyKey = Sk.misceval.callsim(EnumValue, "keys", key.toUpperCase(), e.keyCode);
+    
+    if (e.type == "keydown") {
+        keysPressed[key] = true;
+        keysCodePressed.add(e.keyCode);
+        
+        // on_key_down
+        if (Sk.globals.on_key_down) {
+            var func = Sk.globals.on_key_down;
+            var argCount = func.func_code ? func.func_code.co_argcount : 0;
+            
+            if (argCount > 0) {
+                Sk.misceval.callsimAsync(handlers, func, pyKey).then(function success(r) {}, function fail(e) {
+                    window.onerror(e);
+                });
+            } else {
+                Sk.misceval.callsimAsync(handlers, func).then(function success(r) {}, function fail(e) {
+                    window.onerror(e);
+                });
+            }
+        }
+    }
+    
+    if (e.type == "keyup") {
+        keysPressed[key] = false;
+        keysCodePressed.delete(e.keyCode);
+        
+        // on_key_up
+        if (Sk.globals.on_key_up) {
+            var func = Sk.globals.on_key_up;
+            var argCount = func.func_code ? func.func_code.co_argcount : 0;
+            
+            if (argCount > 0) {
+                Sk.misceval.callsimAsync(handlers, func, pyKey).then(function success(r) {}, function fail(e) {
+                    window.onerror(e);
+                });
+            } else {
+                Sk.misceval.callsimAsync(handlers, func).then(function success(r) {}, function fail(e) {
+                    window.onerror(e);
+                });
+            }
+        }
+    }
+});
 
 		return PythonIDE.runAsync(function(resolve, reject) {});
 
