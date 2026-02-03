@@ -993,6 +993,156 @@
 .slider-recover-native {
   width: 600px;
 }
+#gameCanvas {
+    touch-action: none;           /* Забороняє прокрутку/масштабування */
+    user-select: none;            /* Забороняє виділення тексту */
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Прибирає тап-хайлайт на iOS */
+    cursor: pointer;              /* Покажчик для кращого відчуття інтерактивності */
+}
+
+#virtual-gamepad {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+/* Ліва сторона */
+.left-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+/* Права сторона */
+.right-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+/* Стилі кнопок */
+.action-btn {
+  width: 75px;
+  height: 75px;
+  color: white;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  pointer-events: auto;
+  background: rgba(219, 68, 55, 1);
+  border: 2px solid #c53929;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s;
+}
+
+.action-btn:active,
+.action-btn.pressed {
+  background: rgba(219, 68, 55, 1);
+  transform: scale(0.92);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.dpad-btn {
+  width: 75px;
+  height: 75px;
+  color: white;
+  border: none;
+  font-size: 30px;
+  pointer-events: auto;
+  background: rgba(0, 0, 0,1);
+  border: 2px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s;
+}
+
+.dpad-btn:active,
+.dpad-btn.pressed {
+  background: rgba(66, 133, 244, 0.85);
+  transform: scale(0.93);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Напівкруглі кнопки - плоска сторона до краю екрану */
+.semi-left {
+  border-radius: 0 50% 50% 0;
+}
+
+.semi-right {
+  border-radius: 50% 0 0 50%;
+}
+
+/* Приховати геймпад на десктопі */
+@media (hover: hover) {
+  #virtual-gamepad {
+    display: none;
+  }
+}
+
+/* Адаптивність для малих екранів */
+@media (max-height: 600px) {
+  #virtual-gamepad {
+    bottom: 10px;
+    padding: 0 10px;
+  }
+  
+  .action-btn {
+    width: 65px;
+    height: 65px;
+    font-size: 26px;
+  }
+  
+  .dpad-btn {
+    width: 65px;
+    height: 65px;
+    font-size: 26px;
+  }
+  
+  .left-side,
+  .right-side {
+    gap: 8px;
+  }
+}
+
+/* Адаптивність для дуже малих екранів (мобільні) */
+@media (max-width: 400px) {
+  #virtual-gamepad {
+    padding: 0 8px;
+  }
+  
+  .action-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .dpad-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .left-side,
+  .right-side {
+    gap: 6px;
+  }
+}
 </style>
 
 	
@@ -1816,6 +1966,21 @@ function restoreLastSavedCode() {
         display: block;
     "></canvas>
   </div>
+<div id="virtual-gamepad">
+  <!-- Ліва сторона: B, вгору, вниз -->
+  <div class="left-side">
+    <button class="action-btn semi-left" data-key="Z">B</button> 
+      <button class="dpad-btn semi-left" data-key="UP">↑</button>
+      <button class="dpad-btn semi-left" data-key="DOWN">↓</button> 
+  </div>
+  
+  <!-- Права сторона: A, праворуч, ліворуч -->
+  <div class="right-side">
+    <button class="action-btn semi-right" data-key="SPACE">A</button>
+      <button class="dpad-btn semi-right" data-key="RIGHT">→</button>
+      <button class="dpad-btn semi-right" data-key="LEFT">←</button>    
+  </div>
+</div>
 </div>
 <!-- вікно створення нового проєкту -->
 <div id="newProjectModal" style="
@@ -2060,9 +2225,9 @@ async function clearFolder(folderPath) {
 // видалення всіх файлів
 async function clearProjectResources() {	
 
-    await clearFolder('images');
-    await clearFolder('sounds');
-    await clearFolder('music');
+    await clearFolder('/images');
+    await clearFolder('/sounds');
+    await clearFolder('/music');
     document.getElementById("imagesList").innerHTML = "";
 	document.getElementById("soundsList").innerHTML = "";
 	document.getElementById("musicList").innerHTML = "";
