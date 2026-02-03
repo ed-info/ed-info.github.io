@@ -756,8 +756,76 @@ var PythonIDE = {
         }
     },
     
-    runCode: function(runMode) {
-        if(runMode == "finished") {
+runCode: function(runMode) {
+		// Переконуємося, що jsfs існує
+	if (typeof window.jsfs === 'undefined') {
+		if (typeof window.FileSystem !== 'undefined') {
+			window.jsfs = new window.FileSystem("PGZfs");
+		} else {
+			throw new Error("FileSystem not available");
+		}
+	}
+
+    // -------------------------------------------------
+    // 🔥 GLOBAL IMAGE CACHE (once)
+    // -------------------------------------------------
+    window.PGZ_IMAGE_CACHE = window.PGZ_IMAGE_CACHE || {};
+    window.PGZ_IMAGE_PROMISES = window.PGZ_IMAGE_PROMISES || {};
+
+    function loadImageGlobal(name) {
+
+        if (PGZ_IMAGE_CACHE[name])
+            return Promise.resolve(PGZ_IMAGE_CACHE[name]);
+
+        if (PGZ_IMAGE_PROMISES[name])
+            return PGZ_IMAGE_PROMISES[name];
+
+        const p = jsfs.read("/images/" + name + ".png")
+            .then(data => new Promise((resolve, reject) => {
+
+                const img = new Image();
+
+                img.onload = () => {
+                    PGZ_IMAGE_CACHE[name] = img;
+                    resolve(img);
+                };
+
+                img.onerror = reject;
+                img.src = data;
+            }));
+
+        PGZ_IMAGE_PROMISES[name] = p;
+        return p;
+    }
+
+    function preloadImages() {
+
+        console.log("Preloading images...");
+
+        return jsfs.ls("/images").then(files => {
+
+            if (!files) return;
+
+            const tasks = [];
+
+            files.forEach(file => {
+                if (file.toLowerCase().endsWith(".png")) {
+                    const name = file.replace(/\.png$/i, "");
+                    console.log("Preload: ", name)
+                    tasks.push(loadImageGlobal(name));
+                }
+            });
+
+            return Promise.all(tasks);
+        });
+    }
+
+    // -------------------------------------------------
+    // 🔥 ВСЯ стара логіка переноситься в start()
+    // -------------------------------------------------
+    const start = () => {
+
+         if(runMode == "finished") {
             return;
         }
         if(!PythonIDE.files['my_pgz.py']) {
@@ -906,7 +974,13 @@ var PythonIDE = {
                 PythonIDE.whenFinished();
             }
         }, PythonIDE.handleError);
-    },
+    }; // start
+
+    // -------------------------------------------------
+    // 🔥 PRELOAD → START
+    // -------------------------------------------------
+    preloadImages().then(start);
+},
         handleError: function(err) {
         PythonIDE.running = false;
         console.log(err);

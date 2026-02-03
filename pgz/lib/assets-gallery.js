@@ -336,57 +336,70 @@ async function renderMusic() {
   }
 }
 // --- ФАЙЛОВІ ДІЇ ---
-function addFile(type) {
+async function addFile(type) {
   clearSelection(type);
+
   const input = document.createElement('input');
   input.type = 'file';
+  input.multiple = true; // багатовибір
 
-  if (type === 'image') {
-    input.accept = 'image/*';
-  } else if (type === 'audio' || type === 'music') {
-    input.accept = 'audio/*';
-  } else {
-    return;
+  if (type === 'image') input.accept = 'image/*';
+  else if (type === 'audio' || type === 'music') input.accept = 'audio/*';
+  else return;
+
+input.addEventListener('change', async (e) => {
+  const files = Array.from(input.files);
+  if (files.length === 0) return;
+
+  // Використовуємо for...of для ПОСЛІДОВНОЇ обробки
+  for (const file of files) {
+    await new Promise((resolve) => {
+      const reader = new FileReader();
+
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result;
+          let folder, baseName, ext;
+
+          if (type === 'image') folder = '/images/';
+          else if (type === 'audio') folder = '/sounds/';
+          else if (type === 'music') folder = '/music/';
+          else return resolve();
+
+          const lastDot = file.name.lastIndexOf('.');
+          if (lastDot > 0 && lastDot < file.name.length - 1) {
+            baseName = file.name.substring(0, lastDot);
+            ext = file.name.substring(lastDot);
+          } else {
+            baseName = file.name;
+            ext = '';
+          }
+
+          let name = file.name;
+          let counter = 1;
+          
+          while (await fs.type(folder + name) === 'file') {
+            name = `${baseName} (${counter++})${ext}`;
+          }
+
+          await fs.write(folder + name, dataUrl);
+        } catch (err) {
+          console.error("Помилка завантаження файлу:", file.name, err);
+        }
+        resolve();
+      };
+
+      reader.onerror = () => resolve();
+      reader.readAsDataURL(file);
+    });
   }
 
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result;
-      let folder, baseName, ext;
-
-      if (type === 'image') folder = '/images/';
-      else if (type === 'audio') folder = '/sounds/';
-      else if (type === 'music') folder = '/music/';
-      else return;
-
-      const lastDot = file.name.lastIndexOf('.');
-      if (lastDot > 0 && lastDot < file.name.length - 1) {
-        baseName = file.name.substring(0, lastDot);
-        ext = file.name.substring(lastDot);
-      } else {
-        baseName = file.name;
-        ext = '';
-      }
-
-      let name = file.name;
-      let counter = 1;
-      while (await fs.type(folder + name) === 'file') { 
-        name = `${baseName} (${counter++})${ext}`;
-      }
-
-      await fs.write(folder + name, dataUrl);
-      await refreshGallery();
-    };
-
-    reader.readAsDataURL(file);
-  };
+  await refreshGallery();
+});
 
   input.click();
 }
+
 
 async function showSelected(type) {
   if (!selected[type]) return;
