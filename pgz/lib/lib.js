@@ -989,7 +989,7 @@ handleError: function(err) {
     var modalHtml = `
         <div id="error-modal-overlay" class="error-modal-overlay">
             <div class="modal-error">
-                <div class="modal-header">
+                <div class="error-modal-header">
                     <h3>Помилка виконання</h3>
                     <button class="modal-close" id="error-modal-close">&times;</button>
                 </div>
