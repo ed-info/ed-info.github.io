@@ -4,13 +4,8 @@
     <meta charset="UTF-8">
     <title data-i18n="title">PGZ Studio</title>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">    
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">  
 <style>
-html {
-    -moz-text-size-adjust: none;
-    -webkit-text-size-adjust: none;
-    text-size-adjust: none;
-}
 /* ========================================
    ЗАВАНТАЖЕННЯ СТОРІНКИ
    ======================================== */
@@ -1008,13 +1003,14 @@ html {
 
 #virtual-gamepad {
   position: absolute;
-  bottom: 140px;
+  bottom: 40px;
   left: 0;
   right: 0;
   pointer-events: none;
   z-index: 100;
   display: flex;
   justify-content: space-between;
+  align-items: center; /* Додаємо вертикальне вирівнювання по центру */
   box-sizing: border-box;
 }
 
@@ -1022,7 +1018,7 @@ html {
 .left-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center; /* Змінюємо з flex-start на center */
   gap: 12px;
   pointer-events: none;
 }
@@ -1031,7 +1027,7 @@ html {
 .right-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center; /* Змінюємо з flex-end на center */
   gap: 12px;
   pointer-events: none;
 }
@@ -1100,8 +1096,28 @@ html {
   }
 }
 
+/* Альбомний режим - по центру бічних сторін */
+@media (orientation: landscape) and (max-width: 768px) {
+  #virtual-gamepad {
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0 20px;
+  }
+}
+
+/* Портретний режим - 200 пікселів від низу */
+@media (orientation: portrait) and (max-width: 768px) {
+  #virtual-gamepad {
+    bottom: 200px;
+    top: auto;
+    transform: none;
+    padding: 0 20px;
+  }
+}
+
 /* Адаптивність для малих екранів */
-@media (max-height: 600px) {
+@media (max-height: 600px) and (orientation: portrait) {
   #virtual-gamepad {
     bottom: 10px;
     padding: 0 10px;
@@ -1126,7 +1142,7 @@ html {
 }
 
 /* Адаптивність для дуже малих екранів (мобільні) */
-@media (max-width: 400px) {
+@media (max-width: 400px) and (orientation: portrait) {
   #virtual-gamepad {
     padding: 0 8px;
   }
@@ -1148,6 +1164,197 @@ html {
     gap: 6px;
   }
 }
+
+/* Адаптивність для дуже малих екранів у альбомному режимі */
+@media (max-width: 400px) and (orientation: landscape) {
+  #virtual-gamepad {
+    padding: 0 8px;
+  }
+  
+  .action-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .dpad-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .left-side,
+  .right-side {
+    gap: 6px;
+  }
+}
+
+/* Модальне вікно помилки */
+.error-modal-overlay {
+    position: fixed;
+    height: 100vh;
+	width: 100vw;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-error {
+    background: #2d2d2d;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+    width: 90vw;
+    max-width: 400px;
+
+    max-height: 80dvh;
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+.modal-header {
+    background: #dc3545;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #c82333;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.error-message {
+    background: #3a3a3a;
+    border-left: 4px solid #dc3545;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.5;
+    color: #fff;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+
+.btn-goto-line {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+.btn-goto-line:hover {
+    background-color: #0056b3;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    background: #333;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #444;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #28a745;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Адаптивність для мобільних */
+@media (max-width: 600px) {
+    .modal-error {
+        width: 95vw;
+        min-width: 0;
+    }
+}
+
 </style>
 
 	
@@ -2437,6 +2644,12 @@ async function input(title, text) {
 	});
 	
     document.getElementById('projectNameInput').value = generateProjectName();
+// Необроблені помилки з промісів
+window.addEventListener('unhandledrejection', function(event) {
+    // Отримуємо об'єкт помилки з промісу
+    const errorData = event.reason;
+    PythonIDE.handleError(errorData);//"Uncaught Error
+})
 </script>
 </body>
 </html>
