@@ -237,7 +237,7 @@ function loadImage(name) {
 
     var jsName = Sk.ffi.remapToJs(name);
     var asset = loadedAssets[jsName];
-    console.log("Load:",jsName, asset)
+
     if (!asset) {
         console.warn("Image not found in cache:", jsName);
         return null;
@@ -1508,7 +1508,7 @@ function loadImage(name) {
 			self._loaded = false;
 
 			var jsName = Sk.ffi.remapToJs(name);
-			console.log("Actor init img=",jsName)
+
             var img = loadImage(jsName);
             if (img) {
                 self.attributes.width = img.width;
