@@ -981,41 +981,106 @@ runCode: function(runMode) {
     // -------------------------------------------------
     preloadImages().then(start);
 },
-        handleError: function(err) {
-        PythonIDE.running = false;
-        console.log(err);
-        var html = '<div class="error">' + PythonIDE.sanitize(err.toString()) + '</div>';
-        PythonIDE.showHint(html);
-        
-        if(err.traceback && err.traceback[0].filename != "repl") {
-            console.log(err);
-            html += '<fieldset><legend>Stack trace:</legend>';
-            for(var i = 0; i < err.traceback.length; i++) {
-                var t = err.traceback[i];
-                if(t.filename == "my_pgz.py") {
-                    t.filename = PythonIDE.projectName + ".py";
-                }
-                html += '<div class="error">' + t.filename + ' <button class="btn_lineno" data-file="' + t.filename + '" data-line="' + t.lineno + '">line ' + t.lineno + '</button></div>';
-            }
-            html += '</fieldset>';
+handleError: function(err) {
+    PythonIDE.running = false;
+    console.log(err);
+    
+    // Створюємо модальне вікно з помилкою
+    var modalHtml = `
+        <div id="error-modal-overlay" class="error-modal-overlay">
+            <div class="modal-error">
+                <div class="modal-header">
+                    <h3>Помилка виконання</h3>
+                    <button class="modal-close" id="error-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="error-message">${PythonIDE.sanitize(err.toString())}</div>
+                    
+                    ${err.traceback && err.traceback[0].filename != "repl" ? `
+                    ` : ''}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" id="error-modal-goto">Перейти до помилки</button>
+                    <button class="btn-secondary" id="error-modal-close-footer">Закрити</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Додаємо модальне вікно в документ
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Отримуємо перший рядок помилки для переходу
+    var firstError = err.traceback && err.traceback[0].filename != "repl" ? err.traceback[0] : null;
+    if (firstError && firstError.filename == "my_pgz.py") {
+        firstError.filename = PythonIDE.projectName + ".py";
+    }
+    
+    // Обробник закриття модального вікна
+    function closeModalAndGoto(line, file) {
+        var overlay = document.getElementById('error-modal-overlay');
+        document.getElementById('gameModal').style.display="none";
+        if (overlay) {
+            overlay.remove();
         }
         
-        PythonIDE.python.output(html);
-        
-        // Додаємо обробники для кнопок рядків
-        const btnLineNos = document.querySelectorAll('.btn_lineno');
-        btnLineNos.forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                var line = this.getAttribute('data-line');
-                var file = this.getAttribute('data-file');
-                PythonIDE.editFile(file, line);
+        // Переходимо до рядка помилки
+        if (line && file) {
+            PythonIDE.editFile(file, line);
+            setTimeout(function() {
                 const activeLine = document.querySelector('.CodeMirror-activeline');
                 if (activeLine) {
-                    activeLine.scrollIntoView({behavior: "smooth"});
+                    activeLine.scrollIntoView({behavior: "smooth", block: "center"});
                 }
-            });
+            }, 100);
+        }
+    }
+    
+    // Кнопка "Перейти до помилки" - перейти до першого рядка
+    document.getElementById('error-modal-goto').addEventListener('click', function() {
+        if (firstError) {
+            closeModalAndGoto(firstError.lineno, firstError.filename);
+        }
+    });
+    
+    // Кнопки закриття
+    document.getElementById('error-modal-close').addEventListener('click', function() {
+        closeModalAndGoto(null, null);
+    });
+    
+    document.getElementById('error-modal-close-footer').addEventListener('click', function() {
+        closeModalAndGoto(null, null);
+    });
+    
+    // Закриття по ESC
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            closeModalAndGoto(null, null);
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
+    
+    // Клік по оверлею для закриття
+    document.getElementById('error-modal-overlay').addEventListener('click', function(e) {
+        if (e.target.id === 'error-modal-overlay') {
+            closeModalAndGoto(null, null);
+        }
+    });
+    
+    // Кнопки "рядок X" для переходу до конкретного рядка
+    document.querySelectorAll('.btn-goto-line').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var line = this.getAttribute('data-line');
+            var file = this.getAttribute('data-file');
+            closeModalAndGoto(line, file);
         });
-    },
+    });
+    
+    // Також показуємо помилку у виводі для історії
+    var outputHtml = '<div class="error">' + PythonIDE.sanitize(err.toString()) + '</div>';
+    PythonIDE.python.output(outputHtml);
+},
     
     showShare: function() {
         if(!PythonIDE.shareMode)

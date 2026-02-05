@@ -586,13 +586,14 @@ async function importGallery() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.pgz';
-
+  var filename;
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
       const zip = await JSZip.loadAsync(file);
+      filename = file.name;
 
       // --- 1. Завантаження my_pgz.py у редактор ---
       const codeEntry = zip.file('my_pgz.py');
@@ -676,6 +677,9 @@ async function importGallery() {
 
       // --- Оновлення інтерфейсу ---
       await refreshGallery();
+      const name = filename.substring(0, filename.lastIndexOf('.'));
+      document.getElementById('projectNameInput').value = name; 
+
       await message('','Проєкт успішно імпортовано!');
     } catch (err) {
       console.error('Помилка імпорту:', err);
