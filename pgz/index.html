@@ -70,6 +70,12 @@
     <script src="./lib/jsfs2.js"></script>    
     <script src="./lib/jszip.min.js"></script>
     <script src="./lib/FileSaver.min.js"></script>
+    <script>
+	var coldStart = true;	
+    console.log("localStorage.loadAction=",localStorage.loadAction)
+    if (localStorage.loadAction) { coldStart=false}
+
+    </script>
 <style>
 
 /* ========================================
@@ -2642,14 +2648,15 @@ async function input(title, text) {
 				await loadProjectFromUrl(rawUrl);
 				}
 	});
-	
-    document.getElementById('projectNameInput').value = generateProjectName();
-// Необроблені помилки з промісів
+// зберегти назву проєкту при стоп	
+if (coldStart) {  document.getElementById('projectNameInput').value = generateProjectName(); }
+// необроблені помилки з промісів
 window.addEventListener('unhandledrejection', function(event) {
     // Отримуємо об'єкт помилки з промісу
     const errorData = event.reason;
     PythonIDE.handleError(errorData);//"Uncaught Error
 })
+
 </script>
 </body>
 </html>

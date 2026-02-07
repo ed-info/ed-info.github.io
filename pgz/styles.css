@@ -1,7 +1,17 @@
 table, tr, td, tbody {
     border: none;
 }
+html, body {
+  height: 100%;
+  margin: 0;
+}
 
+#resourceGallery {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 /* === СТИЛІ ГАЛЕРЕЇ РЕСУРСІВ === */
   .header {
     display: flex;
@@ -14,29 +24,33 @@ table, tr, td, tbody {
     color: white;
   }
   .frame {
+    display: flex;
+    flex-direction: column;
     background: white;
     padding: 16px;
     margin: 10px;
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     color: #333;
-    width: 90%
-    
+    width: 90%;
+    min-height: 0;
   }
+ 
   .frame h3 {
     color: #333;
     margin-top:0px;
     margin-bottom:0px;
   }
-
-  /* === Контейнер з прокруткою (макс. 2 рядки) === */
+#imagesFrame { max-height: 38vh; }
+#soundsFrame { max-height: 19vh; }
+#musicFrame  { max-height: 20vh; }
+  /* === Контейнер з прокруткою  === */
 .items-scroll {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; 
   flex-wrap: wrap;
-  gap: 6px;
-  height: 145px;
-  overflow-y: auto;
+  gap: 10px;
+  overflow-y: auto; 
   overflow-x: hidden;
   padding-right: 8px;
   box-sizing: border-box;
