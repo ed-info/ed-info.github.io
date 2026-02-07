@@ -765,10 +765,7 @@ runCode: function(runMode) {
 			throw new Error("FileSystem not available");
 		}
 	}
-
-    // -------------------------------------------------
     // 🔥 GLOBAL IMAGE CACHE (once)
-    // -------------------------------------------------
     window.PGZ_IMAGE_CACHE = window.PGZ_IMAGE_CACHE || {};
     window.PGZ_IMAGE_PROMISES = window.PGZ_IMAGE_PROMISES || {};
 
@@ -820,8 +817,6 @@ runCode: function(runMode) {
         });
     }
 
-    // -------------------------------------------------
-    // 🔥 ВСЯ стара логіка переноситься в start()
     // -------------------------------------------------
     const start = () => {
 
@@ -975,10 +970,7 @@ runCode: function(runMode) {
             }
         }, PythonIDE.handleError);
     }; // start
-
-    // -------------------------------------------------
     // 🔥 PRELOAD → START
-    // -------------------------------------------------
     preloadImages().then(start);
 },
 handleError: function(err) {
@@ -1807,6 +1799,7 @@ if(localStorage.loadAction === "restoreCode") {
             PythonIDE.files = PythonIDE.aT[PythonIDE.hash].c;
             PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
             PythonIDE.updateFileTabs();
+            PythonIDE.editor.focus();
  /*
             PythonIDE.showHint(selectedLang === 'en' 
                 ? "Showing the code you last edited " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " ago" 

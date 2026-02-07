@@ -302,7 +302,7 @@ async function renderSounds() {
     item.className = 'item';
     item.dataset.type = 'audio';
     item.dataset.path = path;
-        
+    item.draggable = true;    
     const icon = document.createElement('div');
     icon.className = 'audio-icon';
     icon.textContent = '🔊';
@@ -324,7 +324,7 @@ async function renderMusic() {
     item.className = 'item';
     item.dataset.type = 'music';
     item.dataset.path = path;
-        
+    item.draggable = true;    
     const icon = document.createElement('div');
     icon.className = 'audio-icon';
     icon.textContent = '🎵';
@@ -576,6 +576,54 @@ document.addEventListener('click', function(e) {
     selectGalleryFile(item.dataset.type, item.dataset.path);
   }
 });
+// ----------------------------------
+enableDragAndDrop()
+// --- ДРАГ-ЕНД-ДРОП ФУНКЦІОНАЛ ---
+function enableDragAndDrop() {
+  // Робимо елементи галереї перетягуваними
+document.addEventListener('dragstart', function(e) {
+    console.log("Drag Start")
+    const item = e.target.closest('.item[data-type]');
+    if (item && item.dataset.path) {
+        const type = item.dataset.type; // 'image', 'audio', 'music'
+        const filename = item.dataset.path.split('/').pop();
+        const nameWithoutExt = stripExtension(filename);
+        
+        let codeToInsert = '';
+        
+        switch(type) {
+            case 'image':
+                codeToInsert = `\n${nameWithoutExt} = Actor('${nameWithoutExt}')\n`;
+                break;
+            case 'audio':
+                codeToInsert = `\nsounds.${nameWithoutExt}.play()\n`;
+                break;
+            case 'music':
+                codeToInsert = `\nmusic.play('${nameWithoutExt}')\n`;
+                break;
+        }
+        
+        // Зберігаємо код для вставки у dataTransfer
+        e.dataTransfer.setData('text/plain', codeToInsert);
+        e.dataTransfer.effectAllowed = 'copy';
+        
+        // Опціонально: показуємо прев'ю зображення під час перетягування
+        if (type === 'image') {
+            const img = item.querySelector('img');
+            if (img) {
+                e.dataTransfer.setDragImage(img, 50, 50);
+            }
+        }
+    }
+});
+}
+
+// --- ІНІЦІАЛІЗАЦІЯ ---
+async function initializeAssetsGallery() {
+  await initFS();
+  await refreshGallery();
+  enableDragAndDrop(); // ✅ Вмикаємо drag-and-drop
+}
 // --- ІНІЦІАЛІЗАЦІЯ ---
 async function initializeAssetsGallery() {
   await initFS();
