@@ -111,89 +111,144 @@ var $builtinmodule = function(name) {
 		console.log(x, Sk.ffi.remapToJs(x));
 	});
 
-	function updateCoordsFromProps(props, size, pos) {
-		props.x = 0;
-		props.y = 0;
-		if (pos) {
-			props.x = pos[0];
-			props.y = pos[1];
-		}
+function updateCoordsFromProps(props, size, pos) {
+    // ---------- resolve positioning props ----------
+    if (props.topleft) {
+        props.left = props.topleft[0];
+        props.top = props.topleft[1];
+    }
+    if (props.bottomleft) {
+        props.left = props.bottomleft[0];
+        props.bottom = props.bottomleft[1];
+    }
+    if (props.topright) {
+        props.right = props.topright[0];
+        props.top = props.topright[1];
+    }
+    if (props.bottomright) {
+        props.right = props.bottomright[0];
+        props.bottom = props.bottomright[1];
+    }
+    if (props.midtop) {
+        props.centerx = props.midtop[0];
+        props.top = props.midtop[1];
+    }
+    if (props.midleft) {
+        props.left = props.midleft[0];
+        props.centery = props.midleft[1];
+    }
+    if (props.midbottom) {
+        props.centerx = props.midbottom[0];
+        props.bottom = props.midbottom[1];
+    }
+    if (props.midright) {
+        props.right = props.midright[0];
+        props.centery = props.midright[1];
+    }
+    if (props.center) {
+        props.centerx = props.center[0];
+        props.centery = props.center[1];
+    }
 
-		if (props.top !== undefined) {
-			props.y = props.top;
-		}
-		if (props.left !== undefined) {
-			props.x = props.left;
-		}
-		if (props.bottom !== undefined) {
-			props.y = props.bottom - size.height;
-		}
-		if (props.right !== undefined) {
-			props.x = props.left - size.width;
-		}
-		if (props.topleft !== undefined) {
-			props.x = props.topleft[0];
-			props.y = props.topleft[1];
-		}
-		if (props.bottomleft !== undefined) {
-			props.x = props.bottomleft[0];
-			props.y = props.bottomleft[1] - size.height;
-		}
-		if (props.topright !== undefined) {
-			props.x = props.topright[0] - size.width;
-			props.y = props.topright[1];
-		}
-		if (props.bottomright !== undefined) {
-			props.x = props.bottomright[0] - size.width;
-			props.y = props.bottomright[1] - size.height;
-		}
-		if (props.midtop !== undefined) {
-			props.x = props.midtop[0] - size.width / 2;
-			props.y = props.midtop[1];
-		}
-		if (props.midleft !== undefined) {
-			props.x = props.midleft[0];
-			props.y = props.midleft[1] - size.height / 2;
-		}
-		if (props.midbottom !== undefined) {
-			props.x = props.midbottom[0] - size.width / 2;
-			props.y = props.midbottom[1] - size.height;
-		}
-		if (props.midright !== undefined) {
-			props.x = props.midright[0] - size.width;
-			props.y = props.midright[1] - size.height / 2;
-		}
-		if (props.center !== undefined) {
-			props.x = props.center[0] - size.width / 2;
-			props.y = props.center[1] - size.height / 2;
-		}
-		if (props.centerx !== undefined) {
-			props.x = props.centerx - size.width / 2;
-		}
-		if (props.centery !== undefined) {
-			props.y = props.centery;
-		}
-	}
+    var x = pos ? pos[0] : null;
+    var y = pos ? pos[1] : null;
 
-	function getColor(c) {
-		var rgb = [255, 255, 255];
-		if (c[0] === '#') {
-			var r = parseInt(c.slice(1, 3), 16),
-				g = parseInt(c.slice(3, 5), 16),
-				b = parseInt(c.slice(5, 7), 16);
-			return "rgb(" + r + ", " + g + ", " + b + ")";
-		}
-		if (THECOLORS && typeof(c) == "string") {
-			var cName = c.replace(" ", "");
-			if (THECOLORS[cName]) {
-				return THECOLORS[cName];
-			}
-		}
-		var r = c[0];
-		var g = c[1];
-		var b = c[2];
-		return "rgb(" + r + "," + g + "," + b + ")";
-	}
+    var hanchor = props.anchor ? props.anchor[0] : null;
+    var vanchor = props.anchor ? props.anchor[1] : null;
+
+    // ---------- resolve anchor from positioning ----------
+    if (props.left !== undefined) {
+        x = props.left;
+        hanchor = 0;
+    }
+    if (props.centerx !== undefined) {
+        x = props.centerx;
+        hanchor = 0.5;
+    }
+    if (props.right !== undefined) {
+        x = props.right;
+        hanchor = 1;
+    }
+    if (props.top !== undefined) {
+        y = props.top;
+        vanchor = 0;
+    }
+    if (props.centery !== undefined) {
+        y = props.centery;
+        vanchor = 0.5;
+    }
+    if (props.bottom !== undefined) {
+        y = props.bottom;
+        vanchor = 1;
+    }
+
+    if (x === null || x === undefined) {
+        throw new Sk.builtin.ValueError("Unable to determine horizontal position");
+    }
+    if (y === null || y === undefined) {
+        throw new Sk.builtin.ValueError("Unable to determine vertical position");
+    }
+
+    // ---------- default anchor if not set ----------
+    if (hanchor === null || hanchor === undefined) {
+        hanchor = 0.5;  // За замовчуванням - центр по горизонталі
+    }
+    if (vanchor === null || vanchor === undefined) {
+        vanchor = 0.5;  // За замовчуванням - центр по вертикалі
+    }
+
+    // ---------- resolve align from anchor ----------
+    if (props.align === undefined || props.align === null) {
+        if (typeof hanchor === "number") {
+            if (hanchor === 0) props.align = "left";
+            else if (hanchor === 0.5) props.align = "center";
+            else if (hanchor === 1) props.align = "right";
+            else props.align = hanchor;  // numeric align
+        } else {
+            props.align = hanchor;  // string align
+        }
+    }
+
+    // ---------- calculate final position ----------
+    if (props.angle) {
+        // Обертання - використовуємо центр поверхні
+        props.x = x - size.width / 2;
+        props.y = y - size.height / 2;
+    } else {
+        // Без обертання - враховуємо якір
+        props.x = x - hanchor * size.width;
+        props.y = y - vanchor * size.height;
+    }
+}
+
+function getColor(c) {
+    var rgb = [255, 255, 255];
+
+    // Обробка об'єктів Skulpt (кортежі/списки)
+    if (c && c.v !== undefined) {
+        c = c.v.map(function(item) {
+            return Sk.ffi.remapToJs(item);
+        });
+    }
+    
+    // Вже існуюча логіка...
+    if (c[0] === '#') {
+        var r = parseInt(c.slice(1, 3), 16),
+            g = parseInt(c.slice(3, 5), 16),
+            b = parseInt(c.slice(5, 7), 16);
+        return "rgb(" + r + ", " + g + ", " + b + ")";
+    }
+    if (THECOLORS && typeof(c) == "string") {
+        var cName = c.replace(" ", "");
+        if (THECOLORS[cName]) {
+            return THECOLORS[cName];
+        }
+    }
+    var r = c[0];
+    var g = c[1];
+    var b = c[2];
+    return "rgb(" + r + "," + g + "," + b + ")";
+}
 
 	var canvas = undefined;
 	var cx = undefined;
@@ -707,16 +762,16 @@ function loadImage(name) {
 				a.y = pos[1] - a.height / 2;
 				break;
 			case 'center':
-				a.x = pos[0] - self.anchorVal.x;
-				a.y = pos[1] - self.anchorVal.y;
-				break;
+				a.x = pos[0] - a.width / 2;    
+				a.y = pos[1] - a.height / 2;   
+			break;
 			case 'anchor':
 				self.anchor = Sk.ffi.remapToJs(value);
 				updateAnchor(self);
 				break;
 			case 'pos':
-				a.x = pos[0] - self.anchorVal.x;
-				a.y = pos[1] - self.anchorVal.y;
+				a.x = pos[0];
+				a.y = pos[1];
 				break;
 			case 'anchor':
 				self.anchor = Sk.ffi.remapToJs(value);
@@ -1396,7 +1451,7 @@ function loadImage(name) {
 			}
 			return new Sk.builtin.bool(pt.x >= self.attributes.x && pt.x <= self.attributes.right && pt.y >= self.attributes.y && pt.y <= self.attributes.bottom);
 		});
-
+		// величини для обчислення "якорів"
 		var anchors = {
 			x: {
 				left: 0.0,
@@ -1443,7 +1498,7 @@ function loadImage(name) {
 			};
 
 		}
-
+        // обчислюємо відносні координати "якоря" 
 		function updateAnchor(self) {
 			var i = loadedAssets[self.attributes.image];
 			if (i) {
@@ -1481,17 +1536,18 @@ function loadImage(name) {
 			self.others = {};
 			self.others._surf = Sk.misceval.callsim(Surface, self);
 
-			self.anchor = ['center', 'center'];
+			self.anchor = ['left', 'top'];
 			self.anchorVal = {
 				x: 0,
 				y: 0
 			};
 
 			var args = unpackKWA(kwa);
-
+            console.log("Actor args=", args)
 			if (args.anchor) {
 				self.anchor[0] = args.anchor.v[0].v;
 				self.anchor[1] = args.anchor.v[1].v;
+				
 			}
 
 			// позиція
@@ -1508,7 +1564,7 @@ function loadImage(name) {
 			self._loaded = false;
 
 			var jsName = Sk.ffi.remapToJs(name);
-
+			console.log("Actor anchorVal x, y =",self.anchor, self.anchorVal.x,self.anchorVal.y  )
             var img = loadImage(jsName);
             if (img) {
                 self.attributes.width = img.width;
@@ -1528,6 +1584,7 @@ function loadImage(name) {
                 updateRectFromXY(self);
                 self._loaded = true;
             }
+            console.log("Actor x, y =",self.attributes.x,self.attributes.y,self.attributes.width, self.attributes.height,self.anchorVal.x,self.anchorVal.y  )
             return Sk.builtin.none.none$;
 		};
 
@@ -1552,45 +1609,45 @@ function loadImage(name) {
 
 
 		//
-		$loc.draw = new Sk.builtin.func(function(self) {
-			if (!loadedAssets[self.attributes.image]) {
-				return;
-			}
-			updateRectFromXY(self);
-			var i = loadedAssets[self.attributes.image];
-			var a = self.attributes;
+$loc.draw = new Sk.builtin.func(function(self) {
+    if (!loadedAssets[self.attributes.image]) {
+        return;
+    }
+    updateRectFromXY(self); // Оновлюємо rect для колізій (важливо для інших методів)
+    var i = loadedAssets[self.attributes.image];
+    var a = self.attributes;
 
-			var w = a.width * a.scale;
-			var h = a.height * a.scale;
+    // Масштабовані розміри зображення
+    var w = a.width * a.scale;
+    var h = a.height * a.scale;
+    var radians = a.angle * Math.PI / 180;
 
-			var radians = a.angle * Math.PI / 180;
-			// ✅ центр актора
-			var cx0 = a.x + w / 2;
-			var cy0 = a.y + h / 2;
+    // Масштабовані координати якоря відносно оригіналу (в пікселях)
+    var ax_scaled = self.anchorVal.x * a.scale;
+    var ay_scaled = self.anchorVal.y * a.scale;
 
-			cx.save();
-			cx.globalAlpha = a.opacity;
-			// 1️⃣ перенос у центр
-			cx.translate(cx0, cy0);
-			// 2️⃣ обертання
-			if (a.angle !== 0) {
-				cx.rotate(-radians);
-			}
-			// 3️⃣ flip
-			var sx = a.flip_x ? -1 : 1;
-			var sy = a.flip_y ? -1 : 1;
-			cx.scale(sx, sy);
-			// 4️⃣ малювання від центра
-			cx.drawImage(
-				i,
-				-w / 2,
-				-h / 2,
-				w,
-				h
-			);
+    cx.save();
+    cx.globalAlpha = a.opacity;
 
-			cx.restore();
-		});
+    // 1. Переміщуємося до світових координат якоря
+    cx.translate(a.x + ax_scaled, a.y + ay_scaled);
+
+    // 2. Обертаємо навколо якоря (від'ємний кут для проти годинникової стрілки, як у Pygame)
+    if (a.angle !== 0) {
+        cx.rotate(-radians);
+    }
+
+    // 3. Застосовуємо віддзеркалення ВІДНОСНО ЯКОРЯ
+    var sx = a.flip_x ? -1 : 1;
+    var sy = a.flip_y ? -1 : 1;
+    cx.scale(sx, sy);
+
+    // 4. Малюємо зображення так, щоб якор в оригіналі потрапляв у (0,0) поточної системи координат
+    // Після scale(sx, sy) зміщення коректно враховує віддзеркалення
+    cx.drawImage(i, -ax_scaled, -ay_scaled, w, h);
+
+    cx.restore();
+});
 
 		$loc.next_image = new Sk.builtin.func(function(self) {
 			if (self.images.length === 0) {
@@ -2079,7 +2136,7 @@ function loadImage(name) {
 				y2 = jsCoord2[1];
 
 				// Якщо третій аргумент - рядок, це колір
-				if (jsColorArg !== undefined && typeof jsColorArg === 'string') {
+				if (jsColorArg !== undefined) {
 					jsColor = jsColorArg;
 				}
 			} else {
@@ -2090,9 +2147,8 @@ function loadImage(name) {
 			// Обробка kwargs (може перевизначити колір)
 			var props = unpackKWA(kwa);
 			if (props.color) {
-				jsColor = Sk.ffi.remapToJs(props.color);
-			}
-
+				jsColor = Sk.ffi.remapToJs(props.color);				
+			}	
 			cx.strokeStyle = getColor(jsColor);
 			var lineWidth = props.width !== undefined ? props.width : 1;
 			cx.lineWidth = lineWidth;
