@@ -388,8 +388,8 @@ body {
 					<input type="text" id="modal-input-field" placeholder="Введіть текст тут...">
 				</div>
 				<div class="modal-buttons">
-					<button id="modal-cancel-btn" class="btn btn-cancel">Скасувати</button>
-					<button id="modal-ok-btn" class="btn btn-ok">OK</button>
+					<button id="modal-cancel-btn" class="btn btn-cancel">Ні</button>					
+					<button id="modal-ok-btn" class="btn btn-ok">Так</button>
 				</div>
 			</div>
 		</div>
@@ -1708,52 +1708,7 @@ function rotateCW() {
   saveState();
   render();
 }
-/*
-document.getElementById('galleryBtn').onclick = async () => {
-  const fileName = await input('Відкрити з галереї', 'Введіть ім’я файлу без розширення (наприклад: my_image):');
-  if (!fileName || fileName.trim() === '') return;
-  const fullPath = `images/${fileName.trim()}.png`;
-  try {
-    if (jsfs.type(fullPath) !== 'file') {
-      await message('Помилка', `Файл не знайдено: ${fullPath}`);
-      return;
-    }
-    const base64Data = jsfs.read(fullPath);
-    if (typeof base64Data !== 'string') {
-      await message('Вміст файлу не є рядком (очікувався base64).');
-      return;
-    }
-    const dataUrl = base64Data;
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const canvasContainer = document.getElementById('canvasContainer');
-      canvasContainer.style.width = canvas.width + 'px';
-      canvasContainer.style.height = canvas.height + 'px';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-      saveState();
-      selectionRect = null;
-      floatingLayer = null;
-      applyZoom(currentZoom);
-      openedFromFS = true;
-      openedFSPath = fullPath;
-      render();
-    };
-    img.onerror = async () => {
-      await message('Помилка', 'Не вдалося завантажити зображення (неправильний формат base64?).');
-    };
-    img.src = dataUrl;
-  } catch (err) {
-    console.error('Помилка завантаження з галереї:', err);
-    await message('Помилка', 'Невідома помилка: ' + (err.message || ''));
-  }
-};
-*/
+
 async function saveToFS(path) {
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = canvas.width;
@@ -1907,6 +1862,11 @@ window.addEventListener('mouseup', () => {
 });
 
 });
+/*
+					<button id="modal-cancel-btn" class="btn btn-cancel">Скасувати</button>
+					<button id="modal-no-btn" class="btn btn-cancel">Ні</button>
+					<button id="modal-ok-btn" class="btn btn-ok">Так</button>
+*/
 
 // керування модальним вікном для message/confirm/input
 const ModalUI = {
