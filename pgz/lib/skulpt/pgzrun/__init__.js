@@ -3393,7 +3393,7 @@ var $builtinmodule = function(name) {
                 new Sk.builtin.int_(coords.x),
                 new Sk.builtin.int_(coords.y)
             ]);
-            const button = new Sk.builtin.int_(mouseButton);
+            const button = mouseButton;
             // Отримуємо параметри Python-функції
             let params = [];
             if (Sk.globals.on_mouse_down.func_code && Sk.globals.on_mouse_down.func_code.co_varnames) {
@@ -3442,7 +3442,7 @@ var $builtinmodule = function(name) {
                 new Sk.builtin.int_(coords.x),
                 new Sk.builtin.int_(coords.y)
             ]);
-            const button = new Sk.builtin.int_(mouseButton);
+            const button = mouseButton;
             // Отримуємо параметри Python-функції
             let params = [];
             if (Sk.globals.on_mouse_up.func_code && Sk.globals.on_mouse_up.func_code.co_varnames) {
