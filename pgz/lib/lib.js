@@ -765,12 +765,14 @@ runCode: function(runMode) {
 			throw new Error("FileSystem not available");
 		}
 	}
-    // 🔥 GLOBAL IMAGE CACHE (once)
+    //GLOBAL IMAGE CACHE (once)
     window.PGZ_IMAGE_CACHE = window.PGZ_IMAGE_CACHE || {};
     window.PGZ_IMAGE_PROMISES = window.PGZ_IMAGE_PROMISES || {};
+    
+    // Прапорець, що preload завершено
+    window.PGZ_PRELOAD_COMPLETE = window.PGZ_PRELOAD_COMPLETE || false;
 
     function loadImageGlobal(name) {
-
         if (PGZ_IMAGE_CACHE[name])
             return Promise.resolve(PGZ_IMAGE_CACHE[name]);
 
@@ -779,14 +781,11 @@ runCode: function(runMode) {
 
         const p = jsfs.read("/images/" + name + ".png")
             .then(data => new Promise((resolve, reject) => {
-
                 const img = new Image();
-
                 img.onload = () => {
                     PGZ_IMAGE_CACHE[name] = img;
                     resolve(img);
                 };
-
                 img.onerror = reject;
                 img.src = data;
             }));
@@ -794,26 +793,22 @@ runCode: function(runMode) {
         PGZ_IMAGE_PROMISES[name] = p;
         return p;
     }
-
     function preloadImages() {
-
         console.log("Preloading images...");
-
         return jsfs.ls("/images").then(files => {
-
             if (!files) return;
-
             const tasks = [];
-
             files.forEach(file => {
                 if (file.toLowerCase().endsWith(".png")) {
                     const name = file.replace(/\.png$/i, "");
-                    console.log("Preload: ", name)
+                    console.log("Preload: ", name);
                     tasks.push(loadImageGlobal(name));
                 }
             });
-
-            return Promise.all(tasks);
+            return Promise.all(tasks).then(() => {
+                window.PGZ_PRELOAD_COMPLETE = true;
+                console.log("Preload complete!");
+            });
         });
     }
 
@@ -970,8 +965,14 @@ runCode: function(runMode) {
             }
         }, PythonIDE.handleError);
     }; // start
-    // 🔥 PRELOAD → START
-    preloadImages().then(start);
+    // 🔥 PRELOAD → START, з перевіркою
+    if (window.PGZ_PRELOAD_COMPLETE) {
+        // Якщо вже завантажено раніше - запускаємо одразу
+        start();
+    } else {
+        // Якщо ще не завантажено - завантажуємо і потім запускаємо
+        preloadImages().then(start);
+    }
 },
 handleError: function(err) {
     PythonIDE.running = false;
