@@ -814,6 +814,17 @@ var $builtinmodule = function(name) {
     var getActorAttribute = function(self, name) {
         Sk.builtin.pyCheckArgs("__getattr__", 2, 2);
         name = Sk.ffi.remapToJs(name);
+        
+        if (name === '_rect') {
+			// Повертаємо новий Rect об'єкт з поточними координатами актора
+			return Sk.misceval.callsim(Sk.globals.Rect,
+				Sk.ffi.remapToPy(self.coords.x1),
+				Sk.ffi.remapToPy(self.coords.y1),
+				Sk.ffi.remapToPy(self.coords.x2 - self.coords.x1),
+				Sk.ffi.remapToPy(self.coords.y2 - self.coords.y1)
+				);
+		}  
+        
         if (name === 'pos') {
             name = 'center';
         }
@@ -1478,8 +1489,16 @@ var $builtinmodule = function(name) {
                 self.attributes.width = img.width;
                 self.attributes.height = img.height;
                 updateAnchor(self);
-                self.attributes.x = desiredX - self.anchorVal.x;
-                self.attributes.y = desiredY - self.anchorVal.y;
+				if (pos) {
+					// Якщо позиція вказана явно - якор має бути в цій позиції
+					self.attributes.x = desiredX - self.anchorVal.x;
+					self.attributes.y = desiredY - self.anchorVal.y;
+				} else {
+					// Якщо позиція не вказана - верхній лівий кут в (0, 0)
+					// Тоді x/y повертатимуть центр зображення
+					self.attributes.x = 0;
+					self.attributes.y = 0;
+				}
                 updateRectFromXY(self);
                 self._loaded = true;
             } else {
