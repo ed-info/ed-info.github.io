@@ -833,6 +833,8 @@ var $builtinmodule = function(name) {
                 return Sk.ffi.remapToPy(self.attributes.x + self.anchorVal.x);
             case 'y':
                 return Sk.ffi.remapToPy(self.attributes.y + self.anchorVal.y);
+            case 'centerx':
+				return Sk.ffi.remapToPy((self.coords.x1 + self.coords.x2) / 2);    
             case 'centery':
                 return Sk.ffi.remapToPy((self.coords.y1 + self.coords.y2) / 2);
             case 'center':
