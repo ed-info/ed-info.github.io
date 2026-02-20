@@ -816,7 +816,7 @@ var $builtinmodule = function(name) {
         name = Sk.ffi.remapToJs(name);
         
         if (name === '_rect') {
-			// Повертаємо новий Rect об'єкт з поточними координатами актора
+			// повертаємо новий Rect об'єкт з поточними координатами актора
 			return Sk.misceval.callsim(Sk.globals.Rect,
 				Sk.ffi.remapToPy(self.coords.x1),
 				Sk.ffi.remapToPy(self.coords.y1),
@@ -843,7 +843,7 @@ var $builtinmodule = function(name) {
                     (self.coords.y1 + self.coords.y2) / 2
                 ]));
         }
-        // Інші атрибути
+        // інші атрибути
         if (self.others[name] !== undefined) {
             return self.others[name];
         }
@@ -853,7 +853,7 @@ var $builtinmodule = function(name) {
         if (name === 'anchor') {
             return new Sk.builtin.tuple(Sk.ffi.remapToPy(self.anchor));
         }
-        // Якщо нічого не знайдено — помилка
+        // якщо нічого не знайдено — помилка
         throw new Sk.builtin.AttributeError("'" + self.tp$name + "' object has no attribute '" + name + "'");
     };
     var idCount = 0;
