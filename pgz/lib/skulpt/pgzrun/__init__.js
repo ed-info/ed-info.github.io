@@ -1,76 +1,16 @@
 var $builtinmodule = function(name) {
     document.getElementById("gameModal").style.display = "flex"; // game canvas 
     var s = {};
-    var TWEEN_FUNCTIONS = {
-        linear: function(n) {
-            return n;
-        },
-        accelerate: function(n) {
-            return n * n;
-        },
-        decelerate: function(n) {
-            return -1.0 * n * (n - 2.0);
-        },
-        accel_decel: function(n) {
-            var p = n * 2;
-            if (p < 1) return 0.5 * p * p;
-            p -= 1.0;
-            return -0.5 * (p * (p - 2.0) - 1.0);
-        },
-        bounce_end: function(n) {
-            if (n < (1.0 / 2.75)) {
-                return 7.5625 * n * n;
-            } else if (n < (2.0 / 2.75)) {
-                n -= (1.5 / 2.75);
-                return 7.5625 * n * n + 0.75;
-            } else if (n < (2.5 / 2.75)) {
-                n -= (2.25 / 2.75);
-                return 7.5625 * n * n + 0.9375;
-            } else {
-                n -= (2.625 / 2.75);
-                return 7.5625 * n * n + 0.984375;
-            }
-        },
-        bounce_start: function(n) {
-            return 1.0 - TWEEN_FUNCTIONS.bounce_end(1.0 - n);
-        },
-        bounce_start_end: function(n) {
-            var p = n * 2.0;
-            if (p < 1.0) {
-                return TWEEN_FUNCTIONS.bounce_start(p) * 0.5;
-            } else {
-                return TWEEN_FUNCTIONS.bounce_end(p - 1.0) * 0.5 + 0.5;
-            }
-        },
-        in_elastic: function(n) {
-            var p = 0.3;
-            var s = p / 4.0;
-            var q = n;
-            if (q === 1) return 1.0;
-            q -= 1.0;
-            return -(Math.pow(2, 10 * q) * Math.sin((q - s) * (2 * Math.PI) / p));
-        },
-        out_elastic: function(n) {
-            var p = 0.3;
-            var s = p / 4.0;
-            var q = n;
-            if (q === 1) return 1.0;
-            return Math.pow(2, -10 * q) * Math.sin((q - s) * (2 * Math.PI) / p) + 1.0;
-        },
-        in_out_elastic: function(n) {
-            var p = 0.3 * 1.5;
-            var s = p / 4.0;
-            var q = n * 2;
-            if (q === 2) return 1.0;
-            if (q < 1) {
-                q -= 1.0;
-                return -0.5 * (Math.pow(2, 10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p));
-            } else {
-                q -= 1.0;
-                return Math.pow(2, -10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p) * 0.5 + 1.0;
-            }
-        }
-    };
+    var promises = [];
+    var animations = {};
+    var startTime = new Date().getTime();
+    var width = undefined;
+    var height = undefined;
+    var idCount = 0;
+    var canvas = undefined;
+    var cx = undefined;
+    var loadedAssets = window.PGZ_IMAGE_CACHE || {}; // preload all images from /images or empty
+    
     var handlers = {
         "Sk.debug": function(e) {
             debugger;
@@ -88,12 +28,7 @@ var $builtinmodule = function(name) {
         } else {
             throw new Error("FileSystem not available");
         }
-    }
-    var promises = [];
-    var animations = {};
-    var startTime = new Date().getTime();
-    var width = undefined;
-    var height = undefined;
+    }   
     Sk.globals.dbg = new Sk.builtin.func(function(x) {
         console.log(x, Sk.ffi.remapToJs(x));
     });
@@ -239,12 +174,8 @@ var $builtinmodule = function(name) {
         // ЗА ЗАМОВЧУВАННЯМ
         return "rgb(255, 255, 255)";
     }
-    var canvas = undefined;
-    var cx = undefined;
-    var loadedAssets = {}; // завантажені ресурси
-    // Завантаження зображень--
-    // PRELOAD ALL IMAGES FROM /images
-    var loadedAssets = window.PGZ_IMAGE_CACHE;
+    
+//
 
     function loadImage(name) {
         var jsName = Sk.ffi.remapToJs(name);
@@ -255,47 +186,7 @@ var $builtinmodule = function(name) {
         }
         return asset;
     }
-    //
-    function get_XY(key, x1, y1, w, h) {
-        var coordXY;
-        switch (key) {
-            case 'x':
-            case 'y':
-                coordsXY = [x1, y1];
-                break;
-            case 'pos':
-            case 'topleft':
-                coordsXY = [x1, y1];
-                break;
-            case 'topright':
-                coordsXY = [x1 - w, y1];
-                break;
-            case 'bottomleft':
-                coordsXY = [x1, y1 - h];
-                break;
-            case 'bottomright':
-                coordsXY = [x1 - w, y1 - h];
-                break;
-            case 'midtop':
-                coordsXY = [x1 - w / 2, y1];
-                break;
-            case 'midbottom':
-                coordsXY = [x1 - w / 2, y1 - h];
-                break;
-            case 'midleft':
-                coordsXY = [x1, y1 - h / 2];
-                break;
-            case 'midright':
-                coordsXY = [x1 - w, y1 - h / 2];
-                break;
-            case 'center':
-                coordsXY = [x1 - w / 2, y1 - h / 2];
-                break;
-            default:
-                coordsXY = [x1, y1];
-        }
-        return coordsXY;
-    }
+   
     // Отримати поточні значення атрибута як список (1 або 2 елементи)
     function getCurrentValues(obj, attr) {
         let rawValue;
@@ -376,6 +267,88 @@ var $builtinmodule = function(name) {
             updateActorAttribute(obj, Sk.ffi.remapToPy(attr), pyValue);
         }
     }
+
+    function unpackKWA(kwa) {
+        var result = {};
+        for (var i = 0; i < kwa.length; i += 2) {
+            var key = Sk.ffi.remapToJs(kwa[i]);
+            var val = kwa[i + 1];
+            result[key] = val;
+        }
+        return result;
+    }
+    
+    //=== TWEEN FUNCTIONS for ANIMATION CLASS ===
+     var TWEEN_FUNCTIONS = {
+        linear: function(n) {
+            return n;
+        },
+        accelerate: function(n) {
+            return n * n;
+        },
+        decelerate: function(n) {
+            return -1.0 * n * (n - 2.0);
+        },
+        accel_decel: function(n) {
+            var p = n * 2;
+            if (p < 1) return 0.5 * p * p;
+            p -= 1.0;
+            return -0.5 * (p * (p - 2.0) - 1.0);
+        },
+        bounce_end: function(n) {
+            if (n < (1.0 / 2.75)) {
+                return 7.5625 * n * n;
+            } else if (n < (2.0 / 2.75)) {
+                n -= (1.5 / 2.75);
+                return 7.5625 * n * n + 0.75;
+            } else if (n < (2.5 / 2.75)) {
+                n -= (2.25 / 2.75);
+                return 7.5625 * n * n + 0.9375;
+            } else {
+                n -= (2.625 / 2.75);
+                return 7.5625 * n * n + 0.984375;
+            }
+        },
+        bounce_start: function(n) {
+            return 1.0 - TWEEN_FUNCTIONS.bounce_end(1.0 - n);
+        },
+        bounce_start_end: function(n) {
+            var p = n * 2.0;
+            if (p < 1.0) {
+                return TWEEN_FUNCTIONS.bounce_start(p) * 0.5;
+            } else {
+                return TWEEN_FUNCTIONS.bounce_end(p - 1.0) * 0.5 + 0.5;
+            }
+        },
+        in_elastic: function(n) {
+            var p = 0.3;
+            var s = p / 4.0;
+            var q = n;
+            if (q === 1) return 1.0;
+            q -= 1.0;
+            return -(Math.pow(2, 10 * q) * Math.sin((q - s) * (2 * Math.PI) / p));
+        },
+        out_elastic: function(n) {
+            var p = 0.3;
+            var s = p / 4.0;
+            var q = n;
+            if (q === 1) return 1.0;
+            return Math.pow(2, -10 * q) * Math.sin((q - s) * (2 * Math.PI) / p) + 1.0;
+        },
+        in_out_elastic: function(n) {
+            var p = 0.3 * 1.5;
+            var s = p / 4.0;
+            var q = n * 2;
+            if (q === 2) return 1.0;
+            if (q < 1) {
+                q -= 1.0;
+                return -0.5 * (Math.pow(2, 10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p));
+            } else {
+                q -= 1.0;
+                return Math.pow(2, -10 * q) * Math.sin((q - s) * (2.0 * Math.PI) / p) * 0.5 + 1.0;
+            }
+        }
+    };
     //ANIMATION CLASS 
     var Animation = Sk.misceval.buildClass(s, function($gbl, $loc) {
         $loc.__init__ = new Sk.builtin.func(function(self, object, tween, duration, onFinished, targets) {
@@ -545,7 +518,6 @@ var $builtinmodule = function(name) {
     //
     var updateRectAttribute = function(self, key, newVal) {
         Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
-        comsole.log("updateRectAttribute=", key, newVal)
         var w = self.coords.x2 - self.coords.x1;
         var h = self.coords.y2 - self.coords.y1;
         switch (key) {
@@ -691,172 +663,65 @@ var $builtinmodule = function(name) {
         // Розмір
         self.attributes.size = [w, h];
     };
-    //
-    var updateActorAttribute = function(self, name, value) {
-        Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
-        name = Sk.ffi.remapToJs(name);
-        var a = self.attributes;
-        a[name] = Sk.ffi.remapToJs(value);
-        var pos = Sk.ffi.remapToJs(value);
-        switch (name) {
-            case 'x':
-                a.x = a.x - self.anchorVal.x;
-                break;
-            case 'y':
-                a.y = a.y - self.anchorVal.y;
-                break;
-            case 'left':
-                a.x = a.left;
-                break;
-            case 'right':
-                a.x = a.right - a.width;
-                break;
-            case 'top':
-                a.y = a.top;
-                break;
-            case 'bottom':
-                a.y = a.bottom - a.height;
-                break;
-            case 'topleft':
-                a.x = pos[0];
-                a.y = pos[1];
-                break;
-            case 'topright':
-                a.x = pos[0] - a.width;
-                a.y = pos[1];
-                break;
-            case 'midtop':
-                a.x = pos[0] - a.width / 2;
-                a.y = pos[1];
-                break;
-            case 'bottomleft':
-                a.x = pos[0];
-                a.y = pos[1] - a.height;
-                break;
-            case 'bottomright':
-                a.x = pos[0] - a.width;
-                a.y = pos[1] - a.height;
-                break;
-            case 'midbottom':
-                a.x = pos[0] - a.width / 2;
-                a.y = pos[1] - a.height;
-                break;
-            case 'midleft':
-                a.x = pos[0];
-                a.y = pos[1] - a.height / 2;
-                break;
-            case 'midright':
-                a.x = pos[0] - a.width;
-                a.y = pos[1] - a.height / 2;
-                break;
-            case 'pos':
-            case 'center':
-                a.x = pos[0] - a.width / 2;
-                a.y = pos[1] - a.height / 2;
-                break;
-            case 'anchor':
-                self.anchor = Sk.ffi.remapToJs(value);
-                updateAnchor(self);
-                // Оновлюємо позицію з урахуванням нового якоря
-                a.x = a.x - self.anchorVal.x;
-                a.y = a.y - self.anchorVal.y;
-                break;
-            case 'flip_x':
-                a.flip_x = !!Sk.ffi.remapToJs(value);
-                break;
-            case 'flip_y':
-                a.flip_y = !!Sk.ffi.remapToJs(value);
-                break;
-            case 'fps':
-                self.fps = Math.max(0.1, Sk.ffi.remapToJs(value)); // avoid zero or negative
-                break;
-            case 'direction':
-                self.direction = Sk.ffi.remapToJs(value);
-                break;
-            case 'angle':
-                self.angle = Sk.ffi.remapToJs(value);
-                break;
-            case 'images':
-                var newImages = Sk.ffi.remapToJs(value);
-                self.images = newImages;
-                self.image_index = 0;
-                if (newImages.length > 0) {
-                    // Завантажуємо всі зображення зі списку 
-                    if (newImages.length > 0) {
-                        var firstImg = loadImage(newImages[0]);
-                        if (firstImg) {
-                            a.image = newImages[0];
-                            updateRectFromXY(self);
-                        } else {
-                            console.warn("No valid image loaded from 'images' list");
-                        }
-                    }
-                } else {
-                    a.image = null;
-                }
-                break;
-            case 'image':
-                var jsName = Sk.ffi.remapToJs(value);
-                a.image = jsName;
-                if (!loadedAssets[jsName]) {
-                    var img = loadImage(jsName);
-                    if (img) updateRectFromXY(self);
-                } else {
-                    updateRectFromXY(self);
-                }
-                break;
-            default:
-                self.others[name] = value;
-                break;
-        }
-        updateRectFromXY(self);
-    };
-    var getActorAttribute = function(self, name) {
-        Sk.builtin.pyCheckArgs("__getattr__", 2, 2);
-        name = Sk.ffi.remapToJs(name);
-        
-        if (name === '_rect') {
-			// повертаємо новий Rect об'єкт з поточними координатами актора
-			return Sk.misceval.callsim(Sk.globals.Rect,
-				Sk.ffi.remapToPy(self.coords.x1),
-				Sk.ffi.remapToPy(self.coords.y1),
-				Sk.ffi.remapToPy(self.coords.x2 - self.coords.x1),
-				Sk.ffi.remapToPy(self.coords.y2 - self.coords.y1)
-				);
-		}  
-        
-        if (name === 'pos') {
-            name = 'center';
-        }
-        switch (name) {
-            case 'x':
-                return Sk.ffi.remapToPy(self.attributes.x + self.anchorVal.x);
-            case 'y':
-                return Sk.ffi.remapToPy(self.attributes.y + self.anchorVal.y);
-            case 'centerx':
-				return Sk.ffi.remapToPy((self.coords.x1 + self.coords.x2) / 2);    
-            case 'centery':
-                return Sk.ffi.remapToPy((self.coords.y1 + self.coords.y2) / 2);
-            case 'center':
-                return new Sk.builtin.tuple(Sk.ffi.remapToPy([
-                    (self.coords.x1 + self.coords.x2) / 2,
-                    (self.coords.y1 + self.coords.y2) / 2
-                ]));
-        }
-        // інші атрибути
-        if (self.others[name] !== undefined) {
-            return self.others[name];
-        }
-        if (self.attributes[name] !== undefined) {
-            return Sk.ffi.remapToPy(self.attributes[name]);
-        }
-        if (name === 'anchor') {
-            return new Sk.builtin.tuple(Sk.ffi.remapToPy(self.anchor));
-        }
-        // якщо нічого не знайдено — помилка
-        throw new Sk.builtin.AttributeError("'" + self.tp$name + "' object has no attribute '" + name + "'");
-    };
-    var idCount = 0;
+
+// === Surface Class ===
+    var Surface = Sk.misceval.buildClass(s, function($gbl, $loc) {
+        $loc.blit = new Sk.builtin.func(function(self, source, dest, area, special_flags) {
+            Sk.builtin.pyCheckArgs("blit", 3, 5);
+            if (self.actor !== undefined) {
+                throw new Sk.builtin.NotImplementedError("You can currently only blit to the screen surface");
+            }
+            if (!(source && source.actor && source.actor.attributes && source.actor.attributes.image)) {
+                throw new Sk.builtin.TypeError("The source must be a pygame surface");
+            }
+            var i = loadedAssets[source.actor.attributes.image];
+            var coords = Sk.ffi.remapToJs(dest);
+            area = Sk.ffi.remapToJs(area);
+            if (area && area.length >= 4) {
+                cx.drawImage(i, area[0], area[1], area[2], area[3], coords[0], coords[1], area[2], area[3]);
+            } else {
+                cx.drawImage(i, coords[0], coords[1]);
+            }
+        });
+        $loc.__init__ = new Sk.builtin.func(function(self, actor) {
+            self.actor = actor;
+        });
+        $loc.set_at = new Sk.builtin.func(function(self, pos, color) {
+            Sk.builtin.pyCheckArgs("set_at", 3, 3);
+            // отримуємо координати
+            var jsPos = Sk.ffi.remapToJs(pos);
+            var x = Math.round(jsPos[0]);
+            var y = Math.round(jsPos[1]);
+            // конвертуємо колір у RGBA
+            var jsColor = Sk.ffi.remapToJs(color);
+            var rgba = getColor(jsColor);
+            // використовуємо глобальний контекст
+            cx.save();
+            cx.fillStyle = rgba;
+            cx.fillRect(x, y, 1, 1);
+            cx.restore();
+            return Sk.builtin.none.none$;
+        });
+        $loc.get_at = new Sk.builtin.func(function(self, pos) {
+            Sk.builtin.pyCheckArgs("get_at", arguments, 2, 2);
+            var jsPos = Sk.ffi.remapToJs(pos);
+            var x = Math.round(jsPos[0]);
+            var y = Math.round(jsPos[1]);
+            // перевірка меж як у pygame
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                return Sk.ffi.remapToPy([0, 0, 0, 0]);
+            }
+            var data = cx.getImageData(x, y, 1, 1).data;
+            return Sk.ffi.remapToPy([
+                data[0], // R
+                data[1], // G
+                data[2], // B
+                data[3] // A
+            ]);
+        });
+    });
+
+// === ZRect Class ===
     Sk.globals.ZRect = Sk.globals.Rect = Sk.misceval.buildClass(s, function($gbl, $loc) {
         function updateRectFromXY(self) {
             self.attributes.width = self.coords.x2 - self.coords.x1;
@@ -1275,451 +1140,531 @@ var $builtinmodule = function(name) {
         });
     }, "Rect", []);
 
-    function unpackKWA(kwa) {
-        result = {};
-        for (var i = 0; i < kwa.length; i += 2) {
-            var key = Sk.ffi.remapToJs(kwa[i]);
-            var val = kwa[i + 1];
-            result[key] = val;
+    var DEG2RAD = Math.PI / 180;
+
+    var anchors = {
+        x: { left: 0.0, center: 0.5, middle: 0.5, right: 1.0 },
+        y: { top: 0.0, center: 0.5, middle: 0.5, bottom: 1.0 }
+    };
+
+    function calculateAnchor(value, dim, total) {
+        if (typeof value === "string") {
+            if (!anchors[dim] || anchors[dim][value] === undefined) {
+                throw new Sk.builtin.ValueError(
+                    value + " is not a valid " + dim + "-anchor name"
+                );
+            }
+            return total * anchors[dim][value];
         }
-        return result;
+        return value;
     }
-    var Surface = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        $loc.blit = new Sk.builtin.func(function(self, source, dest, area, special_flags) {
-            Sk.builtin.pyCheckArgs("blit", 3, 5);
-            if (self.actor !== undefined) {
-                throw new Sk.builtin.NotImplementedError("You can currently only blit to the screen surface");
-            }
-            if (!(source && source.actor && source.actor.attributes && source.actor.attributes.image)) {
-                throw new Sk.builtin.TypeError("The source must be a pygame surface");
-            }
-            var i = loadedAssets[source.actor.attributes.image];
-            var coords = Sk.ffi.remapToJs(dest);
-            area = Sk.ffi.remapToJs(area);
-            if (area && area.length >= 4) {
-                cx.drawImage(i, area[0], area[1], area[2], area[3], coords[0], coords[1], area[2], area[3]);
-            } else {
-                cx.drawImage(i, coords[0], coords[1]);
-            }
-        });
-        $loc.__init__ = new Sk.builtin.func(function(self, actor) {
-            self.actor = actor;
-        });
-        $loc.set_at = new Sk.builtin.func(function(self, pos, color) {
-            Sk.builtin.pyCheckArgs("set_at", 3, 3);
-            // отримуємо координати
-            var jsPos = Sk.ffi.remapToJs(pos);
-            var x = Math.round(jsPos[0]);
-            var y = Math.round(jsPos[1]);
-            // конвертуємо колір у RGBA
-            var jsColor = Sk.ffi.remapToJs(color);
-            var rgba = getColor(jsColor);
-            // використовуємо глобальний контекст
-            cx.save();
-            cx.fillStyle = rgba;
-            cx.fillRect(x, y, 1, 1);
-            cx.restore();
-            return Sk.builtin.none.none$;
-        });
-        $loc.get_at = new Sk.builtin.func(function(self, pos) {
-            Sk.builtin.pyCheckArgs("get_at", arguments, 2, 2);
-            var jsPos = Sk.ffi.remapToJs(pos);
-            var x = Math.round(jsPos[0]);
-            var y = Math.round(jsPos[1]);
-            // перевірка меж як у pygame
-            if (x < 0 || y < 0 || x >= width || y >= height) {
-                return Sk.ffi.remapToPy([0, 0, 0, 0]);
-            }
-            var data = cx.getImageData(x, y, 1, 1).data;
-            return Sk.ffi.remapToPy([
-                data[0], // R
-                data[1], // G
-                data[2], // B
-                data[3] // A
-            ]);
-        });
-    });
 
     function updateAnchor(self) {
-        var i = loadedAssets[self.attributes.image];
-        if (i) {
-            self.anchorVal.x = calculateAnchor(self.anchor[0], 'x', i.width);
-            self.anchorVal.y = calculateAnchor(self.anchor[1], 'y', i.height);
+        var img = loadedAssets[self.attributes.image];
+        if (img) {
+            self.anchorVal.x = calculateAnchor(self.anchor[0], "x", img.width);
+            self.anchorVal.y = calculateAnchor(self.anchor[1], "y", img.height);
         }
     }
-    Sk.globals.Actor = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        $loc.distance_to = new Sk.builtin.func(function(self, target) {
-            Sk.builtin.pyCheckArgs("distance_to", 2, 2);
-            var pos = Sk.ffi.remapToJs(target);
-            var tx = 0;
-            var ty = 0;
-            if (pos) {
-                tx = pos[0];
-                ty = pos[1];
-            } else {
-                tx = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("x")));
-                ty = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("y")));
-            }
-            var myx = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("x")));
-            var myy = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("y")));
-            var dx = tx - myx
-            var dy = myy - ty
-            return Sk.ffi.remapToPy(Math.sqrt(dx * dx + dy * dy));
-        });
-        $loc.angle_to = new Sk.builtin.func(function(self, target) {
-            Sk.builtin.pyCheckArgs("angle_to", 2, 2);
-            var pos = Sk.ffi.remapToJs(target);
-            var tx = 0;
-            var ty = 0;
-            if (pos) {
-                tx = pos[0];
-                ty = pos[1];
-            } else {
-                tx = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("x")));
-                ty = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("y")));
-            }
-            var myx = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("x")));
-            var myy = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("y")));
-            var dx = tx - myx
-            var dy = myy - ty
-            return Sk.ffi.remapToPy(Math.atan2(dy, dx) * 180 / Math.PI);
-        });
-        $loc.collidepoint = new Sk.builtin.func(function(self, pos) {
-            Sk.builtin.pyCheckArgs("collidepoint", 2, 2);
-            var c = Sk.ffi.remapToJs(pos);
-            var pt = {
-                x: c[0],
-                y: c[1]
-            }
-            return new Sk.builtin.bool(pt.x >= self.attributes.x && pt.x <= self.attributes.right && pt.y >= self.attributes.y && pt.y <= self.attributes.bottom);
-        });
-        // величини для обчислення "якорів"
-        var anchors = {
-            x: {
-                left: 0.0,
-                center: 0.5,
-                middle: 0.5,
-                right: 1.0
-            },
-            y: {
-                top: 0.0,
-                center: 0.5,
-                middle: 0.5,
-                bottom: 1.0
-            }
-        }
 
-        function calculateAnchor(value, dim, total) {
-            if (typeof value == 'string') {
-                try {
-                    return total * anchors[dim][value];
-                } catch (e) {
-                    throw new Sk.builtin.ValueError(value + " is not a valid " + dim + "-anchor name");
+    function updateImage(self) {
+        var img = loadedAssets[self.attributes.image];
+        if (img) {
+            self.attributes.width = img.width;
+            self.attributes.height = img.height;
+            updateAnchor(self);
+            updateRectFromXY(self);
+        }
+    }
+
+    function moveAtAngle(self, angleDeg, distance) {
+        var d = Sk.ffi.remapToJs(distance);
+        var rad = angleDeg * DEG2RAD;
+        self.attributes.x += d * Math.cos(rad);
+        self.attributes.y += d * Math.sin(rad);
+        updateRectFromXY(self);
+    }
+
+    var updateActorAttribute = function(self, name, value) {
+        Sk.builtin.pyCheckArgs("__setattr__", 3, 3);
+        name = Sk.ffi.remapToJs(name);
+        var a = self.attributes;
+        a[name] = Sk.ffi.remapToJs(value);
+        var pos = Sk.ffi.remapToJs(value);
+        switch (name) {
+            case 'x':
+                a.x = a.x - self.anchorVal.x;
+                break;
+            case 'y':
+                a.y = a.y - self.anchorVal.y;
+                break;
+            case 'left':
+                a.x = a.left;
+                break;
+            case 'right':
+                a.x = a.right - a.width;
+                break;
+            case 'top':
+                a.y = a.top;
+                break;
+            case 'bottom':
+                a.y = a.bottom - a.height;
+                break;
+            case 'topleft':
+                a.x = pos[0];
+                a.y = pos[1];
+                break;
+            case 'topright':
+                a.x = pos[0] - a.width;
+                a.y = pos[1];
+                break;
+            case 'midtop':
+                a.x = pos[0] - a.width / 2;
+                a.y = pos[1];
+                break;
+            case 'bottomleft':
+                a.x = pos[0];
+                a.y = pos[1] - a.height;
+                break;
+            case 'bottomright':
+                a.x = pos[0] - a.width;
+                a.y = pos[1] - a.height;
+                break;
+            case 'midbottom':
+                a.x = pos[0] - a.width / 2;
+                a.y = pos[1] - a.height;
+                break;
+            case 'midleft':
+                a.x = pos[0];
+                a.y = pos[1] - a.height / 2;
+                break;
+            case 'midright':
+                a.x = pos[0] - a.width;
+                a.y = pos[1] - a.height / 2;
+                break;
+            case 'pos':
+            case 'center':
+                a.x = pos[0] - a.width / 2;
+                a.y = pos[1] - a.height / 2;
+                break;
+            case 'anchor':
+                self.anchor = Sk.ffi.remapToJs(value);
+                updateAnchor(self);
+                // Оновлюємо позицію з урахуванням нового якоря
+                a.x = a.x - self.anchorVal.x;
+                a.y = a.y - self.anchorVal.y;
+                break;
+            case 'flip_x':
+                a.flip_x = !!Sk.ffi.remapToJs(value);
+                break;
+            case 'flip_y':
+                a.flip_y = !!Sk.ffi.remapToJs(value);
+                break;
+            case 'fps':
+                self.fps = Math.max(0.1, Sk.ffi.remapToJs(value)); // avoid zero or negative
+                break;
+            case 'direction':
+                self.direction = Sk.ffi.remapToJs(value);
+                break;
+            case 'angle':
+                self.angle = Sk.ffi.remapToJs(value);
+                break;
+            case 'images':
+                var newImages = Sk.ffi.remapToJs(value);
+                self.images = newImages;
+                self.image_index = 0;
+                if (newImages.length > 0) {
+                    // Завантажуємо всі зображення зі списку 
+                    if (newImages.length > 0) {
+                        var firstImg = loadImage(newImages[0]);
+                        if (firstImg) {
+                            a.image = newImages[0];
+                            updateRectFromXY(self);
+                        } else {
+                            console.warn("No valid image loaded from 'images' list");
+                        }
+                    }
+                } else {
+                    a.image = null;
                 }
-            }
-            return value;
+                break;
+            case 'image':
+                var jsName = Sk.ffi.remapToJs(value);
+                a.image = jsName;
+                if (!loadedAssets[jsName]) {
+                    var img = loadImage(jsName);
+                    if (img) updateRectFromXY(self);
+                } else {
+                    updateRectFromXY(self);
+                }
+                break;
+            default:
+                self.others[name] = value;
+                break;
+        }
+        updateRectFromXY(self);
+    };
+
+var getActorAttribute = function(self, name) {
+    Sk.builtin.pyCheckArgs("__getattr__", 2, 2);
+    var jsName = Sk.ffi.remapToJs(name);
+    
+    // Special: return Rect object representing current bounds
+    if (jsName === '_rect') {
+        return Sk.misceval.callsim(
+            Sk.globals.Rect,
+            Sk.ffi.remapToPy(self.coords.x1),
+            Sk.ffi.remapToPy(self.coords.y1),
+            Sk.ffi.remapToPy(self.coords.x2 - self.coords.x1),
+            Sk.ffi.remapToPy(self.coords.y2 - self.coords.y1)
+        );
+    }
+    
+    // Alias: pos -> center (Pygame Zero compatibility)
+    var lookupName = (jsName === 'pos') ? 'center' : jsName;
+    
+    var a = self.attributes;
+    
+    switch (lookupName) {
+        // === Position aliases (getters) ===
+        case 'left':
+            return Sk.ffi.remapToPy(a.x);
+        case 'right':
+            return Sk.ffi.remapToPy(a.x + a.width);
+        case 'top':
+            return Sk.ffi.remapToPy(a.y);
+        case 'bottom':
+            return Sk.ffi.remapToPy(a.y + a.height);
+        case 'centerx':
+            return Sk.ffi.remapToPy(a.x + a.width / 2);
+        case 'centery':
+            return Sk.ffi.remapToPy(a.y + a.height / 2);
+        case 'center': {
+            var cx = a.x + a.width / 2;
+            var cy = a.y + a.height / 2;
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([cx, cy]));
+        }
+        case 'topleft': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x, a.y]));
+        }
+        case 'topright': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x + a.width, a.y]));
+        }
+        case 'bottomleft': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x, a.y + a.height]));
+        }
+        case 'bottomright': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x + a.width, a.y + a.height]));
+        }
+        case 'midtop': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x + a.width / 2, a.y]));
+        }
+        case 'midbottom': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x + a.width / 2, a.y + a.height]));
+        }
+        case 'midleft': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x, a.y + a.height / 2]));
+        }
+        case 'midright': {
+            return new Sk.builtin.tuple(Sk.ffi.remapToPy([a.x + a.width, a.y + a.height / 2]));
+        }
+        // === Anchor-based position (PGZ behavior: x/y return anchor world pos) ===
+        case 'x':
+            return Sk.ffi.remapToPy(a.x + self.anchorVal.x);
+        case 'y':
+            return Sk.ffi.remapToPy(a.y + self.anchorVal.y);
+    }
+    
+    // Check custom properties first
+    if (self.others[jsName] !== undefined) {
+        return self.others[jsName];
+    }
+    
+    // Check stored attributes
+    if (self.attributes[jsName] !== undefined) {
+        return Sk.ffi.remapToPy(self.attributes[jsName]);
+    }
+    
+    // Special: anchor as tuple
+    if (jsName === 'anchor') {
+        return new Sk.builtin.tuple(Sk.ffi.remapToPy(self.anchor));
+    }
+    
+    throw new Sk.builtin.AttributeError(
+        "'" + self.tp$name + "' object has no attribute '" + jsName + "'"
+    );
+};
+
+ Sk.globals.Actor = Sk.misceval.buildClass(s, function($gbl, $loc) {
+
+
+
+    $loc.__getattr__ = new Sk.builtin.func(getActorAttribute);
+    $loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
+
+    var init = function(kwa, self, name, posArg) {
+        Sk.builtin.pyCheckArgs("__init__", 2, 3);
+
+        self.id = idCount++;
+
+        self.attributes = {
+            x: 0,
+            y: 0,
+            angle: 0,
+            scale: 1,
+            opacity: 1,
+            flip_x: false,
+            flip_y: false,
+            image: Sk.ffi.remapToJs(name),
+            width: 0,
+            height: 0
+        };
+
+        self.direction = 0;
+        self.fps = 5;
+        self.image_index = 0;
+        self.images = [];
+        self.others = {};
+        self.others._surf = Sk.misceval.callsim(Surface, self);
+
+        self.anchor = ["center", "center"];
+        self.anchorVal = { x: 0, y: 0 };
+
+        var args = unpackKWA(kwa);
+
+        if (args.anchor) {
+            self.anchor[0] = args.anchor.v[0].v;
+            self.anchor[1] = args.anchor.v[1].v;
         }
 
-        function transformAnchor(ax, ay, w, h, angle) {
-            var theta = -angle * Math.PI / 180;
-            var sinTheta = Math.sin(theta);
-            var cosTheta = Math.cos(theta);
-            var tw = abs(w * cosTheta) + abs(h * sinTheta);
-            var th = abs(w * sinTheta) + abs(h * cosTheta);
-            var cax = ax - w * 0.5;
-            var cay = ay - h * 0.5;
-            var rax = cax * cosTheta - cay * sinTheta;
-            var ray = cax * sinTheta + cay * cosTheta;
-            return {
-                x: tw * 0.5 + rax,
-                y: th * 0.5 + ray
-            };
+        var desiredX = 0, desiredY = 0;
+        var pos = posArg ?? args.pos;
+
+        if (pos) {
+            pos = Sk.ffi.remapToJs(pos);
+            desiredX = pos[0];
+            desiredY = pos[1];
         }
-        // обчислюємо відносні координати "якоря" 
-        function updateAnchor(self) {
-            var i = loadedAssets[self.attributes.image];
-            if (i) {
-                self.anchorVal.x = calculateAnchor(self.anchor[0], 'x', i.width);
-                self.anchorVal.y = calculateAnchor(self.anchor[1], 'y', i.height);
-            }
+
+        var img = loadImage(self.attributes.image);
+        if (img) {
+            self.attributes.width = img.width;
+            self.attributes.height = img.height;
         }
-        $loc.__getattr__ = new Sk.builtin.func(getActorAttribute);
-        $loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
-        //-----------------------------------
-        var init = function(kwa, self, name, posArg) {
-            Sk.builtin.pyCheckArgs("_init_", 2, 3);
-            self.id = idCount++;
-            self.attributes = {
-                x: 0,
-                y: 0,
-                angle: 0,
-                scale: 1,
-                opacity: 1,
-                flip_x: false,
-                flip_y: false,
-                image: Sk.ffi.remapToJs(name)
-            };
-            self.direction = 0;
-            self.fps = 5;
-            self.image_index = 0;
-            self.images = [];
-            self.others = {};
-            self.others._surf = Sk.misceval.callsim(Surface, self);
-            self.anchor = ['center', 'center'];
-            self.anchorVal = {
-                x: 0,
-                y: 0
-            };
-            var args = unpackKWA(kwa);
-            if (args.anchor) {
-                self.anchor[0] = args.anchor.v[0].v;
-                self.anchor[1] = args.anchor.v[1].v;
-            }
-            // позиція
-            var desiredX = 0,
-                desiredY = 0;
-            var pos = posArg ?? args.pos;
-            if (pos) {
-                pos = Sk.ffi.remapToJs(pos);
-                desiredX = pos[0];
-                desiredY = pos[1];
-            }
-            self._loaded = false;
-            var jsName = Sk.ffi.remapToJs(name);
-            var img = loadImage(jsName);
-            if (img) {
-                self.attributes.width = img.width;
-                self.attributes.height = img.height;
-                updateAnchor(self);
-				if (pos) {
-					// Якщо позиція вказана явно - якор має бути в цій позиції
-					self.attributes.x = desiredX - self.anchorVal.x;
-					self.attributes.y = desiredY - self.anchorVal.y;
-				} else {
-					// Якщо позиція не вказана - верхній лівий кут в (0, 0)
-					// Тоді x/y повертатимуть центр зображення
-					self.attributes.x = 0;
-					self.attributes.y = 0;
-				}
-                updateRectFromXY(self);
-                self._loaded = true;
-            } else {
-                throw new Sk.builtin.KeyError("Image '" + jsName + "' not found or invalid.");
-                self.attributes.width = 0;
-                self.attributes.height = 0;
-                updateAnchor(self);
-                self.attributes.x = desiredX - self.anchorVal.x;
-                self.attributes.y = desiredY - self.anchorVal.y;
-                updateRectFromXY(self);
-                self._loaded = true;
-            }
-            return Sk.builtin.none.none$;
-        };
-        init.co_kwargs = true;
-        $loc.__init__ = new Sk.builtin.func(init);
-        // width / height як геттери
-        Object.defineProperty($loc, 'width', {
-            get: function() {
-                return this.attributes.width;
-            }
-        });
-        Object.defineProperty($loc, 'height', {
-            get: function() {
-                return this.attributes.height;
-            }
-        });
-        //
-        $loc.draw = new Sk.builtin.func(function(self) {
-            if (!loadedAssets[self.attributes.image]) {
-                return;
-            }
-            updateRectFromXY(self); // Оновлюємо rect для колізій (важливо для інших методів)
-            var i = loadedAssets[self.attributes.image];
-            var a = self.attributes;
-            // Масштабовані розміри зображення
-            var w = a.width * a.scale;
-            var h = a.height * a.scale;
-            var radians = a.angle * Math.PI / 180;
-            // Масштабовані координати якоря відносно оригіналу (в пікселях)
-            var ax_scaled = self.anchorVal.x * a.scale;
-            var ay_scaled = self.anchorVal.y * a.scale;
-            cx.save();
-            cx.globalAlpha = a.opacity;
-            // 1. Переміщуємося до світових координат якоря
-            cx.translate(a.x + ax_scaled, a.y + ay_scaled);
-            // 2. Обертаємо навколо якоря (від'ємний кут для проти годинникової стрілки, як у Pygame)
-            if (a.angle !== 0) {
-                cx.rotate(-radians);
-            }
-            // 3. Застосовуємо віддзеркалення ВІДНОСНО ЯКОРЯ
-            var sx = a.flip_x ? -1 : 1;
-            var sy = a.flip_y ? -1 : 1;
-            cx.scale(sx, sy);
-            // 4. Малюємо зображення так, щоб якор в оригіналі потрапляв у (0,0) поточної системи координат
-            // Після scale(sx, sy) зміщення коректно враховує віддзеркалення
-            cx.drawImage(i, -ax_scaled, -ay_scaled, w, h);
-            cx.restore();
-        });
-        $loc.next_image = new Sk.builtin.func(function(self) {
-            if (self.images.length === 0) {
-                return Sk.builtin.none.none$;
-            }
+
+        updateAnchor(self);
+
+        if (pos) {
+            self.attributes.x = desiredX - self.anchorVal.x;
+            self.attributes.y = desiredY - self.anchorVal.y;
+        }
+
+        updateRectFromXY(self);
+        self._loaded = true;
+
+        return Sk.builtin.none.none$;
+    };
+    init.co_kwargs = true;
+    $loc.__init__ = new Sk.builtin.func(init);
+
+    // draw
+
+    $loc.draw = new Sk.builtin.func(function(self) {
+
+        var img = loadedAssets[self.attributes.image];
+        if (!img) return;
+
+        updateRectFromXY(self);
+
+        var a = self.attributes;
+
+        var w = a.width * a.scale;
+        var h = a.height * a.scale;
+
+        var ax = self.anchorVal.x * a.scale;
+        var ay = self.anchorVal.y * a.scale;
+
+        cx.save();
+        cx.globalAlpha = a.opacity;
+
+        cx.translate(a.x + ax, a.y + ay);
+
+        if (a.angle !== 0) {
+            cx.rotate(-a.angle * DEG2RAD);
+        }
+
+        cx.scale(a.flip_x ? -1 : 1, a.flip_y ? -1 : 1);
+
+        cx.drawImage(img, -ax, -ay, w, h);
+
+        cx.restore();
+    });
+
+    // animation (pgzhelper)
+
+    $loc.next_image = new Sk.builtin.func(function(self) {
+        if (self.images.length === 0) return Sk.builtin.none.none$;
+
+        self.image_index = (self.image_index + 1) % self.images.length;
+        self.attributes.image = self.images[self.image_index];
+        updateImage(self);
+
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.animate = new Sk.builtin.func(function(self) {
+
+        if (!self.images || self.images.length === 0) return Sk.builtin.none.none$;
+        if (self.fps <= 0) return Sk.builtin.none.none$;
+
+        if (self.frame_counter === undefined) {
+            self.frame_counter = 0;
+        }
+
+        self.frame_counter++;
+
+        var interval = 60 / self.fps;
+
+        if (self.frame_counter >= interval) {
             self.image_index = (self.image_index + 1) % self.images.length;
             self.attributes.image = self.images[self.image_index];
-            updateRectFromXY(self); // оновлюємо розміри, якщо нове зображення іншого розміру
-            return Sk.builtin.none.none$;
-        });
-        $loc.animate = new Sk.builtin.func(function(self) {
-            if (!self.images || self.images.length === 0) {
-                return Sk.builtin.none.none$;
-            }
-            // Ініціалізуємо лічильник кадрів, якщо ще не існує
-            if (self.frame_counter === undefined) {
-                self.frame_counter = 0;
-            }
-            self.frame_counter += 1;
-            // Обчислюємо інтервал у кадрах: 60 FPS / self.fps
-            var interval = 60 / self.fps;
-            if (self.frame_counter >= interval) {
-                // Перемикаємо зображення
-                self.image_index = (self.image_index + 1) % self.images.length;
-                self.attributes.image = self.images[self.image_index];
-                updateRectFromXY(self);
-                self.frame_counter = 0; // скидаємо лічильник
-            }
-            return Sk.builtin.none.none$;
-        });
-        $loc.move_forward = new Sk.builtin.func(function(self, distance) {
-            var d = Sk.ffi.remapToJs(distance);
-            var angleRad = self.attributes.angle * Math.PI / 180;
-            self.attributes.x += d * Math.cos(angleRad);
-            self.attributes.y += d * Math.sin(angleRad);
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.move_back = new Sk.builtin.func(function(self, distance) {
-            var d = Sk.ffi.remapToJs(distance);
-            var angleRad = self.attributes.angle * Math.PI / 180;
-            self.attributes.x -= d * Math.cos(angleRad);
-            self.attributes.y -= d * Math.sin(angleRad);
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.move_right = new Sk.builtin.func(function(self, distance) {
-            var d = Sk.ffi.remapToJs(distance);
-            var angleRad = (self.attributes.angle + 90) * Math.PI / 180; // 90° to the right of forward
-            self.attributes.x += d * Math.cos(angleRad);
-            self.attributes.y += d * Math.sin(angleRad);
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.move_left = new Sk.builtin.func(function(self, distance) {
-            var d = Sk.ffi.remapToJs(distance);
-            var angleRad = (self.attributes.angle - 90) * Math.PI / 180; // 90° to the left of forward
-            self.attributes.x += d * Math.cos(angleRad);
-            self.attributes.y += d * Math.sin(angleRad);
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.move_in_direction = new Sk.builtin.func(function(self, distance) {
-            var d = Sk.ffi.remapToJs(distance);
-            var angleRad = self.direction * Math.PI / 180;
-            self.attributes.x += d * Math.cos(angleRad);
-            self.attributes.y += d * Math.sin(angleRad);
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.distance_to = new Sk.builtin.func(function(self, other) {
-            Sk.builtin.pyCheckArgs("distance_to", 2, 2);
-            // Отримуємо центри обох акторів
-            var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var other_center = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
-            var dx = other_center[0] - self_center[0];
-            var dy = other_center[1] - self_center[1];
-            var distance = Math.sqrt(dx * dx + dy * dy);
-            return Sk.ffi.remapToPy(distance);
-        });
-        $loc.direction_to = new Sk.builtin.func(function(self, other) {
-            Sk.builtin.pyCheckArgs("direction_to", 2, 2);
-            // Отримуємо центри обох акторів
-            var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var other_center = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
-            var dx = other_center[0] - self_center[0];
-            var dy = other_center[1] - self_center[1];
-            // atan2(dy, dx) дає кут від осі X, з урахуванням квадранту
-            // У системі canvas: Y зростає вниз → це вже враховано
-            var angleRad = Math.atan2(dy, dx);
-            var angleDeg = angleRad * 180 / Math.PI;
-            return Sk.ffi.remapToPy(angleDeg);
-        });
-        $loc.move_towards = new Sk.builtin.func(function(self, target, distance) {
-            Sk.builtin.pyCheckArgs("move_towards", 3, 3);
-            var dist = Sk.ffi.remapToJs(distance);
-            // Отримуємо центри обох акторів
-            var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var target_center = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("center")));
-            var dx = target_center[0] - self_center[0];
-            var dy = target_center[1] - self_center[1];
-            var length = Math.sqrt(dx * dx + dy * dy);
-            if (length === 0) {
-                // Ціль у тій самій точці — нічого не робимо
-                return Sk.builtin.none.none$;
-            }
-            // Нормалізований вектор, помножений на відстань
-            var stepX = (dx / length) * dist;
-            var stepY = (dy / length) * dist;
-            self.attributes.x += stepX;
-            self.attributes.y += stepY;
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.point_towards = new Sk.builtin.func(function(self, target) {
-            Sk.builtin.pyCheckArgs("point_towards", 2, 2);
-            // Отримуємо центри обох акторів
-            var self_center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var target_center = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("center")));
-            var dx = target_center[0] - self_center[0];
-            var dy = target_center[1] - self_center[1];
-            var angleRad = Math.atan2(dy, dx);
-            self.attributes.angle = angleRad * 180 / Math.PI;
-            updateRectFromXY(self);
-            return Sk.builtin.none.none$;
-        });
-        $loc.circle_collidepoint = new Sk.builtin.func(function(self, pos, radius) {
-            Sk.builtin.pyCheckArgs("circle_collidepoint", 2, 3);
-            var center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var px = Sk.ffi.remapToJs(pos)[0];
-            var py = Sk.ffi.remapToJs(pos)[1];
-            var r = (radius !== undefined) ? Sk.ffi.remapToJs(radius) : Math.max(self.attributes.width, self.attributes.height) / 2;
-            var dx = px - center[0];
-            var dy = py - center[1];
-            var distanceSquared = dx * dx + dy * dy;
-            var radiusSquared = r * r;
-            return Sk.ffi.remapToPy(distanceSquared <= radiusSquared);
-        });
-        $loc.circle_collidepoints = new Sk.builtin.func(function(self, points, radius) {
-            Sk.builtin.pyCheckArgs("circle_collidepoints", 2, 3);
-            var center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
-            var r = (radius !== undefined) ? Sk.ffi.remapToJs(radius) : Math.max(self.attributes.width, self.attributes.height) / 2;
-            var radiusSquared = r * r;
-            var pyPoints = Sk.ffi.remapToJs(points);
-            for (var i = 0; i < pyPoints.length; i++) {
-                var pt = pyPoints[i];
-                var px = pt[0];
-                var py = pt[1];
-                var dx = px - center[0];
-                var dy = py - center[1];
-                var distanceSquared = dx * dx + dy * dy;
-                if (distanceSquared <= radiusSquared) {
-                    return Sk.ffi.remapToPy(true);
-                }
-            }
-            return Sk.ffi.remapToPy(false);
-        });
-        $loc.__repr__ = new Sk.builtin.func(function(self) {
-            return Sk.ffi.remapToPy(self.attributes.image + " (x:" + (self.attributes.x + self.anchorVal.x) + "," + (self.attributes.y + self.anchorVal.y) + ")");
-        });
-    }, 'Actor', [Sk.globals.Rect]);
+            updateImage(self);
+            self.frame_counter = 0;
+        }
+
+        return Sk.builtin.none.none$;
+    });
+
+    // move (pgzhelper)
+
+    $loc.move_forward = new Sk.builtin.func(function(self, d) {
+        moveAtAngle(self, self.attributes.angle, d);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.move_back = new Sk.builtin.func(function(self, d) {
+        moveAtAngle(self, self.attributes.angle + 180, d);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.move_right = new Sk.builtin.func(function(self, d) {
+        moveAtAngle(self, self.attributes.angle + 90, d);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.move_left = new Sk.builtin.func(function(self, d) {
+        moveAtAngle(self, self.attributes.angle - 90, d);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.move_in_direction = new Sk.builtin.func(function(self, d) {
+        moveAtAngle(self, self.direction, d);
+        return Sk.builtin.none.none$;
+    });
+
+    // geometry
+    $loc.distance_to = new Sk.builtin.func(function(self, other) {
+        var c1 = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+        var c2 = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
+        var dx = c2[0] - c1[0];
+        var dy = c2[1] - c1[1];
+        return Sk.ffi.remapToPy(Math.sqrt(dx*dx + dy*dy));
+    });
+
+    $loc.direction_to = new Sk.builtin.func(function(self, other) {
+        var c1 = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+        var c2 = Sk.ffi.remapToJs(getActorAttribute(other, Sk.ffi.remapToPy("center")));
+        var dx = c2[0] - c1[0];
+        var dy = c2[1] - c1[1];
+        return Sk.ffi.remapToPy(Math.atan2(dy, dx) / DEG2RAD);
+    });
+
+    $loc.angle_to = new Sk.builtin.func(function(self, other) {
+        return $loc.direction_to(self, other);
+    });
+
+    $loc.point_towards = new Sk.builtin.func(function(self, other) {
+        var angle = Sk.ffi.remapToJs($loc.direction_to(self, other));
+        self.attributes.angle = angle;
+        updateRectFromXY(self);
+        return Sk.builtin.none.none$;
+    });
+
+    $loc.move_towards = new Sk.builtin.func(function(self, target, distance) {
+        var dist = Sk.ffi.remapToJs(distance);
+
+        var c1 = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+        var c2 = Sk.ffi.remapToJs(getActorAttribute(target, Sk.ffi.remapToPy("center")));
+
+        var dx = c2[0] - c1[0];
+        var dy = c2[1] - c1[1];
+        var len = Math.sqrt(dx*dx + dy*dy);
+
+        if (len === 0) return Sk.builtin.none.none$;
+
+        self.attributes.x += (dx/len)*dist;
+        self.attributes.y += (dy/len)*dist;
+
+        updateRectFromXY(self);
+        return Sk.builtin.none.none$;
+    });
+
+    // collisions
+    $loc.collidepoint = new Sk.builtin.func(function(self, pos) {
+        var p = Sk.ffi.remapToJs(pos);
+        return Sk.ffi.remapToPy(
+            p[0] >= self.attributes.x &&
+            p[0] <= self.attributes.right &&
+            p[1] >= self.attributes.y &&
+            p[1] <= self.attributes.bottom
+        );
+    });
+
+    $loc.circle_collidepoint = new Sk.builtin.func(function(self, pos, radius) {
+        var center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+        var p = Sk.ffi.remapToJs(pos);
+
+        var r = radius !== undefined
+            ? Sk.ffi.remapToJs(radius)
+            : Math.max(self.attributes.width, self.attributes.height) / 2;
+
+        var dx = p[0] - center[0];
+        var dy = p[1] - center[1];
+
+        return Sk.ffi.remapToPy(dx*dx + dy*dy <= r*r);
+    });
+
+    $loc.circle_collidepoints = new Sk.builtin.func(function(self, points, radius) {
+
+        var center = Sk.ffi.remapToJs(getActorAttribute(self, Sk.ffi.remapToPy("center")));
+        var r = radius !== undefined
+            ? Sk.ffi.remapToJs(radius)
+            : Math.max(self.attributes.width, self.attributes.height) / 2;
+
+        var r2 = r*r;
+        var pts = Sk.ffi.remapToJs(points);
+
+        for (var i=0;i<pts.length;i++){
+            var dx = pts[i][0] - center[0];
+            var dy = pts[i][1] - center[1];
+            if (dx*dx + dy*dy <= r2) return Sk.ffi.remapToPy(true);
+        }
+        return Sk.ffi.remapToPy(false);
+    });
+
+    $loc.__repr__ = new Sk.builtin.func(function(self) {
+        return Sk.ffi.remapToPy(
+            self.attributes.image +
+            " (x:" +
+            (self.attributes.x + self.anchorVal.x) +
+            "," +
+            (self.attributes.y + self.anchorVal.y) +
+            ")"
+        );
+    });
+
+}, "Actor", [Sk.globals.Rect]);
+
 
     var EnumValue = Sk.misceval.buildClass(s, function($gbl, $loc) {
         $loc.__init__ = new Sk.builtin.func(function(self, enumName, key, value) {
@@ -1754,7 +1699,6 @@ var $builtinmodule = function(name) {
             return Sk.ffi.remapToPy(Sk.ffi.remapToJs(self.value) == cmpTo);
         });
     }, 'enum', []);
-    
     var Enum = Sk.misceval.buildClass(s, function($gbl, $loc) {
         $loc.__init__ = new Sk.builtin.func(function(self, name) {
             self.values = {};
@@ -1764,7 +1708,7 @@ var $builtinmodule = function(name) {
             return new Sk.builtin.str("enum '" + self.name + "'");
         });
     }, 'Enum', []);
-    
+
     var keysPressed = {}
     var keysCodePressed = new Set();
 
@@ -1807,735 +1751,970 @@ var $builtinmodule = function(name) {
     }, 'mouse', [Enum]);
     Sk.globals.mouse = Sk.misceval.callsim(mouse, 'mouse');
     var keys = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        var values = {
-            // Special keys
-            BACKSPACE: 8,
-            TAB: 9,
-            CLEAR: 12,
-            RETURN: 13,
-            ENTER: 13,
-            PAUSE: 19,
-            ESCAPE: 27,
-            SPACE: 32,
-            // Arrow keys
-            LEFT: 37,
-            UP: 38,
-            RIGHT: 39,
-            DOWN: 40,
-            // Modifier keys
-            SHIFT: 16,
-            LSHIFT: 16,
-            RSHIFT: 16,
-            CTRL: 17,
-            LCTRL: 17,
-            RCTRL: 17,
-            ALT: 18,
-            LALT: 18,
-            RALT: 18,
-            META: 91,
-            LMETA: 91,
-            RMETA: 92,
-            // Function keys
-            F1: 112,
-            F2: 113,
-            F3: 114,
-            F4: 115,
-            F5: 116,
-            F6: 117,
-            F7: 118,
-            F8: 119,
-            F9: 120,
-            F10: 121,
-            F11: 122,
-            F12: 123,
-            F13: 124,
-            F14: 125,
-            F15: 126,
-            // Navigation keys
-            HOME: 36,
-            END: 35,
-            PAGEUP: 33,
-            PAGEDOWN: 34,
-            INSERT: 45,
-            DELETE: 46,
-            // Lock keys
-            CAPSLOCK: 20,
-            NUMLOCK: 144,
-            SCROLLOCK: 145,
-            // Numeric keypad
-            KP0: 96,
-            KP1: 97,
-            KP2: 98,
-            KP3: 99,
-            KP4: 100,
-            KP5: 101,
-            KP6: 102,
-            KP7: 103,
-            KP8: 104,
-            KP9: 105,
-            KP_PERIOD: 110,
-            KP_DIVIDE: 111,
-            KP_MULTIPLY: 106,
-            KP_MINUS: 109,
-            KP_PLUS: 107,
-            KP_ENTER: 108,
-            KP_EQUALS: 187,
-            // Letters
-            A: 65,
-            B: 66,
-            C: 67,
-            D: 68,
-            E: 69,
-            F: 70,
-            G: 71,
-            H: 72,
-            I: 73,
-            J: 74,
-            K: 75,
-            L: 76,
-            M: 77,
-            N: 78,
-            O: 79,
-            P: 80,
-            Q: 81,
-            R: 82,
-            S: 83,
-            T: 84,
-            U: 85,
-            V: 86,
-            W: 87,
-            X: 88,
-            Y: 89,
-            Z: 90,
-            // Numbers (main keyboard)
-            K_0: 48,
-            K_1: 49,
-            K_2: 50,
-            K_3: 51,
-            K_4: 52,
-            K_5: 53,
-            K_6: 54,
-            K_7: 55,
-            K_8: 56,
-            K_9: 57,
-            // Symbols
-            EXCLAIM: 49, // '!'
-            QUOTEDBL: 222, // '"'
-            HASH: 51, // '#'
-            DOLLAR: 52, // '$'
-            AMPERSAND: 55, // '&'
-            QUOTE: 222, // "'"
-            LEFTPAREN: 57, // '('
-            RIGHTPAREN: 48, // ')'
-            ASTERISK: 56, // '*'
-            PLUS: 187, // '+'
-            COMMA: 188, // ','
-            MINUS: 189, // '-'
-            PERIOD: 190, // '.'
-            SLASH: 191, // '/'
-            COLON: 186, // ':'
-            SEMICOLON: 186, // ';'
-            LESS: 188, // '<'
-            EQUALS: 187, // '='
-            GREATER: 190, // '>'
-            QUESTION: 191, // '?'
-            AT: 50, // '@'
-            LEFTBRACKET: 219, // '['
-            BACKSLASH: 220, // '\'
-            RIGHTBRACKET: 221, // ']'
-            CARET: 54, // '^'
-            UNDERSCORE: 189, // '_'
-            BACKQUOTE: 192, // '`'
-            // Additional keys
-            HELP: 47,
-            PRINT: 42,
-            SYSREQ: 124,
-            BREAK: 19,
-            MENU: 93,
-            POWER: 0,
-            EURO: 0,
-            LAST: 0
-        };
-        for (var key in values) {
+	var values = {
+    // ───────────── Special ─────────────
+    BACKSPACE: 8,  TAB: 9,  CLEAR: 12,  RETURN: 13,  ENTER: 13,
+    PAUSE: 19,  ESCAPE: 27,  SPACE: 32,
+
+    // ───────────── Arrows ──────────────
+    LEFT: 37,  UP: 38,  RIGHT: 39,  DOWN: 40,
+
+    // ───────────── Modifiers ───────────
+    SHIFT: 16,  LSHIFT: 16,  RSHIFT: 16,
+    CTRL: 17,   LCTRL: 17,   RCTRL: 17,
+    ALT: 18,    LALT: 18,    RALT: 18,
+    META: 91,   LMETA: 91,   RMETA: 92,
+
+    // ───────────── Function ────────────
+    F1: 112,  F2: 113,  F3: 114,  F4: 115,  F5: 116,
+    F6: 117,  F7: 118,  F8: 119,  F9: 120,  F10: 121,
+    F11: 122, F12: 123, F13: 124, F14: 125, F15: 126,
+
+    // ───────────── Navigation ──────────
+    HOME: 36,  END: 35,  PAGEUP: 33,  PAGEDOWN: 34,
+    INSERT: 45,  DELETE: 46,
+
+    // ───────────── Locks ───────────────
+    CAPSLOCK: 20,  NUMLOCK: 144,  SCROLLOCK: 145,
+
+    // ───────────── Keypad ──────────────
+    KP0: 96,  KP1: 97,  KP2: 98,  KP3: 99,  KP4: 100,
+    KP5: 101, KP6: 102, KP7: 103, KP8: 104, KP9: 105,
+    KP_MULTIPLY: 106,  KP_PLUS: 107,  KP_ENTER: 108,
+    KP_MINUS: 109,  KP_PERIOD: 110,  KP_DIVIDE: 111,
+    KP_EQUALS: 187,
+
+    // ───────────── Letters ─────────────
+    A: 65,  B: 66,  C: 67,  D: 68,  E: 69,  F: 70,  G: 71,
+    H: 72,  I: 73,  J: 74,  K: 75,  L: 76,  M: 77,  N: 78,
+    O: 79,  P: 80,  Q: 81,  R: 82,  S: 83,  T: 84,  U: 85,
+    V: 86,  W: 87,  X: 88,  Y: 89,  Z: 90,
+
+    // ───────────── Numbers ─────────────
+    K_0: 48,  K_1: 49,  K_2: 50,  K_3: 51,  K_4: 52,
+    K_5: 53,  K_6: 54,  K_7: 55,  K_8: 56,  K_9: 57,
+
+    // ───────────── Symbols ─────────────
+    EXCLAIM: 49,  QUOTEDBL: 222,  HASH: 51,  DOLLAR: 52,
+    AMPERSAND: 55,  QUOTE: 222,
+    LEFTPAREN: 57,  RIGHTPAREN: 48,
+    ASTERISK: 56,  PLUS: 187,
+    COMMA: 188,  MINUS: 189,  PERIOD: 190,  SLASH: 191,
+    COLON: 186,  SEMICOLON: 186,
+    LESS: 188,  EQUALS: 187,  GREATER: 190,  QUESTION: 191,
+    AT: 50,
+    LEFTBRACKET: 219,  BACKSLASH: 220,  RIGHTBRACKET: 221,
+    CARET: 54,  UNDERSCORE: 189,  BACKQUOTE: 192,
+
+    // ───────────── Extra ───────────────
+    HELP: 47,  PRINT: 42,  SYSREQ: 124,
+    BREAK: 19,  MENU: 93,
+    POWER: 0,  EURO: 0,  LAST: 0
+	};
+    for (var key in values) {
             $loc[key] = Sk.misceval.callsim(EnumValue, "keys", key, values[key]);
         }
     }, 'keys', [Enum]);
     Sk.globals.keys = Sk.misceval.callsim(keys, 'keys');
-    var SurfacePainter = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        var line = function(kwa, self, coord1, coord2, color) {
-            var jsColor = "black";
-            var x1, y1, x2, y2;
-            var jsCoord1 = Sk.ffi.remapToJs(coord1);
-            var jsCoord2 = coord2 !== undefined ? Sk.ffi.remapToJs(coord2) : undefined;
-            var jsColorArg = color !== undefined ? Sk.ffi.remapToJs(color) : undefined;
-            // line((x1, y1, x2, y2), color, ...)
-            // coord1 - масив з 4 елементів
-            if (Array.isArray(jsCoord1) && jsCoord1.length === 4) {
-                x1 = jsCoord1[0];
-                y1 = jsCoord1[1];
-                x2 = jsCoord1[2];
-                y2 = jsCoord1[3];
-                // Якщо другий аргумент - рядок, це колір
-                if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
-                    jsColor = jsCoord2;
-                }
+
+
+// ==============================================
+/**
+ * SurfacePainter
+ * ---------------
+ * Provides drawing methods for lines, shapes, and text on a canvas context.
+ *
+ * Supported methods:
+ *   - line()
+ *   - circle()
+ *   - rect()
+ *   - filled_rect()
+ *   - filled_circle()
+ *   - polygon()
+ *   - filled_polygon()
+ *   - textbox()
+ *   - text()
+ *
+ * Features:
+ *   - Multiple coordinate formats
+ *   - Keyword argument support
+ *   - Anchor-based positioning
+ *   - Rotation support
+ *   - Gradient text rendering
+ *   - Outline text
+ *   - Shadow rendering
+ *   - Word wrapping
+ *   - Automatic font size fitting (textbox)
+ *
+ * All drawing is performed on global canvas context `cx`.
+ */
+
+
+var SurfacePainter = Sk.misceval.buildClass(s, function($gbl, $loc) {
+
+    // LINE DRAWING
+    /**
+     * Draw a line with flexible coordinate formats:
+     * - line((x1, y1, x2, y2), color, ...)
+     * - line(((x1, y1), (x2, y2)), color, ...)
+     * - line((x1, y1), (x2, y2), color, ...)
+     * Supports kwargs: color, width
+     */
+    var line = function(kwa, self, coord1, coord2, color) {
+        var jsColor = "black";
+        var x1, y1, x2, y2;
+        
+        // Convert Python arguments to JavaScript
+        var jsCoord1 = Sk.ffi.remapToJs(coord1);
+        var jsCoord2 = (coord2 !== undefined) ? Sk.ffi.remapToJs(coord2) : undefined;
+        var jsColorArg = (color !== undefined) ? Sk.ffi.remapToJs(color) : undefined;
+        
+        // Parse coordinate format #1: flat array [x1, y1, x2, y2]
+        if (Array.isArray(jsCoord1) && jsCoord1.length === 4) {
+            x1 = jsCoord1[0]; y1 = jsCoord1[1];
+            x2 = jsCoord1[2]; y2 = jsCoord1[3];
+            if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
+                jsColor = jsCoord2;
             }
-            // line(((x1, y1), (x2, y2)), color, ...)
-            // coord1 - масив з 2 елементів, кожен з яких масив
-            else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && Array.isArray(jsCoord1[0]) && Array.isArray(jsCoord1[1])) {
-                x1 = jsCoord1[0][0];
-                y1 = jsCoord1[0][1];
-                x2 = jsCoord1[1][0];
-                y2 = jsCoord1[1][1];
-                // Якщо другий аргумент - рядок, це колір
-                if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
-                    jsColor = jsCoord2;
-                }
-            }
-            // line((x1, y1), (x2, y2), color, ...)
-            // coord1 і coord2 - окремі масиви з 2 елементів
-            else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && Array.isArray(jsCoord2) && jsCoord2.length === 2) {
-                x1 = jsCoord1[0];
-                y1 = jsCoord1[1];
-                x2 = jsCoord2[0];
-                y2 = jsCoord2[1];
-                // Якщо третій аргумент - рядок, це колір
-                if (jsColorArg !== undefined) {
-                    jsColor = jsColorArg;
-                }
-            } else {
-                // Невідомий формат - помилка
-                throw new Error("Invalid line coordinates format. Expected: (x1,y1,x2,y2) or ((x1,y1),(x2,y2)) or (x1,y1),(x2,y2)");
-            }
-            // Обробка kwargs (може перевизначити колір)
-            var props = unpackKWA(kwa);
-            if (props.color) {
-                jsColor = Sk.ffi.remapToJs(props.color);
-            }
-            cx.strokeStyle = getColor(jsColor);
-            var lineWidth = props.width !== undefined ? props.width : 1;
-            cx.lineWidth = lineWidth;
-            cx.beginPath();
-            cx.moveTo(x1, y1);
-            cx.lineTo(x2, y2);
-            cx.stroke();
         }
-        line.co_kwargs = true;
-        $loc.line = new Sk.builtin.func(line);
-        var circle = function(kwa, self, coords, radius, color) {
-            Sk.builtin.pyCheckArgs("circle", 3, 3);
-            var jsCoords = Sk.ffi.remapToJs(coords);
-            var jsRadius = Sk.ffi.remapToJs(radius);
-            var jsColor = Sk.ffi.remapToJs(color);
-            var props = unpackKWA(kwa);
-            var lineWidth = (props && props.width !== undefined) ? props.width : 1;
-            cx.strokeStyle = getColor(jsColor);
-            cx.lineWidth = Sk.ffi.remapToJs(lineWidth);
-            cx.beginPath();
-            cx.arc(jsCoords[0], jsCoords[1], jsRadius, 0, 2 * Math.PI);
-            cx.stroke();
-        };
-        circle.co_kwargs = true;
-        $loc.circle = new Sk.builtin.func(circle);
-        var rect = function(kwa, self, coord, color) {
-            // 1. rect(Rect object, color, width=...)
-            // 2. rect((x, y, w, h), color, width=...)
-            // 3. rect((x, y), (w, h), color, width=...)
-            var jsColor = Sk.ffi.remapToJs(color);
-            cx.strokeStyle = getColor(jsColor);
-            var props = unpackKWA(kwa);
-            var lineWidth = props.width !== undefined ? props.width : 1;
-            cx.lineWidth = Sk.ffi.remapToJs(lineWidth);
-            var x, y, w, h;
-            // Перевіряємо, чи це об'єкт Rect
-            if (coord && coord.coords) {
-                // Rect object
-                x = coord.coords.x1;
-                y = coord.coords.y1;
-                w = coord.coords.x2 - coord.coords.x1;
-                h = coord.coords.y2 - coord.coords.y1;
+        // Parse coordinate format #2: nested array [[x1, y1], [x2, y2]]
+        else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && 
+                 Array.isArray(jsCoord1[0]) && Array.isArray(jsCoord1[1])) {
+            x1 = jsCoord1[0][0]; y1 = jsCoord1[0][1];
+            x2 = jsCoord1[1][0]; y2 = jsCoord1[1][1];
+            if (jsCoord2 !== undefined && typeof jsCoord2 === 'string') {
+                jsColor = jsCoord2;
+            }
+        }
+        // Parse coordinate format #3: two separate arrays (x1,y1), (x2,y2)
+        else if (Array.isArray(jsCoord1) && jsCoord1.length === 2 && 
+                 Array.isArray(jsCoord2) && jsCoord2.length === 2) {
+            x1 = jsCoord1[0]; y1 = jsCoord1[1];
+            x2 = jsCoord2[0]; y2 = jsCoord2[1];
+            if (jsColorArg !== undefined) {
+                jsColor = jsColorArg;
+            }
+        } else {
+            throw new Error("Invalid line coordinates format. Expected: (x1,y1,x2,y2) or ((x1,y1),(x2,y2)) or (x1,y1),(x2,y2)");
+        }
+        
+        // Process keyword arguments (can override color/width)
+        var props = unpackKWA(kwa);
+        if (props.color) {
+            jsColor = Sk.ffi.remapToJs(props.color);
+        }
+        
+        // Apply canvas styles and draw
+        cx.strokeStyle = getColor(jsColor);
+        var lineWidth = (props.width !== undefined) ? props.width : 1;
+        cx.lineWidth = lineWidth;
+        cx.beginPath();
+        cx.moveTo(Math.round(x1), Math.round(y1));
+        cx.lineTo(Math.round(x2), Math.round(y2));
+        cx.stroke();
+    };
+    line.co_kwargs = true;
+    $loc.line = new Sk.builtin.func(line);
+    
+    // CIRCLE DRAWING
+    /**
+     * Draw a circle outline
+     * @param {Array} coords - [x, y] center position
+     * @param {Number} radius - circle radius
+     * @param {String} color - stroke color
+     * kwargs: width (line thickness)
+     */
+    var circle = function(kwa, self, coords, radius, color) {
+        Sk.builtin.pyCheckArgs("circle", 3, 3);
+        
+        var jsCoords = Sk.ffi.remapToJs(coords);
+        var jsRadius = Sk.ffi.remapToJs(radius);
+        var jsColor = Sk.ffi.remapToJs(color);
+        var props = unpackKWA(kwa);
+        
+        var lineWidth = (props && props.width !== undefined) ? props.width : 1;
+        cx.strokeStyle = getColor(jsColor);
+        cx.lineWidth = lineWidth; // Already a JS number, no remap needed
+        
+        cx.beginPath();
+        cx.arc(jsCoords[0], jsCoords[1], jsRadius, 0, 2 * Math.PI);
+        cx.stroke();
+    };
+    circle.co_kwargs = true;
+    $loc.circle = new Sk.builtin.func(circle);
+    
+    // RECTANGLE DRAWING
+    /**
+     * Draw a rectangle outline with multiple input formats:
+     * - rect(Rect_object, color, width=...)
+     * - rect((x, y, w, h), color, width=...)
+     * - rect((x, y), (w, h), color, width=...)
+     */
+    var rect = function(kwa, self, coord, color) {
+        var jsColor = Sk.ffi.remapToJs(color);
+        cx.strokeStyle = getColor(jsColor);
+        
+        var props = unpackKWA(kwa);
+        var lineWidth = (props.width !== undefined) ? props.width : 1;
+        cx.lineWidth = lineWidth;
+        
+        var x, y, w, h;
+        
+        // Check if coord is a Rect-like object with .coords property
+        if (coord && typeof coord === 'object' && coord.coords) {
+            x = coord.coords.x1;
+            y = coord.coords.y1;
+            w = coord.coords.x2 - coord.coords.x1;
+            h = coord.coords.y2 - coord.coords.y1;
+        } else {
+            var jsCoords = Sk.ffi.remapToJs(coord);
+            
+            // Format: [x, y, width, height]
+            if (Array.isArray(jsCoords) && jsCoords.length === 4) {
+                x = jsCoords[0]; y = jsCoords[1];
+                w = jsCoords[2]; h = jsCoords[3];
+            }
+            // Format: [[x, y], [width, height]]
+            else if (Array.isArray(jsCoords) && jsCoords.length === 2 && 
+                     Array.isArray(jsCoords[0]) && Array.isArray(jsCoords[1])) {
+                x = jsCoords[0][0]; y = jsCoords[0][1];
+                w = jsCoords[1][0]; h = jsCoords[1][1];
             } else {
-                // Звичайний кортеж
-                var jsCoords = Sk.ffi.remapToJs(coord);
-                // rect((x, y, w, h), color, ...)
-                if (jsCoords.length === 4) {
-                    x = jsCoords[0];
-                    y = jsCoords[1];
-                    w = jsCoords[2];
-                    h = jsCoords[3];
-                }
-                // rect((x, y), (w, h), color, ...)
-                else if (jsCoords.length === 2) {
-                    x = jsCoords[0][0];
-                    y = jsCoords[0][1];
-                    w = jsCoords[1][0];
-                    h = jsCoords[1][1];
+                throw new Sk.builtin.TypeError(
+                    "rect() takes either Rect object, (left, top, width, height) or ((left, top), (width, height))"
+                );
+            }
+        }
+        
+        cx.beginPath();
+        cx.rect(x, y, w, h);
+        cx.stroke();
+    };
+    rect.co_kwargs = true;
+    $loc.rect = new Sk.builtin.func(rect);
+    
+    // FILLED SHAPES
+    /**
+     * Draw a filled rectangle from a Rect object
+     */
+    $loc.filled_rect = new Sk.builtin.func(function(self, rect, color) {
+        Sk.builtin.pyCheckArgs("filled_rect", 3, 3);
+        
+        // Safely extract coordinates from Rect object
+        if (!rect || !rect.coords) {
+            throw new Sk.builtin.TypeError("filled_rect() requires a Rect object with .coords property");
+        }
+        
+        var x1 = rect.coords.x1;
+        var y1 = rect.coords.y1;
+        var x2 = rect.coords.x2;
+        var y2 = rect.coords.y2;
+        var jsColor = Sk.ffi.remapToJs(color);
+        
+        cx.fillStyle = getColor(jsColor);
+        cx.beginPath();
+        cx.rect(x1, y1, x2 - x1, y2 - y1);
+        cx.fill();
+    });
+    
+    /**
+     * Draw a filled circle
+     * @param {Array} pos - [x, y] center position
+     * @param {Number} radius - circle radius
+     * @param {String} color - fill color
+     */
+    $loc.filled_circle = new Sk.builtin.func(function(self, pos, radius, color) {
+        Sk.builtin.pyCheckArgs("filled_circle", 3, 3); // 3 Python args: pos, radius, color
+        
+        var jsCoords = Sk.ffi.remapToJs(pos);
+        var jsRadius = Sk.ffi.remapToJs(radius);
+        var jsColor = Sk.ffi.remapToJs(color);
+        
+        cx.fillStyle = getColor(jsColor);
+        cx.beginPath();
+        cx.arc(jsCoords[0], jsCoords[1], jsRadius, 0, 2 * Math.PI);
+        cx.closePath();
+        cx.fill();
+    });
+    
+    // POLYGON DRAWING    
+    /**
+     * Draw a polygon outline from an iterable of points
+     * @param {Array} points - Array of [x, y] coordinates
+     * @param {String} color - stroke color
+     * kwargs: width
+     */
+    var polygon = function(kwa, self, points, color) {
+        Sk.builtin.pyCheckArgs("polygon", 3, 4); // 3-4 Python args
+        
+        var jsPoints = Sk.ffi.remapToJs(points);
+        
+        // Validate iterable points
+        if (!jsPoints || typeof jsPoints[Symbol.iterator] !== "function") {
+            throw new Sk.builtin.TypeError("screen.draw.polygon() requires an iterable of points to draw");
+        }
+        if (jsPoints.length === 0) return;
+        
+        var jsColor = Sk.ffi.remapToJs(color);
+        var props = unpackKWA(kwa);
+        var lineWidth = (props.width !== undefined) ? props.width : 1;
+        
+        cx.strokeStyle = getColor(jsColor);
+        cx.lineWidth = lineWidth;
+        cx.beginPath();
+        
+        // Round coordinates for crisp rendering
+        var first = jsPoints[0];
+        cx.moveTo(Math.round(first[0]), Math.round(first[1]));
+        for (var i = 1; i < jsPoints.length; i++) {
+            var p = jsPoints[i];
+            cx.lineTo(Math.round(p[0]), Math.round(p[1]));
+        }
+        cx.closePath();
+        cx.stroke();
+    };
+    polygon.co_kwargs = true;
+    $loc.polygon = new Sk.builtin.func(polygon);
+    
+    /**
+     * Draw a filled polygon from an iterable of points
+     */
+    var filled_polygon = function(kwa, self, points, color) {
+        Sk.builtin.pyCheckArgs("filled_polygon", 3, 4);
+        
+        var jsPoints = Sk.ffi.remapToJs(points);
+        
+        if (!jsPoints || typeof jsPoints[Symbol.iterator] !== "function") {
+            throw new Sk.builtin.TypeError("screen.draw.filled_polygon() requires an iterable of points to draw");
+        }
+        if (jsPoints.length === 0) return;
+        
+        var jsColor = Sk.ffi.remapToJs(color);
+        cx.fillStyle = getColor(jsColor);
+        cx.beginPath();
+        
+        var first = jsPoints[0];
+        cx.moveTo(Math.round(first[0]), Math.round(first[1]));
+        for (var i = 1; i < jsPoints.length; i++) {
+            var p = jsPoints[i];
+            cx.lineTo(Math.round(p[0]), Math.round(p[1]));
+        }
+        cx.closePath();
+        cx.fill();
+    };
+    filled_polygon.co_kwargs = true;
+    $loc.filled_polygon = new Sk.builtin.func(filled_polygon);
+    
+    // TEXT RENDERING HELPERS
+    /**
+     * Word wrap helper: splits text into lines that fit within maxWidth
+     * @param {CanvasRenderingContext2D} ctx - canvas context for measuring text
+     * @param {String} text - text to wrap
+     * @param {Number} maxWidth - maximum line width in pixels
+     * @param {Boolean} strip - whether to strip whitespace (unused but kept for API compatibility)
+     */
+    function wrapLines(ctx, text, maxWidth, strip) {
+        if (!maxWidth) return text.split("\n");
+        
+        const result = [];
+        const paragraphs = text.split("\n");
+        
+        for (let p of paragraphs) {
+            const words = p.split(" ");
+            let line = "";
+            for (let w of words) {
+                const test = line ? line + " " + w : w;
+                if (ctx.measureText(test).width > maxWidth && line) {
+                    result.push(line);
+                    line = w;
                 } else {
-                    throw new Sk.builtin.TypeError("rect() takes either Rect object, (left, top, width, height) or ((left, top), (width, height))");
+                    line = test;
                 }
             }
-            cx.beginPath();
-            cx.rect(x, y, w, h);
-            cx.stroke();
-        };
-        rect.co_kwargs = true;
-        $loc.rect = new Sk.builtin.func(rect);
-        $loc.filled_rect = new Sk.builtin.func(function(self, rect, color) {
-            Sk.builtin.pyCheckArgs("filled_rect", 3, 3);
-            var args = {
-                x1: rect.coords.x1,
-                y1: rect.coords.y1,
-                x2: rect.coords.x2,
-                y2: rect.coords.y2,
-                color: Sk.ffi.remapToJs(color)
-            }
-            cx.fillStyle = getColor(args.color);
-            cx.beginPath();
-            cx.rect(args.x1, args.y1, args.x2 - args.x1, args.y2 - args.y1);
-            cx.fill();
-        });
-        $loc.filled_circle = new Sk.builtin.func(function(self, pos, radius, color) {
-            Sk.builtin.pyCheckArgs("filled_circle", arguments, 4, 4);
-            var args = {
-                coords: Sk.ffi.remapToJs(pos),
-                radius: Sk.ffi.remapToJs(radius),
-                color: Sk.ffi.remapToJs(color)
-            };
-            cx.fillStyle = getColor(args.color);
-            cx.beginPath();
-            cx.arc(args.coords[0], args.coords[1], args.radius, 0, 2 * Math.PI);
-            cx.closePath();
-            cx.fill();
-        });
-        //
-        function fitSize(text, fontname, bold, width, height, lineheight, strip) {
-            function fits(size) {
-                cx.font = (bold ? "bold " : "") + size + "px " + fontname;
-                const lines = wrapLines(cx, text, width, strip);
-                const widths = lines.map(l => cx.measureText(l).width);
-                const w = Math.max(...widths, 0);
-                // 🔥 pygame-style height calculation
-                const metrics = cx.measureText("Mg");
-                const fontHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-                const lineSize = fontHeight * lineheight;
-                const h = Math.round((lines.length - 1) * lineSize) + fontHeight;
-                return w <= width && h <= height;
-            }
-            let a = 1,
-                b = 256;
-            if (!fits(a)) return a;
-            if (fits(b)) return b;
-            while (b - a > 1) {
-                const c = (a + b) >> 1;
-                if (fits(c)) a = c;
-                else b = c;
-            }
-            return a;
+            result.push(line);
         }
-        //	
-        var textbox = function(kwa, self, text, box) {
-            Sk.builtin.pyCheckArgs("textbox", arguments, 3, 4);
-            const jsText = Sk.ffi.remapToJs(text);
-            const props = {};
-            for (let i = 0; i < kwa.length; i += 2) props[Sk.ffi.remapToJs(kwa[i])] = Sk.ffi.remapToJs(kwa[i + 1]);
-            props.fontname ??= "Arial";
-            props.color ??= "white";
-            props.lineheight ??= 1.0; // pygame default
-            props.align ??= "center";
-            props.valign ??= "middle";
-            props.angle ??= 0;
-
-            const rect = box.coords ? {
-                x: box.coords.x1,
-                y: box.coords.y1,
-                width: box.coords.x2 - box.coords.x1,
-                height: box.coords.y2 - box.coords.y1
-            } : {
-                x: box.v[0].v,
-                y: box.v[1].v,
-                width: box.v[2].v,
-                height: box.v[3].v
-            };
-            const fontsize = fitSize(jsText, props.fontname, true, // bold
-                rect.width, rect.height, props.lineheight, true);
-            cx.save();
-			const angle = (props.angle || 0) * Math.PI / 180;
-			if (angle !== 0) {
-				const pivotX = rect.x + rect.width / 2;
-				const pivotY = rect.y;
-
-				cx.translate(pivotX, pivotY);
-				cx.rotate(-angle);
-				cx.translate(-pivotX, -pivotY);			}
-
-            if (props.background) {
-                cx.fillStyle = getColor(props.background);
-                cx.fillRect(rect.x, rect.y, rect.width, rect.height);
-            }
-            cx.font = "bold " + fontsize + "px " + props.fontname;
-            cx.textBaseline = "top";
-            cx.fillStyle = getColor(props.color);
-            const lines = wrapLines(cx, jsText, rect.width, true);
+        return result;
+    }
+    
+    /**
+     * Binary search to find maximum font size that fits text in given dimensions
+     * Uses pygame-style font height calculation for accuracy
+     */
+    function fitSize(text, fontname, bold, width, height, lineheight, strip) {
+        function fits(size) {
+            cx.font = (bold ? "bold " : "") + size + "px " + fontname;
+            const lines = wrapLines(cx, text, width, strip);
+            const widths = lines.map(l => cx.measureText(l).width);
+            const w = Math.max(...widths, 0);
+            
+            // Pygame-style height calculation using actual bounding box
             const metrics = cx.measureText("Mg");
             const fontHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-            const lineSize = fontHeight * props.lineheight;
-            let totalHeight = (lines.length - 1) * lineSize + fontHeight;
-            let y = rect.y;
-            if (props.valign === "middle") y += (rect.height - totalHeight) / 2;
-            else if (props.valign === "bottom") y += rect.height - totalHeight;
-            for (let line of lines) {
-                const w = cx.measureText(line).width;
-                let x = rect.x;
-                if (props.align === "center") x += (rect.width - w) / 2;
-                else if (props.align === "right") x += rect.width - w;
-                cx.fillText(line, x, y);
-                y += lineSize;
-            }
-            cx.restore();
-        };
-        textbox.co_kwargs = true;
-        $loc.textbox = new Sk.builtin.func(textbox);
-        //
-        /*   Word wrap helper  */
-        function wrapLines(ctx, text, maxWidth) {
-            if (!maxWidth) return text.split("\n");
-            const result = [];
-            const paragraphs = text.split("\n");
-            for (let p of paragraphs) {
-                const words = p.split(" ");
-                let line = "";
-                for (let w of words) {
-                    const test = line ? line + " " + w : w;
-                    if (ctx.measureText(test).width > maxWidth && line) {
-                        result.push(line);
-                        line = w;
-                    } else {
-                        line = test;
-                    }
-                }
-                result.push(line);
-            }
-            return result;
+            const lineSize = fontHeight * lineheight;
+            const h = Math.round((lines.length - 1) * lineSize) + fontHeight;
+            
+            return w <= width && h <= height;
         }
-        /* screen.draw.text */
-        var text = function(kwa, self, text, pos) {
-            Sk.builtin.pyCheckArgs("text", arguments, 2, 4);
-            var jsText = Sk.ffi.remapToJs(text);
-            // ---------- kwargs ---------- 
-            var props = {};
-            for (var i = 0; i < kwa.length; i += 2) {
-                var key = Sk.ffi.remapToJs(kwa[i]);
-                props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
-            }
-            // ---------- defaults ---------- 
-            props.fontname ??= "Arial";
-            props.fontsize ??= 24;
-            props.color ??= "white";
-            props.ocolor ??= "#000";
-            props.owidth ??= 0;
-            //props.align ??= "center";
-            props.angle ??= 0;
-            props.alpha ??= 1.0;
-            props.lineheight ??= 1.0;
-            props.x ??= 0;
-            props.y ??= 0;
-            props.y ??= 0;
-            const PYGAME_FONT_SCALE = 0.70;
-            cx.font = "bold " + (props.fontsize * PYGAME_FONT_SCALE) + "px " + props.fontname;
-            cx.textBaseline = "top";
-            var maxWidth = props.width || null;
-            if (props.widthem) {
-                maxWidth = props.widthem * props.fontsize;
-            }
-            var lines = wrapLines(cx, jsText, maxWidth);
-            var lineHeight = props.lineheight * props.fontsize;
-            var size = {
-                width: 0,
-                height: lineHeight * lines.length,
-                lineWidths: []
-            };
-            for (var i = 0; i < lines.length; i++) {
-                var w = cx.measureText(lines[i]).width;
-                size.lineWidths.push(w);
-                if (w > size.width) size.width = w;
-            }
-            // визначаємо точку позиціонування (якір) до виклику updateCoordsFromProps 
-            var anchorPoint = null;
-            // Перевіряємо всі можливі параметри позиціонування
-            if (props.pos) {
-                props.topleft = props.pos;
-            }
-            if (props.center) {
-                anchorPoint = {
-                    x: props.center[0],
-                    y: props.center[1]
-                };
-            } else if (props.centerx !== undefined && props.centery !== undefined) {
-                anchorPoint = {
-                    x: props.centerx,
-                    y: props.centery
-                };
-            } else if (props.topleft) {
-                anchorPoint = {
-                    x: props.topleft[0],
-                    y: props.topleft[1]
-                };
-            } else if (props.topright) {
-                anchorPoint = {
-                    x: props.topright[0],
-                    y: props.topright[1]
-                };
-            } else if (props.bottomleft) {
-                anchorPoint = {
-                    x: props.bottomleft[0],
-                    y: props.bottomleft[1]
-                };
-            } else if (props.bottomright) {
-                anchorPoint = {
-                    x: props.bottomright[0],
-                    y: props.bottomright[1]
-                };
-            } else if (props.midtop) {
-                anchorPoint = {
-                    x: props.midtop[0],
-                    y: props.midtop[1]
-                };
-            } else if (props.midleft) {
-                anchorPoint = {
-                    x: props.midleft[0],
-                    y: props.midleft[1]
-                };
-            } else if (props.midbottom) {
-                anchorPoint = {
-                    x: props.midbottom[0],
-                    y: props.midbottom[1]
-                };
-            } else if (props.midright) {
-                anchorPoint = {
-                    x: props.midright[0],
-                    y: props.midright[1]
-                };
-            } else if (props.left !== undefined && props.top !== undefined) {
-                anchorPoint = {
-                    x: props.left,
-                    y: props.top
-                };
-            } else if (props.right !== undefined && props.top !== undefined) {
-                anchorPoint = {
-                    x: props.right,
-                    y: props.top
-                };
-            } else if (props.left !== undefined && props.bottom !== undefined) {
-                anchorPoint = {
-                    x: props.left,
-                    y: props.bottom
-                };
-            } else if (props.right !== undefined && props.bottom !== undefined) {
-                anchorPoint = {
-                    x: props.right,
-                    y: props.bottom
-                };
-            } else if (props.centerx !== undefined && props.top !== undefined) {
-                anchorPoint = {
-                    x: props.centerx,
-                    y: props.top
-                };
-            } else if (props.left !== undefined && props.centery !== undefined) {
-                anchorPoint = {
-                    x: props.left,
-                    y: props.centery
-                };
-            } else if (props.centerx !== undefined && props.bottom !== undefined) {
-                anchorPoint = {
-                    x: props.centerx,
-                    y: props.bottom
-                };
-            } else if (props.right !== undefined && props.centery !== undefined) {
-                anchorPoint = {
-                    x: props.right,
-                    y: props.centery
-                };
-            }
-            // якщо точка позиціонування не була визначена, використовуємо верхній лівий кут
-            if (!anchorPoint) {
-                props.topleft = [pos?.v?.[0]?.v ?? 0, pos?.v?.[1]?.v ?? 0];
-                anchorPoint = {
-                    x: props.topleft[0],
-                    y: props.topleft[1]
-                };
-            }
-            //  coords (обчислює props.x, props.y - верхній лівий кут) 
-            updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
-            if (props.background) {
-                cx.fillStyle = getColor(props.background);
-                cx.fillRect(props.x, props.y, size.width, size.height);
-            }
-            cx.shadowOffsetX = 0;
-            cx.shadowOffsetY = 0;
-            if (props.scolor) {
-                cx.shadowOffsetX = 2;
-                cx.shadowOffsetY = 2;
-                cx.shadowColor = props.scolor;
-            }
-            for (var i = 0; i < lines.length; i++) {
-                var x = props.x;
-                var y = props.y + i * lineHeight * 0.8;
-                if (maxWidth) {
-                    if (props.topleft || props.bottomleft || props.midleft) {
-                        props.align = "left"
-                    }
-                    if (props.topright || props.bottomright || props.midright) {
-                        props.align = "right"
-                    }
-                    if (props.midtop || props.midbottom || props.center) {
-                        props.align = "center"
-                    }
-                }
-                switch (props.align) {
-                    // align для кожного рядка
-                    case "center":
-                        x += (size.width - size.lineWidths[i]) / 2;
-                        break;
-                    case "right":
-                        x += (size.width - size.lineWidths[i]);
-                        break;
-                }
-                cx.save();
-                // обертання навколо точки позиціонування (якоря)
-                if (props.angle !== 0) {
-                    cx.translate(anchorPoint.x, anchorPoint.y);
-                    cx.rotate(-props.angle * Math.PI / 180);
-                    cx.translate(-anchorPoint.x, -anchorPoint.y);
-                }
-                cx.translate(x, y);
-                cx.globalAlpha = props.alpha;
-                if (props.gcolor) {
-                    const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
-                    grad.addColorStop(0, getColor(props.color));
-                    grad.addColorStop(0.8, getColor(props.gcolor));
-                    cx.fillStyle = grad;
-                } else {
-                    cx.fillStyle = getColor(props.color);
-                }
-                if (props.owidth) {
-                    cx.strokeStyle = getColor(props.ocolor);
-                    cx.lineJoin = "round";
-                    cx.lineWidth = props.owidth * props.fontsize / 10;
-                    cx.strokeText(lines[i], 0, 0);
-                }
-                cx.fillText(lines[i], 0, 0);
-                cx.restore();
-            }
-        };
-        text.co_kwargs = true;
-        $loc.text = new Sk.builtin.func(text);
-    }, 'pgzero.screen.SurfacePainter', []);
+        
+        let a = 1, b = 256;
+        if (!fits(a)) return a;
+        if (fits(b)) return b;
+        
+        // Binary search for optimal font size
+        while (b - a > 1) {
+            const c = (a + b) >> 1;
+            if (fits(c)) a = c;
+            else b = c;
+        }
+        return a;
+    }
     
-    var Clock = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        $loc.__init__ = new Sk.builtin.func(function(self) {
-            self.callbacks = {};
-        });
-        $loc.schedule_unique = new Sk.builtin.func(function(self, callback, delay) {
-            Sk.builtin.pyCheckArgs("schedule_unique", 3, 3);
-            if (self.callbacks[callback]) {
-                clearTimeout(self.callbacks[callback]);
-                delete self.callbacks[callback];
+    // TEXTBOX: TEXT WITH BACKGROUND AND ALIGNMENT
+    /**
+     * Draw text inside a rectangular box with alignment, background, and rotation support
+     * @param {String} text - text content
+     * @param {Rect|Array} box - Rect object or [x, y, width, height] array
+     * kwargs: fontname, color, background, align, valign, lineheight, angle, width
+     */
+    var textbox = function(kwa, self, text, box) {
+        Sk.builtin.pyCheckArgs("textbox", 3, 4);
+        
+        const jsText = Sk.ffi.remapToJs(text);
+        
+        // Parse keyword arguments with defaults
+        const props = {};
+        for (let i = 0; i < kwa.length; i += 2) {
+            props[Sk.ffi.remapToJs(kwa[i])] = Sk.ffi.remapToJs(kwa[i + 1]);
+        }
+        props.fontname = props.fontname ?? "Arial";
+        props.color = props.color ?? "white";
+        props.lineheight = props.lineheight ?? 1.0;
+        props.align = props.align ?? "center";
+        props.valign = props.valign ?? "middle";
+        props.angle = props.angle ?? 0;
+        
+        // Extract box dimensions (support both Rect objects and arrays)
+        const rect = (box && box.coords) ? {
+            x: box.coords.x1,
+            y: box.coords.y1,
+            width: box.coords.x2 - box.coords.x1,
+            height: box.coords.y2 - box.coords.y1
+        } : {
+            x: box[0], y: box[1], width: box[2], height: box[3]
+        };
+        
+        // Calculate optimal font size
+        const fontsize = fitSize(jsText, props.fontname, true, rect.width, rect.height, props.lineheight, true);
+        
+        cx.save();
+        
+        // Apply rotation around box center-top pivot
+        const angle = (props.angle || 0) * Math.PI / 180;
+        if (angle !== 0) {
+            const pivotX = rect.x + rect.width / 2;
+            const pivotY = rect.y;
+            cx.translate(pivotX, pivotY);
+            cx.rotate(-angle);
+            cx.translate(-pivotX, -pivotY);
+        }
+        
+        // Draw background if specified
+        if (props.background) {
+            cx.fillStyle = getColor(props.background);
+            cx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        }
+        
+        // Configure text styling
+        cx.font = "bold " + fontsize + "px " + props.fontname;
+        cx.textBaseline = "top";
+        cx.fillStyle = getColor(props.color);
+        
+        // Wrap text and calculate dimensions
+        const lines = wrapLines(cx, jsText, rect.width, true);
+        const metrics = cx.measureText("Mg");
+        const fontHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+        const lineSize = fontHeight * props.lineheight;
+        let totalHeight = (lines.length - 1) * lineSize + fontHeight;
+        
+        // Vertical alignment
+        let y = rect.y;
+        if (props.valign === "middle") y += (rect.height - totalHeight) / 2;
+        else if (props.valign === "bottom") y += rect.height - totalHeight;
+        
+        // Draw each line with horizontal alignment
+        for (let line of lines) {
+            const w = cx.measureText(line).width;
+            let x = rect.x;
+            if (props.align === "center") x += (rect.width - w) / 2;
+            else if (props.align === "right") x += rect.width - w;
+            
+            cx.fillText(line, x, y);
+            y += lineSize;
+        }
+        
+        cx.restore();
+    };
+    textbox.co_kwargs = true;
+    $loc.textbox = new Sk.builtin.func(textbox);
+    
+    // TEXT: ADVANCED TEXT RENDERING WITH POSITIONING   
+    /**
+     * Draw text with advanced positioning, styling, and effects
+     * Supports pygame-style anchor points: pos, center, topleft, etc.
+     * kwargs: fontname, fontsize, color, ocolor (outline), owidth, align, 
+     *         angle, alpha, lineheight, background, scolor (shadow), gcolor (gradient)
+     */
+    var text = function(kwa, self, text, pos) {
+        Sk.builtin.pyCheckArgs("text", 3, 4);
+        
+        var jsText = Sk.ffi.remapToJs(text);
+        
+        // Parse keyword arguments
+        var props = {};
+        for (var i = 0; i < kwa.length; i += 2) {
+            var key = Sk.ffi.remapToJs(kwa[i]);
+            props[key] = Sk.ffi.remapToJs(kwa[i + 1]);
+        }
+        
+        // Set defaults
+        props.fontname = props.fontname ?? "Arial";
+        props.fontsize = props.fontsize ?? 24;
+        props.color = props.color ?? "white";
+        props.ocolor = props.ocolor ?? "#000";
+        props.owidth = props.owidth ?? 0;
+        props.angle = props.angle ?? 0;
+        props.alpha = props.alpha ?? 1.0;
+        props.lineheight = props.lineheight ?? 1.0;
+        
+        // Scale font for pygame compatibility
+        const PYGAME_FONT_SCALE = 0.70;
+        cx.font = "bold " + (props.fontsize * PYGAME_FONT_SCALE) + "px " + props.fontname;
+        cx.textBaseline = "top";
+        
+        // Calculate max width for wrapping
+        var maxWidth = props.width || null;
+        if (props.widthem) {
+            maxWidth = props.widthem * props.fontsize;
+        }
+        
+        // Wrap text and measure dimensions
+        var lines = wrapLines(cx, jsText, maxWidth);
+        var lineHeight = props.lineheight * props.fontsize;
+        var size = { width: 0, height: lineHeight * lines.length, lineWidths: [] };
+        
+        for (var i = 0; i < lines.length; i++) {
+            var w = cx.measureText(lines[i]).width;
+            size.lineWidths.push(w);
+            if (w > size.width) size.width = w;
+        }
+        
+        // Determine anchor point from positioning kwargs (pygame-style priority)
+        var anchorPoint = null;
+        
+        // Handle pos alias
+        if (props.pos) props.topleft = props.pos;
+        
+        // Check all possible anchor specifications in priority order
+        const anchors = [
+            'center', 'centerx,centery', 'topleft', 'topright', 'bottomleft', 'bottomright',
+            'midtop', 'midleft', 'midbottom', 'midright',
+            'left,top', 'right,top', 'left,bottom', 'right,bottom',
+            'centerx,top', 'left,centery', 'centerx,bottom', 'right,centery'
+        ];
+        
+        for (const anchor of anchors) {
+            if (anchor.includes(',')) {
+                const [a, b] = anchor.split(',');
+                if (props[a] !== undefined && props[b] !== undefined) {
+                    anchorPoint = { x: props[a], y: props[b] };
+                    break;
+                }
+            } else if (props[anchor] !== undefined) {
+                if (Array.isArray(props[anchor])) {
+                    anchorPoint = { x: props[anchor][0], y: props[anchor][1] };
+                } else if (typeof props[anchor] === 'object' && props[anchor].x !== undefined) {
+                    anchorPoint = { x: props[anchor].x, y: props[anchor].y };
+                }
+                if (anchorPoint) break;
             }
-            self.callbacks[callback] = setTimeout(function() {
-                delete self.callbacks[callback];
-                Sk.misceval.callsimAsync(handlers, callback).then(function success(r) {}, function fail(e) {
-                    window.onerror(e);
-                });
-            }, Sk.ffi.remapToJs(delay) * 1000);
-        });
-        $loc.schedule = new Sk.builtin.func(function(self, callback, delay) {
-            Sk.builtin.pyCheckArgs("schedule_unique", 3, 3);
-            self.callbacks[callback] = setTimeout(function() {
-                delete self.callbacks[callback];
-                Sk.misceval.callsimAsync(handlers, callback).then(function success(r) {}, function fail(e) {
-                    window.onerror(e);
-                });
-            }, Sk.ffi.remapToJs(delay) * 1000);
-        });
-        $loc.schedule_interval = new Sk.builtin.func(function(self, callback, delay) {
-            Sk.builtin.pyCheckArgs("schedule_schedule", 3, 3);
-            self.callbacks[callback] = setInterval(function() {
-                delete self.callbacks[callback];
-                Sk.misceval.callsimAsync(handlers, callback).then(function success(r) {}, function fail(e) {
-                    window.onerror(e);
-                });
-            }, Sk.ffi.remapToJs(delay) * 1000);
-        });
-        $loc.unschedule = new Sk.builtin.func(function(self, callback) {
-            Sk.builtin.pyCheckArgs("unschedule", arguments, 2, 2);
-            var id = self.callbacks[callback];
-            if (id !== undefined) {
-                clearTimeout(id);
-                clearInterval(id);
-                delete self.callbacks[callback];
+        }
+        
+        // Fallback to pos parameter or [0, 0]
+        if (!anchorPoint) {
+            const fallbackPos = (pos && pos.v) ? [pos.v[0]?.v ?? 0, pos.v[1]?.v ?? 0] : [0, 0];
+            props.topleft = fallbackPos;
+            anchorPoint = { x: props.topleft[0], y: props.topleft[1] };
+        }
+        
+        // Calculate final top-left position based on anchor and size
+        updateCoordsFromProps(props, size, Sk.ffi.remapToJs(pos));
+        
+        // Draw background if specified
+        if (props.background) {
+            cx.fillStyle = getColor(props.background);
+            cx.fillRect(props.x, props.y, size.width, size.height);
+        }
+        
+        // Configure shadow effect
+        cx.shadowOffsetX = 0;
+        cx.shadowOffsetY = 0;
+        if (props.scolor) {
+            cx.shadowOffsetX = 2;
+            cx.shadowOffsetY = 2;
+            cx.shadowColor = props.scolor;
+        }
+        
+        // Draw each line with alignment and effects
+        for (var i = 0; i < lines.length; i++) {
+            var x = props.x;
+            var y = props.y + i * lineHeight * 0.8; // Slight line spacing adjustment
+            
+            // Auto-align based on anchor position when maxWidth is set
+            if (maxWidth) {
+                if (['topleft', 'bottomleft', 'midleft'].some(k => props[k])) props.align = "left";
+                if (['topright', 'bottomright', 'midright'].some(k => props[k])) props.align = "right";
+                if (['midtop', 'midbottom', 'center'].some(k => props[k])) props.align = "center";
+            }
+            
+            // Apply horizontal alignment per line
+            switch (props.align) {
+                case "center":
+                    x += (size.width - size.lineWidths[i]) / 2;
+                    break;
+                case "right":
+                    x += (size.width - size.lineWidths[i]);
+                    break;
+            }
+            
+            cx.save();
+            
+            // Apply rotation around anchor point
+            if (props.angle !== 0) {
+                cx.translate(anchorPoint.x, anchorPoint.y);
+                cx.rotate(-props.angle * Math.PI / 180);
+                cx.translate(-anchorPoint.x, -anchorPoint.y);
+            }
+            
+            cx.translate(x, y);
+            cx.globalAlpha = props.alpha;
+            
+            // Apply gradient fill if specified
+            if (props.gcolor) {
+                const grad = cx.createLinearGradient(0, 0, 0, props.fontsize);
+                grad.addColorStop(0, getColor(props.color));
+                grad.addColorStop(0.8, getColor(props.gcolor));
+                cx.fillStyle = grad;
+            } else {
+                cx.fillStyle = getColor(props.color);
+            }
+            
+            // Draw text outline if specified
+            if (props.owidth) {
+                cx.strokeStyle = getColor(props.ocolor);
+                cx.lineJoin = "round";
+                cx.lineWidth = props.owidth * props.fontsize / 10;
+                cx.strokeText(lines[i], 0, 0);
+            }
+            
+            // Draw main text
+            cx.fillText(lines[i], 0, 0);
+            cx.restore();
+        }
+    };
+    text.co_kwargs = true;
+    $loc.text = new Sk.builtin.func(text);
+    
+}, 'pgzero.screen.SurfacePainter', []);
+
+//////////////////////////////////////////////////////////////////    
+/**
+ * Clock class implementation for Pygame Zero (Skulpt environment)
+ *
+ * This class provides scheduling utilities similar to pgzero.clock:
+ *
+ * Methods:
+ *   - schedule(callback, delay)
+ *   - schedule_unique(callback, delay)
+ *   - schedule_interval(callback, delay)
+ *   - each_tick(callback)
+ *   - tick(callback)  (alias for each_tick)
+ *   - unschedule(callback)
+ *
+ * Internally:
+ *   - Uses JavaScript timers (setTimeout / setInterval)
+ *   - Stores callback → timer ID mapping in a Map
+ *   - Executes Python callbacks asynchronously via Sk.misceval.callsimAsync
+ */
+
+var Clock = Sk.misceval.buildClass(s, function($gbl, $loc) {
+    // Map is used instead of a plain object to allow Python function
+    $loc.__init__ = new Sk.builtin.func(function(self) {
+        self.callbacks = new Map();
+    });
+
+    // Internal helper function to execute a Python callback safely.
+    var executeCallback = function(callback) {
+        return Sk.misceval.callsimAsync(undefined, callback).catch(function(err) {
+            console.error("Pygame Zero Clock Error:", err);
+            if (window.onerror) {
+                window.onerror(err.message, null, null, null, err);
             }
         });
-        $loc.each_tick = new Sk.builtin.func(function(self, callback) {
-            Sk.builtin.pyCheckArgs("each_tick", arguments, 2, 2);
-            // 60 FPS ≈ 0.0167 сек
-            scheduleInternal(self, callback, 1 / 60, true);
-        });
-        $loc.tick = $loc.each_tick;
-    }, 'pgzero.clock', []);
-    Sk.globals.clock = Sk.misceval.callsim(Clock);
+    };
+
+    // schedule(callback, delay)
+    $loc.schedule = new Sk.builtin.func(function(self, callback, delay) {
+        Sk.builtin.pyCheckArgs("schedule", arguments, 3, 3);
+
+        var jsDelay = Sk.ffi.remapToJs(delay) * 1000;
+        var id = setTimeout(function() {
+            self.callbacks.delete(callback);
+            executeCallback(callback);
+        }, jsDelay);
+        self.callbacks.set(callback, id);
+    });
+
+     // schedule_unique(callback, delay)
+    $loc.schedule_unique = new Sk.builtin.func(function(self, callback, delay) {
+        Sk.builtin.pyCheckArgs("schedule_unique", arguments, 3, 3);
+
+        if (self.callbacks.has(callback)) {
+            clearTimeout(self.callbacks.get(callback));
+        }
+
+        var jsDelay = Sk.ffi.remapToJs(delay) * 1000;
+        var id = setTimeout(function() {
+            self.callbacks.delete(callback);
+            executeCallback(callback);
+        }, jsDelay);
+        self.callbacks.set(callback, id);
+    });
+
+    // schedule_interval(callback, delay)
+    $loc.schedule_interval = new Sk.builtin.func(function(self, callback, delay) {
+        Sk.builtin.pyCheckArgs("schedule_interval", arguments, 3, 3);
+
+        var jsDelay = Sk.ffi.remapToJs(delay) * 1000;
+        var id = setInterval(function() {
+            executeCallback(callback);
+        }, jsDelay);
+        self.callbacks.set(callback, id);
+    });
+
+    // each_tick(callback)
+    $loc.each_tick = new Sk.builtin.func(function(self, callback) {
+        Sk.builtin.pyCheckArgs("each_tick", arguments, 2, 2);
+
+        const pyFunc = callback;
+        const interval = 1000 / 60;
+        const dt = Sk.ffi.remapToPy(1 / 60);
+
+        function tick() {
+            if (!self.callbacks.has(pyFunc)) return;
+
+            Sk.misceval.callsimAsync(undefined, pyFunc, dt).then(function() {
+
+                if (self.callbacks.has(pyFunc)) {
+                    let nextId = setTimeout(tick, interval);
+                    self.callbacks.set(pyFunc, nextId);
+                }
+            }).catch(function(err) {
+                // If callback doesn't accept dt, retry without argument
+                if (err.toString().includes("arguments")) {
+                    Sk.misceval.callsimAsync(undefined, pyFunc).then(function() {
+                        let nextId = setTimeout(tick, interval);
+                        self.callbacks.set(pyFunc, nextId);
+                    }).catch(e => console.error("Final tick error:", e));
+
+                } else {
+                    console.error("Tick execution error:", err);
+                }
+            });
+        }
+        // Mark callback as active
+        self.callbacks.set(pyFunc, true);
+        tick();
+    });
+
+    // tick(callback) - alias for each_tick(callback).
+    $loc.tick = $loc.each_tick;
+
+    // unschedule(callback)
+    $loc.unschedule = new Sk.builtin.func(function(self, callback) {
+        Sk.builtin.pyCheckArgs("unschedule", arguments, 2, 2);
+
+        if (self.callbacks.has(callback)) {
+            var id = self.callbacks.get(callback);
+
+            clearTimeout(id);
+            clearInterval(id);
+            self.callbacks.delete(callback);
+        }
+    });
+}, 'Clock', []);
+Sk.globals.clock = Sk.misceval.callsim(Clock);    
+    
+    
+    //////////////////////////////////////////////////////
+    /**
+     *  SCREEN CLASS
+     * Represents the main drawing surface in a Pygame Zero–like environment.
+     * 
+     * This class provides high-level drawing utilities such as:
+     *  - Clearing the screen
+     *  - Filling with a color
+     *  - Drawing images (blitting)
+     *  - Drawing gradients
+     *  - Accessing drawing helpers (SurfacePainter)
+     *  - Getting screen bounds
+     * 
+     * Available methods:
+     *  - clear() - clears the entire screen
+     *  - fill(color) -  fills the entire screen with a solid RGB color
+     *  - blit(image, position) - draws an image on the screen at the specified (x, y) position
+     *  - blit_gradient(start_color, end_color) - draws a vertical gradient from top (start_color) to bottom (end_color)
+     *  - bounds() - returns a ZRect representing the full screen area
+     * 
+     * Attributes:
+     *  - surface (Surface instance) - provides direct access to the underlying Surface object.
+     *  - draw (SurfacePainter instance) -  provides access to drawing primitives (lines, circles, etc.)
+     */
     var Screen = Sk.misceval.buildClass(s, function($gbl, $loc) {
+        // clear()
         $loc.clear = new Sk.builtin.func(function(self) {
             Sk.builtin.pyCheckArgs("clear", arguments, 1, 1);
             cx.clearRect(0, 0, width, height);
+            return Sk.builtin.none.none$;
         });
+        // surface    
         $loc.surface = Sk.misceval.callsim(Surface);
-        $loc.blit = new Sk.builtin.func(function(self, image, ccoords) {
-            var coords = Sk.ffi.remapToJs(ccoords);
+        // blit(image, position)    // 
+        $loc.blit = new Sk.builtin.func(function(self, image, position) {
+            Sk.builtin.pyCheckArgs("blit", arguments, 3, 3);
+            var coords = Sk.ffi.remapToJs(position);
             var jsName = Sk.ffi.remapToJs(image);
-            // якщо зображення вже завантажено — малюємо одразу
+            if (!Array.isArray(coords) || coords.length < 2) {
+                throw new Sk.builtin.TypeError("Position must be a tuple/list of (x, y).");
+            }
+            // If already loaded — draw immediately
             if (loadedAssets[jsName]) {
                 cx.drawImage(loadedAssets[jsName], coords[0], coords[1]);
                 return Sk.builtin.none.none$;
             }
-            // інакше завантажуємо через loadImage
+            // Otherwise attempt to load dynamically
             var img = loadImage(jsName);
             if (img) {
                 cx.drawImage(img, coords[0], coords[1]);
             } else {
-                throw new Sk.builtin.KeyError("Image '" + jsName + "' not found or invalid.");
+                throw new Sk.builtin.KeyError("Image '" + jsName + "' not found.");
             }
             return Sk.builtin.none.none$;
         });
+        // fill(color)
         $loc.fill = new Sk.builtin.func(function(self, color) {
             Sk.builtin.pyCheckArgs("fill", arguments, 2, 2);
             var rgb = Sk.ffi.remapToJs(color);
+            if (!Array.isArray(rgb) || rgb.length < 3) {
+                throw new Sk.builtin.TypeError("Color must be a tuple/list of (r, g, b).");
+            }
             cx.fillStyle = getColor(rgb);
             cx.fillRect(0, 0, width, height);
+            return Sk.builtin.none.none$;
         });
+        // draw
         $loc.draw = Sk.misceval.callsim(SurfacePainter);
+        // bounds()
         $loc.bounds = new Sk.builtin.func(function(self) {
-            // Повертаємо ZRect(0, 0, width, height)
+            Sk.builtin.pyCheckArgs("bounds", arguments, 1, 1);
             return Sk.misceval.callsim(Sk.globals.ZRect, Sk.ffi.remapToPy(0), Sk.ffi.remapToPy(0), Sk.ffi.remapToPy(width), Sk.ffi.remapToPy(height));
         });
+        // blit_gradient(start_color, end_color)
+        $loc.blit_gradient = new Sk.builtin.func(function(self, start, stop) {
+            Sk.builtin.pyCheckArgs("blit_gradient", arguments, 3, 3);
+            var s = Sk.ffi.remapToJs(start);
+            var e = Sk.ffi.remapToJs(stop);
+            if (!Array.isArray(s) || s.length < 3 || !Array.isArray(e) || e.length < 3) {
+                throw new Sk.builtin.TypeError("Start and stop colors must be tuples/lists of (r, g, b).");
+            }
+            var imgData = cx.createImageData(width, height);
+            var data = imgData.data;
+            for (var y = 0; y < height; y++) {
+                var t = height > 1 ? y / (height - 1) : 0;
+                var r = Math.round(s[0] + (e[0] - s[0]) * t);
+                var g = Math.round(s[1] + (e[1] - s[1]) * t);
+                var b = Math.round(s[2] + (e[2] - s[2]) * t);
+                for (var x = 0; x < width; x++) {
+                    var i = (y * width + x) * 4;
+                    data[i] = r;
+                    data[i + 1] = g;
+                    data[i + 2] = b;
+                    data[i + 3] = 255; // Fully opaque
+                }
+            }
+            cx.putImageData(imgData, 0, 0);
+            return Sk.builtin.none.none$;
+        });
     }, 'pgzero.screen.Screen', []);
-    //  MUSIC 
+    //////////////////////////////////////////////////////
+    /**  MusicSystem - Background Music Manager for pgzrun
+     * 
+     * Provides music playback similar to pgzero.music.
+     *
+     * Music files must be located in:
+     *
+     *     music/<name>.mp3
+     *     music/<name>.ogg
+     *     music/<name>.wav
+     *
+     * Available methods:
+     *
+     * music.play(name)
+     *      Play track in loop (replaces current).
+     *
+     * music.play_once(name)
+     *      Play track once (no loop).
+     *
+     * music.queue(name)
+     *      Queue track to play once after current finishes.
+     *
+     * music.stop()
+     *      Stop playback and clear queue.
+     *
+     * music.pause()
+     * music.unpause()
+     *
+     * music.fadeout(duration)
+     *      Fade out over duration (seconds).
+     *
+     * music.set_volume(vol)
+     *      Set global volume (0.0 - 1.0).
+     *
+     * music.get_volume()
+     * music.is_playing()
+     *
+     */
     var MusicSystem = Sk.misceval.buildClass(s, function($gbl, $loc) {
         var currentAudio = null;
         var queuedTracks = [];
         var isPaused = false;
         var volume = 1.0;
+        var trackCache = {}; // Cache loaded data URLs
+        var extensions = ['.mp3', '.ogg', '.wav'];
+        // Load music file (cached)
         async function loadTrack(name) {
-            const extensions = ['.mp3', '.ogg', '.wav'];
+            if (trackCache[name]) {
+                return trackCache[name];
+            }
             for (const ext of extensions) {
                 const path = 'music/' + name + ext;
                 try {
                     const type = await jsfs.type(path);
                     if (type === 'file') {
                         const dataUrl = await jsfs.read(path);
+                        trackCache[name] = dataUrl;
                         return dataUrl;
                     }
                 } catch (e) {
-                    // файл не знайдено — пробуємо наступне розширення
                     continue;
                 }
             }
@@ -2547,57 +2726,60 @@ var $builtinmodule = function(name) {
             audio.volume = volume;
             return audio;
         }
-
+        // Handle track ending
         function onTrackEnd() {
             if (queuedTracks.length > 0) {
                 const next = queuedTracks.shift();
-                playTrack(next.name, next.once, false);
+                playTrack(next.name, true, false);
             } else {
                 currentAudio = null;
             }
         }
-        async function playTrack(name, once = false, stopCurrent = true) {
+        // Core playback function
+        async function playTrack(name, once, stopCurrent) {
             if (stopCurrent && currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
             }
-            try {
-                const dataUrl = await loadTrack(name);
-                const audio = createAudio(dataUrl);
-                if (once) {
-                    audio.addEventListener('ended', onTrackEnd, {
-                        once: true
-                    });
-                } else {
-                    audio.loop = true;
+            const dataUrl = await loadTrack(name);
+            const audio = createAudio(dataUrl);
+            if (once) {
+                audio.addEventListener('ended', onTrackEnd, {
+                    once: true
+                });
+            } else {
+                audio.loop = true;
+            }
+            currentAudio = audio;
+            if (!isPaused) {
+                try {
+                    await audio.play();
+                } catch (e) {
+                    console.warn("Autoplay blocked:", e);
                 }
-                if (isPaused) {
-                    currentAudio = audio;
-                } else {
-                    try {
-                        await audio.play();
-                    } catch (e) {
-                        console.warn("Autoplay blocked:", e);
-                        PythonIDE.showHint("Звук заблоковано браузером. Натисніть будь-яку кнопку.");
-                    }
-                    currentAudio = audio;
-                }
-            } catch (e) {
-                PythonIDE.handleError("Music error: " + String(e));
             }
         }
+        // play(name)
         $loc.play = new Sk.builtin.func(function(self, name) {
             Sk.builtin.pyCheckArgs("play", arguments, 2, 2);
             const jsName = Sk.ffi.remapToJs(name);
-            playTrack(jsName, false, true);
-            return Sk.builtin.none.none$;
+            async function run() {
+                await playTrack(jsName, false, true);
+                return Sk.builtin.none.none$;
+            }
+            return Sk.misceval.promiseToSuspension(run());
         });
+        // play_once(name)
         $loc.play_once = new Sk.builtin.func(function(self, name) {
             Sk.builtin.pyCheckArgs("play_once", arguments, 2, 2);
             const jsName = Sk.ffi.remapToJs(name);
-            playTrack(jsName, true, true);
-            return Sk.builtin.none.none$;
+            async function run() {
+                await playTrack(jsName, true, true);
+                return Sk.builtin.none.none$;
+            }
+            return Sk.misceval.promiseToSuspension(run());
         });
+        // queue(name)
         $loc.queue = new Sk.builtin.func(function(self, name) {
             Sk.builtin.pyCheckArgs("queue", arguments, 2, 2);
             const jsName = Sk.ffi.remapToJs(name);
@@ -2607,29 +2789,64 @@ var $builtinmodule = function(name) {
             });
             return Sk.builtin.none.none$;
         });
-        $loc.fadeout = new Sk.builtin.func(function(self, duration) {
-            Sk.builtin.pyCheckArgs("fadeout", arguments, 2, 2);
-            const dur = Sk.ffi.remapToJs(duration);
+        // stop()
+        $loc.stop = new Sk.builtin.func(function() {
             if (currentAudio) {
-                const steps = 50;
-                const stepTime = (dur * 1000) / steps;
-                const volStep = currentAudio.volume / steps;
-                let i = 0;
-                const fade = setInterval(() => {
-                    i++;
-                    if (i >= steps || !currentAudio) {
-                        clearInterval(fade);
-                        if (currentAudio) {
-                            currentAudio.pause();
-                            currentAudio = null;
-                        }
-                    } else if (currentAudio) {
-                        currentAudio.volume = Math.max(0, currentAudio.volume - volStep);
-                    }
-                }, stepTime);
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            queuedTracks = [];
+            isPaused = false;
+            return Sk.builtin.none.none$;
+        });
+        // pause()
+        $loc.pause = new Sk.builtin.func(function() {
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                isPaused = true;
             }
             return Sk.builtin.none.none$;
         });
+        // unpause()
+        $loc.unpause = new Sk.builtin.func(function() {
+            if (currentAudio && isPaused) {
+                currentAudio.play().catch(e => {
+                    console.warn("Autoplay blocked:", e);
+                });
+                isPaused = false;
+            }
+            return Sk.builtin.none.none$;
+        });
+        // fadeout(duration)
+        $loc.fadeout = new Sk.builtin.func(function(self, duration) {
+            Sk.builtin.pyCheckArgs("fadeout", arguments, 2, 2);
+            const dur = Math.max(0, Sk.ffi.remapToJs(duration));
+            if (!currentAudio) {
+                return Sk.builtin.none.none$;
+            }
+            const steps = 40;
+            const stepTime = (dur * 1000) / steps;
+            const initialVolume = currentAudio.volume;
+            const volStep = initialVolume / steps;
+            let i = 0;
+            const fade = setInterval(() => {
+                if (!currentAudio) {
+                    clearInterval(fade);
+                    return;
+                }
+                i++;
+                if (i >= steps) {
+                    clearInterval(fade);
+                    currentAudio.pause();
+                    currentAudio.volume = volume;
+                    currentAudio = null;
+                } else {
+                    currentAudio.volume = Math.max(0, currentAudio.volume - volStep);
+                }
+            }, stepTime);
+            return Sk.builtin.none.none$;
+        });
+        // set_volume(vol)
         $loc.set_volume = new Sk.builtin.func(function(self, vol) {
             Sk.builtin.pyCheckArgs("set_volume", arguments, 2, 2);
             volume = Math.max(0, Math.min(1, Sk.ffi.remapToJs(vol)));
@@ -2638,62 +2855,70 @@ var $builtinmodule = function(name) {
             }
             return Sk.builtin.none.none$;
         });
-        $loc.stop = new Sk.builtin.func(function(self) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            queuedTracks = [];
-            return Sk.builtin.none.none$;
-        });
-        $loc.pause = new Sk.builtin.func(function(self) {
-            if (currentAudio && !currentAudio.paused) {
-                currentAudio.pause();
-                isPaused = true;
-            }
-            return Sk.builtin.none.none$;
-        });
-        $loc.unpause = new Sk.builtin.func(function(self) {
-            if (currentAudio && isPaused) {
-                currentAudio.play().catch(e => {
-                    console.warn("Autoplay blocked on unpause:", e);
-                });
-                isPaused = false;
-            }
-            return Sk.builtin.none.none$;
-        });
-        $loc.is_playing = new Sk.builtin.func(function(self) {
-            const playing = currentAudio && !currentAudio.paused && !isPaused;
-            return Sk.ffi.remapToPy(playing);
-        });
-        $loc.get_volume = new Sk.builtin.func(function(self) {
+        // get_volume()
+        $loc.get_volume = new Sk.builtin.func(function() {
             return Sk.ffi.remapToPy(volume);
+        });
+        // is_playing()
+        $loc.is_playing = new Sk.builtin.func(function() {
+            const playing = currentAudio && !currentAudio.paused && !isPaused;
+            return Sk.ffi.remapToPy(Boolean(playing));
         });
     }, 'MusicSystem', []);
     Sk.globals.music = Sk.misceval.callsim(MusicSystem);
-    //
+    //////////////////////////////////////////////////////
+    /** SoundLoader - Lazy Sound Accessor
+     * 
+     * Provides dynamic attribute access for loading sounds.
+     * Example usage:
+     *
+     * sounds.explosion.play()
+     * sounds.music.play(-1)
+     *
+     * Sounds are cached after first access.
+     */
     var SoundLoader = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        var soundCache = {}; // кеш для уникнення повторного завантаження
+        var soundCache = {}; // Cache of Sound objects
         $loc.__getattr__ = new Sk.builtin.func(function(self, name) {
             var soundName = Sk.ffi.remapToJs(name);
             if (soundCache[soundName]) {
                 return soundCache[soundName];
             }
-            // Створюємо новий Sound
             var soundObj = Sk.misceval.callsim(Sound, Sk.ffi.remapToPy(soundName));
             soundCache[soundName] = soundObj;
             return soundObj;
         });
     }, 'pgzero.loaders.SoundLoader', []);
-    //
-    //  SOUND
+    // ===========================================
+    /** Sound - Asynchronous Audio Player
+     *
+     * Represents a single sound resource located in:
+     *
+     *     sounds/<name>.mp3
+     *     sounds/<name>.ogg
+     *     sounds/<name>.wav
+     *
+     * Lazy loads sound data using jsfs.
+     *
+     * Available methods:
+     *
+     * sound.play(loops=0)
+     *      Play sound. loops = number of repeats.
+     *      loops = -1 means infinite loop.
+     *
+     * sound.stop()
+     *      Stop playback immediately.
+     *
+     * sound.get_length()
+     *      Return sound duration in seconds.
+     */
     var Sound = Sk.misceval.buildClass(s, function($gbl, $loc) {
-        // кеш завантажених dataURL
-        var soundCache = {};
+        // Internal dataURL cache
+        var dataUrlCache = {};
         var extensions = ['.mp3', '.ogg', '.wav'];
         async function loadDataUrl(name) {
-            if (soundCache[name]) {
-                return soundCache[name];
+            if (dataUrlCache[name]) {
+                return dataUrlCache[name];
             }
             for (const ext of extensions) {
                 const path = 'sounds/' + name + ext;
@@ -2701,7 +2926,7 @@ var $builtinmodule = function(name) {
                     const type = await jsfs.type(path);
                     if (type === 'file') {
                         const dataUrl = await jsfs.read(path);
-                        soundCache[name] = dataUrl;
+                        dataUrlCache[name] = dataUrl;
                         return dataUrl;
                     }
                 } catch (e) {
@@ -2716,23 +2941,27 @@ var $builtinmodule = function(name) {
             audio.preload = 'auto';
             return audio;
         }
+        // Constructor
         $loc.__init__ = new Sk.builtin.func(function(self, name) {
-            Sk.builtin.pyCheckArgs("__init__", 2, 2);
+            Sk.builtin.pyCheckArgs("__init__", arguments, 2, 2);
             self.name = Sk.ffi.remapToJs(name);
             self.dataUrl = null;
             self.audio = null;
-            self._loading = null;
+            self._loadingPromise = null;
+            return Sk.builtin.none.none$;
         });
+        // play(loops=0)
         $loc.play = new Sk.builtin.func(function(self, loops) {
-            Sk.builtin.pyCheckArgs("play", 1, 2);
+            Sk.builtin.pyCheckArgs("play", arguments, 1, 2);
             const loopCount = (loops === undefined) ? 0 : Sk.ffi.remapToJs(loops);
             async function playImpl() {
                 try {
-                    // lazy loading (як music)
+                    // Lazy load data URL
                     if (!self.dataUrl) {
                         self.dataUrl = await loadDataUrl(self.name);
                     }
                     const audio = createAudio(self.dataUrl);
+                    self.audio = audio;
                     let played = 0;
                     const onEnded = () => {
                         if (loopCount === -1) {
@@ -2751,16 +2980,16 @@ var $builtinmodule = function(name) {
                     audio.addEventListener('ended', onEnded);
                     await audio.play().catch(e => {
                         console.warn("Autoplay blocked:", e);
-                        PythonIDE.showHint("Звук заблоковано браузером. Натисніть будь-яку кнопку.");
                     });
-                    self.audio = audio;
                 } catch (e) {
-                    PythonIDE.handleError("Sound error: " + String(e));
+                    console.error("Sound error:", e);
+                    throw e;
                 }
                 return Sk.builtin.none.none$;
             }
             return Sk.misceval.promiseToSuspension(playImpl());
         });
+        // stop()
         $loc.stop = new Sk.builtin.func(function(self) {
             if (self.audio) {
                 self.audio.pause();
@@ -2768,16 +2997,57 @@ var $builtinmodule = function(name) {
             }
             return Sk.builtin.none.none$;
         });
+        // get_length()
         $loc.get_length = new Sk.builtin.func(function(self) {
-            if (!self.audio) return Sk.ffi.remapToPy(0.0);
+            if (!self.audio) {
+                return Sk.ffi.remapToPy(0.0);
+            }
             return Sk.ffi.remapToPy(self.audio.duration || 0.0);
+        });
+        // __repr__
+        $loc.__repr__ = new Sk.builtin.func(function(self) {
+            return new Sk.builtin.str("Sound(name='" + self.name + "')");
         });
     }, 'Sound', []);
     Sk.globals.sounds = Sk.misceval.callsim(SoundLoader);
-    // TONE GENERATOR 
+    // ===================================================
+    /** ToneGenerator - Harmonic Web Audio Tone Synthesizer
+     *
+     * A lightweight polyphonic tone generator for Skulpt.
+     *
+     * Features:
+     * - Supports frequency (Hz) or note notation (e.g. "A4", "C#5")
+     * - Harmonic synthesis (richer than pure sine)
+     * - ADSR amplitude envelope
+     * - Low-pass filtering
+     * - Polyphonic playback
+     * - Individual sound objects (ToneSound)
+     * - Global stop_all()
+     *
+     * Available methods:
+     *
+     * ToneGenerator.play(pitch, duration)
+     *     Play tone immediately.
+     *
+     * ToneGenerator.create(pitch, duration)
+     *     Create ToneSound object for later playback.
+     *
+     * ToneGenerator.note_to_freq(note)
+     *     Convert note string (e.g. "A4") to frequency.
+     *
+     * ToneGenerator.stop_all()
+     *     Stop all currently playing tones.
+     *
+     * ToneSound.play()
+     *     Play stored tone.
+     *
+     * ToneSound.stop()
+     *     Stop playing tone. *
+     */
     var ToneGenerator = Sk.misceval.buildClass(s, function($gbl, $loc) {
         var audioContext = null;
         var activeSources = [];
+        // Base frequencies for octave 0
         var noteFreqs = {
             'C': 16.35,
             'C#': 17.32,
@@ -2797,15 +3067,14 @@ var $builtinmodule = function(name) {
             'Bb': 29.14,
             'B': 30.87
         };
-        // Initialize audio context (lazy initialization)
+        // Lazy AudioContext initialization
         function getAudioContext() {
             if (!audioContext) {
                 var AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (AudioContext) {
                     audioContext = new AudioContext();
-                    // Resume context on user interaction (browser requirement)
                     document.addEventListener('click', function() {
-                        if (audioContext && audioContext.state === 'suspended') {
+                        if (audioContext.state === 'suspended') {
                             audioContext.resume();
                         }
                     }, {
@@ -2815,10 +3084,10 @@ var $builtinmodule = function(name) {
             }
             return audioContext;
         }
-        // Parse note string like 'A#4' or 'Bb3'
+        // Parse note string like "A4", "C#5", "Bb3", supports negative octaves
         function parseNote(noteStr) {
             if (typeof noteStr !== 'string') return noteStr;
-            var match = noteStr.match(/^([A-G])([#b]?)(\d+)$/);
+            var match = noteStr.match(/^([A-G])([#b]?)(-?\d+)$/);
             if (!match) {
                 throw new Sk.builtin.ValueError("Invalid note format: " + noteStr);
             }
@@ -2828,7 +3097,7 @@ var $builtinmodule = function(name) {
             var noteName = note;
             if (accidental === '#') noteName = note + '#';
             if (accidental === 'b') noteName = note + 'b';
-            // Adjust for enharmonic equivalents
+            // Handle enharmonics
             if (noteName === 'B#') {
                 noteName = 'C';
                 octave += 1;
@@ -2849,72 +3118,67 @@ var $builtinmodule = function(name) {
             }
             return baseFreq * Math.pow(2, octave);
         }
-        // ADSR envelope function
+        // ADSR envelope (safe for very short durations)
         function applyADSREnvelope(t, duration) {
+            duration = Math.max(0.01, duration);
             var attackTime = Math.min(0.005, duration * 0.05);
             var decayTime = Math.min(0.03, duration * 0.15);
-            var sustainLevel = 0.7;
             var releaseTime = Math.min(0.2, duration * 0.4);
-            var envelope = 0.0;
+            var sustainLevel = 0.7;
             if (t < attackTime) {
-                envelope = Math.pow(t / attackTime, 0.5);
+                return Math.pow(t / attackTime, 0.5);
             } else if (t < attackTime + decayTime) {
-                var decayProgress = (t - attackTime) / decayTime;
-                envelope = 1.0 - (1.0 - sustainLevel) * decayProgress;
+                var dp = (t - attackTime) / decayTime;
+                return 1.0 - (1.0 - sustainLevel) * dp;
             } else if (t < duration - releaseTime) {
-                envelope = sustainLevel;
+                return sustainLevel;
             } else {
-                var releaseProgress = (t - (duration - releaseTime)) / releaseTime;
-                releaseProgress = Math.max(0, Math.min(releaseProgress, 1));
-                envelope = sustainLevel * Math.exp(-5.0 * releaseProgress);
+                var rp = (t - (duration - releaseTime)) / releaseTime;
+                rp = Math.max(0, Math.min(rp, 1));
+                return sustainLevel * Math.exp(-5.0 * rp);
             }
-            return envelope;
         }
-        // Generate tone buffer with harmonics
+        // Generate harmonic tone buffer
         function generateToneBuffer(frequency, duration) {
             var ctx = getAudioContext();
             if (!ctx) return null;
+            duration = Math.max(0.01, duration);
             var sampleRate = ctx.sampleRate;
             var length = Math.floor(sampleRate * duration);
             var buffer = ctx.createBuffer(1, length, sampleRate);
             var data = buffer.getChannelData(0);
-            // Гармоніки для більш насиченого звуку (як у реальних інструментів)
             var harmonics = [{
-                    freq: 1.0,
-                    amp: 1.0
-                }, // Основна частота
-                {
-                    freq: 2.0,
-                    amp: 0.3
-                }, // Октава
-                {
-                    freq: 3.0,
-                    amp: 0.15
-                }, // Квінта + октава
-                {
-                    freq: 4.0,
-                    amp: 0.08
-                }, // Дві октави
-                {
-                    freq: 5.0,
-                    amp: 0.04
-                } // Терція + дві октави
-            ];
+                freq: 1.0,
+                amp: 1.0
+            }, {
+                freq: 2.0,
+                amp: 0.3
+            }, {
+                freq: 3.0,
+                amp: 0.15
+            }, {
+                freq: 4.0,
+                amp: 0.08
+            }, {
+                freq: 5.0,
+                amp: 0.04
+            }];
+            var maxAmp = harmonics.reduce(function(s, h) {
+                return s + h.amp;
+            }, 0);
             for (var i = 0; i < length; i++) {
                 var t = i / sampleRate;
                 var envelope = applyADSREnvelope(t, duration);
-                // Сума гармонік
                 var sample = 0.0;
                 for (var h = 0; h < harmonics.length; h++) {
                     var harmonic = harmonics[h];
                     sample += Math.sin(2 * Math.PI * frequency * harmonic.freq * t) * harmonic.amp;
                 }
-                // Нормалізація та застосування огинаючої
-                data[i] = (sample / 1.57) * envelope; // 1.57 ≈ сума амплітуд гармонік
+                data[i] = (sample / maxAmp) * envelope * 0.9;
             }
             return buffer;
         }
-        // Play tone immediately
+        // Immediate playback
         $loc.play = new Sk.builtin.func(function(self, pitch, duration) {
             Sk.builtin.pyCheckArgs("play", arguments, 3, 3);
             var frequency = Sk.ffi.remapToJs(pitch);
@@ -2929,153 +3193,158 @@ var $builtinmodule = function(name) {
                 throw new Sk.builtin.ValueError("Invalid duration: " + dur);
             }
             var ctx = getAudioContext();
-            if (!ctx) {
-                console.warn("Web Audio API not supported");
-                return Sk.builtin.none.none$;
-            }
-            if (ctx.state === 'suspended') {
-                ctx.resume().catch(function(e) {
-                    console.warn("Could not resume audio context:", e);
-                });
-            }
-            // Generate and play the tone
+            if (!ctx) return Sk.builtin.none.none$;
             var buffer = generateToneBuffer(frequency, dur);
-            if (!buffer) {
-                return Sk.builtin.none.none$;
-            }
+            if (!buffer) return Sk.builtin.none.none$;
             var source = ctx.createBufferSource();
             source.buffer = buffer;
-            // Додаємо легкий low-pass фільтр для м'якості
             var filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.value = Math.min(8000, frequency * 6); // Обрізаємо високі частоти
+            filter.frequency.value = Math.min(8000, frequency * 6);
             filter.Q.value = 0.5;
             source.connect(filter);
             filter.connect(ctx.destination);
-            source.start();
-            // Clean up after playback
+            ctx.resume().then(function() {
+                source.start();
+            });
             source.onended = function() {
                 var index = activeSources.indexOf(source);
-                if (index > -1) {
-                    activeSources.splice(index, 1);
-                }
+                if (index > -1) activeSources.splice(index, 1);
                 source.disconnect();
                 filter.disconnect();
             };
             activeSources.push(source);
             return Sk.builtin.none.none$;
         });
-        // Create a ToneSound class for deferred playback
+        // ToneSound class
         var ToneSound = Sk.misceval.buildClass(s, function($gbl2, $loc2) {
             $loc2.__init__ = new Sk.builtin.func(function(self, pitch, duration) {
                 self.frequency = Sk.ffi.remapToJs(pitch);
                 self.duration = Sk.ffi.remapToJs(duration);
-                // Convert note string to frequency if needed
+                self._source = null;
                 if (typeof self.frequency === 'string') {
                     self.frequency = parseNote(self.frequency);
                 }
             });
             $loc2.play = new Sk.builtin.func(function(self) {
                 var ctx = getAudioContext();
-                if (!ctx) {
-                    console.warn("Web Audio API not supported");
-                    return Sk.builtin.none.none$;
-                }
-                // Validate inputs
-                if (typeof self.frequency !== 'number' || self.frequency <= 0) {
-                    throw new Sk.builtin.ValueError("Invalid frequency: " + self.frequency);
-                }
-                if (typeof self.duration !== 'number' || self.duration <= 0) {
-                    throw new Sk.builtin.ValueError("Invalid duration: " + self.duration);
-                }
-                // Ensure context is running
-                if (ctx.state === 'suspended') {
-                    ctx.resume().catch(function(e) {
-                        console.warn("Could not resume audio context:", e);
-                    });
-                }
-                // Generate and play the tone
+                if (!ctx) return Sk.builtin.none.none$;
                 var buffer = generateToneBuffer(self.frequency, self.duration);
-                if (!buffer) {
-                    return Sk.builtin.none.none$;
-                }
+                if (!buffer) return Sk.builtin.none.none$;
                 var source = ctx.createBufferSource();
                 source.buffer = buffer;
-                // Додаємо low-pass фільтр
                 var filter = ctx.createBiquadFilter();
                 filter.type = 'lowpass';
                 filter.frequency.value = Math.min(8000, self.frequency * 6);
                 filter.Q.value = 0.5;
                 source.connect(filter);
                 filter.connect(ctx.destination);
-                source.start();
-                // Clean up after playback
+                ctx.resume().then(function() {
+                    source.start();
+                });
                 source.onended = function() {
-                    var index = activeSources.indexOf(source);
-                    if (index > -1) {
-                        activeSources.splice(index, 1);
-                    }
                     source.disconnect();
                     filter.disconnect();
+                    self._source = null;
                 };
+                self._source = source;
                 activeSources.push(source);
                 return Sk.builtin.none.none$;
             });
             $loc2.stop = new Sk.builtin.func(function(self) {
-                // Note: Web Audio API doesn't have a simple stop for buffer sources
-                // once started. This would need more complex implementation.
+                if (self._source) {
+                    try {
+                        self._source.stop();
+                        self._source.disconnect();
+                    } catch (e) {}
+                    self._source = null;
+                }
                 return Sk.builtin.none.none$;
             });
             $loc2.__repr__ = new Sk.builtin.func(function(self) {
                 return new Sk.builtin.str("ToneSound(freq=" + self.frequency + ", duration=" + self.duration + ")");
             });
         }, 'ToneSound', []);
-        // Create tone for later use
+        // Create deferred tone
         $loc.create = new Sk.builtin.func(function(self, pitch, duration) {
             Sk.builtin.pyCheckArgs("create", arguments, 3, 3);
             return Sk.misceval.callsim(ToneSound, pitch, duration);
         });
-        // Helper method to get frequency from note
+        // Convert note to frequency
         $loc.note_to_freq = new Sk.builtin.func(function(self, note) {
             Sk.builtin.pyCheckArgs("note_to_freq", arguments, 2, 2);
-            var noteStr = Sk.ffi.remapToJs(note);
-            var freq = parseNote(noteStr);
+            var freq = parseNote(Sk.ffi.remapToJs(note));
             return Sk.ffi.remapToPy(freq);
         });
         // Stop all active tones
-        $loc.stop_all = new Sk.builtin.func(function(self) {
+        $loc.stop_all = new Sk.builtin.func(function() {
             while (activeSources.length > 0) {
                 var source = activeSources.pop();
                 try {
                     source.stop();
                     source.disconnect();
-                } catch (e) {
-                    // Ignore errors if source already stopped
-                }
+                } catch (e) {}
             }
             return Sk.builtin.none.none$;
         });
     }, 'ToneGenerator', []);
     Sk.globals.tone = Sk.misceval.callsim(ToneGenerator);
-    // STORAGE ================================
+    // ==================================================
+    /** Storage - Persistent Key-Value Storage for pgzrun
+     *
+     * A lightweight dictionary-like wrapper around browser
+     * localStorage, designed to mimic pgzero storage behavior.
+     * 
+     * Data is automatically saved on modification.
+     *
+     * Storage location is bound to the current page path.
+     * Available methods:
+     *
+     * storage[key]          -> get value (KeyError if missing)
+     * storage[key] = value  -> set value (autosave)
+     *
+     * storage.get(key, default=None)
+     * storage.setdefault(key, default)
+     * storage.clear()
+     * storage.save()
+     * storage.load()
+     *
+     * Attributes:
+     * storage.path      -> storage key in localStorage
+     */
     var STORAGE_KEY = "pgzero_storage_" + (window.location.pathname || "game");
     var Storage = Sk.misceval.buildClass(s, function($gbl, $loc) {
+        // Constructor
         $loc.__init__ = new Sk.builtin.func(function(self) {
             self._data = {};
             self.path = Sk.ffi.remapToPy(STORAGE_KEY);
-            self._load();
+            loadFromLocalStorage(self);
             return Sk.builtin.none.none$;
         });
-        $loc._save = new Sk.builtin.func(function(self) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
-            return Sk.builtin.none.none$;
-        });
-        $loc._load = new Sk.builtin.func(function(self) {
-            var raw = localStorage.getItem(STORAGE_KEY);
-            self._data = raw ? JSON.parse(raw) : {};
-            return Sk.builtin.none.none$;
-        });
-        // dict behaviour
+        // Internal save helper (safe)
+        function saveToLocalStorage(self) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+            } catch (e) {
+                console.warn("Storage save failed:", e);
+            }
+        }
+        // Internal load helper (safe JSON parsing)
+        function loadFromLocalStorage(self) {
+            try {
+                var raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) {
+                    self._data = {};
+                    return;
+                }
+                var parsed = JSON.parse(raw);
+                self._data = (typeof parsed === "object" && parsed !== null) ? parsed : {};
+            } catch (e) {
+                console.warn("Storage load failed, resetting:", e);
+                self._data = {};
+            }
+        }
+        // Dictionary behavior
         $loc.__getitem__ = new Sk.builtin.func(function(self, key) {
             key = Sk.ffi.remapToJs(key);
             if (!(key in self._data)) {
@@ -3086,47 +3355,50 @@ var $builtinmodule = function(name) {
         $loc.__setitem__ = new Sk.builtin.func(function(self, key, value) {
             key = Sk.ffi.remapToJs(key);
             self._data[key] = Sk.ffi.remapToJs(value);
-            // autosave як у pgzero
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+            saveToLocalStorage(self);
             return Sk.builtin.none.none$;
         });
-        $loc.setdefault = new Sk.builtin.func(function(self, key, defaultVal) {
-            key = Sk.ffi.remapToJs(key);
-            if (!(key in self._data)) {
-                self._data[key] = Sk.ffi.remapToJs(defaultVal);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
-            }
-            return Sk.ffi.remapToPy(self._data[key]);
-        });
+        // get(key, default=None)
         $loc.get = new Sk.builtin.func(function(self, key, defaultVal) {
             key = Sk.ffi.remapToJs(key);
             if (key in self._data) {
                 return Sk.ffi.remapToPy(self._data[key]);
             }
-            return defaultVal !== undefined ? defaultVal : Sk.builtin.none.none$;
+            if (defaultVal !== undefined) {
+                return defaultVal;
+            }
+            return Sk.builtin.none.none$;
         });
+        // setdefault(key, default)
+        $loc.setdefault = new Sk.builtin.func(function(self, key, defaultVal) {
+            key = Sk.ffi.remapToJs(key);
+            if (!(key in self._data)) {
+                self._data[key] = Sk.ffi.remapToJs(defaultVal);
+                saveToLocalStorage(self);
+            }
+            return Sk.ffi.remapToPy(self._data[key]);
+        });
+        // clear() - remove all stored data
         $loc.clear = new Sk.builtin.func(function(self) {
             self._data = {};
-            localStorage.removeItem(STORAGE_KEY);
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                console.warn("Storage clear failed:", e);
+            }
             return Sk.builtin.none.none$;
         });
+        // save() - manual save
         $loc.save = new Sk.builtin.func(function(self) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(self._data));
+            saveToLocalStorage(self);
             return Sk.builtin.none.none$;
         });
+        // load() - manual reload
         $loc.load = new Sk.builtin.func(function(self) {
-            var raw = localStorage.getItem(STORAGE_KEY);
-            self._data = raw ? JSON.parse(raw) : {};
+            loadFromLocalStorage(self);
             return Sk.builtin.none.none$;
         });
     }, "Storage", []);
-    Storage.prototype._save = function() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this._data));
-    };
-    Storage.prototype._load = function() {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        this._data = raw ? JSON.parse(raw) : {};
-    };
     Sk.globals.storage = Sk.misceval.callsim(Storage);
     //  ВІРТУАЛЬНИЙ ГЕЙМПАД 
     let gamepadElement = null;
@@ -3297,7 +3569,7 @@ var $builtinmodule = function(name) {
     }
     //--------------------------------------------------------
     s.go = new Sk.builtin.func(function() {
-        console.log("pgzrun.go")
+        console.log("pgzrun.go");
         // create globals
         Sk.globals.screen = Sk.misceval.callsim(Screen);
         width = 800;
@@ -3307,7 +3579,6 @@ var $builtinmodule = function(name) {
         height = 600;
         if (Sk.globals.HEIGHT) {
             height = Sk.ffi.remapToJs(Sk.globals.HEIGHT);
-            console.log("Height:", height);
         }
         if (Sk.globals.TITLE) {
             var title = Sk.ffi.remapToJs(Sk.globals.TITLE);
@@ -3631,6 +3902,7 @@ var $builtinmodule = function(name) {
             }
         });
         return PythonIDE.runAsync(function(resolve, reject) {});
+        // end .go()
     });
     return s;
 };
