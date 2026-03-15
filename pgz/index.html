@@ -1449,7 +1449,7 @@
     <h3>🖼️ Зображення</h3>
     <div id="imagesList" class="assets-items-scroll"></div>
     <div class="controls-bar">
-      <button onclick="addFile('image')" title="Додати зображення">➕</button>
+      <button onclick="(async () => await addFile('image'))()" title="Додати зображення">➕</button>
       <span class="file-controls" id="imageControls" style="display:none;">
         <button onclick="showSelected('image')" title="Показати">👁️</button>
         <button onclick="renameSelected('image')" title="Перейменувати">✏️</button>
@@ -1463,7 +1463,7 @@
     <h3>🔊 Аудіо</h3>
     <div id="soundsList" class="assets-items-scroll"></div>
     <div class="controls-bar">
-      <button onclick="addFile('audio')" title="Додати аудіо">➕</button>
+      <button onclick="(async () => await addFile('audio'))()" title="Додати аудіо">➕</button>
       <span class="file-controls" id="soundControls" style="display:none;">
         <button id="playBtn" onclick="togglePlayPause()" title="Програти">▶️</button>
         <button onclick="renameSelected('audio')" title="Перейменувати">✏️</button>
@@ -1476,7 +1476,7 @@
     <h3>🎵 Музика</h3>
     <div id="musicList" class="assets-items-scroll"></div>
     <div class="controls-bar">
-      <button onclick="addFile('music')" title="Додати музичний файл">➕</button>
+      <button onclick="(async () => await addFile('music'))()" title="Додати музичний файл">➕</button>
       <span class="file-controls" id="musicControls" style="display:none;">
         <button id="playMusicBtn" onclick="togglePlayPauseMusic()" title="Програти">▶️</button>
         <button onclick="renameSelected('music')" title="Перейменувати">✏️</button>
@@ -2411,51 +2411,7 @@ function showHandbook() {
 		    document.getElementById("splashImg").style.display = "none";
 		}
 }
-// видалення всіх файлів
-async function clearFolder(folderPath) {
-	// переконуємося, що jsfs існує
-	if (typeof window.jsfs === 'undefined') {
-		if (typeof window.FileSystem !== 'undefined') {
-			window.jsfs = new window.FileSystem("PGZfs");
-		} else {
-			throw new Error("FileSystem not available");
-		}
-	}
-        try {
-            const entries = await window.jsfs.ls(folderPath, 'all');
-            for (const entry of entries) {
-                const fullPath = folderPath + '/' + entry;
-                const entryType = await window.jsfs.type(fullPath);
-                if (entryType === 'folder') {
-                    await clearFolder(fullPath); // рекурсія
-                    await window.jsfs.rm(fullPath); // видалити порожню теку
-                } else if (entryType === 'file') {
-                    await window.jsfs.rm(fullPath);
-                }
-            }
-        } catch (e) {
-            if (!e.message?.includes('Invalid folder')) {
-                console.warn('Помилка при очищенні:', folderPath, e);
-            }
-        }
-    }
 
-// видалення всіх файлів
-async function clearProjectResources() {	
-
-    await clearFolder('/images');
-    await clearFolder('/sounds');
-    await clearFolder('/music');
-    document.getElementById("imagesList").innerHTML = "";
-	document.getElementById("soundsList").innerHTML = "";
-	document.getElementById("musicList").innerHTML = "";
-
-    if (typeof initializeAssetsGallery === 'function') {
-            showSplash();
-        }
-	document.getElementById('output').innerHTML = '';
-}
-//
 // створення проєкту
 async function createNewProject() {
     document.getElementById('newProjectModal').style.display = 'flex';
