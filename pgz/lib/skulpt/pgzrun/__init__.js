@@ -132,6 +132,7 @@ var $builtinmodule = function(name) {
     }
 
     function getColor(c) {
+		console.log("color=",c)
         // специфічні відтінки кольорів (як у Pygame Zero)
         var SPECIAL_COLORS = {
             'green': [0, 255, 0],
@@ -1397,8 +1398,6 @@ var getActorAttribute = function(self, name) {
 
  Sk.globals.Actor = Sk.misceval.buildClass(s, function($gbl, $loc) {
 
-
-
     $loc.__getattr__ = new Sk.builtin.func(getActorAttribute);
     $loc.__setattr__ = new Sk.builtin.func(updateActorAttribute);
 
@@ -1438,7 +1437,7 @@ var getActorAttribute = function(self, name) {
         }
 
         var desiredX = 0, desiredY = 0;
-        var pos = posArg ?? args.pos;
+        var pos = posArg ?? args.pos ?? args.center;
 
         if (pos) {
             pos = Sk.ffi.remapToJs(pos);
@@ -2614,9 +2613,9 @@ Sk.globals.clock = Sk.misceval.callsim(Clock);
         $loc.fill = new Sk.builtin.func(function(self, color) {
             Sk.builtin.pyCheckArgs("fill", arguments, 2, 2);
             var rgb = Sk.ffi.remapToJs(color);
-            if (!Array.isArray(rgb) || rgb.length < 3) {
+            /*if (!Array.isArray(rgb) || rgb.length < 3) {
                 throw new Sk.builtin.TypeError("Color must be a tuple/list of (r, g, b).");
-            }
+            }*/
             cx.fillStyle = getColor(rgb);
             cx.fillRect(0, 0, width, height);
             return Sk.builtin.none.none$;
