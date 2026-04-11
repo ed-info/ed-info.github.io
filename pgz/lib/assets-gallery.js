@@ -5,7 +5,7 @@ let isPlaying = false;
 let currentMusicAudio = null; // окремий програвач для музики
 let isMusicPlaying = false;
 // --- ІМПОРТ ---
-let externalFiles = [];        // повний список файлів з files.txt
+let externalFiles = [];       // повний список файлів з files.txt
 let categories = [];          // унікальні категорії
 let currentCategory = 'things';
 let selectedExternalImage = null; // URL обраного зображення для імпорту
@@ -290,51 +290,45 @@ async function renderImages() {
     container.appendChild(item);
   }
 }
+async function renderAudioItems(containerId, folder, type, icon) {
+  const container = document.getElementById(containerId);
+  if (!container) return; // Захист від відсутності контейнера в DOM
+  
+  container.innerHTML = '';
+  
+  // Використовуємо активну файлову систему (як ми визначили раніше)
+  const activeFs = window.jsfs || fs;
+  const files = await activeFs.ls(folder, 'files'); 
+
+  for (const name of files) {
+    const path = `${folder}/${name}`.replace(/\/+/g, '/');
+    const displayName = stripExtension(name);
+    
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.dataset.type = type;
+    item.dataset.path = path;
+    item.draggable = true;    
+    
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'audio-icon';
+    iconDiv.textContent = icon;
+    
+    item.appendChild(iconDiv);
+    item.appendChild(document.createElement('br'));
+    item.appendChild(document.createTextNode(displayName));
+    container.appendChild(item);
+  }
+}
 
 async function renderSounds() {
-  const container = document.getElementById('soundsList');
-  container.innerHTML = '';
-  const files = await fs.ls('/sounds', 'files'); 
-  for (const name of files) {
-    const path = `/sounds/${name}`;
-    const displayName = stripExtension(name);
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.dataset.type = 'audio';
-    item.dataset.path = path;
-    item.draggable = true;    
-    const icon = document.createElement('div');
-    icon.className = 'audio-icon';
-    icon.textContent = '🔊';
-    
-    item.appendChild(icon);
-    item.appendChild(document.createElement('br'));
-    item.appendChild(document.createTextNode(displayName));
-    container.appendChild(item);
-  }
+  await renderAudioItems('soundsList', '/sounds', 'audio', '🔊');
 }
+
 async function renderMusic() {
-  const container = document.getElementById('musicList');
-  container.innerHTML = '';
-  const files = await fs.ls('/music', 'files');
-  for (const name of files) {
-    const path = `/music/${name}`;
-    const displayName = stripExtension(name);
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.dataset.type = 'music';
-    item.dataset.path = path;
-    item.draggable = true;    
-    const icon = document.createElement('div');
-    icon.className = 'audio-icon';
-    icon.textContent = '🎵';
-    
-    item.appendChild(icon);
-    item.appendChild(document.createElement('br'));
-    item.appendChild(document.createTextNode(displayName));
-    container.appendChild(item);
-  }
+  await renderAudioItems('musicList', '/music', 'music', '🎵');
 }
+
 // --- ФАЙЛОВІ ДІЇ ---
 async function addFile(type) {
   clearSelection(type);
@@ -407,25 +401,54 @@ async function showSelected(type) {
   document.getElementById('modalImg').src = data;
   document.getElementById('modal').style.display = 'flex';
 }
+async function toggleAudioPlayback(type) {
+  const isMusic = type === 'music';
+  const path = selected[type];
+  if (!path) return;
 
-async function togglePlayPause() {
-  if (!selected.audio) return;
-  if (isPlaying) {
-    if (currentAudio) currentAudio.pause();
-    isPlaying = false;
-    updatePlayButton(false);
+  // Вибір потрібних змінних залежно від типу
+  let audioVar = isMusic ? currentMusicAudio : currentAudio;
+  let playingVar = isMusic ? isMusicPlaying : isPlaying;
+  const updateFunc = isMusic ? updatePlayMusicButton : updatePlayButton;
+
+  if (playingVar) {
+    if (audioVar) audioVar.pause();
+    if (isMusic) {
+        isMusicPlaying = false;
+    } else {
+        isPlaying = false;
+    }
+    updateFunc(false);
   } else {
-    if (currentAudio) currentAudio.pause();
-    const data = await fs.read(selected.audio); 
-    currentAudio = new Audio(data);
-    currentAudio.play().catch(e => message('', 'Помилка програвання: ' + e.message));
-    isPlaying = true;
-    updatePlayButton(true);
-    // ✅ Правильна змінна
-    currentAudio.onended = () => {
-      isPlaying = false;
-      updatePlayButton(false);
-      currentAudio = null;
+    // Зупиняємо попередній трек перед запуском нового
+    if (audioVar) audioVar.pause();
+
+    const activeFs = window.jsfs || fs;
+    const data = await activeFs.read(path); 
+    
+    const newAudio = new Audio(data);
+    
+    // Оновлення глобальних посилань
+    if (isMusic) {
+        currentMusicAudio = newAudio;
+        isMusicPlaying = true;
+    } else {
+        currentAudio = newAudio;
+        isPlaying = true;
+    }
+
+    newAudio.play().catch(e => message('', 'Помилка програвання: ' + e.message));
+    updateFunc(true);
+
+    newAudio.onended = () => {
+      if (isMusic) {
+          isMusicPlaying = false;
+          currentMusicAudio = null;
+      } else {
+          isPlaying = false;
+          currentAudio = null;
+      }
+      updateFunc(false);
     };
   }
 }
@@ -440,26 +463,6 @@ function updatePlayButton(playing) {
     btn.title = 'Програти';
   }
 }
-async function togglePlayPauseMusic() {
-  if (!selected.music) return;
-  if (isMusicPlaying) {
-    if (currentMusicAudio) currentMusicAudio.pause();
-    isMusicPlaying = false;
-    updatePlayMusicButton(false);
-  } else {
-    if (currentMusicAudio) currentMusicAudio.pause();
-    const data = await fs.read(selected.music); 
-    currentMusicAudio = new Audio(data);
-    currentMusicAudio.play().catch(e => message('','Помилка програвання: ' + e.message));
-    isMusicPlaying = true;
-    updatePlayMusicButton(true);
-    currentMusicAudio.onended = () => {
-      isMusicPlaying = false;
-      updatePlayMusicButton(false);
-      currentMusicAudio = null;
-    };
-  }
-}
 
 function updatePlayMusicButton(playing) {
   const btn = document.getElementById('playMusicBtn');
@@ -470,6 +473,16 @@ function updatePlayMusicButton(playing) {
     btn.textContent = '▶️';
     btn.title = 'Програти';
   }
+}
+
+// Для звукових ефектів
+async function togglePlayPause() {
+  await toggleAudioPlayback('audio');
+}
+
+// Для музики
+async function togglePlayPauseMusic() {
+  await toggleAudioPlayback('music');
 }
 // 
 function getPath(type) {
@@ -485,7 +498,7 @@ async function renameSelected(type) {
   const oldDisplayName = stripExtension(oldName);
   const ext = getExtension(oldName);
 
-  const newName = prompt('Нове ім’я:', oldDisplayName);
+  const newName = prompt("Нове ім’я:", oldDisplayName);
   if (!newName || newName === oldDisplayName) return;
 
   const newFullName = newName + ext;
@@ -576,8 +589,6 @@ document.addEventListener('click', function(e) {
     selectGalleryFile(item.dataset.type, item.dataset.path);
   }
 });
-// ----------------------------------
-enableDragAndDrop()
 // --- ДРАГ-ЕНД-ДРОП ФУНКЦІОНАЛ ---
 function enableDragAndDrop() {
   // Робимо елементи галереї перетягуваними
@@ -617,125 +628,106 @@ document.addEventListener('dragstart', function(e) {
     }
 });
 }
+//
+// видалення всіх файлів
+async function clearFolder(folderPath) {
+    // Використовуємо вже ініціалізований об'єкт fs
+    if (!fs) {
+        console.error("Файлова система не ініціалізована");
+        return;
+    }
 
+    try {
+        // Отримуємо список усіх елементів у теці
+        const entries = await fs.ls(folderPath, 'all');
+        
+        for (const entry of entries) {
+            const fullPath = `${folderPath}/${entry}`.replace(/\/+/g, '/');
+            const entryType = await fs.type(fullPath);
+
+            if (entryType === 'folder') {
+                // Рекурсивно очищаємо підтеку
+                await clearFolder(fullPath);
+                // Видаляємо вже порожню теку
+                await fs.rm(fullPath);
+            } else {
+                // Видаляємо файл
+                await fs.rm(fullPath);
+            }
+        }
+    } catch (e) {
+        // Ігноруємо лише помилку відсутності теки, інші — виводимо
+        if (!e.message?.includes('Invalid folder') && !e.message?.includes('not found')) {
+            console.error(`Помилка очищення ${folderPath}:`, e);
+        }
+    }
+}
+
+// видалення всіх файлів
+async function clearProjectResources() { 
+	await initFS();   
+    await clearFolder('/images');
+    await clearFolder('/sounds');
+    await clearFolder('/music');
+    // Очищення DOM
+    ['imagesList', 'soundsList', 'musicList'].forEach(id => {
+        document.getElementById(id).innerHTML = "";
+    });
+    document.getElementById('output').innerHTML = '';
+}
+//
 // --- ІНІЦІАЛІЗАЦІЯ ---
 async function initializeAssetsGallery() {
   await initFS();
   await refreshGallery();
   enableDragAndDrop(); // ✅ Вмикаємо drag-and-drop
 }
-// --- ІНІЦІАЛІЗАЦІЯ ---
-async function initializeAssetsGallery() {
-  await initFS();
-  await refreshGallery();
-};
-initializeAssetsGallery()
 async function importGallery() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.pgz';
-  var filename;
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pgz';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    try {
-      const zip = await JSZip.loadAsync(file);
-      filename = file.name;
+        try {
+            await clearProjectResources();
+            clearAllSelections();
 
-      // --- 1. Завантаження my_pgz.py у редактор ---
-      const codeEntry = zip.file('my_pgz.py');
-      if (codeEntry) {
-        const code = await codeEntry.async('text');
-        if (typeof PythonIDE !== 'undefined') {
-          PythonIDE.files['my_pgz.py'] = code;
-          PythonIDE.currentFile = 'my_pgz.py';
-          PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
-          PythonIDE.updateFileTabs();
-		  PythonIDE.editor.refresh();
-          console.log('Код my_pgz.py завантажено в редактор.');
-        } else {
-          console.warn('PythonIDE недоступний — код не завантажено.');
+            const zip = await JSZip.loadAsync(file);
+            
+            // Завантаження коду
+            const codeEntry = zip.file('my_pgz.py');
+            if (codeEntry && typeof PythonIDE !== 'undefined') {
+                const code = await codeEntry.async('text');
+                PythonIDE.files['my_pgz.py'] = code;
+                PythonIDE.currentFile = 'my_pgz.py';
+                PythonIDE.editor.setValue(code);
+                PythonIDE.updateFileTabs();
+            }
+
+            // Обробка медіафайлів одним циклом
+            const allFiles = Object.keys(zip.files).filter(name => !name.endsWith('/'));
+            for (const path of allFiles) {
+                const folder = path.split('/')[0];
+                if (['images', 'sounds', 'music'].includes(folder)) {
+                    const fileData = await zip.file(path).async('base64');
+                    // Логіка визначення MIME-типу та запис через fs.write...
+                    const dataUrl = `data:application/octet-stream;base64,${fileData}`;
+                    await fs.write('/' + path, dataUrl);
+                }
+            }
+
+            await refreshGallery();
+            const projectName = file.name.replace(/\.pgz$/, '');
+            document.getElementById('projectNameInput').value = projectName;
+            await message('', 'Проєкт успішно імпортовано!');
+        } catch (err) {
+            console.error('Помилка імпорту:', err);
         }
-      } else {
-        console.log('Файл my_pgz.py не знайдено в архіві.');
-      }
-
-      // --- 2. Завантаження зображень ---
-      const allFiles = Object.keys(zip.files).filter(name => !name.endsWith('/'));
-      for (const path of allFiles) {
-        if (path.startsWith('images/')) {
-          const filename = path.substring('images/'.length);
-          const fileEntry = zip.file(path);
-          if (!fileEntry) continue;
-
-          const b64 = await fileEntry.async('base64');
-          const extMatch = path.toLowerCase().match(/\.([a-z0-9]+)$/);
-          const ext = extMatch ? extMatch[1] : 'png';
-          const mimeTypes = {
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-            png: 'image/png',
-            gif: 'image/gif',
-            webp: 'image/webp',
-            svg: 'image/svg+xml'
-          };
-          const mime = mimeTypes[ext] || 'image/png';
-          const dataUrl = `data:${mime};base64,${b64}`;
-          await fs.write(`/images/${filename}`, dataUrl);
-          console.log("Імпортовано зображення:", filename);
-        }
-      }
-
-      // --- 3. Завантаження звуків ---
-      for (const path of allFiles) {
-        if (path.startsWith('sounds/')) {
-          const filename = path.substring('sounds/'.length);
-          const fileEntry = zip.file(path);
-          if (!fileEntry) continue;
-          const arrayBuffer = await fileEntry.async('arraybuffer');
-          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-          const dataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-          });
-          await fs.write(`/sounds/${filename}`, dataUrl);
-          console.log("Імпортовано звук:", filename);
-        }
-      }
-
-      // --- 4. Завантаження музики ---
-      for (const path of allFiles) {
-        if (path.startsWith('music/')) {
-          const filename = path.substring('music/'.length);
-          const fileEntry = zip.file(path);
-          if (!fileEntry) continue;
-          const arrayBuffer = await fileEntry.async('arraybuffer');
-          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-          const dataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-          });
-          await fs.write(`/music/${filename}`, dataUrl);
-          console.log("Імпортовано музику:", filename);
-        }
-      }
-
-      // --- Оновлення інтерфейсу ---
-      await refreshGallery();
-      const name = filename.substring(0, filename.lastIndexOf('.'));
-      document.getElementById('projectNameInput').value = name; 
-
-      await message('','Проєкт успішно імпортовано!');
-    } catch (err) {
-      console.error('Помилка імпорту:', err);
-      await message('','Помилка при завантаженні архіву:\n' + (err.message || err));
-    }
-  };
-
-  input.click();
+    };
+    input.click();
 }
 
 function normalizePgzUrl(input) {
@@ -771,94 +763,58 @@ async function loadProjectFromUrl(rawUrl) {
     const blob = await response.blob();
     const zip = await JSZip.loadAsync(blob);
 
-    // --- my_pgz.py ---
+    // 1. Завантаження коду (my_pgz.py)
     const codeEntry = zip.file('my_pgz.py');
-    if (codeEntry) {
+    if (codeEntry && typeof PythonIDE !== 'undefined') {
       const code = await codeEntry.async('text');
-      if (typeof PythonIDE !== 'undefined') {
-        PythonIDE.files['my_pgz.py'] = code;
-        PythonIDE.currentFile = 'my_pgz.py';
-        PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
-        PythonIDE.updateFileTabs();
-        PythonIDE.editor.refresh();
-        console.log('Код my_pgz.py завантажено.');
-      }
+      PythonIDE.files['my_pgz.py'] = code;
+      PythonIDE.currentFile = 'my_pgz.py';
+      PythonIDE.editor.setValue(code);
+      PythonIDE.updateFileTabs();
+      PythonIDE.editor.refresh();
+      console.log('Код завантажено');
     }
 
+    // 2. Обробка всіх медіафайлів одним циклом (як в importGallery)
     const allFiles = Object.keys(zip.files).filter(name => !name.endsWith('/'));
-    console.log("allFiles =",allFiles)
-    // --- images/ ---
-      for (const path of allFiles) {
-        if (path.startsWith('images/')) {
-          const filename = path.substring('images/'.length);
-          const fileEntry = zip.file(path);
-          if (!fileEntry) continue;
+    for (const path of allFiles) {
+      const folder = path.split('/')[0];
+      
+      // Перевіряємо, чи файл належить до однієї з медіа-папок
+      if (['images', 'sounds', 'music'].includes(folder)) {
+        const fileEntry = zip.file(path);
+        if (!fileEntry) continue;
 
-          const b64 = await fileEntry.async('base64');
-          const extMatch = path.toLowerCase().match(/\.([a-z0-9]+)$/);
-          const ext = extMatch ? extMatch[1] : 'png';
-          const mimeTypes = {
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-            png: 'image/png',
-            gif: 'image/gif',
-            webp: 'image/webp',
-            svg: 'image/svg+xml'
-          };
-          const mime = mimeTypes[ext] || 'image/png';
-          const dataUrl = `data:${mime};base64,${b64}`;
-          await fs.write(`/images/${filename}`, dataUrl);
-          console.log("Імпортовано зображення:", filename);
-        }
-      }
-    // --- sounds/ ---
-    for (const path of allFiles) {
-      if (path.startsWith('sounds/')) {
-        const filename = path.substring('sounds/'.length);
-        const fileEntry = zip.file(path);
-        if (!fileEntry) continue;
-        const arrayBuffer = await fileEntry.async('arraybuffer');
-        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-        const dataUrl = await new Promise(r => {
-          const reader = new FileReader();
-          reader.onload = () => r(reader.result);
-          reader.readAsDataURL(blob);
-        });
-        await fs.write(`/sounds/${filename}`, dataUrl);
+        // Використовуємо універсальний метод отримання base64 (як в importGallery)
+        const fileData = await fileEntry.async('base64');
+        const dataUrl = `data:application/octet-stream;base64,${fileData}`;
+        
+        await fs.write('/' + path, dataUrl);
+        console.log(`Імпортовано: ${path}`);
       }
     }
-    // --- music/ ---
-    for (const path of allFiles) {
-      if (path.startsWith('music/')) {
-        const filename = path.substring('music/'.length);
-        const fileEntry = zip.file(path);
-        if (!fileEntry) continue;
-        const arrayBuffer = await fileEntry.async('arraybuffer');
-        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-        const dataUrl = await new Promise(r => {
-          const reader = new FileReader();
-          reader.onload = () => r(reader.result);
-          reader.readAsDataURL(blob);
-        });
-        await fs.write(`/music/${filename}`, dataUrl);
-      }
-    }
+
+    // Налаштування інтерфейсу для запуску гри
     document.getElementById('topPanel').style.display = 'none';
     document.getElementById('mainLayout').style.display = 'none';
     document.getElementById('gameModal').style.background = '#222';
     document.getElementById('closeGameBtn').style.display = 'none';
     document.getElementById('cgb').style.display = 'block';
 	
-	document.getElementById('playGameBtn').addEventListener('click', function() {
-    // Приховуємо кнопку при запуску гри
-    this.style.display = 'none';
-    PythonIDE.runCode();
-
-});
-
+    const playBtn = document.getElementById('playGameBtn');
+    if (playBtn) {
+      // Очищуємо старі лісенери та додаємо новий
+      const newPlayBtn = playBtn.cloneNode(true);
+      playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+      
+      newPlayBtn.addEventListener('click', function() {
+        this.style.display = 'none';
+        PythonIDE.runCode();
+      });
+    }
 
   } catch (err) {
-    console.error('Помилка:', err);
+    console.error('Помилка імпорту з URL:', err);
     await message('', 'Не вдалося завантажити проєкт:\n' + (err.message || err.toString()));
   }
 }
