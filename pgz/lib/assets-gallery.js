@@ -165,7 +165,8 @@ async function importSelectedImage() {
   }
 }
 async function initFS() {
-  if (!fs) fs = new FileSystem("PGZfs");
+  if (!fs) fs = window.jsfs || new FileSystem("PGZfs");
+  window.jsfs = fs;
   await fs.mkdir('/images');
   await fs.mkdir('/sounds');
   await fs.mkdir('/music');
