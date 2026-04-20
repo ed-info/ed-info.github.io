@@ -165,10 +165,11 @@ async function importSelectedImage() {
   }
 }
 async function initFS() {
-  fs = new FileSystem("PGZfs");
+  if (!fs) fs = window.jsfs || new FileSystem("PGZfs");
+  window.jsfs = fs;
   await fs.mkdir('/images');
   await fs.mkdir('/sounds');
-  await fs.mkdir('/music'); 
+  await fs.mkdir('/music');
 }
 
 async function refreshGallery() {
@@ -527,6 +528,7 @@ async function deleteSelected(type) {
 
 // --- ЕКСПОРТ У ZIP ---
 async function exportGallery() {
+  if (!fs) await initFS();
   const zip = new JSZip();
 
   // Зображення
@@ -680,7 +682,7 @@ async function clearProjectResources() {
 async function initializeAssetsGallery() {
   await initFS();
   await refreshGallery();
-  enableDragAndDrop(); // ✅ Вмикаємо drag-and-drop
+  enableDragAndDrop();
 }
 async function importGallery() {
     const input = document.createElement('input');

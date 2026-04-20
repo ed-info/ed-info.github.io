@@ -198,7 +198,7 @@ _Class.prototype._joinPath = function (pathArray) {
     const fs = await this._loadMetadata();
     const pathArray = this.separate(folder);
     const target = this._walkPath(fs, pathArray);
-    if (!target) throw new Error('Invalid folder');
+    if (!target) return [];
 
     const entries = Object.keys(target).sort();
     const folders = entries.filter(e => !Array.isArray(target[e]));
