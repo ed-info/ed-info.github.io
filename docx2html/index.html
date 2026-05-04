@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOCX to HTML Конвертер - Зі збереженням форматування</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .upload-area {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: inline-block;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #0b7dda;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .preview-container {
+            padding: 30px;
+            background: white;
+        }
+
+        .preview-header {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .preview-header h3 {
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .html-preview {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 500px;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .html-preview img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .html-preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .html-preview td, .html-preview th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.3.7/dist/docx-preview.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 DOCX to HTML Конвертер</h1>
+            <p>Завантажте DOCX файл та отримайте HTML зі збереженням форматування</p>
+        </div>
+
+        <div class="upload-area">
+            <div class="file-input-wrapper">
+                <label class="file-label">
+                    📁 Обрати файл DOCX
+                    <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                </label>
+                <button class="btn btn-secondary" id="downloadHtmlBtn" disabled>
+                    💾 Завантажити HTML
+                </button>
+                <button class="btn btn-danger" id="clearBtn">
+                    🗑️ Очистити
+                </button>
+            </div>
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <div class="controls">
+            <div class="stats" id="stats">
+                <span>📊 Статус: Очікування файлу</span>
+            </div>
+        </div>
+
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3>👁️ Попередній перегляд HTML</h3>
+            </div>
+            <div id="preview" class="html-preview">
+                <div style="text-align: center; color: #999; padding: 50px;">
+                    Оберіть DOCX файл для конвертації
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentHtmlContent = '';
+        let currentFileName = '';
+
+        const fileInput = document.getElementById('fileInput');
+        const downloadBtn = document.getElementById('downloadHtmlBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const previewDiv = document.getElementById('preview');
+        const fileInfo = document.getElementById('fileInfo');
+        const stats = document.getElementById('stats');
+
+        // Функція перевірки чи є файл DOCX
+        function isDocxFile(file) {
+            // Перевірка за MIME типом
+            const validMimeTypes = [
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/msword',
+                'application/octet-stream'
+            ];
+            
+            if (validMimeTypes.includes(file.type)) {
+                return true;
+            }
+            
+            // Перевірка за розширенням в назві файлу
+            const fileName = file.name.toLowerCase();
+            if (fileName.endsWith('.docx')) {
+                return true;
+            }
+            
+            // Додаткова перевірка: пробуємо прочитати перші байти ZIP (DOCX - це ZIP архів)
+            return false;
+        }
+
+        // Функція для оновлення статусу
+        function updateStatus(message, isLoading = false, isError = false) {
+            if (isLoading) {
+                stats.innerHTML = `<span>⏳ ${message}</span>`;
+                previewDiv.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>${message}</div>
+                    </div>
+                `;
+            } else if (isError) {
+                stats.innerHTML = `<span>❌ ${message}</span>`;
+            } else {
+                stats.innerHTML = `<span>✅ ${message}</span>`;
+            }
+        }
+
+        // Функція для показу помилки
+        function showError(message) {
+            previewDiv.innerHTML = `<div class="error-message">❌ ${message}</div>`;
+            updateStatus(`Помилка: ${message}`, false, true);
+            downloadBtn.disabled = true;
+            currentHtmlContent = '';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `✅ ${message}`;
+            previewDiv.appendChild(successDiv);
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // Функція для конвертації DOCX в HTML
+        async function convertDocxToHtml(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        
+                        // Перевіряємо чи це валідний DOCX (має бути ZIP)
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B; // PK заголовок ZIP
+                        
+                        if (!isZip) {
+                            reject(new Error('Файл не є валідним DOCX (не ZIP архів)'));
+                            return;
+                        }
+                        
+                        // Створюємо тимчасовий контейнер для рендерингу
+                        const tempContainer = document.createElement('div');
+                        tempContainer.style.position = 'absolute';
+                        tempContainer.style.left = '-9999px';
+                        tempContainer.style.top = '-9999px';
+                        document.body.appendChild(tempContainer);
+                        
+                        // Рендеримо документ
+                        await docx.renderAsync(arrayBuffer, tempContainer, null, {
+                            className: "docx-render",
+                            ignoreWidth: false,
+                            ignoreHeight: false,
+                            inWrapper: true,
+                            ignoreFonts: false,
+                            debug: false
+                        });
+                        
+                        // Отримуємо HTML
+                        let htmlContent = tempContainer.innerHTML;
+                        
+                        // Додаємо мета-теги та стилі
+                        const styledHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${file.name.replace('.docx', '')}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+        td, th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .docx-render {
+            width: 100%;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    ${htmlContent}
+</body>
+</html>`;
+                        
+                        // Видаляємо тимчасовий контейнер
+                        document.body.removeChild(tempContainer);
+                        
+                        resolve(styledHtml);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error('Помилка читання файлу'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Функція для відображення HTML в прев'ю
+        function displayHtmlPreview(htmlContent) {
+            // Використовуємо iframe для безпечного відображення HTML
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.minHeight = '500px';
+            iframe.style.border = '1px solid #e0e0e0';
+            iframe.style.borderRadius = '8px';
+            iframe.style.backgroundColor = 'white';
+            
+            previewDiv.innerHTML = '';
+            previewDiv.appendChild(iframe);
+            
+            // Записуємо HTML в iframe
+            const iframeDoc = iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(htmlContent);
+            iframeDoc.close();
+        }
+
+        // Основна функція обробки файлу
+        async function handleFile(file) {
+            if (!file) {
+                showError('Файл не обрано');
+                return;
+            }
+            
+            // Перевіряємо чи це DOCX файл
+            if (!isDocxFile(file)) {
+                showError('Будь ласка, оберіть файл у форматі DOCX (з розширенням .docx)');
+                fileInfo.textContent = '❌ Невірний формат файлу. Оберіть DOCX файл.';
+                return;
+            }
+
+            currentFileName = file.name;
+            const fileSizeKB = (file.size / 1024).toFixed(2);
+            fileInfo.textContent = `📄 Обрано файл: ${file.name} (${fileSizeKB} KB)`;
+            
+            updateStatus('Конвертація DOCX в HTML...', true);
+            
+            try {
+                // Конвертуємо файл
+                currentHtmlContent = await convertDocxToHtml(file);
+                
+                // Відображаємо в прев'ю
+                displayHtmlPreview(currentHtmlContent);
+                
+                // Активуємо кнопку завантаження
+                downloadBtn.disabled = false;
+                
+                const htmlSizeKB = (currentHtmlContent.length / 1024).toFixed(2);
+                updateStatus(`Готово! Файл успішно конвертовано в HTML (розмір: ${htmlSizeKB} KB)`);
+                showSuccess(`Конвертація завершена! Розмір HTML: ${htmlSizeKB} KB`);
+            } catch (error) {
+                console.error('Помилка конвертації:', error);
+                let errorMsg = error.message;
+                if (errorMsg.includes('Cannot read property')) {
+                    errorMsg = 'Неможливо прочитати файл. Переконайтеся, що файл не пошкоджений.';
+                }
+                showError(`Помилка конвертації: ${errorMsg}`);
+                currentHtmlContent = '';
+                downloadBtn.disabled = true;
+            }
+        }
+
+        // Функція завантаження HTML файлу
+        function downloadHtml() {
+            if (!currentHtmlContent) {
+                alert('Немає HTML контенту для завантаження');
+                return;
+            }
+
+            const baseName = currentFileName.replace(/\.docx$/i, '');
+            const fileName = `${baseName}_converted.html`;
+            const blob = new Blob([currentHtmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Показуємо повідомлення про успішне завантаження
+            const originalStatus = stats.innerHTML;
+            stats.innerHTML = '<span>✅ Файл завантажено успішно!</span>';
+            setTimeout(() => {
+                stats.innerHTML = originalStatus;
+            }, 2000);
+        }
+
+        // Функція очищення
+        function clearAll() {
+            fileInput.value = '';
+            currentHtmlContent = '';
+            currentFileName = '';
+            fileInfo.textContent = '';
+            downloadBtn.disabled = true;
+            previewDiv.innerHTML = `
+                <div style="text-align: center; color: #999; padding: 50px;">
+                    Оберіть DOCX файл для конвертації
+                </div>
+            `;
+            updateStatus('Очікування файлу');
+        }
+
+        // Обробник вибору файлу
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Обробник кнопки завантаження
+        downloadBtn.addEventListener('click', downloadHtml);
+
+        // Обробник кнопки очищення
+        clearBtn.addEventListener('click', clearAll);
+
+        // Drag and Drop підтримка
+        const dropZone = document.querySelector('.upload-area');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.opacity = '0.8';
+            dropZone.style.transition = 'opacity 0.3s';
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.opacity = '1';
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.opacity = '1';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+    </script>
+</body>
+</html>
