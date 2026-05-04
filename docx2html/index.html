@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOCX to HTML Конвертер - Зі збереженням форматування</title>
+    <title>DOCX to HTML Converter – Images in media folder</title>
     <style>
         * {
             margin: 0;
@@ -124,6 +124,16 @@
             transform: translateY(-2px);
         }
 
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e68900;
+            transform: translateY(-2px);
+        }
+
         .btn-danger {
             background: #f44336;
             color: white;
@@ -154,11 +164,24 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .preview-header h3 {
             color: #333;
             font-size: 1.2em;
+        }
+
+        .image-info {
+            font-size: 13px;
+            background: #e3f2fd;
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: #1976d2;
         }
 
         .html-preview {
@@ -174,17 +197,6 @@
         .html-preview img {
             max-width: 100%;
             height: auto;
-        }
-
-        .html-preview table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 10px 0;
-        }
-
-        .html-preview td, .html-preview th {
-            border: 1px solid #ddd;
-            padding: 8px;
         }
 
         .loading {
@@ -225,17 +237,40 @@
             border-radius: 8px;
             margin: 20px;
             border-left: 4px solid #2e7d32;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 360px;
         }
 
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        /* Optimizer stats panel */
+        .opt-stats {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #f3f0ff;
+            border: 1px solid #c4b5fd;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #4c1d95;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .opt-stats.visible { display: flex; }
+        .opt-stat { display: flex; flex-direction: column; align-items: center; }
+        .opt-stat strong { font-size: 17px; }
+        .opt-stat span   { opacity: 0.75; }
+
         @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .btn {
-                width: 100%;
-            }
+            .controls { flex-direction: column; align-items: stretch; }
+            .btn { width: 100%; }
         }
     </style>
     <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -244,353 +279,966 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📄 DOCX to HTML Конвертер</h1>
-            <p>Завантажте DOCX файл та отримайте HTML зі збереженням форматування</p>
+            <h1>📄 DOCX to HTML Converter</h1>
+            <p>Images are stored in the media folder + ready ZIP archive</p>
         </div>
 
         <div class="upload-area">
             <div class="file-input-wrapper">
                 <label class="file-label">
-                    📁 Обрати файл DOCX
-                    <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    📁 Choose DOCX file
+                    <input type="file" id="fileInput" accept=".docx">
                 </label>
-                <button class="btn btn-secondary" id="downloadHtmlBtn" disabled>
-                    💾 Завантажити HTML
+                <button class="btn btn-warning" id="optimizeBtn" disabled>
+                    ⚡ Optimize HTML
+                </button>
+                <button class="btn btn-primary" id="downloadZipBtn" disabled>
+                    📦 Download ZIP (HTML + media/)
                 </button>
                 <button class="btn btn-danger" id="clearBtn">
-                    🗑️ Очистити
+                    🗑️ Clear
                 </button>
             </div>
             <div class="file-info" id="fileInfo"></div>
+            <div class="opt-stats" id="optStats">
+                <div class="opt-stat"><strong id="statBefore">—</strong><span>before (KB)</span></div>
+                <div class="opt-stat"><strong id="statAfter">—</strong><span>after (KB)</span></div>
+                <div class="opt-stat"><strong id="statSaving">—</strong><span>reduction</span></div>
+                <div class="opt-stat"><strong id="statClasses">—</strong><span>CSS classes</span></div>
+                <div class="opt-stat"><strong id="statNodes">—</strong><span>tags removed</span></div>
+            </div>
         </div>
 
         <div class="controls">
             <div class="stats" id="stats">
-                <span>📊 Статус: Очікування файлу</span>
+                <span>📊 Status: Waiting for file</span>
             </div>
         </div>
 
         <div class="preview-container">
             <div class="preview-header">
-                <h3>👁️ Попередній перегляд HTML</h3>
+                <h3>👁️ Preview</h3>
+                <div class="image-info" id="imageInfo"></div>
             </div>
             <div id="preview" class="html-preview">
                 <div style="text-align: center; color: #999; padding: 50px;">
-                    Оберіть DOCX файл для конвертації
+                    Choose a DOCX file to convert<br>
+                    <small style="display: block; margin-top: 10px;">After conversion you will receive a ZIP archive with the HTML file and a media folder containing all images</small>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentHtmlContent = '';
+        let currentZipBlob = null;
         let currentFileName = '';
+        let imagesCount = 0;
+        let currentPreviewHtml = '';
+        let currentZipHtmlContent = ''; // raw body HTML for ZIP (relative img paths)
+        let currentFullZipHtml = '';    // full HTML with TOC modal (for optimizer)
+        let optimizedZipHtml = null;    // full HTML after optimization (for ZIP)
+        let isOptimized = false;
 
-        const fileInput = document.getElementById('fileInput');
-        const downloadBtn = document.getElementById('downloadHtmlBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const previewDiv = document.getElementById('preview');
-        const fileInfo = document.getElementById('fileInfo');
-        const stats = document.getElementById('stats');
+        const fileInput     = document.getElementById('fileInput');
+        const downloadZipBtn= document.getElementById('downloadZipBtn');
+        const optimizeBtn   = document.getElementById('optimizeBtn');
+        const clearBtn      = document.getElementById('clearBtn');
+        const previewDiv    = document.getElementById('preview');
+        const fileInfo      = document.getElementById('fileInfo');
+        const stats         = document.getElementById('stats');
+        const imageInfo     = document.getElementById('imageInfo');
+        const optStats      = document.getElementById('optStats');
 
-        // Функція перевірки чи є файл DOCX
+        /* ─── UI helpers ─────────────────────────────────────────────── */
+
+        function showMessage(message, isSuccess = true) {
+            const d = document.createElement('div');
+            d.className = isSuccess ? 'success-message' : 'error-message';
+            d.innerHTML = isSuccess ? `✅ ${message}` : `❌ ${message}`;
+            document.body.appendChild(d);
+            setTimeout(() => { if (d.parentNode) d.remove(); }, 4000);
+        }
+
+        function updateStatus(message, isLoading = false) {
+            stats.innerHTML = isLoading
+                ? `<span>⏳ ${message}</span>`
+                : `<span>✅ ${message}</span>`;
+        }
+
+        function showError(message) {
+            previewDiv.innerHTML = `<div class="error-message">❌ ${message}</div>`;
+            updateStatus(`Error: ${message}`);
+            downloadZipBtn.disabled = true;
+            optimizeBtn.disabled = true;
+            imageInfo.textContent = '';
+        }
+
+        function showPreview(htmlContent) {
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'width:100%;min-height:600px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;';
+            previewDiv.innerHTML = '';
+            previewDiv.appendChild(iframe);
+            const doc = iframe.contentWindow.document;
+            doc.open(); doc.write(htmlContent); doc.close();
+        }
+
         function isDocxFile(file) {
-            // Перевірка за MIME типом
-            const validMimeTypes = [
+            if (file.name.toLowerCase().endsWith('.docx')) return true;
+            return [
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/msword',
                 'application/octet-stream'
-            ];
-            
-            if (validMimeTypes.includes(file.type)) {
-                return true;
-            }
-            
-            // Перевірка за розширенням в назві файлу
-            const fileName = file.name.toLowerCase();
-            if (fileName.endsWith('.docx')) {
-                return true;
-            }
-            
-            // Додаткова перевірка: пробуємо прочитати перші байти ZIP (DOCX - це ZIP архів)
-            return false;
+            ].includes(file.type);
         }
 
-        // Функція для оновлення статусу
-        function updateStatus(message, isLoading = false, isError = false) {
-            if (isLoading) {
-                stats.innerHTML = `<span>⏳ ${message}</span>`;
-                previewDiv.innerHTML = `
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <div>${message}</div>
-                    </div>
-                `;
-            } else if (isError) {
-                stats.innerHTML = `<span>❌ ${message}</span>`;
-            } else {
-                stats.innerHTML = `<span>✅ ${message}</span>`;
-            }
+        function generateImageName(ext, idx) {
+            return `image_${String(idx).padStart(3, '0')}.${ext}`;
         }
 
-        // Функція для показу помилки
-        function showError(message) {
-            previewDiv.innerHTML = `<div class="error-message">❌ ${message}</div>`;
-            updateStatus(`Помилка: ${message}`, false, true);
-            downloadBtn.disabled = true;
-            currentHtmlContent = '';
-        }
+        /* ─── Image extraction ───────────────────────────────────────── */
 
-        function showSuccess(message) {
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success-message';
-            successDiv.innerHTML = `✅ ${message}`;
-            previewDiv.appendChild(successDiv);
-            setTimeout(() => {
-                if (successDiv.parentNode) {
-                    successDiv.remove();
-                }
-            }, 3000);
-        }
-
-        // Функція для конвертації DOCX в HTML
-        async function convertDocxToHtml(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                
-                reader.onload = async function(e) {
-                    try {
-                        const arrayBuffer = e.target.result;
-                        
-                        // Перевіряємо чи це валідний DOCX (має бути ZIP)
-                        const uint8Array = new Uint8Array(arrayBuffer);
-                        const isZip = uint8Array[0] === 0x50 && uint8Array[1] === 0x4B; // PK заголовок ZIP
-                        
-                        if (!isZip) {
-                            reject(new Error('Файл не є валідним DOCX (не ZIP архів)'));
-                            return;
+        async function getImageDataUrl(imgElement) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    if (imgElement.tagName === 'IMG') {
+                        const src = imgElement.getAttribute('src');
+                        if (src && src.startsWith('data:')) {
+                            resolve(src);
+                        } else if (src && (src.startsWith('blob:') || src.startsWith('http'))) {
+                            const resp = await fetch(src);
+                            const blob = await resp.blob();
+                            const r = new FileReader();
+                            r.onloadend = () => resolve(r.result);
+                            r.onerror   = reject;
+                            r.readAsDataURL(blob);
+                        } else {
+                            reject(new Error('Невідомий тип src'));
                         }
-                        
-                        // Створюємо тимчасовий контейнер для рендерингу
-                        const tempContainer = document.createElement('div');
-                        tempContainer.style.position = 'absolute';
-                        tempContainer.style.left = '-9999px';
-                        tempContainer.style.top = '-9999px';
-                        document.body.appendChild(tempContainer);
-                        
-                        // Рендеримо документ
-                        await docx.renderAsync(arrayBuffer, tempContainer, null, {
-                            className: "docx-render",
-                            ignoreWidth: false,
-                            ignoreHeight: false,
-                            inWrapper: true,
-                            ignoreFonts: false,
-                            debug: false
-                        });
-                        
-                        // Отримуємо HTML
-                        let htmlContent = tempContainer.innerHTML;
-                        
-                        // Додаємо мета-теги та стилі
-                        const styledHtml = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${file.name.replace('.docx', '')}</title>
-    <style>
+                    } else if (imgElement.tagName === 'CANVAS') {
+                        resolve(imgElement.toDataURL('image/png'));
+                    } else {
+                        reject(new Error('Не img і не canvas'));
+                    }
+                } catch (err) { reject(err); }
+            });
+        }
+
+        /* ─── Shared CSS template ────────────────────────────────────── */
+
+        const SHARED_CSS = `
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             padding: 40px;
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: #ffffff;
+            color: #333333;
         }
         img {
             max-width: 100%;
             height: auto;
+            display: block;
+            margin: 20px auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 10px 0;
-        }
-        td, th {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        .docx-render {
-            width: 100%;
-        }
-        @media print {
-            body {
-                padding: 0;
-            }
-        }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: top; }
+        th { background-color: #f5f5f5; }
+        ul, ol { margin: 10px 0 10px 30px; }
+        h1, h2, h3, h4, h5, h6 { margin: 20px 0 10px 0; }
+        p { margin: 10px 0; }
+        blockquote { margin: 15px 0; padding: 10px 20px; border-left: 4px solid #667eea; background: #f8f9fa; }
+        @media (max-width: 768px) { body { padding: 20px; } }`;
+
+        function buildFullHtml(title, bodyHtml, extraCss = '') {
+            return `<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>${SHARED_CSS}${extraCss ? '\n        ' + extraCss : ''}
     </style>
 </head>
 <body>
-    ${htmlContent}
+    ${bodyHtml}
 </body>
 </html>`;
-                        
-                        // Видаляємо тимчасовий контейнер
-                        document.body.removeChild(tempContainer);
-                        
-                        resolve(styledHtml);
-                    } catch (error) {
-                        reject(error);
-                    }
+        }
+
+        /* ─── Core conversion ────────────────────────────────────────── */
+
+        async function convertDocxToZip(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        const zip = new JSZip();
+                        let imageCounter = 0;
+
+                        const previewContainer = document.createElement('div');
+                        const zipContainer     = document.createElement('div');
+                        previewContainer.style.cssText = 'position:absolute;left:-9999px;';
+                        zipContainer.style.cssText     = 'position:absolute;left:-9999px;';
+                        document.body.appendChild(previewContainer);
+                        document.body.appendChild(zipContainer);
+
+                        updateStatus('Rendering document...', true);
+
+                        await docx.renderAsync(arrayBuffer, previewContainer, null, {
+                            className: 'docx-content',
+                            ignoreWidth: false,
+                            ignoreHeight: false,
+                            ignoreFonts: false,
+                            breakPages: false,
+                            debug: false,
+                            experimental: true
+                        });
+
+                        updateStatus('Fixing table of contents links...', true);
+                        const tocResult = fixTocAnchors(previewContainer);
+                        console.log('TOC:', tocResult);
+
+                        zipContainer.innerHTML = previewContainer.innerHTML;
+
+                        updateStatus('Processing images...', true);
+
+                        const previewImages = previewContainer.querySelectorAll('img, canvas');
+                        const zipImages     = zipContainer.querySelectorAll('img, canvas');
+
+                        for (let i = 0; i < zipImages.length; i++) {
+                            try {
+                                const dataUrl    = await getImageDataUrl(previewImages[i]);
+                                const base64Data = dataUrl.split(',')[1];
+                                const mimeMatch  = dataUrl.match(/data:image\/(\w+);/);
+                                let ext = 'png';
+                                if (mimeMatch) ext = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1];
+
+                                const byteChars = atob(base64Data);
+                                const byteArrays = [];
+                                for (let offset = 0; offset < byteChars.length; offset += 512) {
+                                    const slice = byteChars.slice(offset, offset + 512);
+                                    const bytes = new Uint8Array(slice.length);
+                                    for (let j = 0; j < slice.length; j++) bytes[j] = slice.charCodeAt(j);
+                                    byteArrays.push(bytes);
+                                }
+                                const blob = new Blob(byteArrays, { type: `image/${ext}` });
+
+                                const imgName = generateImageName(ext, imageCounter);
+                                const imgPath = `media/${imgName}`;
+                                zip.folder('media').file(imgName, blob);
+
+                                if (zipImages[i].tagName === 'IMG') {
+                                    zipImages[i].setAttribute('src', imgPath);
+                                } else if (zipImages[i].tagName === 'CANVAS') {
+                                    const newImg = document.createElement('img');
+                                    newImg.src = imgPath;
+                                    newImg.style.cssText = 'max-width:100%;height:auto;';
+                                    zipImages[i].parentNode.replaceChild(newImg, zipImages[i]);
+                                }
+                                imageCounter++;
+                            } catch (err) {
+                                console.warn('Помилка обробки зображення:', err);
+                            }
+                        }
+
+                        imagesCount = imageCounter;
+
+                        const previewBodyHtml = previewContainer.innerHTML;
+                        const zipBodyHtml     = zipContainer.innerHTML;
+
+                        const baseName       = file.name.replace(/\.docx$/i, '');
+                        const tocEntries     = tocResult.tocEntries || [];
+                        const fullPreviewHtml = injectTocCss(buildFullHtml(`${baseName} (preview)`, previewBodyHtml), tocEntries);
+                        const fullZipHtml     = injectTocCss(buildFullHtml(baseName, zipBodyHtml), tocEntries);
+
+                        zip.file(`${baseName}.html`, fullZipHtml);
+
+                        document.body.removeChild(previewContainer);
+                        document.body.removeChild(zipContainer);
+
+                        updateStatus('Creating ZIP archive...', true);
+                        const zipBlob = await zip.generateAsync({
+                            type: 'blob',
+                            compression: 'DEFLATE',
+                            compressionOptions: { level: 6 }
+                        });
+
+                        resolve({ zipBlob, previewHtml: fullPreviewHtml, zipBodyHtml, fullZipHtml, baseName, imagesCount: imageCounter, tocResult });
+                    } catch (err) { reject(err); }
                 };
-                
-                reader.onerror = () => reject(new Error('Помилка читання файлу'));
+                reader.onerror = () => reject(new Error('File read error'));
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        // Функція для відображення HTML в прев'ю
-        function displayHtmlPreview(htmlContent) {
-            // Використовуємо iframe для безпечного відображення HTML
-            const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.minHeight = '500px';
-            iframe.style.border = '1px solid #e0e0e0';
-            iframe.style.borderRadius = '8px';
-            iframe.style.backgroundColor = 'white';
-            
-            previewDiv.innerHTML = '';
-            previewDiv.appendChild(iframe);
-            
-            // Записуємо HTML в iframe
-            const iframeDoc = iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(htmlContent);
-            iframeDoc.close();
+        /* ─── TOC Anchor Fixer ───────────────────────────────────────── */
+
+        /**
+         * Makes the auto-generated Word TOC navigable in HTML.
+         *
+         * docx-preview renders TOC entries as plain <p class="docx-content_N"> —
+         * no <a> tags at all. Structure of each TOC row:
+         *   <p class="docx-content_23">
+         *     <span style="font-family:...">2.4. Some heading text</span>
+         *     <span><span class="docx-content-tab-stop"> </span></span>
+         *     <span>17</span>          ← page number
+         *   </p>
+         *
+         * Algorithm:
+         *  1. Scan ALL paragraphs to detect which CSS classes are used for TOC rows
+         *     (heuristic: paragraph whose last text-node is a short integer and contains
+         *     a tab-stop span) vs. which are used for headings (appear in body after TOC,
+         *     same text as TOC entries without page number).
+         *  2. Assign id="h-N" anchors to heading paragraphs.
+         *  3. Wrap the text content of each TOC paragraph in <a href="#h-N">,
+         *     keeping the page-number span outside the link.
+         *
+         * Works on a live DOM container. Returns { headingsFound, linksFixed }.
+         */
+        function fixTocAnchors(container) {
+
+            /* ── helpers ── */
+            function cleanText(node) {
+                return node.textContent
+                    .replace(/[\u00a0\u2002\u2003\u2009\t]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toLowerCase();
+            }
+
+            // Strip trailing page number ("...  17") from TOC text
+            function tocEntryText(p) {
+                return p.textContent
+                    .replace(/[\u00a0\u2002\u2003\u2009\t .]*\d+\s*$/, '')
+                    .replace(/[\u00a0\u2002\u2003\u2009]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toLowerCase();
+            }
+
+            // Is this paragraph a TOC row?
+            // Criteria: contains a tab-stop span AND ends with a short integer span
+            function isTocRow(p) {
+                if (!p.querySelector('.docx-content-tab-stop')) return false;
+                const spans = p.querySelectorAll('span');
+                if (!spans.length) return false;
+                // Last non-empty text span should be a page number (1–4 digits)
+                const texts = Array.from(spans)
+                    .map(s => s.textContent.trim())
+                    .filter(t => t.length > 0);
+                const last = texts[texts.length - 1];
+                return /^\d{1,4}$/.test(last);
+            }
+
+            /* ── 1. Detect TOC rows and heading candidates ── */
+            const allParas = Array.from(container.querySelectorAll('p'));
+
+            const tocRows = allParas.filter(isTocRow);
+            if (tocRows.length === 0) return { headingsFound: 0, linksFixed: 0 };
+
+            // Build index: normalized text → heading element
+            // Strategy: scan all paragraphs that are NOT toc rows;
+            // match by text to TOC entry texts.
+            const tocTexts = new Set(tocRows.map(tocEntryText).filter(Boolean));
+
+            // Collect candidate headings: any p or hN whose cleaned text
+            // matches a TOC entry text, AND appears after the last TOC row in DOM order.
+            const lastTocRow = tocRows[tocRows.length - 1];
+            let pastToc = false;
+            const headingIndex = new Map(); // normText → element
+
+            allParas.forEach(p => {
+                if (p === lastTocRow) { pastToc = true; return; }
+                if (!pastToc) return;
+                if (isTocRow(p)) return;
+                const key = cleanText(p);
+                if (key && tocTexts.has(key) && !headingIndex.has(key)) {
+                    headingIndex.set(key, p);
+                }
+            });
+
+            // Also check real h1-h6 elements
+            container.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+                const key = cleanText(h);
+                if (key && tocTexts.has(key) && !headingIndex.has(key)) {
+                    headingIndex.set(key, h);
+                }
+            });
+
+            // Fuzzy fallback for unmatched TOC entries
+            function similarity(a, b) {
+                if (!a || !b) return 0;
+                if (a === b) return 1;
+                const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+                if (longer.includes(shorter)) return shorter.length / longer.length;
+                let common = 0;
+                const used = new Array(longer.length).fill(false);
+                for (const ch of shorter) {
+                    const idx = longer.split('').findIndex((c, i) => c === ch && !used[i]);
+                    if (idx !== -1) { common++; used[idx] = true; }
+                }
+                return (2 * common) / (shorter.length + longer.length);
+            }
+
+            // For entries still unmatched, widen search to ALL non-toc paragraphs
+            const unmatchedTocTexts = [...tocTexts].filter(t => !headingIndex.has(t));
+            if (unmatchedTocTexts.length > 0) {
+                allParas.forEach(p => {
+                    if (isTocRow(p)) return;
+                    const key = cleanText(p);
+                    if (!key) return;
+                    unmatchedTocTexts.forEach(tocText => {
+                        if (headingIndex.has(tocText)) return;
+                        if (similarity(key, tocText) >= 0.82) {
+                            headingIndex.set(tocText, p);
+                        }
+                    });
+                });
+            }
+
+            if (headingIndex.size === 0) return { headingsFound: 0, linksFixed: 0 };
+
+            /* ── 2. Assign id anchors to heading elements ── */
+            let anchorIdx = 0;
+            const headingToId = new Map();
+            headingIndex.forEach((el) => {
+                if (!el.id) el.id = `h-${++anchorIdx}`;
+                headingToId.set(el, el.id);
+            });
+
+            /* ── 3. Wrap TOC row text in <a> ── */
+            let linksFixed = 0;
+            const tocEntries = []; // { href, text, level } for modal
+
+            function detectLevel(p) {
+                const raw = p.textContent;
+                const spaces = (raw.match(/^[\s\u00a0\u2002\u2003\u2009]*/)?.[0] || '').length;
+                return Math.min(4, Math.floor(spaces / 2));
+            }
+
+            tocRows.forEach(p => {
+                const entryText = tocEntryText(p);
+                if (!entryText) return;
+
+                let targetEl = headingIndex.get(entryText);
+                if (!targetEl) {
+                    let best = 0.75;
+                    headingIndex.forEach((el, key) => {
+                        const s = similarity(entryText, key);
+                        if (s > best) { best = s; targetEl = el; }
+                    });
+                }
+                if (!targetEl) return;
+
+                const href = `#${targetEl.id}`;
+
+                const tabStop = p.querySelector('.docx-content-tab-stop');
+                if (!tabStop) return;
+
+                const tabStopParent = tabStop.parentElement;
+                const children = Array.from(p.childNodes);
+                const tabIdx = children.indexOf(tabStopParent);
+                if (tabIdx <= 0) return;
+
+                const textNodes = children.slice(0, tabIdx);
+                const displayText = textNodes.map(n => n.textContent).join('').trim();
+
+                tocEntries.push({ href, text: displayText, level: detectLevel(p) });
+
+                const a = document.createElement('a');
+                a.href = href;
+                a.style.cssText = 'color:inherit;text-decoration:none;cursor:pointer;';
+                textNodes.forEach(node => a.appendChild(node.cloneNode(true)));
+                textNodes.forEach(node => node.remove());
+                p.insertBefore(a, p.firstChild);
+                linksFixed++;
+            });
+
+            /* ── 4. Hide cover + TOC block ──
+             *
+             * docx-preview puts everything before the first real heading
+             * (cover image, title page, TOC rows) as siblings inside the same
+             * <article>. We hide every direct child of the article (or body)
+             * that comes BEFORE the first anchored heading element.
+             * TOC rows themselves are also hidden individually (they may appear
+             * after the first heading in some layouts).
+             */
+            // Hide individual TOC rows
+            tocRows.forEach(p => { p.style.display = 'none'; });
+
+            // Find the first heading element that got an anchor
+            const firstHeadingEl = headingIndex.size > 0
+                ? (() => {
+                    // headingIndex maps normText→element; find the one with lowest DOM position
+                    let first = null;
+                    headingIndex.forEach(el => {
+                        if (!first) { first = el; return; }
+                        if (el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING) {
+                            first = el;
+                        }
+                    });
+                    return first;
+                })()
+                : null;
+
+            if (firstHeadingEl) {
+                // Walk up to find the direct child of the article/section/body
+                // that contains firstHeadingEl
+                const articleEl = firstHeadingEl.closest('article, section, body');
+                if (articleEl) {
+                    let node = firstHeadingEl;
+                    while (node.parentElement && node.parentElement !== articleEl) {
+                        node = node.parentElement;
+                    }
+                    // Hide all siblings that come BEFORE this node
+                    let sibling = articleEl.firstElementChild;
+                    while (sibling && sibling !== node) {
+                        sibling.style.display = 'none';
+                        sibling = sibling.nextElementSibling;
+                    }
+                }
+            }
+
+            return { headingsFound: headingIndex.size, linksFixed, tocEntries };
         }
 
-        // Основна функція обробки файлу
-        async function handleFile(file) {
-            if (!file) {
-                showError('Файл не обрано');
-                return;
+        /**
+         * Injects smooth-scroll CSS, TOC floating button and modal into an HTML string.
+         * tocEntries: Array<{ href, text, level }>
+         */
+        function injectTocCss(htmlString, tocEntries = []) {
+            const tocCss = `
+        /* ── TOC anchor navigation ── */
+        html { scroll-behavior: smooth; }
+        [id^="h-"] { scroll-margin-top: 24px; }
+        p a[href^="#h-"] { color:inherit; text-decoration:none; cursor:pointer; transition:color .15s; }
+        p a[href^="#h-"]:hover { color:#667eea; text-decoration:underline; }
+
+        /* ── TOC floating button ── */
+        #toc-fab {
+            position: fixed; top: 18px; right: 18px; z-index: 9998;
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff; border: none; border-radius: 50px;
+            padding: 10px 18px; font-size: 15px; font-weight: 600;
+            cursor: pointer; box-shadow: 0 4px 14px rgba(102,126,234,.45);
+            display: flex; align-items: center; gap: 7px;
+            transition: transform .2s, box-shadow .2s; white-space: nowrap;
+        }
+        #toc-fab:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(102,126,234,.55); }
+
+        /* ── TOC modal overlay ── */
+        #toc-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+            align-items: flex-start; justify-content: flex-end;
+            padding: 64px 18px 18px;
+        }
+        #toc-overlay.open { display: flex; }
+        #toc-modal {
+            background: #fff; border-radius: 14px;
+            box-shadow: 0 16px 48px rgba(0,0,0,.25);
+            width: min(400px, 92vw); max-height: 80vh;
+            display: flex; flex-direction: column; overflow: hidden;
+            animation: tocSlideIn .18s ease-out;
+        }
+        @keyframes tocSlideIn {
+            from { opacity:0; transform:translateY(-12px) scale(.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+        #toc-modal-header {
+            padding: 14px 20px 12px; font-weight: 700; font-size: 15px;
+            border-bottom: 1px solid #ebebeb;
+            display: flex; align-items: center; gap: 8px;
+            color: #333; flex-shrink: 0;
+        }
+        #toc-modal-list { overflow-y: auto; padding: 8px 0 12px; flex: 1; }
+        #toc-modal-list a {
+            display: block;
+            padding: 7px 20px 7px calc(20px + var(--toc-indent,0px));
+            font-size: 14px; color: #222; text-decoration: none;
+            line-height: 1.4; transition: background .12s, color .12s;
+            border-left: 3px solid transparent;
+        }
+        #toc-modal-list a:hover { background:#f3f0ff; color:#667eea; border-left-color:#667eea; }`;
+
+            const listHtml = tocEntries.map(({ href, text, level }) => {
+                const indent = level * 16;
+                return `<a href="${href}" style="--toc-indent:${indent}px" onclick="closeTocModal()">${text}</a>`;
+            }).join('\n');
+
+            const modalHtml = tocEntries.length === 0 ? '' : `
+    <!-- TOC floating button -->
+    <button id="toc-fab" onclick="openTocModal()" title="Table of Contents">📖 Contents</button>
+    <!-- TOC modal -->
+    <div id="toc-overlay" onclick="handleTocOverlayClick(event)">
+        <div id="toc-modal">
+            <div id="toc-modal-header">📖 Table of Contents</div>
+            <nav id="toc-modal-list">\n${listHtml}\n            </nav>
+        </div>
+    </div>
+    <script>
+        function openTocModal()  { document.getElementById('toc-overlay').classList.add('open'); }
+        function closeTocModal() { document.getElementById('toc-overlay').classList.remove('open'); }
+        function handleTocOverlayClick(e) {
+            if (!document.getElementById('toc-modal').contains(e.target)) closeTocModal();
+        }
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeTocModal(); });
+    <\/script>`;
+
+            return htmlString
+                .replace('</style>', tocCss + '\n    </style>')
+                .replace('</body>', modalHtml + '\n</body>');
+        }
+
+        /* ─── HTML Optimizer ─────────────────────────────────────────── */
+
+        /**
+         * Optimizes a full HTML string:
+         *  1. Extracts frequent inline style combinations → CSS utility classes
+         *  2. Removes empty/transparent <span> elements (no attrs, no content)
+         *  3. Removes redundant fixed img height where max-width is already set
+         *
+         * Returns { html, stats }
+         */
+        function optimizeHtml(htmlString) {
+            const parser = new DOMParser();
+            const doc    = parser.parseFromString(htmlString, 'text/html');
+            const body   = doc.body;
+
+            let removedNodes   = 0;
+            let classesCreated = 0;
+
+            /* ── Step 1: remove empty spans ── */
+            let changed = true;
+            while (changed) {
+                changed = false;
+                body.querySelectorAll('span').forEach(span => {
+                    if (span.attributes.length === 0 &&
+                        span.textContent.trim() === '' &&
+                        span.children.length === 0) {
+                        span.remove();
+                        removedNodes++;
+                        changed = true;
+                    }
+                });
             }
-            
-            // Перевіряємо чи це DOCX файл
+
+            /* ── Step 2: fix img heights ── */
+            body.querySelectorAll('img').forEach(img => {
+                const style = img.getAttribute('style') || '';
+                const cleaned = style.split(';').map(s => s.trim())
+                    .filter(s => s && !s.startsWith('height:')).join('; ');
+                if (cleaned !== style) img.setAttribute('style', cleaned);
+            });
+
+            /* ── Step 3: span-level style deduplication via CSS inheritance ──
+             *
+             * docx-preview emits something like:
+             *   <p><span style="font-family:Arial;font-size:12pt">A</span>
+             *      <span style="font-family:Arial;font-size:12pt">B</span>
+             *      <span style="font-family:Arial;font-size:12pt;font-weight:bold">C</span>
+             *      <span style="font-family:Arial;font-size:12pt">D</span></p>
+             *
+             * Strategy:
+             *   a) Collect all USED styles (after step 1 culled empties).
+             *   b) For each paragraph, walk its direct span children in order.
+             *      Track the "current active style" (initially the paragraph's own style).
+             *      Remove a span's style only when it equals the active style;
+             *      when it differs, keep it (it IS the style change signal) and update active.
+             *   c) Generate CSS classes only for styles actually referenced after step b.
+             */
+
+            // a) Helper: parse style string → Map of prop→val
+            function parseStyleMap(s) {
+                const m = new Map();
+                if (!s) return m;
+                s.split(';').forEach(d => {
+                    const colon = d.indexOf(':');
+                    if (colon === -1) return;
+                    const prop = d.slice(0, colon).trim().toLowerCase();
+                    const val  = d.slice(colon + 1).trim();
+                    if (prop) m.set(prop, val);
+                });
+                return m;
+            }
+
+            function serializeMap(m) {
+                return [...m.entries()].sort((a,b) => a[0].localeCompare(b[0]))
+                    .map(([p,v]) => `${p}:${v}`).join(';');
+            }
+
+            // b) Walk every paragraph and deduplicate sequential spans with same style
+            body.querySelectorAll('p, div').forEach(para => {
+                const paraStyleMap = parseStyleMap(para.getAttribute('style') || '');
+                let activeStyle = serializeMap(paraStyleMap); // inheriting from para
+
+                const spans = Array.from(para.children).filter(el => el.tagName === 'SPAN');
+                spans.forEach(span => {
+                    const raw  = span.getAttribute('style') || '';
+                    const norm = serializeMap(parseStyleMap(raw));
+                    if (norm === activeStyle) {
+                        // Same as what's already active — remove (CSS inheritance covers it)
+                        span.removeAttribute('style');
+                    } else {
+                        // Different — keep, and update active context
+                        activeStyle = norm;
+                    }
+                });
+            });
+
+            /* ── Step 4: collect actually-used styles → CSS classes ──
+             * Only styles still present in the DOM after step 3 get a class.
+             * A class is created only when the style appears ≥ 2 times.
+             */
+            const styleFreq = new Map();
+            body.querySelectorAll('span[style], p[style], div[style]').forEach(el => {
+                const norm = serializeMap(parseStyleMap(el.getAttribute('style') || ''));
+                if (norm) styleFreq.set(norm, (styleFreq.get(norm) || 0) + 1);
+            });
+
+            const styleToClass = new Map();
+            const cssLines     = [];
+            let classIndex     = 0;
+
+            for (const [style, count] of styleFreq.entries()) {
+                if (count >= 2) {
+                    const cls = `_o${++classIndex}`;
+                    styleToClass.set(style, cls);
+                    cssLines.push(`.${cls}{${style}}`);
+                }
+            }
+            classesCreated = classIndex;
+
+            // Apply classes to elements
+            body.querySelectorAll('span[style], p[style], div[style]').forEach(el => {
+                const norm = serializeMap(parseStyleMap(el.getAttribute('style') || ''));
+                const cls  = styleToClass.get(norm);
+                if (cls) {
+                    el.classList.add(cls);
+                    el.removeAttribute('style');
+                }
+            });
+
+            /* ── Step 5: inject CSS ── */
+            if (cssLines.length > 0) {
+                const styleEl = doc.createElement('style');
+                styleEl.textContent = '\n        /* optimizer utility classes */\n        ' +
+                    cssLines.join('\n        ') + '\n    ';
+                doc.head.appendChild(styleEl);
+            }
+
+            const result = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+            return { html: result, classesCreated, removedNodes };
+        }
+
+        /**
+         * Normalizes a CSS style string:
+         * - sorts declarations alphabetically
+         * - trims whitespace
+         * - lowercases property names
+         * Returns null if empty after cleaning.
+         */
+        function normalizeStyle(raw) {
+            const decls = raw.split(';')
+                .map(d => d.trim())
+                .filter(d => d.length > 0)
+                .map(d => {
+                    const colon = d.indexOf(':');
+                    if (colon === -1) return null;
+                    const prop = d.slice(0, colon).trim().toLowerCase();
+                    const val  = d.slice(colon + 1).trim();
+                    return `${prop}:${val}`;
+                })
+                .filter(Boolean)
+                .sort();
+            return decls.length ? decls.join(';') : null;
+        }
+
+        /* ─── Main handlers ──────────────────────────────────────────── */
+
+        async function handleFile(file) {
+            if (!file) { showError('Файл не обрано'); return; }
             if (!isDocxFile(file)) {
-                showError('Будь ласка, оберіть файл у форматі DOCX (з розширенням .docx)');
-                fileInfo.textContent = '❌ Невірний формат файлу. Оберіть DOCX файл.';
+                showError('Будь ласка, оберіть файл у форматі DOCX');
+                fileInfo.textContent = '❌ Invalid format. Please choose a DOCX file.';
                 return;
             }
 
             currentFileName = file.name;
-            const fileSizeKB = (file.size / 1024).toFixed(2);
-            fileInfo.textContent = `📄 Обрано файл: ${file.name} (${fileSizeKB} KB)`;
-            
-            updateStatus('Конвертація DOCX в HTML...', true);
-            
+            fileInfo.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+
+            previewDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Converting DOCX to HTML...</div>
+                    <div style="font-size:12px;margin-top:10px;">Processing images and creating archive...</div>
+                </div>`;
+
+            isOptimized = false;
+            optimizedZipHtml = null;
+            optStats.classList.remove('visible');
+
             try {
-                // Конвертуємо файл
-                currentHtmlContent = await convertDocxToHtml(file);
-                
-                // Відображаємо в прев'ю
-                displayHtmlPreview(currentHtmlContent);
-                
-                // Активуємо кнопку завантаження
-                downloadBtn.disabled = false;
-                
-                const htmlSizeKB = (currentHtmlContent.length / 1024).toFixed(2);
-                updateStatus(`Готово! Файл успішно конвертовано в HTML (розмір: ${htmlSizeKB} KB)`);
-                showSuccess(`Конвертація завершена! Розмір HTML: ${htmlSizeKB} KB`);
-            } catch (error) {
-                console.error('Помилка конвертації:', error);
-                let errorMsg = error.message;
-                if (errorMsg.includes('Cannot read property')) {
-                    errorMsg = 'Неможливо прочитати файл. Переконайтеся, що файл не пошкоджений.';
+                const result = await convertDocxToZip(file);
+                currentZipBlob        = result.zipBlob;
+                currentPreviewHtml    = result.previewHtml;
+                currentZipHtmlContent = result.zipBodyHtml;
+                currentFullZipHtml    = result.fullZipHtml;
+                imagesCount           = result.imagesCount;
+
+                showPreview(currentPreviewHtml);
+
+                downloadZipBtn.disabled = false;
+                optimizeBtn.disabled    = false;
+                optimizeBtn.textContent = '⚡ Optimize HTML';
+
+                const zipSizeKB = (result.zipBlob.size / 1024).toFixed(2);
+                updateStatus(`Done! ZIP archive: ${zipSizeKB} KB`);
+
+                const { headingsFound, linksFixed } = result.tocResult || {};
+                if (linksFixed > 0) {
+                    showMessage(`Table of contents fixed: ${linksFixed} links → anchors (${headingsFound} headings found).`);
+                } else if (headingsFound > 0) {
+                    showMessage(`Found ${headingsFound} headings, but no TOC links detected.`);
                 }
-                showError(`Помилка конвертації: ${errorMsg}`);
-                currentHtmlContent = '';
-                downloadBtn.disabled = true;
+
+                if (imagesCount > 0) {
+                    imageInfo.textContent = `🖼️ Images: ${imagesCount} (in media folder)`;
+                    showMessage(`Found ${imagesCount} image(s). Saved in the media folder inside the ZIP archive.`);
+                } else {
+                    imageInfo.textContent = '📝 No images found';
+                }
+            } catch (err) {
+                console.error(err);
+                showError(`Conversion error: ${err.message}`);
+                currentZipBlob = null;
+                downloadZipBtn.disabled = true;
+                optimizeBtn.disabled    = true;
+                imageInfo.textContent   = '';
             }
         }
 
-        // Функція завантаження HTML файлу
-        function downloadHtml() {
-            if (!currentHtmlContent) {
-                alert('Немає HTML контенту для завантаження');
-                return;
-            }
+        async function handleOptimize() {
+            if (!currentZipHtmlContent) { alert('Please convert a DOCX file first.'); return; }
 
+            optimizeBtn.disabled    = true;
+            downloadZipBtn.disabled = true;
+            updateStatus('Optimizing HTML...', true);
+
+            // Yield to browser so spinner renders
+            await new Promise(r => setTimeout(r, 30));
+
+            try {
+                const baseName     = currentFileName.replace(/\.docx$/i, '');
+                const fullZipHtml  = currentFullZipHtml || buildFullHtml(baseName, currentZipHtmlContent);
+                const sizeBefore   = new Blob([fullZipHtml]).size;
+
+                const { html, classesCreated, removedNodes } = optimizeHtml(fullZipHtml);
+                const sizeAfter  = new Blob([html]).size;
+                const saving     = (((sizeBefore - sizeAfter) / sizeBefore) * 100).toFixed(1);
+
+                optimizedZipHtml = html;
+                isOptimized      = true;
+
+                /* Rebuild ZIP with optimized HTML */
+                const zip = new JSZip();
+                zip.file(`${baseName}.html`, html);
+
+                /* Re-add images from original ZIP */
+                const origZip = await JSZip.loadAsync(currentZipBlob);
+                for (const [path, zipEntry] of Object.entries(origZip.files)) {
+                    if (path.startsWith('media/') && !zipEntry.dir) {
+                        const blob = await zipEntry.async('blob');
+                        zip.file(path, blob);
+                    }
+                }
+
+                currentZipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                /* Show stats */
+                document.getElementById('statBefore').textContent  = (sizeBefore / 1024).toFixed(1);
+                document.getElementById('statAfter').textContent   = (sizeAfter  / 1024).toFixed(1);
+                document.getElementById('statSaving').textContent  = `−${saving}%`;
+                document.getElementById('statClasses').textContent = classesCreated;
+                document.getElementById('statNodes').textContent   = removedNodes;
+                optStats.classList.add('visible');
+
+                downloadZipBtn.disabled = false;
+                optimizeBtn.textContent = '✅ Optimized';
+
+                const zipSizeKB = (currentZipBlob.size / 1024).toFixed(2);
+                updateStatus(`Optimized! HTML reduced by ${saving}%. ZIP: ${zipSizeKB} KB`);
+                showMessage(`HTML optimized: −${saving}% size, ${classesCreated} CSS classes, ${removedNodes} empty tags removed.`);
+
+            } catch (err) {
+                console.error(err);
+                showError(`Optimization error: ${err.message}`);
+                optimizeBtn.disabled    = false;
+                downloadZipBtn.disabled = false;
+            }
+        }
+
+        function downloadZip() {
+            if (!currentZipBlob) { alert('No ZIP archive available for download.'); return; }
             const baseName = currentFileName.replace(/\.docx$/i, '');
-            const fileName = `${baseName}_converted.html`;
-            const blob = new Blob([currentHtmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
+            const suffix   = isOptimized ? '_optimized' : '';
+            const zipName  = `${baseName}${suffix}_with_media.zip`;
+            const url = URL.createObjectURL(currentZipBlob);
+            const a   = document.createElement('a');
+            a.href = url; a.download = zipName;
+            document.body.appendChild(a); a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            // Показуємо повідомлення про успішне завантаження
-            const originalStatus = stats.innerHTML;
-            stats.innerHTML = '<span>✅ Файл завантажено успішно!</span>';
-            setTimeout(() => {
-                stats.innerHTML = originalStatus;
-            }, 2000);
+            showMessage(`Archive "${zipName}" saved! Contains HTML + media folder with ${imagesCount} image(s).`);
         }
 
-        // Функція очищення
         function clearAll() {
-            fileInput.value = '';
-            currentHtmlContent = '';
-            currentFileName = '';
-            fileInfo.textContent = '';
-            downloadBtn.disabled = true;
+            fileInput.value         = '';
+            currentZipBlob          = null;
+            currentFileName         = '';
+            imagesCount             = 0;
+            currentPreviewHtml      = '';
+            currentZipHtmlContent   = '';
+            currentFullZipHtml      = '';
+            optimizedZipHtml        = null;
+            isOptimized             = false;
+            fileInfo.textContent    = '';
+            imageInfo.textContent   = '';
+            downloadZipBtn.disabled = true;
+            optimizeBtn.disabled    = true;
+            optimizeBtn.textContent = '⚡ Optimize HTML';
+            optStats.classList.remove('visible');
             previewDiv.innerHTML = `
-                <div style="text-align: center; color: #999; padding: 50px;">
-                    Оберіть DOCX файл для конвертації
-                </div>
-            `;
-            updateStatus('Очікування файлу');
+                <div style="text-align:center;color:#999;padding:50px;">
+                    Choose a DOCX file to convert<br>
+                    <small style="display:block;margin-top:10px;">You will receive a ZIP archive with the HTML file and a media folder containing all images</small>
+                </div>`;
+            updateStatus('Waiting for file');
         }
 
-        // Обробник вибору файлу
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        });
+        /* ─── Event listeners ────────────────────────────────────────── */
 
-        // Обробник кнопки завантаження
-        downloadBtn.addEventListener('click', downloadHtml);
-
-        // Обробник кнопки очищення
+        fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
+        downloadZipBtn.addEventListener('click', downloadZip);
+        optimizeBtn.addEventListener('click', handleOptimize);
         clearBtn.addEventListener('click', clearAll);
 
-        // Drag and Drop підтримка
         const dropZone = document.querySelector('.upload-area');
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.opacity = '0.8';
-            dropZone.style.transition = 'opacity 0.3s';
-        });
-        
-        dropZone.addEventListener('dragleave', (e) => {
+        dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.style.opacity = '0.8'; });
+        dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.style.opacity = '1'; });
+        dropZone.addEventListener('drop', e => {
             e.preventDefault();
             dropZone.style.opacity = '1';
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.style.opacity = '1';
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                handleFile(file);
-            }
+            const f = e.dataTransfer.files[0];
+            if (f) handleFile(f);
         });
     </script>
 </body>
