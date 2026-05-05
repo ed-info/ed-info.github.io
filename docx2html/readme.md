@@ -12,23 +12,6 @@ A browser-based tool that converts Microsoft Word documents (`.docx`) into clean
 
 ---
 
-## Interface Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  📁 Choose DOCX file   ⚡ Optimize HTML                  │
-│  📦 Download ZIP       🗑️ Clear                          │
-│  ─────────────────────────────────────────────────────  │
-│  📊 Status bar                                           │
-│  ─────────────────────────────────────────────────────  │
-│  👁️ Preview                                              │
-│                                                          │
-│  [ rendered document preview ]                           │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
 ## Step-by-Step Usage
 
 ### 1. Choose a file
