@@ -426,31 +426,69 @@
         /* ─── Shared CSS template ────────────────────────────────────── */
 
         const SHARED_CSS = `
+        /* ── Reset & base ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            padding: 40px;
-            max-width: 1200px;
+            padding: 24px 40px;
+            max-width: 960px;
             margin: 0 auto;
             background: #ffffff;
             color: #333333;
+            overflow-x: hidden;
         }
+        /* ── Override docx-preview fixed widths ── */
+        article, section {
+            width: auto !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            overflow-x: hidden !important;
+        }
+        /* Remove page margins from wrapper on mobile, keep content padding intact */
+        @media (max-width: 600px) {
+            .docx-content-wrapper {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: auto !important;
+                min-width: 0 !important;
+            }
+            .docx-content {
+                padding: 10px !important;
+                min-height: 0 !important;
+            }
+        }
+        /* ── Images ── */
         img {
-            max-width: 100%;
-            height: auto;
+            max-width: 100% !important;
+            width: auto !important;
+            height: auto !important;
             display: block;
-            margin: 20px auto;
+            margin: 16px auto;
             border-radius: 4px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: top; }
+        /* ── Tables ── */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 100%;
+        }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; white-space: normal; }
         th { background-color: #f5f5f5; }
-        ul, ol { margin: 10px 0 10px 30px; }
-        h1, h2, h3, h4, h5, h6 { margin: 20px 0 10px 0; }
-        p { margin: 10px 0; }
-        blockquote { margin: 15px 0; padding: 10px 20px; border-left: 4px solid #667eea; background: #f8f9fa; }
-        @media (max-width: 768px) { body { padding: 20px; } }`;
+        /* ── Override docx-preview default span font ── */
+        .docx-content span { font-family: inherit !important; }
+        /* ── Typography ── */
+        ul, ol { margin: 10px 0 10px 24px; }
+        h1, h2, h3, h4, h5, h6 { margin: 20px 0 10px 0; line-height: 1.3; }
+        p { margin: 8px 0; }
+        blockquote { margin: 12px 0; padding: 10px 16px; border-left: 4px solid #667eea; background: #f8f9fa; }
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            body { padding: 12px 14px; font-size: 15px; }
+            th, td { padding: 7px 8px; font-size: 13px; }
+        }`;
 
         function buildFullHtml(title, bodyHtml, extraCss = '') {
             return `<!DOCTYPE html>
@@ -501,6 +539,55 @@
                         updateStatus('Fixing table of contents links...', true);
                         const tocResult = fixTocAnchors(previewContainer);
                         console.log('TOC:', tocResult);
+
+                        // Strip fixed pt/px widths from docx-preview wrapper only
+                        previewContainer.querySelectorAll('article, section').forEach(el => {
+                            const s = el.style;
+                            if (s.width    && /pt|px|in|cm/.test(s.width))    { s.width = ''; s.minWidth = ''; }
+                            if (s.maxWidth && /pt|px|in|cm/.test(s.maxWidth))   s.maxWidth = '';
+                        });
+                        // Strip oversized horizontal margins/padding from the wrapper div only
+                        previewContainer.querySelectorAll('.docx-content-wrapper').forEach(el => {
+                            const s = el.style;
+                            if (s.width    && /pt|px|in|cm/.test(s.width))    { s.width = ''; s.minWidth = ''; }
+                            if ((parseFloat(s.marginLeft)   || 0) > 40) s.marginLeft   = '';
+                            if ((parseFloat(s.marginRight)  || 0) > 40) s.marginRight  = '';
+                        });
+                        // Fix image wrapper divs: replace fixed width with horizontal scroll
+                        previewContainer.querySelectorAll('div').forEach(el => {
+                            const s = el.style;
+                            if (s.display === 'inline-block' && s.width && /pt|px|in|cm/.test(s.width)) {
+                                s.display  = 'block';
+                                s.width    = '100%';
+                                s.maxWidth = '100%';
+                                s.height   = 'auto';
+                                s.overflowX = 'auto';
+                                s.WebkitOverflowScrolling = 'touch';
+                            }
+                        });
+                        // Images: keep natural size but cap at 100% of their (now scrollable) wrapper
+                        previewContainer.querySelectorAll('img').forEach(img => {
+                            img.style.position = 'static';
+                            img.style.left     = '';
+                            img.style.top      = '';
+                            img.style.maxWidth = '100%';
+                            img.style.height   = 'auto';
+                        });
+                        // Fix tables: wrap in scrollable div, remove fixed widths from table/col/td
+                        previewContainer.querySelectorAll('table').forEach(table => {
+                            // Wrap table in scrollable container
+                            const wrapper = document.createElement('div');
+                            wrapper.style.cssText = 'width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0;';
+                            table.parentNode.insertBefore(wrapper, table);
+                            wrapper.appendChild(table);
+                            // Remove fixed width from table itself
+                            table.style.width = '';
+                            table.style.minWidth = '';
+                            // Remove fixed widths from col elements
+                            table.querySelectorAll('col').forEach(col => { col.style.width = ''; });
+                            // Remove fixed widths from td/th but keep padding/borders
+                            table.querySelectorAll('td, th').forEach(cell => { cell.style.width = ''; });
+                        });
 
                         zipContainer.innerHTML = previewContainer.innerHTML;
 
@@ -820,28 +907,36 @@
 
         /* ── TOC floating button ── */
         #toc-fab {
-            position: fixed; top: 18px; right: 18px; z-index: 9998;
+            position: fixed; top: 12px; right: 12px; z-index: 9998;
             background: linear-gradient(135deg,#667eea,#764ba2);
             color: #fff; border: none; border-radius: 50px;
-            padding: 10px 18px; font-size: 15px; font-weight: 600;
+            padding: 9px 16px; font-size: 14px; font-weight: 600;
             cursor: pointer; box-shadow: 0 4px 14px rgba(102,126,234,.45);
-            display: flex; align-items: center; gap: 7px;
+            display: flex; align-items: center; gap: 6px;
             transition: transform .2s, box-shadow .2s; white-space: nowrap;
+            max-width: calc(100vw - 24px);
         }
         #toc-fab:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(102,126,234,.55); }
+        @media (max-width: 600px) {
+            #toc-fab { top: 8px; right: 8px; padding: 8px 13px; font-size: 13px; }
+        }
 
         /* ── TOC modal overlay ── */
         #toc-overlay {
             display: none; position: fixed; inset: 0; z-index: 9999;
             background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
             align-items: flex-start; justify-content: flex-end;
-            padding: 64px 18px 18px;
+            padding: 56px 12px 12px;
+        }
+        @media (max-width: 600px) {
+            #toc-overlay { padding: 52px 8px 8px; align-items: flex-start; justify-content: stretch; }
+            #toc-modal { width: 100% !important; max-width: 100% !important; max-height: 70vh; border-radius: 10px; }
         }
         #toc-overlay.open { display: flex; }
         #toc-modal {
             background: #fff; border-radius: 14px;
             box-shadow: 0 16px 48px rgba(0,0,0,.25);
-            width: min(400px, 92vw); max-height: 80vh;
+            width: min(400px, calc(100vw - 24px)); max-height: 80vh;
             display: flex; flex-direction: column; overflow: hidden;
             animation: tocSlideIn .18s ease-out;
         }
@@ -1008,7 +1103,8 @@
                 if (count >= 2) {
                     const cls = `_o${++classIndex}`;
                     styleToClass.set(style, cls);
-                    cssLines.push(`.${cls}{${style}}`);
+                    // Use .docx-content .cls to match specificity of .docx-content span
+                    cssLines.push(`.docx-content .${cls}{${style}}`);
                 }
             }
             classesCreated = classIndex;
