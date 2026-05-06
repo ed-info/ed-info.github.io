@@ -1,0 +1,471 @@
+Це вебсторінка з каталогом програмного забезпечення для вивчення інформатики, створена на основі наданого файлу.
+```html
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Програмні засоби для курсу інформатики · Офлайн та смартфон</title>
+    <!-- Google Fonts & simple reset -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        /* layout: sidebar + main */
+        .app-layout {
+            display: flex;
+            flex-direction: row;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.03);
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR (tree menu) */
+        .sidebar {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 1.8rem 1rem 2rem 1.2rem;
+            box-shadow: 1px 0 8px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f3b5e;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3b82f6;
+            display: inline-block;
+        }
+
+        .tree-nav {
+            list-style: none;
+            margin-top: 0.5rem;
+        }
+
+        .tree-nav li {
+            margin-bottom: 0.4rem;
+        }
+
+        .tree-category {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e293b;
+            background: #f8fafc;
+            padding: 0.5rem 0.75rem;
+            border-radius: 10px;
+            margin: 0.5rem 0 0.2rem 0;
+            display: block;
+            letter-spacing: -0.2px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .tree-sublist {
+            list-style: none;
+            padding-left: 1rem;
+            margin-top: 0.2rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .tree-sublist li {
+            margin: 0.3rem 0;
+        }
+
+        .tree-sublist a {
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #334155;
+            display: block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .tree-sublist a:hover {
+            background: #eef2ff;
+            color: #2563eb;
+            padding-left: 0.8rem;
+        }
+
+        /* main content */
+        .main-content {
+            flex: 1;
+            padding: 2rem 2rem 3rem 2rem;
+            max-width: calc(100% - 300px);
+            overflow-x: auto;
+        }
+
+        .hero {
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e3a5f, #2b6cb0);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .hero p {
+            color: #334155;
+            margin-top: 0.5rem;
+            font-size: 1.05rem;
+            border-left: 3px solid #94a3b8;
+            padding-left: 1rem;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 2.5rem;
+            border: 1px solid #eef2f6;
+            transition: box-shadow 0.2s;
+            overflow-x: auto;
+        }
+
+        .section-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin: 0;
+            padding: 1.2rem 1.5rem 0.5rem 1.5rem;
+            background: #ffffff;
+            border-bottom: 2px solid #e2edff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title span {
+            background: #eef2ff;
+            padding: 0.2rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .table-wrapper {
+            padding: 0 1rem 1.2rem 1rem;
+            overflow-x: auto;
+        }
+
+        .app-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 680px;
+        }
+
+        .app-table th {
+            text-align: left;
+            padding: 0.85rem 0.6rem;
+            background: #f9fbfe;
+            font-weight: 600;
+            color: #0b3b5f;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .app-table td {
+            padding: 0.85rem 0.6rem;
+            border-bottom: 1px solid #f0f2f5;
+            vertical-align: top;
+            color: #1f2a44;
+        }
+
+        .app-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.2rem 0.55rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-offline {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-freemium {
+            background: #fff3e3;
+            color: #b45309;
+        }
+
+        .badge-open {
+            background: #e6f7e6;
+            color: #2c6e2c;
+        }
+
+        .app-link {
+            text-decoration: none;
+            font-weight: 500;
+            color: #2563eb;
+            word-break: break-all;
+            font-size: 0.8rem;
+        }
+
+        .app-link:hover {
+            text-decoration: underline;
+        }
+
+        .notes-text {
+            font-size: 0.8rem;
+            color: #475569;
+            max-width: 260px;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.8rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 860px) {
+            .app-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 1rem;
+                max-height: 280px;
+            }
+            .main-content {
+                max-width: 100%;
+                padding: 1.5rem;
+            }
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <!-- БІЧНА ПАНЕЛЬ: дерево розділів -->
+    <aside class="sidebar">
+        <div style="margin-bottom: 1rem;">
+            <div class="sidebar-header">📂 Зміст</div>
+        </div>
+        <ul class="tree-nav">
+            <li><span class="tree-category">📌 1. Програмування</span>
+                <ul class="tree-sublist">
+                    <li><a href="#prog-octostudio">OctoStudio</a></li>
+                    <li><a href="#prog-pocketcode">Pocket Code</a></li>
+                    <li><a href="#prog-scratchjr">ScratchJr</a></li>
+                    <li><a href="#prog-epython">ЄPython</a></li>
+                    <li><a href="#prog-spck">Spck Editor Lite</a></li>
+                    <li><a href="#prog-cpp">C++ Compiler</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">📄 2. Офісні технології</span>
+                <ul class="tree-sublist">
+                    <li><a href="#office-nx">Office NX (SoftMaker)</a></li>
+                    <li><a href="#office-google">Документи Google</a></li>
+                    <li><a href="#office-wps">WPS Office</a></li>
+                    <li><a href="#office-collabora">Collabora Office</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">🎨 3. Дизайн і графіка</span>
+                <ul class="tree-sublist">
+                    <li><a href="#design-pocketpaint">Pocket Paint</a></li>
+                    <li><a href="#design-vectorink">Vector Ink</a></li>
+                    <li><a href="#design-prisma3d">Prisma3D</a></li>
+                    <li><a href="#design-ibispaint">Ibis Paint X</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">🌐 4. Вебдизайн (HTML/CSS)</span>
+                <ul class="tree-sublist">
+                    <li><a href="#web-htmleditor">HTML Editor</a></li>
+                    <li><a href="#web-learnhtml">Learn HTML</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">🎬 5. Відео та музика</span>
+                <ul class="tree-sublist">
+                    <li><a href="#media-youcut">YouCut</a></li>
+                    <li><a href="#media-ringtone">Ringtone Maker</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">🧩 6. Розвивальні ігри</span>
+                <ul class="tree-sublist">
+                    <li><a href="#game-gcompis">GCompris</a></li>
+                    <li><a href="#game-khan">Khan Academy Kids</a></li>
+                    <li><a href="#game-superrobot">Super Robot Bros</a></li>
+                    <li><a href="#game-codingkids">Coding Games For Kids</a></li>
+                    <li><a href="#game-codekarts">Code Karts</a></li>
+                </ul>
+            </li>
+            <li><span class="tree-category">📡 7. Передача файлів (офлайн)</span>
+                <ul class="tree-sublist">
+                    <li><a href="#share-easyshare">EasyShare</a></li>
+                    <li><a href="#share-shareme">ShareMe (Mi Drop)</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div style="margin-top: 2rem; font-size: 0.7rem; color: #94a3b8; padding-left: 0.5rem;">
+            ⚡ Швидкий перехід<br>⬤ Безкоштовні / Open Source
+        </div>
+    </aside>
+
+    <!-- ОСНОВНИЙ КОНТЕНТ -->
+    <main class="main-content">
+        <div class="hero">
+            <h1>📱 Програмні засоби для курсу інформатики<br><span style="font-size: 1.3rem;">працюємо зі смартфону та офлайн</span></h1>
+            <p>Збірка ПЗ для дистанційного та офлайн-навчання: програмування, офіс, графіка, вебдизайн, медіа та ігри. Більшість застосунків працюють без інтернету — ідеально для школи та вдома.</p>
+        </div>
+
+        <!-- РОЗДІЛ 1: ПРОГРАМУВАННЯ -->
+        <div class="section-card" id="prog-section">
+            <div class="section-title">💻 1. Програмування та алгоритмізація <span>5-9+ класи</span></div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження (Google Play)</th><th>Примітки</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr id="prog-octostudio"><td><strong>OctoStudio</strong></td><td><span class="badge">Free (MIT)</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=edu.mit.octostudio" target="_blank">Google Play →</a></td><td class="notes-text">Для 5-6 кл. Візуальне програмування від MIT, аналог Scratch для телефонів.</td></tr>
+                        <tr id="prog-pocketcode"><td><strong>Pocket Code</strong></td><td><span class="badge badge-open">Open Source</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Google Play →</a></td><td class="notes-text">Scratch-стиль, програмування руху телефону, алгоритми.</td></tr>
+                        <tr id="prog-scratchjr"><td><strong>ScratchJr</strong></td><td><span class="badge">Free (MIT)</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=org.scratchjr.android" target="_blank">Google Play →</a></td><td class="notes-text">Для 1-3 класів. Дуже проста, інтуїтивна, англійський інтерфейс, але зрозуміло за іконками.</td></tr>
+                        <tr id="prog-epython"><td><strong>ЄPython</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://drive.google.com/file/d/1iq_e3WXm-ZFVaonDaF0Li8QAtWv8LgFo/view?usp=drive_link" target="_blank">APK (Google Drive)</a></td><td class="notes-text">Українська розробка, 7-9 класи. Python з turtle, tkinter. Працює без інтернету (Android).</td></tr>
+                        <tr id="prog-spck"><td><strong>Spck Editor Lite</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=io.spck" target="_blank">Google Play →</a></td><td class="notes-text">JavaScript код на Android, підсвітка, запуск проєктів.</td></tr>
+                        <tr id="prog-cpp"><td><strong>C++ Compiler</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=club.onepercent.cplusplus_compiler" target="_blank">Google Play →</a></td><td class="notes-text">IDE для C++ на телефоні, компіляція без інтернету.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- РОЗДІЛ 2: ОФІСНІ ТЕХНОЛОГІЇ -->
+        <div class="section-card" id="office-section">
+            <div class="section-title">📊 2. Офісні технології (Word, Excel, PowerPoint)</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="office-nx"><td><strong>Office NX (SoftMaker)</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=softmaker.applications.office.textmaker" target="_blank">Text Maker</a> / <a class="app-link" href="https://play.google.com/store/apps/details?id=softmaker.applications.office.planmaker" target="_blank">Plan Maker</a> / <a class="app-link" href="https://play.google.com/store/apps/details?id=softmaker.applications.office.presentations" target="_blank">Presentations</a></td><td class="notes-text">Найкраща заміна MS Office, робота без інтернету, звичний інтерфейс, без підписки.</td></tr>
+                        <tr id="office-google"><td><strong>Документи Google</strong></td><td><span class="badge">Free</span></td><td><span class="badge">Ні (потрібна синхронізація)</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.google.android.apps.docs.editors.docs" target="_blank">Google Play →</a></td><td class="notes-text">Для дистанційки, спільне редагування, без інтернету — тільки перегляд.</td></tr>
+                        <tr id="office-wps"><td><strong>WPS Office</strong></td><td><span class="badge badge-freemium">Freemium</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=cn.wps.moffice_eng" target="_blank">Google Play →</a></td><td class="notes-text">Швидкий, PDF-конвертер, але реклама і преміум-пропозиції, потребує налаштувань.</td></tr>
+                        <tr id="office-collabora"><td><strong>Collabora Office</strong></td><td><span class="badge badge-open">Open Source</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.collabora.libreoffice" target="_blank">Google Play →</a></td><td class="notes-text">Відкритий код, чудова сумісність з MS Office, але на старих телефонах може гальмувати.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3 ДИЗАЙН -->
+        <div class="section-card" id="design-section">
+            <div class="section-title">🎨 3. Дизайн та комп'ютерна графіка</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="design-pocketpaint"><td><strong>Pocket Paint</strong></td><td><span class="badge badge-open">Open Source</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=org.catrobat.paintroid" target="_blank">Google Play →</a></td><td class="notes-text">Аналог Paint з шарами, легкий, ідеально для малювання та редагування фото.</td></tr>
+                        <tr id="design-vectorink"><td><strong>Vector Ink</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/search?q=vector+ink+svg+illustrator" target="_blank">Пошук Google Play</a></td><td class="notes-text">Векторний редактор (CorelDraw-подібний), зручний на планшеті для SVG-іконок.</td></tr>
+                        <tr id="design-prisma3d"><td><strong>Prisma3D</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.prisma3D.prisma3D" target="_blank">Google Play →</a></td><td class="notes-text">3D-моделювання та анімація, не потребує потужного пристрою, цікаво для проєктів.</td></tr>
+                        <tr id="design-ibispaint"><td><strong>Ibis Paint X</strong></td><td><span class="badge badge-freemium">Freemium</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=jp.ne.ibis.ibispaintx.app" target="_blank">Google Play →</a></td><td class="notes-text">Професійний растровий редактор, багато інструментів, але реклама у безкоштовній версії.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4 ВЕБДИЗАЙН -->
+        <div class="section-card" id="web-section">
+            <div class="section-title">🌐 4. Вебдизайн (HTML/CSS)</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="web-htmleditor"><td><strong>HTML Editor</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.qamar.editor.html" target="_blank">Google Play →</a></td><td class="notes-text">Редактор коду з підсвіткою та попереднім переглядом, підходить для початківців.</td></tr>
+                        <tr id="web-learnhtml"><td><strong>Learn HTML</strong></td><td><span class="badge">Free</span></td><td><span class="badge">Ні (частково)</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.codeliber.html" target="_blank">Google Play →</a></td><td class="notes-text">Підручник з прикладами, теорія. Завантажити уроки заздалегідь для блекауту.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5 Відео та музика -->
+        <div class="section-card" id="media-section">
+            <div class="section-title">🎵 5. Відео та музика (мультимедіа)</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="media-youcut"><td><strong>YouCut</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.camerasideas.trimmer" target="_blank">Google Play →</a></td><td class="notes-text">Найкращий відеоредактор без водяного знаку, різання, музика, сповільнення.</td></tr>
+                        <tr id="media-ringtone"><td><strong>Ringtone Maker</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=ringtone.maker.mp3.cutter.audio" target="_blank">Google Play →</a></td><td class="notes-text">Обрізка та склеювання аудіо, легкий інструмент для роботи з музикою.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 6 РОЗВИВАЛЬНІ ІГРИ -->
+        <div class="section-card" id="games-section">
+            <div class="section-title">🧸 6. Розвивальні ігри та логіка</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="game-gcompis"><td><strong>GCompris</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=net.gcompris.full&hl=uk" target="_blank">Google Play →</a></td><td class="notes-text">100+ вправ для дітей 2-10 років: читання, математика, географія, алгоритми, шахи тощо.</td></tr>
+                        <tr id="game-khan"><td><strong>Khan Academy Kids</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=org.khankids.android" target="_blank">Google Play →</a></td><td class="notes-text">Ігри для дошкільнят та 1-2 класів: читання, акустика, інтерактивні оповідання.</td></tr>
+                        <tr id="game-superrobot"><td><strong>Super Robot Bros: Play & Code</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.learnyland.SuperRobotBros" target="_blank">Google Play →</a></td><td class="notes-text">Основи програмування: послідовності, цикли, умови, цікаво для логіки.</td></tr>
+                        <tr id="game-codingkids"><td><strong>Coding Games For Kids</strong></td><td><span class="badge badge-freemium">Freemium</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.internetdesignzone.kidlolandcoding" target="_blank">Google Play →</a></td><td class="notes-text">Головоломки для логіки, візуально яскраво, багато реклами у безкоштовній версії, потрібна англійська.</td></tr>
+                        <tr id="game-codekarts"><td><strong>Code Karts</strong></td><td><span class="badge badge-freemium">Freemium</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.edokiacademy.babycoding" target="_blank">Google Play →</a></td><td class="notes-text">Для 1-4 класів, навчання алгоритмам через перегони, простий ігровий інтерфейс, обмежені рівні у free версії.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 7 ПЕРЕДАЧА ФАЙЛІВ -->
+        <div class="section-card" id="share-section">
+            <div class="section-title">📡 7. Передача файлів (офлайн-шерінг)</div>
+            <div class="table-wrapper">
+                <table class="app-table">
+                    <thead><tr><th>Назва ПЗ</th><th>Ліцензія</th><th>Офлайн</th><th>Завантаження</th><th>Примітки</th></tr></thead>
+                    <tbody>
+                        <tr id="share-easyshare"><td><strong>EasyShare</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.vivo.easyshare" target="_blank">Google Play →</a></td><td class="notes-text">Аналог AirDrop, швидка передача великих файлів. Сумісність різних виробників може бути проблемною.</td></tr>
+                        <tr id="share-shareme"><td><strong>ShareMe (Mi Drop)</strong></td><td><span class="badge">Free</span></td><td><span class="badge badge-offline">Так</span></td><td><a class="app-link" href="https://play.google.com/store/apps/details?id=com.xiaomi.midrop" target="_blank">Google Play →</a></td><td class="notes-text">Стабільне рішення, створює власну Wi-Fi мережу, передає apk без перейменувань.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="footer-note">
+            📌 Всі застосунки підібрані для навчання інформатиці в школі та вдома. Більшість працюють повністю офлайн після встановлення.<br>
+            🔗 Ліцензії: Free, Open Source, Freemium (деякі мають рекламу або обмеження). Для шкіл рекомендується обирати безкоштовні версії без підписки.
+        </div>
+    </main>
+</div>
+</body>
+</html>
+```
