@@ -3634,7 +3634,10 @@ Sk.globals.clock = Sk.misceval.callsim(Clock);
             if (Sk.globals.draw) {
                 tasks.push(Sk.misceval.callsimAsync(handlers, Sk.globals.draw));
             }
-            return Promise.all(tasks).then(() => window.requestAnimationFrame(update)).catch(PythonIDE.handleError);
+            return Promise.all(tasks).then(() => {
+                if (window.PGZ_STOP_REQUESTED) return;
+                window.requestAnimationFrame(update);
+            }).catch(PythonIDE.handleError);
         }
         // add event handlers
         // Універсальна функція для отримання координат
