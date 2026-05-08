@@ -130,6 +130,7 @@ async function importSelectedImage() {
   if (!selectedExternalImage) return;
 
   try {
+    await initFS();
     // Завантажуємо зображення як Blob
     const response = await fetch(selectedExternalImage);
     if (!response.ok) throw new Error('Не вдалося завантажити зображення');
