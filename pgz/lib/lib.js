@@ -1229,23 +1229,55 @@ handleError: function(err) {
     
 stop: function() {
     console.log("Stop");
-    
-    // Зберігаємо поточний код перед перезавантаженням
-    if (PythonIDE.hash && PythonIDE.aT[PythonIDE.hash]) {
-        // Зберігаємо файли для відновлення після перезавантаження
-        PythonIDE.aT[PythonIDE.hash].c = JSON.parse(JSON.stringify(PythonIDE.files));
-        PythonIDE.aT[PythonIDE.hash].t = Date.now();
-        localStorage.aT = JSON.stringify(PythonIDE.aT);
+
+    // Якщо запущено через URL /run/ — потрібен reload для зміни URL
+    if (window.location.href.indexOf('/run/') > -1) {
+        if (PythonIDE.hash && PythonIDE.aT[PythonIDE.hash]) {
+            PythonIDE.aT[PythonIDE.hash].c = JSON.parse(JSON.stringify(PythonIDE.files));
+            PythonIDE.aT[PythonIDE.hash].t = Date.now();
+            localStorage.aT = JSON.stringify(PythonIDE.aT);
+        }
+        localStorage.loadAction = "restoreCode";
+        window.location = window.location.href
+            .replace('run/', 'python/')
+            .replace('?run', '');
+        return;
     }
-    
-    // Встановлюємо прапорець для відновлення коду після перезавантаження
-    localStorage.loadAction = "restoreCode";
-    
-    // Змінюємо URL і перезавантажуємо
-    window.location = window.location.href
-        .replace('run/', 'python/')
-        .replace('?run', '');
-    location.reload();
+
+    // Зупиняємо game loop pgzrun
+    window.PGZ_STOP_REQUESTED = true;
+
+    // Ховаємо вікно гри та геймпад
+    const gameModal = document.getElementById('gameModal');
+    if (gameModal) gameModal.style.display = 'none';
+    const gamepad = document.getElementById('virtual-gamepad');
+    if (gamepad) gamepad.style.display = 'none';
+
+    // Скидаємо кнопки UI
+    const btnStop = document.getElementById('btn_stopRunning');
+    const btnRun = document.getElementById('btn_run');
+    if (btnStop) { btnStop.style.display = 'none'; btnStop.classList.remove('visibleButton'); }
+    if (btnRun) btnRun.style.display = 'block';
+
+    // Скидаємо стан Skulpt/IDE
+    PythonIDE.running = false;
+    PythonIDE.runMode = 'finished';
+    PythonIDE.continueRunning = false;
+    if (PythonIDE.continueDebug) delete PythonIDE.continueDebug;
+    if (PythonIDE.abortDebug) delete PythonIDE.abortDebug;
+
+    // Клонуємо canvas щоб зняти всі event listeners
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas && canvas.parentNode) {
+        const newCanvas = canvas.cloneNode(false);
+        canvas.parentNode.replaceChild(newCanvas, canvas);
+    }
+
+    // Скидаємо прапорець і оновлюємо редактор
+    setTimeout(function() {
+        window.PGZ_STOP_REQUESTED = false;
+        PythonIDE.editor.refresh();
+    }, 100);
 },
     
     keyHandlers: [],
@@ -1801,6 +1833,7 @@ if(localStorage.loadAction === "restoreCode") {
             PythonIDE.editor.setValue(PythonIDE.files[PythonIDE.currentFile]);
             PythonIDE.updateFileTabs();
             PythonIDE.editor.focus();
+            setTimeout(function() { PythonIDE.editor.refresh(); }, 0);
  /*
             PythonIDE.showHint(selectedLang === 'en' 
                 ? "Showing the code you last edited " + timeSince(PythonIDE.aT[PythonIDE.hash].t) + " ago" 
