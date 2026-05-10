@@ -1,0 +1,378 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Logic Gates</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"><link rel="stylesheet" href="./style.css">
+<style>
+  @font-face {
+    font-family: 'segments';
+    src: url('./7segment.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  /* ── Delete button (bin) ── */
+  #deleteBtn {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    width: 72px !important;
+    height: 72px !important;
+    cursor: pointer !important;
+    z-index: 300 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.15s, transform 0.15s !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: transparent !important;
+    font-size: 0 !important;
+  }
+
+  #deleteBtn.show {
+    opacity: 1 !important;
+    pointer-events: all !important;
+  }
+
+  #deleteBtn.active {
+    transform: scale(1.15) !important;
+  }
+
+  #deleteBtnImg {
+    width: 72px !important;
+    height: 72px !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
+    display: block !important;
+  }
+
+  /* ── Bottom Bar ── */
+  #bottomBar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(calc(100% - 6px));
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(20, 24, 34, 0.97);
+    border: 1px solid rgba(100, 160, 255, 0.18);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    padding: 10px 16px 14px;
+    z-index: 200;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+    cursor: pointer;
+  }
+
+  #bottomBar::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: rgba(100, 160, 255, 0.35);
+    border-radius: 2px;
+  }
+
+  #bottomBar.open,
+  #bottomBar:hover {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #schemaName {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(100, 160, 255, 0.25);
+    border-radius: 6px;
+    color: rgba(180, 210, 255, 0.9);
+    font-family: monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    outline: none;
+    width: 160px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  #schemaName::placeholder {
+    color: rgba(100, 160, 255, 0.35);
+  }
+
+  #schemaName:focus {
+    border-color: rgba(100, 160, 255, 0.6);
+    background: rgba(255,255,255,0.09);
+  }
+
+  #importBtn, #exportBtn, #clearBtn {
+    width: 40px !important;
+    height: 40px !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(100, 160, 255, 0.2) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    color: rgba(150, 200, 255, 0.8) !important;
+    transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+    position: static !important;
+    font-size: 0 !important;
+  }
+
+  #importBtn:hover, #exportBtn:hover, #clearBtn:hover {
+    background: rgba(100, 160, 255, 0.15) !important;
+    color: #7fc3ff !important;
+    border-color: rgba(100, 160, 255, 0.45) !important;
+  }
+
+  #clearBtn {
+    color: rgba(255, 120, 120, 0.7) !important;
+    border-color: rgba(255, 100, 100, 0.2) !important;
+  }
+
+  #clearBtn:hover {
+    background: rgba(255, 80, 80, 0.15) !important;
+    color: #ff8080 !important;
+    border-color: rgba(255, 100, 100, 0.45) !important;
+  }
+
+  #importBtn .material-icons,
+  #exportBtn .material-icons,
+  #clearBtn .material-icons {
+    font-size: 22px !important;
+  }
+
+  /* ── Side Gate Panel ── */
+  #gatePanel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    display: flex;
+    flex-direction: row;
+    pointer-events: none;
+  }
+
+  #gatePanelContent {
+    width: 130px;
+    height: 100%;
+    background: rgba(20, 24, 34, 0.97);
+    border-right: 1px solid rgba(100, 160, 255, 0.18);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+    overflow-y: auto;
+    overflow-x: hidden;
+    transform: translateX(-130px);
+    transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+    pointer-events: all;
+    padding-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,160,255,0.3) transparent;
+  }
+
+  #gatePanelContent::-webkit-scrollbar { width: 4px; }
+  #gatePanelContent::-webkit-scrollbar-track { background: transparent; }
+  #gatePanelContent::-webkit-scrollbar-thumb { background: rgba(100,160,255,0.3); border-radius: 2px; }
+
+  #gatePanel.open #gatePanelContent {
+    transform: translateX(0);
+  }
+
+  #gatePanelToggle {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 56px;
+    background: rgba(20, 24, 34, 0.97);
+    border: 1px solid rgba(100, 160, 255, 0.25);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(100, 160, 255, 0.85);
+    font-size: 18px;
+    font-weight: bold;
+    transition: left 0.32s cubic-bezier(.4,0,.2,1), background 0.15s, color 0.15s;
+    pointer-events: all;
+    user-select: none;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+
+  #gatePanel.open #gatePanelToggle {
+    left: 130px;
+  }
+
+  #gatePanelToggle:hover {
+    background: rgba(40, 60, 100, 0.98);
+    color: #7fc3ff;
+  }
+
+  .gate-section-title {
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(100, 160, 255, 0.45);
+    padding: 12px 10px 4px 10px;
+    user-select: none;
+  }
+
+  .gate-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 6px 6px;
+    cursor: grab;
+    border-radius: 6px;
+    margin: 2px 6px;
+    transition: background 0.15s;
+    user-select: none;
+    min-height: 64px;
+    justify-content: center;
+  }
+
+  .gate-item:hover {
+    background: rgba(100, 160, 255, 0.12);
+  }
+
+  .gate-item:active {
+    cursor: grabbing;
+  }
+
+  .gate-item img {
+    max-width: 72px;
+    max-height: 48px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: brightness(0.9);
+  }
+
+  .gate-item span {
+    font-family: monospace;
+    font-size: 10px;
+    color: rgba(180, 210, 255, 0.7);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+  }
+
+  /* Ghost element during drag */
+  #drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.75;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #drag-ghost img {
+    max-width: 72px;
+    max-height: 48px;
+    object-fit: contain;
+  }
+
+  #drag-ghost span {
+    font-family: monospace;
+    font-size: 10px;
+    color: #adf;
+    margin-top: 3px;
+  }
+</style>
+</head>
+<body>
+<div style="font-family: segments; visibility: hidden; height: 0px; width:0px;"></div>
+<div id="appWrap">
+	<canvas id="circuits-canvas" style="background-color: #255;" width="1072" height="957">Canvas is not supported in your browser</canvas>
+	<div id="deleteBtn"><img id="deleteBtnImg" src="./bin-close.png" alt="Delete"></div>
+
+	<!-- Side panel -->
+	<div id="gatePanel">
+		<div id="gatePanelToggle" title="Відкрити/закрити панель елементів">»</div>
+		<div id="gatePanelContent">
+			<div class="gate-section-title">Входи / Виходи</div>
+			<div class="gate-item" data-type="button" title="INPUT-1 (перемикач)"><img src="./switch-off-80.png" draggable="false"><span>INPUT-1</span></div>
+			<div class="gate-item" data-type="pushbutton" title="INPUT-2 (кнопка без фіксації)"><img src="./push-off-80.png" draggable="false"><span>INPUT-2</span></div>
+			<div class="gate-item" data-type="light" title="OUTPUT"><img src="./bulb-off-100.png" draggable="false"><span>OUTPUT</span></div>
+			<div class="gate-section-title">Логічні вентилі</div>
+			<div class="gate-item" data-type="not" title="NOT"><img src="./not-gate-100.png" draggable="false"><span>NOT</span></div>
+			<div class="gate-item" data-type="and" title="AND"><img src="./and-gate-100.png" draggable="false"><span>AND</span></div>
+			<div class="gate-item" data-type="or" title="OR"><img src="./or-gate-100.png" draggable="false"><span>OR</span></div>
+			<div class="gate-item" data-type="xor" title="XOR"><img src="./xor-gate-100.png" draggable="false"><span>XOR</span></div>
+			<div class="gate-item" data-type="nand" title="NAND"><img src="./nand-gate-100.png" draggable="false"><span>NAND</span></div>
+			<div class="gate-item" data-type="nor" title="NOR"><img src="./nor-gate-100.png" draggable="false"><span>NOR</span></div>
+			<div class="gate-item" data-type="xnor" title="XNOR"><img src="./xnor-gate-100.png" draggable="false"><span>XNOR</span></div>
+			<div class="gate-section-title">Багатовходові</div>
+			<div class="gate-item" data-type="and3" title="AND-3"><img src="./and-gate-3-100.png" draggable="false"><span>AND-3</span></div>
+			<div class="gate-item" data-type="and4" title="AND-4"><img src="./and-gate-4-100.png" draggable="false"><span>AND-4</span></div>
+			<div class="gate-item" data-type="or3" title="OR-3"><img src="./or-gate-3-100.png" draggable="false"><span>OR-3</span></div>
+			<div class="gate-item" data-type="or4" title="OR-4"><img src="./or-gate-4-100.png" draggable="false"><span>OR-4</span></div>
+			<div class="gate-section-title">Спеціальні</div>
+			<div class="gate-item" data-type="sr" title="SR-тригер"><img src="./sr-trigger.png" draggable="false"><span>SR</span></div>
+			<div class="gate-item" data-type="adder" title="Повний суматор"><img src="./full-adder-100.png" draggable="false"><span>ADDER</span></div>
+			<div class="gate-item" data-type="memory" title="MEMORY"><img src="./memory.png" draggable="false"><span>MEMORY</span></div>
+			<div class="gate-item" data-type="ticker" title="CLOCK"><img src="./clock.png" draggable="false"><span>CLOCK</span></div>
+			<div class="gate-item" data-type="delay" title="DELAY"><img src="./delay.png" draggable="false"><span>DELAY</span></div>
+			<div class="gate-item" data-type="display" title="DISPLAY"><img src="./display.png" draggable="false"><span>DISPLAY</span></div>
+			<div class="gate-item" data-type="dot" title="LINK"><img src="./dot.png" draggable="false"><span>LINK</span></div>
+			<div class="gate-item" data-type="label" title="LABEL"><img src="" draggable="false" style="display:none"><span style="font-size:13px;font-weight:bold;letter-spacing:1px;color:#adf;">LABEL</span></div>
+		</div>
+	</div>
+
+	<div id="bottomBar">
+		<input id="schemaName" type="text" placeholder="назва схеми" autocomplete="off" spellcheck="false">
+		<div id="importBtn" title="Завантажити схему з файлу .lgc"><i class="material-icons">file_upload</i></div>
+		<div id="exportBtn" title="Зберегти схему у файл .lgc"><i class="material-icons">file_download</i></div>
+		<div id="clearBtn" title="Очистити канвас"><i class="material-icons">delete_sweep</i></div>
+	</div>
+</div>
+	
+<script src="//cdnjs.cloudflare.com/ajax/libs/gsap/1.18.2/TweenMax.min.js"></script>
+<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+<script src="https://code.createjs.com/1.0.0/createjs.min.js"></script><script type="module" src="./script.js"></script>
+
+
+
+<!-- Ghost element for drag from panel -->
+<div id="drag-ghost">
+  <img id="drag-ghost-img" src="" alt="">
+  <span id="drag-ghost-label"></span>
+</div>
+
+<script>
+(function() {
+  var bar = document.getElementById('bottomBar');
+  var barOpen = false;
+  // tap on the handle area (::before strip) toggles on touch devices
+  bar.addEventListener('touchstart', function(e) {
+    // only toggle if touch is on the bar handle (top 20px) or bar is closed
+    if (!barOpen) {
+      barOpen = true;
+      bar.classList.add('open');
+      e.stopPropagation();
+    }
+  }, { passive: true });
+  // tap outside closes the bar
+  document.addEventListener('touchstart', function(e) {
+    if (barOpen && !bar.contains(e.target)) {
+      barOpen = false;
+      bar.classList.remove('open');
+    }
+  }, { passive: true });
+})();
+</script>
+
+<div id="preloadjs-container" style="visibility: hidden; position: absolute; height: 10px; width: 10px; overflow: hidden; transform: translate(-10px, -10px);"></div></body></html>

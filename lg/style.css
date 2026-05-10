@@ -1,0 +1,199 @@
+  @font-face {
+    font-family: 'segments';
+    src: url('./7segment.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+body {
+  background: #555;
+  font-family: arial, sans-serif;
+  padding: 0px;
+  margin: 0px;
+}
+
+#appWrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+#circuits-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+
+#addBtn,
+#importBtn,
+#exportBtn,
+#shareBtn,
+#newBtn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+#addBtn,
+#addDropdown > div,
+#importBtn,
+#exportBtn,
+#shareBtn,
+#newBtn {
+  width: 50px;
+  height: 30px;
+  text-align: center;
+  line-height: 30px;
+  color: white;
+  background-color: #A0A;
+  border-radius: 50px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+  cursor: default;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+      user-select: none;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+#addBtn {
+	height:50px;
+	line-height: 50px;
+}
+
+
+#addBtn:hover,
+#addDropdown > div:hover,
+#importBtn:hover,
+#exportBtn:hover,
+#shareBtn:hover,
+#newBtn:hover {
+  background-color: #C0C;
+  transition: none;
+}
+
+#addDropdown > div {
+  width: 80px;
+  margin-bottom: 6px;
+}
+
+#addDropdown {
+  display: none;
+  position: absolute;
+  top: 8px;
+  left: 80px;
+}
+
+#addDropdown > div {
+  font-size: 14px;
+  margin-top: 0px;
+  margin-right: 10px;
+  float: left;
+}
+
+#addDropdown > div {
+  width: 70px;
+  margin-bottom: 6px;
+}
+
+#addDropdown > div:nth-child(1), #addDropdown > div:nth-child(2), #addDropdown > div:nth-child(14) {
+  background-color: #660066;
+}
+#addDropdown > div:nth-child(1):hover, #addDropdown > div:nth-child(2):hover, #addDropdown > div:nth-child(14):hover {
+  background-color: #880088;
+}
+
+#addDropdown > div:nth-child(10):hover, #addDropdown > div:nth-child(11):hover, #addDropdown > div:nth-child(12):hover, #addDropdown > div:nth-child(13):hover, #addDropdown > div:nth-child(19):hover {
+  background-color: #888888;
+}
+#addDropdown > div:nth-child(10), #addDropdown > div:nth-child(11), #addDropdown > div:nth-child(12), #addDropdown > div:nth-child(13), #addDropdown > div:nth-child(19) {
+  background-color: #666666;
+}
+
+#addDropdown > div:nth-child(10) {
+  background-color: #111111;
+}
+#addDropdown > div:nth-child(10):hover {
+  background-color: #333333;
+}
+
+#addDropdown > div:nth-child(11) {
+clear: both;	
+}	
+
+#importBtn,
+#exportBtn,
+#shareBtn,
+#newBtn {
+  top: auto;
+  right: auto;
+  left: 16px;
+  bottom: 16px;
+}
+
+#logo {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  border: 5px white solid;
+  background-color:white;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  -webkit-box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+  -moz-box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+  box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+  transform: translateX(-50%,-4px);
+  cursor: pointer;
+}
+
+#exportBtn {
+  left: 74px;
+}
+
+#newBtn {
+  left:190px;
+}
+#exportBtn::after {
+  content: "Exported to clipboard.";
+  position: absolute;
+  left: -52px;
+  top: -40px;
+  white-space: nowrap;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1s, visibility 1s;
+}
+#exportBtn.show-copy-msg::after {
+  visibility: visible;
+  opacity: 1;
+  transition: none;
+}
+
+#shareBtn {
+  left: 132px;
+}
+#shareBtn::after {
+  content: "Share URL exported to clipboard.";
+  position: absolute;
+  left: -112px;
+  top: -40px;
+  white-space: nowrap;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1s, visibility 1s;
+}
+#shareBtn.show-copy-msg::after {
+  visibility: visible;
+  opacity: 1;
+  transition: none;
+}
