@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>⚡ Електросимулятор кола постійного струму</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ===== ТЕМИ: ТЕМНА / СВІТЛА ===== */
+  :root {
+    --bg-body:        #0a0c12;
+    --bg-sidebar:     #11141c;
+    --bg-main:        #0c0f16;
+    --bg-canvas:      #0a0d14;
+    --bg-top-bar:     #11141c;
+    --bg-info-bar:    #0e1119;
+    --bg-mark-bar:    #1a1e2c;
+    --bg-palette-item:#1a1e28;
+    --bg-btn:         #1e2432;
+    --bg-ctx-menu:    #1a1e2a;
+    --bg-popover:     #1a1e2c;
+    --bg-props-panel: #161c26e6;
+    --bg-sketch-dd:   #1e2235;
+    --border-main:    #2a2f3a;
+    --border-sub:     #232836;
+    --border-ctx:     #4a4f62;
+    --text-main:      #eef2ff;
+    --text-muted:     #9aa5c0;
+    --text-section:   #777c8e;
+    --text-btn:       #cbd5e6;
+    --label-color:    #ffb347;
+    --sidebar-toggle-bg: #11141c;
+    --darkmode-btn-bg:   #1a1e28;
+    --tool-btn-color:    #cbd5e1;
+    --tool-btn-hover-bg: #2a2f40;
+    --tool-btn-hover-color: #fff;
+    --tool-drop-color:   #94a3b8;
+    --sketch-label-color:#94a3b8;
+    --swatch-active-border: #fff;
+    --width-btn-border:  #334155;
+    --width-btn-color:   #cbd5e1;
+    --shape-pick-border: #334155;
+    --shape-pick-color:  #cbd5e1;
+    --fill-btn-border:   #334155;
+    --fill-btn-color:    #94a3b8;
+    --props-input-bg:    #0f121c;
+    --props-input-color: #fff;
+    --props-input-border:#2e3a4e;
+  }
+
+  body.light-theme {
+    --bg-body:        #f0f2f7;
+    --bg-sidebar:     #ffffff;
+    --bg-main:        #f5f7fc;
+    --bg-canvas:      #e8ecf4;
+    --bg-top-bar:     #ffffff;
+    --bg-info-bar:    #f0f2f7;
+    --bg-mark-bar:    #e2e6f0;
+    --bg-palette-item:#f0f4ff;
+    --bg-btn:         #e4e8f5;
+    --bg-ctx-menu:    #ffffff;
+    --bg-popover:     #ffffff;
+    --bg-props-panel: #ffffffee;
+    --bg-sketch-dd:   #ffffff;
+    --border-main:    #c8cfe0;
+    --border-sub:     #d4daea;
+    --border-ctx:     #b0b8cc;
+    --text-main:      #1a1e2e;
+    --text-muted:     #4a5068;
+    --text-section:   #7a82a0;
+    --text-btn:       #2a3050;
+    --label-color:    #d4821a;
+    --sidebar-toggle-bg: #ffffff;
+    --darkmode-btn-bg:   #e4e8f5;
+    --tool-btn-color:    #2a3050;
+    --tool-btn-hover-bg: #d0d6e8;
+    --tool-btn-hover-color: #1a1e2e;
+    --tool-drop-color:   #4a5068;
+    --sketch-label-color:#6b7494;
+    --swatch-active-border: #2a3050;
+    --width-btn-border:  #b0b8cc;
+    --width-btn-color:   #2a3050;
+    --shape-pick-border: #b0b8cc;
+    --shape-pick-color:  #2a3050;
+    --fill-btn-border:   #b0b8cc;
+    --fill-btn-color:    #4a5068;
+    --props-input-bg:    #f0f4ff;
+    --props-input-color: #1a1e2e;
+    --props-input-border:#c8cfe0;
+  }
+
+  body {
+    background: var(--bg-body);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .app { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
+    position: relative;
+  }
+
+  /* ===== САЙДБАР З АНІМАЦІЄЮ (не впливає на геометрію main-panel) ===== */
+  .sidebar-wrapper {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-shrink: 0;
+    z-index: 25;
+  }
+
+  .sidebar {
+    width: 280px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-main);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100%;
+    transition: width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), border 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  /* Згорнутий стан — ширина 0, але контент прихований, border зникає */
+  .sidebar-wrapper.collapsed .sidebar {
+    width: 0;
+    border-right: none;
+    overflow: visible;
+  }
+  
+  .sidebar-wrapper.collapsed .sidebar > * {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 0.2s, opacity 0.1s;
+  }
+  
+  /* Кнопка-перемикач (прикріплена до правого краю обгортки сайдбару) */
+  .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -29px;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 60px;
+    background: var(--sidebar-toggle-bg);
+    border: 1px solid var(--border-main);
+    border-left: none;
+    border-radius: 0 12px 12px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 30;
+    font-size: 32px;
+    color: #ffb347;
+    padding-bottom: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .sidebar-toggle:hover {
+    background: #ff6b35;
+    color: white;
+    border-color: #ff6b35;
+    width: 32px;
+  }
+  
+  /* Коли сайдбар згорнутий, кнопка залишається на тому ж місці */
+  .sidebar-wrapper.collapsed .sidebar-toggle {
+    right: -25px;
+    border-radius: 0 12px 12px 0;
+  }
+
+  /* Стилі для контенту сайдбару */
+  .sidebar-header {
+    padding: 20px 16px 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #ffb347, #ff6b35);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    border-bottom: 1px solid var(--border-main);
+    white-space: nowrap;
+  }
+
+  .sidebar-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-section);
+    padding: 16px 16px 6px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .palette {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 12px 16px;
+  }
+
+  .palette-item {
+    background: var(--bg-palette-item);
+    border: 1px solid var(--border-main);
+    border-radius: 14px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: grab;
+    transition: all 0.2s ease;
+    color: var(--text-main);
+    white-space: nowrap;
+  }
+
+  .palette-item:hover {
+    background: var(--bg-btn);
+    border-color: #ffb347;
+    transform: translateX(4px);
+  }
+
+  .palette-icon { font-size: 24px; width: 40px; text-align: center; }
+  .palette-label { font-size: 12px; font-weight: 500; }
+
+  /* Основний контент — займає все вільне місце, не зміщується при згортанні сайдбару */
+  .main-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main);
+    min-width: 0;
+    transition: none;
+  }
+
+  .top-bar {
+    background: var(--bg-top-bar);
+    border-bottom: 1px solid var(--border-main);
+    padding: 8px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn {
+    background: var(--bg-btn);
+    border: none;
+    color: var(--text-btn);
+    padding: 8px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    background: var(--tool-btn-hover-bg);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary { background: #ff6b35; color: white; }
+  .btn-primary:hover { background: #ff5722; }
+  .btn-outline:hover {background: rgba(255, 107, 53, 0.1); }
+
+  /* Стилі для кнопок із зображеннями */
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .btn-icon img {
+    width: 40px;
+    height: 40px;
+    
+  }
+
+  .darkmode-btn {
+    margin-left: auto;
+  }
+
+  .canvas-card {
+    flex: 1;
+    position: relative;
+    background: var(--bg-canvas);
+    overflow: hidden;
+  }
+
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .info-bar {
+    background: var(--bg-info-bar);
+    border-top: 1px solid var(--border-sub);
+    padding: 6px 20px;
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .info-item { display: flex; gap: 6px; }
+  .info-label { font-weight: 600; color: var(--label-color); }
+
+  .properties-panel, .props-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 260px;
+    background: var(--bg-props-panel);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    border: 1px solid #ffb34760;
+    padding: 16px;
+    z-index: 200;
+    font-size: 12px;
+    color: var(--text-main);
+  }
+
+  .props-title {
+    font-weight: 600;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #ffb34760;
+    padding-bottom: 6px;
+  }
+
+  .props-body {
+    width: 100%;
+  }
+
+  .props-body label {
+    display: block;
+    margin: 8px 0;
+  }
+
+  .props-body input, .props-body select {
+    background: var(--props-input-bg);
+    border: 1px solid var(--props-input-border);
+    color: var(--props-input-color);
+    padding: 4px 8px;
+    border-radius: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .comp-popover {
+    position: absolute;
+    background: var(--bg-popover);
+    border: 1px solid #ffb347;
+    border-radius: 20px;
+    padding: 12px 16px;
+    width: 260px;
+    z-index: 300;
+    backdrop-filter: blur(12px);
+    font-size: 12px;
+    color: var(--text-main);
+  }
+
+  .ctx-menu {
+    position: fixed;
+    background: var(--bg-ctx-menu);
+    border: 1px solid var(--border-ctx);
+    border-radius: 14px;
+    padding: 6px 0;
+    min-width: 170px;
+    z-index: 1000;
+    display: none;
+    color: var(--text-main);
+  }
+
+  .ctx-item { padding: 8px 20px; font-size: 12px; cursor: pointer; }
+  .ctx-item:hover { background: #ff6b3533; color: #ffb347; }
+
+  .fault-banner {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: #2a1210;
+    border-left: 6px solid #ff4d4d;
+    padding: 14px 20px;
+    border-radius: 16px;
+    color: #ffb2a1;
+    font-size: 12px;
+    max-width: 460px;
+    z-index: 400;
+    backdrop-filter: blur(12px);
+  }
+  .fb-close { float: right; background: none; border: none; color: white; cursor: pointer; }
+
+  .mark-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-mark-bar);
+    border-radius: 10px;
+    margin: 8px 12px 0 12px;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .tool-btn {
+    width: 36px; height: 36px;
+    border: none; background: transparent;
+    color: var(--tool-btn-color); border-radius: 6px;
+    cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tool-btn:hover { background: var(--tool-btn-hover-bg); color: var(--tool-btn-hover-color); }
+  .tool-btn.active { background: #3b82f6; color: #fff; }
+
+  .tool-btn-group { position: relative; display: inline-flex; }
+  .tool-btn-drop {
+    width: 20px; height: 36px; border: none; background: transparent;
+    color: var(--tool-drop-color); cursor: pointer; font-size: 10px; border-radius: 0 6px 6px 0;
+  }
+  .tool-btn-drop:hover { color: var(--tool-btn-hover-color); background: var(--tool-btn-hover-bg); }
+
+  .sketch-dropdown, .shape-dropdown {
+    position: absolute; top: 100%; left: 0;
+    background: var(--bg-sketch-dd); border: 1px solid var(--border-sub);
+    padding: 12px; border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    z-index: 999; min-width: 180px;
+    display: none;
+    color: var(--text-main);
+  }
+
+  .sketch-dd-label { font-size: 11px; color: var(--sketch-label-color); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sketch-dd-label:first-child { margin-top: 0; }
+
+  .sketch-colors, .shape-colors { display: flex; gap: 6px; }
+  .swatch {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .swatch.active { border-color: var(--swatch-active-border); transform: scale(1.1); }
+
+  .sketch-widths, .shape-widths { display: flex; gap: 6px; align-items: center; }
+  .width-btn {
+    background: transparent; border: 1px solid var(--width-btn-border); border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; color: var(--width-btn-color); display: flex; align-items: center; justify-content: center;
+  }
+  .width-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .wline { display: block; background: currentColor; border-radius: 1px; }
+  .wline-thin { height: 1px; width: 16px; }
+  .wline-med  { height: 2px; width: 16px; }
+  .wline-thick{ height: 3px; width: 16px; }
+
+  .shape-picker { display: flex; gap: 4px; flex-wrap: wrap; }
+  .shape-pick {
+    width: 32px; height: 32px; background: transparent; border: 1px solid var(--shape-pick-border);
+    border-radius: 4px; color: var(--shape-pick-color); cursor: pointer; font-size: 14px;
+  }
+  .shape-pick.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .shape-fill-row { display: flex; gap: 6px; margin-top: 6px; }
+  .fill-btn {
+    flex: 1; padding: 6px; background: transparent; border: 1px solid var(--fill-btn-border);
+    border-radius: 4px; color: var(--fill-btn-color); cursor: pointer; font-size: 12px;
+  }
+  .fill-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+  .shape-text-input {
+    position: absolute; background: #111827; color: #fff;
+    border: 2px solid #3b82f6; padding: 6px 10px; border-radius: 6px;
+    font-size: 14px; outline: none; z-index: 50;
+  }
+
+  .confirm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  }
+.confirm-dialog {
+  background: #1e2235;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #f00;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  color: #fff;
+}
+  .confirm-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: center; }
+  
+  /* Додаткове приховування скролу при згортанні */
+  .sidebar-wrapper.collapsed .sidebar::-webkit-scrollbar {
+    width: 0;
+  }
+ 
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Обгортка сайдбару з кнопкою всередині (позиціонування відносно неї) -->
+<div class="sidebar-wrapper" id="sidebarWrapper">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">⚡ ЕЛЕКТРОКОНСТРУКТОР</div>
+      <div id="palette">
+        <div class="sidebar-section">Джерела</div>
+        <div class="palette">
+          <div class="palette-item" draggable="true" data-type="battery"><img src="img/battery.png" class="palette-icon" alt="battery"><span class="palette-label">Батарея</span></div>
+          <div class="palette-item" draggable="true" data-type="ground"><img src="img/ground.png" class="palette-icon" alt="ground"><span class="palette-label">Заземлення</span></div>
+        </div>
+        <div class="sidebar-section">Пасивні елементи</div>
+        <div class="palette">
+          <div class="palette-item" draggable="true" data-type="resistor"><img src="img/resistor.png" class="palette-icon" alt="resistor"><span class="palette-label">Резистор</span></div>
+          <div class="palette-item" draggable="true" data-type="rheostat"><img src="img/rheostat.png" class="palette-icon" alt="rheostat"><span class="palette-label">Реостат</span></div>
+          <div class="palette-item" draggable="true" data-type="lamp"><img src="img/lamp.png" class="palette-icon" alt="lamp"><span class="palette-label">Лампа</span></div>
+          <div class="palette-item" draggable="true" data-type="led"><img src="img/led.png" class="palette-icon" alt="led"><span class="palette-label">Світлодіод</span></div>
+          <div class="palette-item" draggable="true" data-type="fan"><img src="img/fan.png" class="palette-icon" alt="fan"><span class="palette-label">Вентилятор</span></div>
+          <div class="palette-item" draggable="true" data-type="buzzer"><img src="img/buzzer.png" class="palette-icon" alt="buzzer"><span class="palette-label">Зуммер</span></div>
+          <div class="palette-item" draggable="true" data-type="heater"><img src="img/heater.png" class="palette-icon" alt="heater"><span class="palette-label">Нагрівач</span></div>
+          <div class="palette-item" draggable="true" data-type="switch"><img src="img/switch.png" class="palette-icon" alt="switch"><span class="palette-label">Вимикач</span></div>
+          <div class="palette-item" draggable="true" data-type="pushbutton"><img src="img/pushbutton.png" class="palette-icon" alt="pushbutton"><span class="palette-label">Кнопка</span></div>
+        </div>
+        <div class="sidebar-section">Вимірювальні прилади</div>
+        <div class="palette">
+          <div class="palette-item" draggable="true" data-type="ammeter"><img src="img/ammeter.png" class="palette-icon" alt="ammeter"><span class="palette-label">Амперметр</span></div>
+          <div class="palette-item" draggable="true" data-type="voltmeter"><img src="img/voltmeter.png" class="palette-icon" alt="voltmeter"><span class="palette-label">Вольтметр</span></div>
+        </div>
+        <div class="sidebar-section">З'єднання</div>
+        <div class="palette">
+          <div class="palette-item" draggable="true" data-type="junction"><img src="img/junction.png" class="palette-icon" alt="junction"><span class="palette-label">Вузол</span></div>
+          <div class="palette-item" draggable="true" data-type="junction4"><img src="img/junction4.png" class="palette-icon" alt="junction4"><span class="palette-label">4-вихідний вузол</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- Кнопка перемикання - знаходиться в обгортці, біля правого краю сайдбару -->
+    <div class="sidebar-toggle" id="sidebarToggleBtn">«</div>
+  </div>
+
+  <div class="main-panel">
+    <div class="top-bar">
+
+      <!-- Кнопка запуску емуляції (start.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-run" title="Запустити емуляцію">
+        <img src="img/start.png" alt="Start" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">        
+      </button>
+      <button class="btn btn-outline btn-icon" style="display:none;" id="btn-stop" title="Зупинити емуляцію">
+        <img src="img/stop.png" alt="Start" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+      </button>      
+      <!-- Кнопка undo (undo.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-undo" title="Скасувати">
+        <img src="img/undo.png" alt="Undo" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">↩️</span>
+      </button>
+      <!-- Кнопка redo (redo.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-redo" title="Повернути">
+        <img src="img/redo.png" alt="Redo" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">↪️</span>
+      </button>
+      <!-- Кнопка rotate (rotate.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-rotate" title="Повернути компонент">
+        <img src="img/rotate.png" alt="Rotate" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">🔄</span>
+      </button>
+      <!-- Кнопка delete (delete.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-delete" title="Видалити">
+        <img src="img/delete.png" alt="Delete" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">🗑️</span>
+      </button>
+      <!-- Кнопка clear (clear.png) -->
+      <button class="btn btn-outline btn-icon" id="btn-clear" title="Очистити все" >
+        <img src="img/clear.png" alt="Clear" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        
+      </button>
+       <button class="btn btn-outline btn-icon" id="btn-annotate" title="Аннотації" onclick="annotationPanel()" >
+        <img src="img/annotate.png" alt="Annotate" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">🧹</span>
+      </button>
+      <button class="btn btn-outline btn-icon" id="btn-save" title="Зберегти">
+        <img src="img/save.png" alt="Save" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+      </button>
+       <button class="btn btn-outline btn-icon" id="btn-load" title="Відкрити">
+        <img src="img/load.png" alt="Open" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+        <span style="display:none;">🧹</span>
+      </button>      
+	  <input type="file" id="file-load" accept=".json" style="display:none;">
+
+      <div class="darkmode-btn" 
+      <button class="btn btn-outline btn-icon" id="btn-darkmode" title="Темна/світла тема">
+        <img src="img/darkmode.png" alt="Darkmode" width=40px; height=40px; onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">        
+      </button>
+      </div>
+    </div>
+    <div class="mark-bar" id="mark-bar" style="display:none;">
+      <button class="tool-btn active" data-tool="move" title="Move / Select">&#10021;</button>
+      <div class="tool-btn-group" id="sketch-group">
+        <button class="tool-btn tool-btn-sketch" data-tool="sketch" title="Freehand Sketch">✏️</button><button class="tool-btn-drop" id="sketch-drop-toggle" title="Sketch color &amp; width">&#9662;</button>
+        <div class="sketch-dropdown" id="sketch-dropdown" style="display:none;">
+          <div class="sketch-dd-label">Color</div>
+          <div class="sketch-colors" id="sketch-colors">
+            <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+            <button class="swatch" data-color="#ff5555" style="background:#ff5555" title="Red"></button>
+            <button class="swatch" data-color="#50fa7b" style="background:#50fa7b" title="Green"></button>
+            <button class="swatch" data-color="#f1fa8c" style="background:#f1fa8c" title="Yellow"></button>
+            <button class="swatch" data-color="#55aaff" style="background:#55aaff" title="Blue"></button>
+            <button class="swatch" data-color="#ffb86c" style="background:#ffb86c" title="Orange"></button>
+          </div>
+          <div class="sketch-dd-label">Width</div>
+          <div class="sketch-widths" id="sketch-widths">
+            <button class="width-btn active" data-width="2" title="Thin"><span class="wline wline-thin"></span></button>
+            <button class="width-btn" data-width="4" title="Medium"><span class="wline wline-med"></span></button>
+            <button class="width-btn" data-width="7" title="Thick"><span class="wline wline-thick"></span></button>
+          </div>
+        </div>
+      </div>
+      <div class="tool-btn-group" id="shape-group">
+        <button class="tool-btn tool-btn-shape" data-tool="shape" title="Shape Marking"><span id="shape-icon">☐</span></button><button class="tool-btn-drop" id="shape-drop-toggle" title="Shape options">&#9662;</button>
+        <div class="shape-dropdown" id="shape-dropdown" style="display:none;">
+          <div class="sketch-dd-label">Shape</div>
+          <div class="shape-picker" id="shape-picker">
+            <button class="shape-pick" data-shape="arrow" title="Arrow">&#10140;</button>
+            <button class="shape-pick" data-shape="line" title="Line">&#9585;</button>
+            <button class="shape-pick active" data-shape="rect" title="Rectangle">☐</button>
+            <button class="shape-pick" data-shape="circle" title="Circle">&#9711;</button>
+            <button class="shape-pick" data-shape="ellipse" title="Ellipse">&#11053;</button>
+            <button class="shape-pick" data-shape="dblarrow" title="Double Arrow">&#10231;</button>
+            <button class="shape-pick" data-shape="text" title="Text Label">T</button>
+          </div>
+          <div class="sketch-dd-label">Color</div>
+          <div class="sketch-colors shape-colors" id="shape-colors">
+            <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+            <button class="swatch" data-color="#ff5555" style="background:#ff5555" title="Red"></button>
+            <button class="swatch" data-color="#50fa7b" style="background:#50fa7b" title="Green"></button>
+            <button class="swatch" data-color="#f1fa8c" style="background:#f1fa8c" title="Yellow"></button>
+            <button class="swatch" data-color="#55aaff" style="background:#55aaff" title="Blue"></button>
+            <button class="swatch" data-color="#ffb86c" style="background:#ffb86c" title="Orange"></button>
+          </div>
+          <div class="sketch-dd-label">Stroke</div>
+          <div class="sketch-widths shape-widths" id="shape-widths">
+            <button class="width-btn active" data-width="2" title="Thin"><span class="wline wline-thin"></span></button>
+            <button class="width-btn" data-width="4" title="Medium"><span class="wline wline-med"></span></button>
+            <button class="width-btn" data-width="7" title="Thick"><span class="wline wline-thick"></span></button>
+          </div>
+          <div class="sketch-dd-label">Fill</div>
+          <div class="shape-fill-row" id="shape-fill-btns">
+            <button class="fill-btn active" data-fill="false" title="Outline only">Outline</button>
+            <button class="fill-btn" data-fill="true" title="Filled shape">Filled</button>
+          </div>
+        </div>
+      </div>
+      <button class="tool-btn tool-btn-action" id="btn-clear-annotations" title="Clear annotations">🗑️</button>
+      <button class="tool-btn" id="btn-toggle-annotations" title="Toggle Annotations">👁️</button>
+    </div>
+    <input type="text" id="shape-text-input" class="shape-text-input" style="display:none;" placeholder="Type label..." maxlength="60">
+    <div class="canvas-card" id="canvas-card">
+      <canvas id="sim-canvas"></canvas>
+      <div id="props-panel" class="props-panel" style="display:none;">
+        <div class="props-title">Властивості компонента</div>
+        <div id="props-body" class="props-body"></div>
+      </div>
+      <div id="comp-popover" class="comp-popover" style="display:none;"></div>
+      <div id="fault-banner" class="fault-banner" style="display:none;">
+        <div class="fb-text"></div>
+        <button class="fb-close">×</button>
+      </div>
+    </div>
+    <div class="info-bar">
+      <div class="info-item"><span class="info-label">V_eq:</span> <span id="r-v">0.00</span> V</div>
+      <div class="info-item"><span class="info-label">I_total:</span> <span id="r-it">0.0</span> mA</div>
+      <div class="info-item"><span class="info-label">P_total:</span> <span id="r-p">0.00</span> W</div>
+      <div class="info-item"><span class="info-label">R_eq:</span> <span id="r-rt">—</span> Ω</div>
+      <div class="info-item"><span class="info-label">Компонентів:</span> <span id="r-n">0</span></div>
+      <div class="info-item"><span class="info-label">Статус:</span> <span id="r-status">Idle</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- контекстні меню (необхідні для сумісності) -->
+<div id="ctx-menu" class="ctx-menu">
+  <div class="ctx-item" id="ctx-delete">🗑️ Видалити</div>
+  <div class="ctx-item" id="ctx-rotate">🔄 Повернути</div>
+  <div class="ctx-item" id="ctx-duplicate">📋 Дублювати</div>
+  <div class="ctx-item" id="ctx-toggle" style="display:none;">🔘 Перемкнути</div>
+</div>
+<div id="ctx-conn-menu" class="ctx-menu">
+  <div class="ctx-item" id="ctx-conn-delete">✖️ Видалити дріт</div>
+  <div class="ctx-item" id="ctx-conn-clear-wp">🗑️ Очистити вигини</div>
+</div>
+<div id="ctx-canvas-menu" class="ctx-menu">
+  <div class="ctx-item" id="ctx-canvas-clear">🧹 Очистити все</div>
+  <div class="ctx-item" id="ctx-canvas-export">📸 Експорт PNG</div>
+</div>
+
+            <!-- Clear annotations dialog -->
+            <div class="confirm-overlay" id="clear-ann-confirm" style="display:none;">
+              <div class="confirm-dialog">
+                <div class="confirm-icon">&#9888;</div>
+                <div class="confirm-title">Clear Annotations</div>
+                <div class="confirm-msg">What would you like to clear?</div>
+                <select class="clear-select" id="clear-ann-category">
+                  <option value="all" selected>All Annotations</option>
+                  <option value="sketches">Sketches Only</option>
+                  <option value="shapes">Shapes &amp; Text Only</option>
+                </select>
+                <div class="clear-hint" id="clear-ann-hint">Removes all sketches, shapes, and text annotations.</div>
+                <div class="confirm-actions">
+                  <button class="btn btn-ghost" id="clear-ann-no">Cancel</button>
+                  <button class="btn btn-danger" id="clear-ann-yes">Clear</button>
+                </div>
+              </div>
+            </div>
+
+<script>
+	
+function annotationPanel() {
+    var panel = document.getElementById("mark-bar");
+    
+    // Перевіряємо поточний стан
+    if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "flex";
+    } else {
+        panel.style.display = "none";
+    }
+}		
+  // === ЛОГІКА ЗГОРТАННЯ САЙДБАРУ БЕЗ ВПЛИВУ НА ГЕОМЕТРІЮ ===
+  (function() {
+    const wrapper = document.getElementById('sidebarWrapper');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    
+    // Завантаження стану
+    let isCollapsed = localStorage.getItem('sidebarCollapsedFixed') === 'true';
+    
+    function updateSidebarState() {
+      if (!wrapper) return;
+      if (isCollapsed) {
+        wrapper.classList.add('collapsed');
+        if (toggleBtn) toggleBtn.innerHTML = '»';
+      } else {
+        wrapper.classList.remove('collapsed');
+        if (toggleBtn) toggleBtn.innerHTML = '«';
+      }
+      localStorage.setItem('sidebarCollapsedFixed', isCollapsed);
+      
+setTimeout(() => {
+  if (window.dispatchEvent) {
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  if (typeof resizeCanvas === 'function') {
+    resizeCanvas();
+  }
+
+  if (typeof scheduleDraw === 'function') {
+    scheduleDraw();
+  }
+
+  if (typeof redrawCanvas === 'function') {
+    redrawCanvas();
+  }
+}, 320); // має бути >= transition-duration
+    }
+    
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isCollapsed = !isCollapsed;
+        updateSidebarState();
+      });
+    }
+    
+    updateSidebarState();
+  })();
+
+  // === ПЕРЕМИКАННЯ ТЕМНОЇ / СВІТЛОЇ ТЕМИ ===
+  (function() {
+    const btn = document.getElementById('btn-darkmode');
+    if (!btn) return;
+
+    // Завантаження збереженої теми
+    const saved = localStorage.getItem('theme');
+    const isLight = saved === 'light';
+    if (isLight) document.body.classList.add('light-theme');
+    updateIcon(!isLight);
+
+    function updateIcon(isDark) {
+      // Якщо зображення darkmode.png є — воно вже у кнопці
+      // Міняємо title і підказку
+      btn.title = isDark ? 'Переключити на світлу тему' : 'Переключити на темну тему';
+      // Необов'язково: міняємо opacity зображення як візуальний індикатор
+      const img = btn.querySelector('img');
+      if (img) img.style.opacity = isDark ? '1' : '0.5';
+    }
+
+    btn.addEventListener('click', function() {
+      const nowLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('theme', nowLight ? 'light' : 'dark');
+      updateIcon(!nowLight);
+      // Перемалювати canvas якщо функція існує
+      setTimeout(() => {
+        if (typeof scheduleDraw === 'function') scheduleDraw();
+        if (typeof redrawCanvas === 'function') redrawCanvas();
+      }, 50);
+    });
+  })();
+
+
+  (function() {
+    console.log('Завантаження симулятора...');
+    
+    window.state = window.state || { components: [], connections: [] };
+    
+    if (typeof makeComponent === 'undefined') {
+      window.makeComponent = function(type, x, y) {
+        return { id: Date.now() + Math.random(), type: type, x: x, y: y, rotation: 0, properties: { value: 100 } };
+      };
+    }
+    
+   
+    // Підтримка дропдаунів для анотацій
+    const sketchDropToggle = document.getElementById('sketch-drop-toggle');
+    const sketchDropdown = document.getElementById('sketch-dropdown');
+    if (sketchDropToggle && sketchDropdown) {
+      sketchDropToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sketchDropdown.style.display = sketchDropdown.style.display === 'none' ? 'flex' : 'none';
+        const shapeDropdown = document.getElementById('shape-dropdown');
+        if (shapeDropdown) shapeDropdown.style.display = 'none';
+      });
+    }
+    const shapeDropToggle = document.getElementById('shape-drop-toggle');
+    const shapeDropdown = document.getElementById('shape-dropdown');
+    if (shapeDropToggle && shapeDropdown) {
+      shapeDropToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shapeDropdown.style.display = shapeDropdown.style.display === 'none' ? 'flex' : 'none';
+        const sketchDropdown2 = document.getElementById('sketch-dropdown');
+        if (sketchDropdown2) sketchDropdown2.style.display = 'none';
+      });
+    }
+    document.addEventListener('click', function() {
+      const sd = document.getElementById('sketch-dropdown');
+      const shd = document.getElementById('shape-dropdown');
+      if (sd) sd.style.display = 'none';
+      if (shd) shd.style.display = 'none';
+    });
+  })();
+</script>
+<script src="app.js"></script>
+</body>
+</html>
