@@ -515,7 +515,7 @@
   margin-top:6px;
 }
 
-.led-color-btn{
+.led-color-btn, .lamp-color-btn {
   width:28px;
   height:28px;
   border-radius:50%;
@@ -524,14 +524,80 @@
   transition:0.15s;
 }
 
-.led-color-btn.active{
+.led-color-btn.active, .lamp-color-btn.active {
   border:3px solid #ffffff;
   box-shadow:0 0 10px rgba(255,255,255,0.7);
   transform:scale(1.08);
 }
 
-.led-color-btn:hover{
+.led-color-btn:hover, .lamp-color-btn:hover{
   transform:scale(1.05);
+}
+.cp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cp-close {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	background: #e74c3c;
+	color: white;
+	border: none;
+	font-size: 20px;
+	font-weight: bold;
+	width: 30px;
+	height: 20px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.2s ease;
+	padding-bottom: 5px;
+	border-top-left-radius: 0px;
+	border-top-right-radius: 20px;
+	border-bottom-right-radius: 0px;
+	border-bottom-left-radius: 10px;
+}
+#fault-banner {
+  pointer-events: auto !important;
+  position: absolute; /* або relative, залежно від вашої верстки */
+  z-index: 998;
+  background: rgba(20, 24, 40, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: none; /* керується через JS */
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.fb-close {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	background: #e74c3c;
+	color: white;
+	border: none;
+	font-size: 20px;
+	font-weight: bold;
+	width: 30px;
+	height: 20px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.2s ease;
+	padding-bottom: 5px;
+	border-top-left-radius: 0px;
+	border-top-right-radius: 12px;
+	border-bottom-right-radius: 0px;
+	border-bottom-left-radius: 12px;
+}
+.fb-close:hover {
+  transform: scale(1.1);
+  color: #000;
 }
 </style>
 </head>
@@ -558,6 +624,7 @@
           <div class="palette-item" draggable="true" data-type="heater"><img src="img/heater.png" class="palette-icon" alt="heater"><span class="palette-label">Нагрівач</span></div>
           <div class="palette-item" draggable="true" data-type="switch"><img src="img/switch.png" class="palette-icon" alt="switch"><span class="palette-label">Вимикач</span></div>
           <div class="palette-item" draggable="true" data-type="pushbutton"><img src="img/pushbutton.png" class="palette-icon" alt="pushbutton"><span class="palette-label">Кнопка</span></div>
+          <div class="palette-item" draggable="true" data-type="flasher"><img src="img/flasher.png" class="palette-icon" alt="flasher"><span  class="palette-label">Реле-переривник</span></div>
         </div>
         <div class="sidebar-section">Вимірювальні прилади</div>
         <div class="palette">
@@ -596,7 +663,7 @@
         <span style="display:none;">↪️</span>
       </button>
       <!-- Кнопка rotate (rotate.png) -->
-      <button class="btn btn-outline btn-icon" id="btn-rotate" title="Повернути компонент">
+      <button class="btn btn-outline btn-icon" id="btn-rotate" title="Поворот компонента на 90°">
         <img src="img/rotate.png" alt="Rotate" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
         <span style="display:none;">🔄</span>
       </button>
@@ -620,7 +687,13 @@
        <button class="btn btn-outline btn-icon" id="btn-load" title="Відкрити">
         <img src="img/load.png" alt="Open" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
         <span style="display:none;">🧹</span>
-      </button>      
+      </button>
+       <button class="btn btn-outline btn-icon" id="btn-print" title="Роздрукувати">
+        <img src="img/print.png" alt="Print" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+      </button> 
+       <button class="btn btn-outline btn-icon" id="canvas-export-btn" title="Зберегти зображення">
+        <img src="img/save-img.png" alt="Save Image" onerror="this.style.display='none'; this.nextSibling?.style?.setProperty('display','inline');">
+      </button>                      
 	  <input type="file" id="file-load" accept=".json" style="display:none;">
 
       <div class="darkmode-btn" 
@@ -769,14 +842,16 @@ function annotationPanel() {
     let isCollapsed = localStorage.getItem('sidebarCollapsedFixed') === 'true';
     
     function updateSidebarState() {
+	  isCollapsed = localStorage.getItem('sidebarCollapsedFixed') === 'true';	
       if (!wrapper) return;
-      if (isCollapsed) {
+      if (!isCollapsed) {
         wrapper.classList.add('collapsed');
         if (toggleBtn) toggleBtn.innerHTML = '»';
       } else {
         wrapper.classList.remove('collapsed');
         if (toggleBtn) toggleBtn.innerHTML = '«';
       }
+      isCollapsed = !isCollapsed;
       localStorage.setItem('sidebarCollapsedFixed', isCollapsed);
       
 setTimeout(() => {
@@ -800,12 +875,11 @@ setTimeout(() => {
     
     if (toggleBtn) {
       toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        isCollapsed = !isCollapsed;
+        e.stopPropagation();        
         updateSidebarState();
       });
     }
-    
+    localStorage.setItem('sidebarCollapsedFixed', true);
     updateSidebarState();
   })();
 

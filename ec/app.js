@@ -84,6 +84,7 @@ var selectedId = null;         // component id
 var selectedConnId = null;     // connection id
 var hoverId = null;
 var hoverPort = null;          // { compId, portIdx }
+var hoverDangle = null;        // { conn, end } — dangling anchor being hovered
 var hoverConnId = null;
 var tool = 'move';  // move | sketch | shape | pan
 var isRunning = false;
@@ -103,7 +104,65 @@ var textEditing = null;    // shape index while editing text
 var drag = null; // {kind:'move'|'pan'|'sketch'|'shape-draw'|'shape-move', ...}
 // solver dirty flag — set whenever circuit topology or component params change
 var circuitDirty = true;
-function markDirty(){ circuitDirty = true; if (typeof faults !== 'undefined' && faults) clearFaults(); }
+function purgeFullyDanglingWires() {
+var before = state.connections.length;
+state.connections = state.connections.filter(function(conn) {
+return !(conn.from.anchor && conn.to.anchor);
+});
+if (state.connections.length !== before) scheduleDraw();
+}
+// When a dangling anchor on one wire is connected to a port/anchor on another,
+// merge the two wires into one to avoid invisible mid-wire "joints".
+function mergeConnectedDanglingWires() {
+var changed = true;
+while (changed) {
+changed = false;
+outer: for (var i = 0; i < state.connections.length; i++) {
+var ca = state.connections[i];
+for (var j = 0; j < state.connections.length; j++) {
+if (i === j) continue;
+var cb = state.connections[j];
+// Check if ca.to is an anchor that matches cb.from (same coords)
+if (ca.to.anchor && cb.from.anchor &&
+Math.abs(ca.to.anchor.x - cb.from.anchor.x) < 2 &&
+Math.abs(ca.to.anchor.y - cb.from.anchor.y) < 2) {
+ca.to = cb.to;
+ca.waypoints = (ca.waypoints||[]).concat(cb.waypoints||[]);
+state.connections.splice(j, 1);
+changed = true; break outer;
+}
+// ca.to anchor matches cb.to anchor → reverse cb and merge
+if (ca.to.anchor && cb.to.anchor &&
+Math.abs(ca.to.anchor.x - cb.to.anchor.x) < 2 &&
+Math.abs(ca.to.anchor.y - cb.to.anchor.y) < 2) {
+ca.to = cb.from;
+ca.waypoints = (ca.waypoints||[]).concat((cb.waypoints||[]).slice().reverse());
+state.connections.splice(j, 1);
+changed = true; break outer;
+}
+// ca.from anchor matches cb.from anchor → reverse ca and merge
+if (ca.from.anchor && cb.from.anchor &&
+Math.abs(ca.from.anchor.x - cb.from.anchor.x) < 2 &&
+Math.abs(ca.from.anchor.y - cb.from.anchor.y) < 2) {
+ca.from = cb.to;
+ca.waypoints = (cb.waypoints||[]).slice().reverse().concat(ca.waypoints||[]);
+state.connections.splice(j, 1);
+changed = true; break outer;
+}
+// ca.from anchor matches cb.to anchor
+if (ca.from.anchor && cb.to.anchor &&
+Math.abs(ca.from.anchor.x - cb.to.anchor.x) < 2 &&
+Math.abs(ca.from.anchor.y - cb.to.anchor.y) < 2) {
+ca.from = cb.from;
+ca.waypoints = (cb.waypoints||[]).concat(ca.waypoints||[]);
+state.connections.splice(j, 1);
+changed = true; break outer;
+}
+}
+}
+}
+}
+function markDirty(){ circuitDirty = true; mergeConnectedDanglingWires(); purgeFullyDanglingWires(); if (typeof faults !== 'undefined' && faults) clearFaults(); }
 // undo stack
 var undoStack = [], redoStack = [];
 var MAX_UNDO = 30;
@@ -151,13 +210,14 @@ battery:    { w: 80, h: 40, label: 'V',  ports: [{x:-40,y:0,name:'+'},{x:40,y:0,
 ground:     { w: 40, h: 40, label: 'GND',ports: [{x:0,y:-20,name:'n'}], props: {} },
 resistor:   { w: 80, h: 30, label: 'R',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 220 } },
 rheostat:   { w: 80, h: 30, label: 'R',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 100, Rmax: 1000 } },
-lamp:       { w: 60, h: 60, label: 'L',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { R: 48 } },
+lamp: 		{ w: 60, h: 60, label: 'L',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { R: 48, color: 'yellow' } },
 led:        { w: 60, h: 40, label: 'D',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'k'}], props: { Vf: 2.0, R: 30, color:'green' } },
 fan:        { w: 70, h: 70, label: 'M',  ports: [{x:-35,y:0,name:'a'},{x:35,y:0,name:'b'}], props: { R: 24 } },
 buzzer:     { w: 60, h: 50, label: 'BZ', ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { R: 120 } },
 heater:     { w: 80, h: 40, label: 'H',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 12 } },
 switch:     { w: 70, h: 30, label: 'S',  ports: [{x:-35,y:0,name:'a'},{x:35,y:0,name:'b'}], props: { closed: false } },
 pushbutton: { w: 60, h: 30, label: 'PB', ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { closed: false } },
+flasher:    { w: 70, h: 30, label: 'FR', ports: [{x:-35,y:0,name:'a'},{x:35,y:0,name:'b'}], props: { closed: true, tOn: 0.5, tOff: 0.5 } },
 ammeter:    { w: 60, h: 60, label: 'A',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: {} },
 voltmeter:  { w: 60, h: 60, label: 'V',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: {} },
 junction:   { w: 20, h: 20, label: '',   ports: [{x:-10,y:0,name:'a'},{x:10,y:0,name:'b'},{x:0,y:-10,name:'c'}], props: {} },
@@ -166,7 +226,7 @@ junction4:  { w: 20, h: 20, label: '',   ports: [{x:-10,y:0,name:'a'},{x:10,y:0,
 var COMP_LABELS = {
 battery:'Батарея', ground:'Земля', resistor:'Резистор', rheostat:'Реостат',
 lamp:'Лампа', led:'Світлодіод', fan:'Вентилятор', buzzer:'Зумер', heater:'Нагрівач',
-switch:'Вимикач', pushbutton:'Кнопка', ammeter:'Амперметр', voltmeter:'Вольтметр',
+switch:'Вимикач', pushbutton:'Кнопка', flasher:'Реле-переривник', ammeter:'Амперметр', voltmeter:'Вольтметр',
 junction:'Вузол', junction4:'Вузол (4 порти)'
 };
 function makeComponent(type, x, y) {
@@ -291,6 +351,70 @@ var minY = Math.min(a.y,b.y) - tol, maxY = Math.max(a.y,b.y) + tol;
 if (px < minX || px > maxX || py < minY || py > maxY) return false;
 if (a.x === b.x) return Math.abs(px - a.x) < tol;
 if (a.y === b.y) return Math.abs(py - a.y) < tol;
+return false;
+}
+// Try to split a wire when a 2-port component is dropped onto it.
+// Both ports of comp must lie on the same wire segment (within tol).
+// If so: remove the original wire, create wire from→port0 and port1→to.
+// Returns true if the split was performed.
+function trySnapComponentToWire(comp) {
+var def = COMP_DEFS[comp.type];
+if (!def || def.ports.length !== 2) return false; // only 2-port components
+var p0 = portWorld(comp, 0);
+var p1 = portWorld(comp, 1);
+var TOL = 14; // pixels in world coords
+for (var ci = 0; ci < state.connections.length; ci++) {
+var conn = state.connections[ci];
+var pts = connectionPoints(conn);
+if (!pts) continue;
+for (var si = 0; si < pts.length - 1; si++) {
+var a = pts[si], b = pts[si+1];
+if (pointOnSegment(p0.x, p0.y, a, b, TOL) && pointOnSegment(p1.x, p1.y, a, b, TOL)) {
+// Both ports lie on this segment — snap comp onto wire and split it
+// Snap component center to wire line
+if (a.x === b.x) { comp.x = a.x; } // vertical wire
+else { comp.y = a.y; }              // horizontal wire
+// Recalculate port positions after snap
+var sp0 = portWorld(comp, 0);
+var sp1 = portWorld(comp, 1);
+// Determine which port is closer to conn.from end
+var fromPt = pts[0];
+var d0from = Math.abs(sp0.x-fromPt.x)+Math.abs(sp0.y-fromPt.y);
+var d1from = Math.abs(sp1.x-fromPt.x)+Math.abs(sp1.y-fromPt.y);
+var nearFromPortIdx = (d0from < d1from) ? 0 : 1;
+var nearToPortIdx   = 1 - nearFromPortIdx;
+// Build replacement wires, preserving waypoints on each side
+var fromRef = conn.from;
+var toRef   = conn.to;
+// waypoints before split segment go to first wire; after to second
+var wpsFirst = [], wpsSecond = [];
+var segStart = si; // index in pts where the split segment starts
+for (var wi = 0; wi < (conn.waypoints||[]).length; wi++) {
+var wp = conn.waypoints[wi];
+// waypoints correspond to pts[1..pts.length-2]
+if (wi < segStart) wpsFirst.push(wp);
+else wpsSecond.push(wp);
+}
+// wire 1: original-from → comp port nearFrom
+state.connections.push({
+id: state.nextId++,
+from: fromRef,
+to:   { compId: comp.id, portIdx: nearFromPortIdx },
+waypoints: wpsFirst
+});
+// wire 2: comp port nearTo → original-to
+state.connections.push({
+id: state.nextId++,
+from: { compId: comp.id, portIdx: nearToPortIdx },
+to:   toRef,
+waypoints: wpsSecond
+});
+// Remove original wire
+state.connections.splice(ci, 1);
+return true;
+}
+}
+}
 return false;
 }
 // Splice an existing connection at point p by inserting a 4-way junction.
@@ -579,33 +703,44 @@ switch (type) {
     g.fill();
     break;
   }
-  case 'lamp': {
-    var lr = 14*s;
+case 'lamp': {
+    var lr = 14 * s;
+    var baseColor = opts.color || 'yellow';
+    var colorMap = {
+        'yellow': { r: 255, g: 230, b: 80  },
+        'white':  { r: 255, g: 255, b: 255 },
+        'red':    { r: 255, g: 70,  b: 70  },
+        'green':  { r: 80,  g: 255, b: 110 },
+        'blue':   { r: 70,  g: 150, b: 255 }
+    };
+    var rgb = colorMap[baseColor] || colorMap['yellow'];
+    var cr = rgb.r, cg = rgb.g, cb = rgb.b;
+
     if (glow > 0) {
-      var rg = g.createRadialGradient(0, 0, lr * 0.5, 0, 0, lr * 2.4);
-      rg.addColorStop(0, 'rgba(255,240,80,'  + (0.55 + 0.45*glow) + ')');
-      rg.addColorStop(0.4, ' rgba(255,200,40,'+ (0.3  + 0.4 *glow) + ')');
-      rg.addColorStop(1,   'rgba(255,160,0,0)');
-      g.save();
-      g.fillStyle = rg;
-      g.beginPath();
-      g.arc(0, 0, lr * 2.4, 0, Math.PI*2);
-      g.fill();
-      g.restore();
+        var rg = g.createRadialGradient(0, 0, lr * 0.5, 0, 0, lr * 2.4);
+        rg.addColorStop(0, 'rgba(' + cr + ',' + cg + ',' + cb + ',' + (0.55 + 0.45 * glow) + ')');
+        rg.addColorStop(0.4, 'rgba(' + Math.max(0,cr-30) + ',' + Math.max(0,cg-30) + ',' + Math.max(0,cb-30) + ',' + (0.3 + 0.4 * glow) + ')');
+        rg.addColorStop(1, 'rgba(' + cr + ',' + cg + ',' + cb + ',0)');
+        g.save();
+        g.fillStyle = rg;
+        g.beginPath();
+        g.arc(0, 0, lr * 2.4, 0, Math.PI * 2);
+        g.fill();
+        g.restore();
     }
     var lampColor = glow > 0
-      ? 'rgba(255,' + Math.round(220 + 35*(1-glow)) + ',' + Math.round(60*glow) + ',1)'
-      : g.strokeStyle;
+        ? 'rgba(' + cr + ',' + cg + ',' + cb + ',1)'
+        : g.strokeStyle;
     g.save();
     g.strokeStyle = lampColor;
-    g.lineWidth = Math.max(1.5, 2*s);
+    g.lineWidth = Math.max(1.5, 2 * s);
     g.beginPath();
-    g.arc(0, 0, lr, 0, Math.PI*2);
+    g.arc(0, 0, lr, 0, Math.PI * 2);
     g.stroke();
     var xi = lr * 0.68;
     g.beginPath();
-    g.moveTo(-xi, -xi); g.lineTo(xi,  xi);
-    g.moveTo( xi, -xi); g.lineTo(-xi,  xi);
+    g.moveTo(-xi, -xi); g.lineTo(xi, xi);
+    g.moveTo( xi, -xi); g.lineTo(-xi, xi);
     g.stroke();
     g.restore();
     g.beginPath();
@@ -613,9 +748,9 @@ switch (type) {
     g.moveTo( w/2, 0); g.lineTo( lr, 0);
     g.stroke();
     break;
-  }
+}
 case 'led': {
-  var ledColor = opts.color || 'red';
+  var ledColor = opts.color || 'green';
   var glowColor = (ledColor === 'green')
     ? '100,220,100'
     : '255,80,80';
@@ -811,6 +946,37 @@ case 'led': {
     g.stroke();
     break;
   }
+case 'flasher': {
+    // Зовнішні дроти
+    g.beginPath();
+    //g.moveTo(-w/2, 0); g.lineTo(-30 * s, 0);
+    g.moveTo(-w/2, 0); g.lineTo(-10 * s, 0);
+    g.moveTo( 10 * s, 0); g.lineTo( w/2, 0);
+    g.stroke();
+
+    // Корпус реле (прямокутник)
+    g.beginPath();
+    g.rect(-20 * s, -15 * s, 40 * s, 30 * s);
+    g.stroke();
+
+    // Внутрішні точки контактів
+    var cx1 = -10 * s, cx2 = 10 * s;
+    g.beginPath();
+    g.arc(cx1, 0, 2 * s, 0, Math.PI * 2); g.fill();
+    g.arc(cx2, 0, 2 * s, 0, Math.PI * 2); g.fill();
+
+    // Контактний важіль (змінює кут залежно від opts.closed)
+    g.beginPath();
+    g.moveTo(cx1, 0);
+    if (opts.closed) {
+        g.lineTo(cx2, 0);          // замкнено ───
+    } else {
+        g.lineTo(cx2 - 3 * s, -9 * s); // розімкнено ╱
+    }
+    g.stroke();
+    break;
+}
+
   case 'ammeter':
   case 'voltmeter': {
     g.beginPath();
@@ -939,15 +1105,25 @@ if (isFault) {
 ctx.fillStyle = ctx.strokeStyle;
 
 var opts = {};
-if (c.type === 'led') {
-  opts.color = c.props.color || 'green';
-}
-if (c.type === 'switch' || c.type === 'pushbutton') opts.closed = !!c.props.closed;
+if (c.type === 'led') { opts.color = c.props.color || 'green'; }
+else if (c.type === 'lamp') { opts.color = c.props.color || 'yellow'; }
+
+if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') opts.closed = !!c.props.closed;
 if (isRunning && sim) {
   var p = Math.abs(sim.compP[c.id] || 0);
   if (c.type === 'lamp' || c.type === 'led' || c.type === 'heater') {
     opts.glow = Math.max(0, Math.min(1, p / 2));
   }
+  if (c.type === 'led') {
+        // LED світить лише за прямого струму (port 0 → port 1)
+        var dir = sim.compCurrentDir[c.id] || 0;
+        var i   = sim.compI[c.id] || 0;
+        if (dir > 0 && i > 0.0005) {
+          opts.glow = Math.max(0, Math.min(1, p / 2));
+        } else {
+          opts.glow = 0; // зворотний струм або замалий поріг → вимкнено
+        }
+      }  
   if ( c.type === 'fan' || c.type === 'buzzer') {
     var i = Math.abs(sim.compI[c.id] || 0);
     opts.rot = (performance.now() / 1000) * i * 40;
@@ -962,21 +1138,24 @@ if (isRunning && sim) {
 }
 
 drawComponentShape(ctx, c.type, 1, opts);
-
-if (def.label && c.type !== 'junction' && c.type !== 'junction4' && c.type !== 'ground') {
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  ctx.fillStyle = themeColors().label;
-  var lbl = def.label + (c.id ? c.id : '');
-  var paramLbl = '';
-  if (c.type === 'battery') paramLbl = formatV(c.props.V);
-  else if (c.type === 'resistor' || c.type === 'rheostat' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') paramLbl = formatR(c.props.R);
-  else if (c.type === 'led') paramLbl = formatR(c.props.R);
-  if (paramLbl) lbl += ' · ' + paramLbl;
-  ctx.fillText(lbl, 0, -def.h/2 - 4);
-}
-
-ctx.restore();
+    if (def.label && c.type !== 'junction' && c.type !== 'junction4' && c.type !== 'ground') {
+      ctx.save(); // Зберігаємо трансформ компонента (з поточним поворотом)
+      if (c.rot === 180) {
+        ctx.rotate(-Math.PI); // Скасовуємо поворот 180° лише для тексту
+      }
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = themeColors().label;
+      var lbl = def.label + (c.id ? c.id : '');
+      var paramLbl = '';
+      if (c.type === 'battery') paramLbl = formatV(c.props.V);
+      else if (c.type === 'resistor' || c.type === 'rheostat' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') paramLbl = formatR(c.props.R);
+      else if (c.type === 'led') paramLbl = formatR(c.props.R);
+      if (paramLbl) lbl += ' · ' + paramLbl;
+      ctx.fillText(lbl, 0, -def.h/2 - 4);
+      ctx.restore(); // Повертаємо контекст до стану компонента
+    }
+    ctx.restore(); // Завершуємо контекст компонента
 
 if (isSel) {
   var b = compBounds(c);
@@ -992,12 +1171,39 @@ if (isSel) {
 }
 
 ctx.save();
+ctx.setTransform(1,0,0,1,0,0); // reset to screen coords — use toSX/toSY explicitly
 for (var i = 0; i < def.ports.length; i++) {
   var pw = portWorld(c, i);
-  ctx.beginPath();
-  ctx.arc(toSX(pw.x)*DPR, toSY(pw.y)*DPR, 4*DPR, 0, Math.PI*2);
-  ctx.fillStyle = isSel ? '#ffa000' : themeColors().port;
+  var pk = c.id + ':' + i;
+  var isConnected = !!(_connectedPorts && _connectedPorts[pk]);
+  var sx = toSX(pw.x) * DPR;
+  var sy = toSY(pw.y) * DPR;
+ctx.beginPath();
+
+if (isConnected) {
+  // Підключений порт — великий
+  ctx.arc(sx, sy, 6 * DPR, 0, Math.PI * 2);
+
+  ctx.fillStyle = isSel ? '#ffa000' : themeColors().wire;
   ctx.fill();
+
+  // невеликий внутрішній кружок
+  ctx.beginPath();
+  ctx.arc(sx, sy, 2.5 * DPR, 0, Math.PI * 2);
+
+  ctx.fillStyle = isLightTheme()
+    ? '#f0f4ff'
+    : '#0d1120';
+
+  ctx.fill();
+
+} else {
+  // Вільний порт — малий
+  ctx.arc(sx, sy, 3 * DPR, 0, Math.PI * 2);
+
+  ctx.fillStyle = isSel ? '#ffa000' : '#ff9800';
+  ctx.fill();
+}
 }
 ctx.restore();
 }
@@ -1007,6 +1213,13 @@ ctx.save();
 ctx.setTransform(1,0,0,1,0,0);
 ctx.clearRect(0, 0, canvas.width, canvas.height);
 drawGrid();
+// Build connected-port lookup for port rendering
+_connectedPorts = {};
+for (var cpi = 0; cpi < state.connections.length; cpi++) {
+  var cp0 = state.connections[cpi];
+  if (!cp0.from.anchor) _connectedPorts[cp0.from.compId + ':' + cp0.from.portIdx] = true;
+  if (!cp0.to.anchor)   _connectedPorts[cp0.to.compId   + ':' + cp0.to.portIdx]   = true;
+}
 _hSegs = [];
 for (var ci0 = 0; ci0 < state.connections.length; ci0++) {
   var pts0 = connectionPoints(state.connections[ci0]);
@@ -1039,6 +1252,7 @@ if (hoverPort && !pendingWire) {
 ctx.restore();
 }
 var _hSegs = [];
+var _connectedPorts = {};
 function drawVerticalWithHumps(x, y1, y2, connId) {
 var sx = toSX(x) * DPR;
 var sgn = y2 > y1 ? 1 : -1;
@@ -1100,21 +1314,24 @@ ctx.stroke();
 var dangColor = isFault ? ctx.strokeStyle : (isSel ? '#ffa000' : themeColors().wire);
 if (conn.from.anchor) {
 var af = conn.from.anchor;
+var isHoverDangle = hoverDangle && hoverDangle.conn === conn && hoverDangle.end === 'from';
+var isPendingTarget = pendingWire && !pendingWire._dangle;
 ctx.save();
-ctx.strokeStyle = dangColor;
-ctx.lineWidth = 2 * DPR;
+ctx.strokeStyle = (isHoverDangle || (isHoverDangle && isPendingTarget)) ? '#ffa000' : dangColor;
+ctx.lineWidth = (isHoverDangle ? 3 : 2) * DPR;
 ctx.beginPath();
-ctx.arc(toSX(af.x)*DPR, toSY(af.y)*DPR, 5*DPR, 0, Math.PI*2);
+ctx.arc(toSX(af.x)*DPR, toSY(af.y)*DPR, (isHoverDangle ? 7 : 5)*DPR, 0, Math.PI*2);
 ctx.stroke();
 ctx.restore();
 }
 if (conn.to.anchor) {
-var at = conn.to.anchor;
+var at2 = conn.to.anchor;
+var isHoverDangle2 = hoverDangle && hoverDangle.conn === conn && hoverDangle.end === 'to';
 ctx.save();
-ctx.strokeStyle = dangColor;
-ctx.lineWidth = 2 * DPR;
+ctx.strokeStyle = isHoverDangle2 ? '#ffa000' : dangColor;
+ctx.lineWidth = (isHoverDangle2 ? 3 : 2) * DPR;
 ctx.beginPath();
-ctx.arc(toSX(at.x)*DPR, toSY(at.y)*DPR, 5*DPR, 0, Math.PI*2);
+ctx.arc(toSX(at2.x)*DPR, toSY(at2.y)*DPR, (isHoverDangle2 ? 7 : 5)*DPR, 0, Math.PI*2);
 ctx.stroke();
 ctx.restore();
 }
@@ -1783,8 +2000,9 @@ var prevHover = hoverId, prevPort = hoverPort, prevConn = hoverConnId;
 if (!drag) {
   var port = hitPort(p.x, p.y);
   hoverPort = port;
+  hoverDangle = port ? null : hitDanglingEnd(p.x, p.y);
   if (port) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
-  else if (hitDanglingEnd(p.x, p.y)) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
+  else if (hoverDangle) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
   else {
     var c = hitComponent(p.x, p.y);
     hoverId = c ? c.id : null; 
@@ -1917,7 +2135,32 @@ setTool('move');
 }
 if (drag.kind === 'move' && drag.moved) {
 var cm = state.components.find(function(x){return x.id===drag.id;});
-if (cm) showCompPopover(cm);
+if (cm) {
+var snapped = trySnapComponentToWire(cm);
+if (!snapped) {
+// Check if any port of the dropped component snaps onto a dangling wire end
+var def2 = COMP_DEFS[cm.type];
+var TOL_SNAP = 14;
+for (var pi = 0; pi < def2.ports.length; pi++) {
+var pw2 = portWorld(cm, pi);
+for (var ci2 = 0; ci2 < state.connections.length; ci2++) {
+var conn2 = state.connections[ci2];
+if (conn2.from.anchor &&
+Math.abs(conn2.from.anchor.x - pw2.x) < TOL_SNAP &&
+Math.abs(conn2.from.anchor.y - pw2.y) < TOL_SNAP) {
+conn2.from = { compId: cm.id, portIdx: pi };
+}
+if (conn2.to.anchor &&
+Math.abs(conn2.to.anchor.x - pw2.x) < TOL_SNAP &&
+Math.abs(conn2.to.anchor.y - pw2.y) < TOL_SNAP) {
+conn2.to = { compId: cm.id, portIdx: pi };
+}
+}
+}
+}
+markDirty();
+showCompPopover(cm);
+}
 }
 }
 drag = null;
@@ -1980,6 +2223,126 @@ renderProps();
 scheduleDraw();
 paletteDragType = null;
 });
+
+// Pointer-based drag from palette — full-viewport ghost canvas follows cursor seamlessly
+palette.addEventListener('pointerdown', function (ev) {
+var item = ev.target.closest('.palette-item');
+if (!item) return;
+var type = item.getAttribute('data-type');
+if (!COMP_DEFS[type]) return;
+ev.preventDefault();
+
+// Create a full-viewport transparent overlay so the ghost component follows
+// the cursor everywhere — across sidebar and main canvas — without any gap.
+var DPR2 = window.devicePixelRatio || 1;
+var oc = document.createElement('canvas');
+oc.width  = window.innerWidth  * DPR2;
+oc.height = window.innerHeight * DPR2;
+oc.style.cssText = 'position:fixed;left:0;top:0;'
+  + 'width:'+window.innerWidth+'px;height:'+window.innerHeight+'px;'
+  + 'pointer-events:none;z-index:9998;';
+document.body.appendChild(oc);
+var og = oc.getContext('2d');
+
+// Ghost scale: match the visual size used on the main canvas at current zoom
+var ghostScale =  viewScale * DPR2;
+
+function drawOverlay(clientX, clientY) {
+  og.clearRect(0, 0, oc.width, oc.height);
+  og.save();
+  og.translate(clientX * DPR2, clientY * DPR2);
+  og.strokeStyle = '#ffa000';
+  og.fillStyle   = '#ffa000';
+  //og.globalAlpha = 0.75;
+  drawComponentShape(og, type, ghostScale);
+  og.restore();
+}
+drawOverlay(ev.clientX, ev.clientY);
+
+// Pre-create the real component immediately so it's visible on the main
+// canvas as soon as the cursor enters it — no jarring appearance delay.
+saveUndo();
+var canvasRect = canvas.getBoundingClientRect();
+// Place it initially at the cursor position (will snap once over canvas)
+var initWX = Math.round(toWX(ev.clientX - canvasRect.left) / 10) * 10;
+var initWY = Math.round(toWY(ev.clientY - canvasRect.top)  / 10) * 10;
+var placedComp = makeComponent(type, initWX, initWY);
+state.components.push(placedComp);
+selectedId = placedComp.id;
+renderProps();
+drag = { kind: 'move', id: placedComp.id, dx: 0, dy: 0, moved: true };
+markDirty();
+
+// Track whether cursor is currently over the main canvas
+var overCanvas = false;
+
+function onMove(e) {
+  var r = canvas.getBoundingClientRect();
+  var nowOverCanvas = e.clientX >= r.left && e.clientX <= r.right
+                   && e.clientY >= r.top  && e.clientY <= r.bottom;
+
+  // Update ghost position on the full-viewport overlay
+  if (nowOverCanvas) {
+    // Hide ghost when over canvas — the real component renders there
+    og.clearRect(0, 0, oc.width, oc.height);
+  } else {
+    drawOverlay(e.clientX, e.clientY);
+  }
+
+  overCanvas = nowOverCanvas;
+
+  // Always keep the real component following the cursor so it's ready
+  // the instant the pointer enters the canvas (no pop-in delay)
+  if (!placedComp) return;
+  var wx = Math.round(toWX(e.clientX - r.left) / 10) * 10;
+  var wy = Math.round(toWY(e.clientY - r.top)  / 10) * 10;
+  placedComp.x = wx;
+  placedComp.y = wy;
+  scheduleDraw();
+}
+
+function onUp(e) {
+  cleanup();
+  oc.remove();
+  if (!placedComp) return;
+
+  var r = canvas.getBoundingClientRect();
+  var releasedOverCanvas = e.clientX >= r.left && e.clientX <= r.right
+                        && e.clientY >= r.top  && e.clientY <= r.bottom;
+
+  if (!releasedOverCanvas) {
+    // Released over sidebar — undo the component addition
+    doUndo();
+    drag = null;
+    scheduleDraw();
+    return;
+  }
+
+  trySnapComponentToWire(placedComp);
+  var def2 = COMP_DEFS[placedComp.type];
+  var TOL_SNAP = 14;
+  for (var pi = 0; pi < def2.ports.length; pi++) {
+    var pw2 = portWorld(placedComp, pi);
+    state.connections.forEach(function(conn2) {
+      if (conn2.from.anchor && Math.abs(conn2.from.anchor.x - pw2.x) < TOL_SNAP && Math.abs(conn2.from.anchor.y - pw2.y) < TOL_SNAP) conn2.from = { compId: placedComp.id, portIdx: pi };
+      if (conn2.to.anchor   && Math.abs(conn2.to.anchor.x   - pw2.x) < TOL_SNAP && Math.abs(conn2.to.anchor.y   - pw2.y) < TOL_SNAP) conn2.to   = { compId: placedComp.id, portIdx: pi };
+    });
+  }
+  markDirty();
+  drag = null;
+  showCompPopover(placedComp);
+  scheduleDraw();
+}
+
+function cleanup() {
+  window.removeEventListener('pointermove', onMove);
+  window.removeEventListener('pointerup',   onUp);
+  window.removeEventListener('pointercancel', onUp);
+}
+window.addEventListener('pointermove', onMove);
+window.addEventListener('pointerup',   onUp);
+window.addEventListener('pointercancel', onUp);
+});
 palette.addEventListener('click', function (ev) {
 var item = ev.target.closest('.palette-item');
 if (!item) return;
@@ -2013,8 +2376,22 @@ html += propUnitSlider(c, 'R', 'Опір', 'R');
 } else if (c.type === 'rheostat') {
 html += propUnitSlider(c, 'R', 'Робочий опір', 'R');
 html += propNumber(c, 'Rmax', 'Макс. опір (Ом)');
-} else if (c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') {
-html += propUnitSlider(c, 'R', 'Опір', 'R');
+} else if (c.type === 'lamp') {
+    html += propUnitSlider(c, 'R', 'Опір', 'R');
+    var lampColors = [
+        { name: 'yellow', hex: '#ffcc00' },
+        { name: 'white',  hex: '#ffffff' },
+        { name: 'red',    hex: '#ff3b30' },
+        { name: 'green',  hex: '#00d26a' },
+        { name: 'blue',   hex: '#007aff' }
+    ];
+    html += ' <label><span class="prop-val">Колір лампи</span><div class="led-color-picker">';
+    lampColors.forEach(function(clr){
+        html += ' <button class="lamp-color-btn ' + (c.props.color === clr.name ? 'active' : '') + '" data-lamp-color="' + clr.name + '" style="background:' + clr.hex + ';"></button>';
+    });
+    html += '</div></label>';
+} else if (c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') {
+    html += propUnitSlider(c, 'R', 'Опір', 'R');
 } else if (c.type === 'led') {
 
 html += propNumber(c, 'Vf', 'Пряма напруга (В)');
@@ -2041,7 +2418,13 @@ html +=
 } else if (c.type === 'switch' || c.type === 'pushbutton') {
 html += ' <div> <span class="prop-val" >Стан: '+(c.props.closed?'⁣⁣⁣.Замкнутий':'Розімкнено')+' </span >'+
 ' <button class="btn btn-ghost" data-act="toggle" style="margin-top:4px;">Переключити </button ></div> ';
+} else if (c.type === 'flasher') {
+    html += '<label><span class="prop-val">Початковий стан</span>'+
+            '<button class="btn btn-ghost" data-act="toggle-init" style="margin:4px 0;">'+ (c.props.closed ? 'Замкнено' : 'Розімкнено') +'</button></label>';
+    html += propNumber(c, 'tOn', 'Час замкненого (с)');
+    html += propNumber(c, 'tOff', 'Час розімкненого (с)');
 }
+
 html += ' <label > <button class="btn btn-ghost" data-act="rotate" >↻ Повернути 90° </button > '+
 ' <button class="btn btn-ghost" data-act="delete" >🗑 Видалити </button > </label >';
 propsBody.innerHTML = html;
@@ -2083,12 +2466,29 @@ propsBody.querySelectorAll('.led-color-btn').forEach(function(btn){
     scheduleDraw();
   });
 });
+propsBody.querySelectorAll('.lamp-color-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+        saveUndo();
+        c.props.color = btn.getAttribute('data-lamp-color');
+        console.log("lamp color=",c.props.color)
+        renderProps();
+        scheduleDraw();
+    });
+});
+
 propsBody.querySelectorAll('button[data-act]').forEach(function (b) {
   b.addEventListener('click', function () {
     var act = b.getAttribute('data-act');
     if (act === 'toggle') { saveUndo(); c.props.closed = !c.props.closed; try{sfx.click();}catch(e){} renderProps(); scheduleDraw(); }
     else if (act === 'rotate') { saveUndo(); c.rot = (c.rot + 90) % 360; scheduleDraw(); }
     else if (act === 'delete') { saveUndo(); deleteSelected(); }
+    else if (act === 'toggle-init') {
+		saveUndo();
+		c.props.closed = !c.props.closed;
+		c.state._flasherInit = false; // скидаємо відлік часу
+		renderProps(); scheduleDraw();
+	}
+    
   });
 });
 }
@@ -2203,10 +2603,15 @@ else if (c.type === 'led') {
 html += ' <div class="cp-label">Пряма напруга (В) <input type="number" data-cp="Vf" value="'+c.props.Vf+'" step="any"> </div>';
 html += compEditField(c, 'R', 'Послідовний опір', 'R');
 }
-else if (c.type === 'switch' || c.type === 'pushbutton') {
+else if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') {
 html += ' <div class="cp-label">Стан:  <strong><span style="display: inline-block; width: 55px;">' + 
         (c.props.closed ? 'Замкнено' : 'Розімкнено') + '</span></strong>'+
 ' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити </button> </div>';
+    if (c.type === 'flasher') {
+        html += '<div class="cp-label">Час замк. (с) <input type="number" data-cp="tOn" value="'+c.props.tOn+'" step="0.1"></div>';
+        html += '<div class="cp-label">Час розімк. (с) <input type="number" data-cp="tOff" value="'+c.props.tOff+'" step="0.1"></div>';
+    }
+
 }
 
 html += ' <div class="cp-actions">'+
@@ -2321,7 +2726,9 @@ conn.to = { anchor: { x: pw.x, y: pw.y } };
 });
 }
 state.components = state.components.filter(function(x){return x.id!==selectedId;});
+purgeFullyDanglingWires();
 selectedId = null;
+hideCompPopover();
 renderProps();
 scheduleDraw();
 }
@@ -2351,11 +2758,74 @@ clearCanvas();
 });
 on('btn-undo', 'click', doUndo);
 on('btn-redo', 'click', doRedo);
+
+function updateFlashers(t) {
+    if (!isRunning || !sim || !sim.compI) return;
+    var changed = false;
+    var TH = 0.0001; // 0.1 мА
+    for (var i = 0; i < state.components.length; i++) {
+        var c = state.components[i];
+        if (c.type !== 'flasher') continue;
+        if (!c.state._flInit) {
+            c.state._flInit = true;
+            c.state._lastT = t;
+            c.state._phase = c.props.closed ? 'on' : 'off';
+            c.state._powered = false;
+        }
+
+        // Визначаємо, чи є живлення на флешері.
+        // Якщо флешер зараз розімкнений (фаза 'off'), струм через нього буде 0,
+        // але це не означає відсутність живлення — треба перевірити напругу на вузлах.
+        var iVal = Math.abs(sim.compI[c.id] || 0);
+        var poweredByCurrent = iVal > TH;
+
+        // Перевіряємо напругу між портами флешера (працює і коли він розімкнений)
+        var hasPotential = false;
+        if (sim.netOf && sim.voltages) {
+            var netA = sim.netOf(c.id, 0);
+            var netB = sim.netOf(c.id, 1);
+            var vA = (netA != null && sim.voltages[netA] != null) ? sim.voltages[netA] : 0;
+            var vB = (netB != null && sim.voltages[netB] != null) ? sim.voltages[netB] : 0;
+            hasPotential = Math.abs(vA - vB) > 0.05; // більше 50 мВ різниці
+        }
+
+        // Флешер вважається живленим, якщо: є струм (замкнений) АБО є напруга (розімкнений)
+        var powered = poweredByCurrent || hasPotential;
+
+        if (powered && !c.state._powered) {
+            // Струм/напруга щойно з'явилися → скидаємо до заданого початкового стану
+            c.state._phase = c.props.closed ? 'on' : 'off';
+            c.state._lastT = t;
+            c.state._powered = true;
+        } else if (!powered) {
+            // Живлення зникло повністю → таймер "заморожується"
+            c.state._powered = false;
+            c.state._lastT = t;
+            continue;
+        }
+
+        var elapsed = (t - c.state._lastT) / 1000;
+        var dur = c.state._phase === 'on'
+            ? (parseFloat(c.props.tOn) || 0.5)
+            : (parseFloat(c.props.tOff) || 0.5);
+        if (dur < 0.01) dur = 0.01;
+
+        if (elapsed >= dur) {
+            c.props.closed = !c.props.closed;
+            c.state._phase = c.props.closed ? 'on' : 'off';
+            c.state._lastT = t;
+            changed = true;
+        }
+    }
+    if (changed) markDirty();
+}
+
 var animRAF = 0;
 var animStart = 0;
 function animLoop(t) {
 if (!isRunning) { animRAF = 0; return; }
 if (!animStart) animStart = t;
+updateFlashers(t);
 if (circuitDirty || !sim) {
 // Check for short circuits before solving (catches KZ created by switch/button toggle)
 var fRuntime = checkFaults();
@@ -2393,37 +2863,61 @@ draw();
 animRAF = requestAnimationFrame(animLoop);
 }
 function startSim() {
-var f = checkFaults();
-if (f) {
-showFaults(f);
-if (f._voltmeterInSeries) {
-// Warning only — simulation can still run
-clearFaults();
-showFaults(f); // keep banner visible
-} else {
-if (!animRAF) animRAF = requestAnimationFrame(function flash(){
-if (!faults) { animRAF = 0; return; }
-scheduleDraw();
-animRAF = requestAnimationFrame(flash);
-});
-return;
-}
-}
-clearFaults();
-runSolve();
-var f2 = checkPostSolveFaults(sim);
-if (f2) {
-var onlyOpenSwitch = f2._onlyOpenSwitch;
-if (!onlyOpenSwitch) {
-sim = null;
-showFaults(f2);
-if (!animRAF) animRAF = requestAnimationFrame(function flash(){
-if (!faults) { animRAF = 0; return; }
-scheduleDraw();
-animRAF = requestAnimationFrame(flash);
-});
-return;
-}
+	state.components.forEach(function(c){ if(c.type==='flasher') c.state._flasherInit = false; });
+	const wrapper = document.getElementById('sidebarWrapper');
+	const toggleBtn = document.getElementById('sidebarToggleBtn');
+	let sbIsCollapsed = localStorage.getItem('sidebarCollapsedFixed') === 'true';
+	console.log("sbIsCollapsed=",sbIsCollapsed)
+	if (!sbIsCollapsed) {
+        wrapper.classList.add('collapsed');
+        if (toggleBtn) toggleBtn.innerHTML = '»';
+        localStorage.setItem('sidebarCollapsedFixed', true);
+		setTimeout(() => {
+		if (window.dispatchEvent) {
+			window.dispatchEvent(new Event('resize'));
+		}
+		if (typeof resizeCanvas === 'function') {
+			resizeCanvas();
+		}
+		if (typeof scheduleDraw === 'function') {
+			scheduleDraw();
+		}
+		if (typeof redrawCanvas === 'function') {
+			redrawCanvas();
+			}
+		}, 150); 
+	}
+	var f = checkFaults();
+	if (f) {
+		showFaults(f);
+		if (f._voltmeterInSeries) {
+			// Warning only — simulation can still run
+			clearFaults();
+		showFaults(f); // keep banner visible
+		} else {
+			if (!animRAF) animRAF = requestAnimationFrame(function flash(){
+				if (!faults) { animRAF = 0; return; }
+				scheduleDraw();
+				animRAF = requestAnimationFrame(flash);
+			});
+			return;
+		}
+	}
+	clearFaults();
+	runSolve();
+	var f2 = checkPostSolveFaults(sim);
+	if (f2) {
+		var onlyOpenSwitch = f2._onlyOpenSwitch;
+		if (!onlyOpenSwitch) {
+			sim = null;
+			showFaults(f2);
+			if (!animRAF) animRAF = requestAnimationFrame(function flash(){
+				if (!faults) { animRAF = 0; return; }
+				scheduleDraw();
+				animRAF = requestAnimationFrame(flash);
+			});
+		return;
+	}
 showOpenLoopInfo('Розімкнене коло — клацніть вимикач, щоб замкнути і запустити струм');
 }
 isRunning = true;
@@ -2609,9 +3103,7 @@ if (!c) return;
 saveUndo(); c.props.closed = !c.props.closed; try{sfx.click();}catch(e){} renderProps(); scheduleDraw();
 });
 on('ctx-canvas-clear', 'click', function(){ hideCtxMenus(); if (confirm('Очистити полотно?')) clearCanvas(); });
-/* ══════════════════════════════════════════════════════════
-MNA Solver — slice 4
-══════════════════════════════════════════════════════════ */
+/* ═══════════════════ MNA Solver ════════════════════════════ */
 var sim = null;
 function portKey(compId, portIdx) { return compId + ':' + portIdx; }
 /* ── Fault detection (short circuits, dangling sources) ── */
@@ -2625,6 +3117,7 @@ var def = COMP_DEFS[c.type];
 for (var i = 0; i < def.ports.length; i++) parent[portKey(c.id,i)] = portKey(c.id,i);
 });
 state.connections.forEach(function (conn) {
+if (conn.from.anchor || conn.to.anchor) return;
 union(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
 });
 state.components.forEach(function (c) {
@@ -2657,6 +3150,7 @@ var batteries = state.components.filter(function (c) { return c.type === 'batter
     for (var i = 0; i < def.ports.length; i++) p2[portKey(c.id,i)] = portKey(c.id,i);
   });
   state.connections.forEach(function(conn) {
+    if (conn.from.anchor || conn.to.anchor) return;
     union2(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
   });
   state.components.forEach(function(c) {
@@ -2713,13 +3207,14 @@ batteries.forEach(function (b) {
       }
     });
     var cause = shortAmmeter
-      ? ' Амперметр #' + shortAmmeter.id + ' підключено без навантаження — він має майже нульовий опір і створює КЗ. Підключайте амперметр ПОСЛІДОВНО з резистором або іншим навантаженням.'
+      ? ' Амперметр #' + shortAmmeter.id + ' підключено без навантаження — він має майже нульовий опір і створює коротке замикання. Підключайте амперметр ПОСЛІДОВНО з резистором або іншим навантаженням.'
       : shortSwitch
       ? ' Замкнутий ' + (shortSwitch.type === 'switch' ? 'вимикач' : 'кнопка') + ' #' + shortSwitch.id + ' з\'єднує клеми без опору між ними.'
       : ' Клеми + та − в одному вузлі без опору між ними.';
     msgs.push('⚡ Коротке замикання батареї #' + b.id + ' (' + (b.props.V||0) + 'В)!' + cause + ' Додайте резистор або навантаження в коло.');
     var sn = find(portKey(b.id,0));
     state.connections.forEach(function (conn) {
+      if (conn.from.anchor || conn.to.anchor) return;
       if (find(portKey(conn.from.compId, conn.from.portIdx)) === sn || find(portKey(conn.to.compId, conn.to.portIdx)) === sn) {
         wireIds[conn.id] = true;
       }
@@ -2736,6 +3231,7 @@ batteries.forEach(function (b) {
   var p0 = find(portKey(b.id,0)), p1 = find(portKey(b.id,1));
   var p0Conn = false, p1Conn = false;
   state.connections.forEach(function (conn) {
+    if (conn.from.anchor || conn.to.anchor) return;
     var fk = find(portKey(conn.from.compId, conn.from.portIdx));
     var tk = find(portKey(conn.to.compId, conn.to.portIdx));
     if (fk === p0 || tk === p0) p0Conn = true;
@@ -2783,6 +3279,7 @@ ammeters.forEach(function (a) {
 
 var seenPairs = {};
 state.connections.forEach(function (conn) {
+  if (conn.from.anchor || conn.to.anchor) return;
   var a = conn.from.compId + ':' + conn.from.portIdx;
   var b = conn.to.compId + ':' + conn.to.portIdx;
   var k = a < b ? (a + '|' + b) : (b + '|' + a);
@@ -2809,8 +3306,60 @@ if (liveBatts.length === 0) return null;
 var wireIds = {}, compIds = {}, msgs = [];
 
 if (!s) {
-  liveBatts.forEach(function (b) { compIds[b.id] = true; });
-  msgs.push('⚠ Солвер не зміг розв\'язати коло — ймовірно, жорстке замикання джерела напруги або сингулярна конфігурація. Перевірте з\'єднання.');
+  // Перевіряємо, чи є вимикачі/кнопки, які розривають коло
+  var hasOpenSwitch2 = state.components.some(function(c) {
+    return (c.type === 'switch' || c.type === 'pushbutton') && !c.props.closed;
+  });
+  var hasClosedSwitch2 = state.components.some(function(c) {
+    return (c.type === 'switch' || c.type === 'pushbutton') && c.props.closed;
+  });
+
+  // Виявляємо "висячі" елементи — підключені менш ніж двома дротами
+  // (для 2-портових) або жодним (для 1-портових)
+  var danglingComps = [];
+  state.components.forEach(function(c) {
+    var def = COMP_DEFS[c.type];
+    if (!def) return;
+    // Пропускаємо не-гілкові елементи
+    if (BRANCH_TYPES.indexOf(c.type) < 0) return;
+    // Пропускаємо батареї — вони вже діагностуються окремо
+    if (c.type === 'battery') return;
+    // Рахуємо скільки портів підключені хоча б до одного дроту
+    var connectedPorts = 0;
+    for (var pi = 0; pi < def.ports.length; pi++) {
+      var hasConn = state.connections.some(function(conn) {
+        if (conn.from.anchor || conn.to.anchor) return false;
+        return (conn.from.compId === c.id && conn.from.portIdx === pi) ||
+               (conn.to.compId === c.id && conn.to.portIdx === pi);
+      });
+      if (hasConn) connectedPorts++;
+    }
+    if (connectedPorts < def.ports.length) {
+      danglingComps.push(c);
+    }
+  });
+
+  if (danglingComps.length > 0) {
+    // Є реально непідключені елементи
+    danglingComps.forEach(function(c) { compIds[c.id] = true; });
+    var names = danglingComps.map(function(c) {
+      return (COMP_LABELS[c.type] || c.type) + ' #' + c.id;
+    }).join(', ');
+    msgs.push('⚠ Деякі компоненти не повністю підключені до кола: ' + names + '. Підключіть усі порти або видаліть зайві елементи.');
+    // Якщо при цьому всі вимикачі замкнені — не показуємо помилку про розімкнене коло
+    if (!hasOpenSwitch2) {
+      liveBatts.forEach(function(b) { compIds[b.id] = true; });
+    }
+  } else {
+    // Солвер не зміг розрахувати з іншої причини
+    liveBatts.forEach(function (b) { compIds[b.id] = true; });
+    if (hasOpenSwitch2) {
+      // Основна причина — розімкнутий вимикач
+      msgs.push('⚠ Коло розімкнене — замкніть вимикач, щоб струм міг протікати.');
+    } else {
+      msgs.push('⚠ Система не може розрахувати цю схему — ймовірно, є неприєднані компоненти або сингулярна конфігурація. Перевірте з\'єднання.');
+    }
+  }
 } else {
   var realLoadTypes = ['resistor','rheostat','lamp','fan','buzzer','heater','led'];
   var maxLoadI = 0, maxVmI = 0;
@@ -2831,6 +3380,7 @@ if (!s) {
     var nA = s.netOf ? s.netOf(b.id, 0) : null;
     var nB = s.netOf ? s.netOf(b.id, 1) : null;
     state.connections.forEach(function (conn) {
+      if (conn.from.anchor || conn.to.anchor) return;
       var fn = s.netOf ? s.netOf(conn.from.compId, conn.from.portIdx) : null;
       var tn = s.netOf ? s.netOf(conn.to.compId, conn.to.portIdx) : null;
       if (fn === nA || fn === nB || tn === nA || tn === nB) wireIds[conn.id] = true;
@@ -2840,62 +3390,96 @@ if (!s) {
   var hasOpenSwitch = state.components.some(function (c) { 
     return (c.type === 'switch' || c.type === 'pushbutton') && !c.props.closed;
   });
-  var hint = hasVm ? ' Вольтметр має дуже великий опір — він не може бути єдиним шляхом повернення; його слід підключати паралельно до того, що вимірюється.' :
+  var hint = hasVm ? ' Вольтметр має дуже великий опір — він не може бути єдиним шляхом проходження струму, його слід підключати паралельно до вимірюваної ділянки.' :
               hasOpenSwitch ? ' Розімкнутий вимикач розриває коло — замкніть його або приберіть з основного шляху струму.' :
-             ' Переконайтеся, що кожен компонент має повний контур назад до батареї без розривів.';
-  msgs.push('⚠ Струм не тече — коло не має замкненого провідного контуру.' + hint);
+             ' Переконайтеся, що кожен компонент поєднаний у спільне коло з батареєю без розривів.';
+  msgs.push('⚠ Струм не проходить по колу, оскільки воно не має замкненого провідного контуру.' + hint);
 }
 
 if (msgs.length === 0) return null;
 var result = { wireIds: wireIds, compIds: compIds, messages: msgs };
 
+// _onlyOpenSwitch = розімкнутий вимикач є ЄДИНОЮ причиною (немає непідключених елементів)
 var hasOpenSwitch = state.components.some(function(c){
   return (c.type === 'switch' || c.type === 'pushbutton') &&
          !c.props.closed;
 });
 
-if (hasOpenSwitch) {
+// Перевіряємо, чи є непідключені елементи (висячі порти)
+var hasDangling = state.components.some(function(c) {
+  var def = COMP_DEFS[c.type];
+  if (!def || BRANCH_TYPES.indexOf(c.type) < 0 || c.type === 'battery') return false;
+  for (var pi = 0; pi < def.ports.length; pi++) {
+    var hasConn = state.connections.some(function(conn) {
+      if (conn.from.anchor || conn.to.anchor) return false;
+      return (conn.from.compId === c.id && conn.from.portIdx === pi) ||
+             (conn.to.compId === c.id && conn.to.portIdx === pi);
+    });
+    if (!hasConn) return true;
+  }
+  return false;
+});
+
+if (hasOpenSwitch && !hasDangling) {
   result._onlyOpenSwitch = true;
 }
 return result;
 }
 
+window.clearFaults = function() {
+  console.log('[clearFaults] Викликано');
+  
+  faults = null;
+  wasRunningBeforeFault = false; // 🔑 Головне: повертає інтерактивність полотну
 
+  // Примусово зупиняємо цикл анімації/миготіння, якщо він ще працює
+  if (typeof animRAF !== 'undefined' && animRAF) {
+    cancelAnimationFrame(animRAF);
+    animRAF = 0;
+  }
 
+  var bn = document.getElementById('fault-banner');
+  if (bn) bn.style.display = 'none';
 
-
-
-
-function clearFaults() {
-if (!faults) return;
-faults = null;
-var bn = document.getElementById('fault-banner');
-if (bn) bn.style.display = 'none';
-scheduleDraw();
+  scheduleDraw();
 }
 function showFaults(f) {
-faults = f;
-try { if (typeof sfx !== 'undefined' && sfx) sfx.fault(); } catch(e){}
-var bn = document.getElementById('fault-banner');
-if (!bn) {
-bn = document.createElement('div');
-bn.id = 'fault-banner';
-bn.className = 'fault-banner';
-bn.innerHTML = ' <div class="fb-text"></div> <button class="fb-close" type="button" aria-label="Dismiss">×</button>';
-if (canvasCard) canvasCard.appendChild(bn);
-bn.querySelector('.fb-close').addEventListener('click', clearFaults);
-}
-bn.querySelector('.fb-text').innerHTML = f.messages.map(function (m) {
-  return '<div>' + m.replace(/[<>&]/g, function(ch){
-    return {
-      '<':'&lt;',
-      '>':'&gt;',
-      '&':'&amp;'
-    }[ch];
-  }) + '</div>';
-}).join('');
-bn.style.display = 'block';
-scheduleDraw();
+  console.log('[showFaults] Викликано');
+
+  faults = f;
+
+  let bn = document.getElementById('fault-banner');
+
+  if (!bn) {
+    bn = document.createElement('div');
+    bn.id = 'fault-banner';
+    bn.className = 'fault-banner';
+
+    if (canvasCard) {
+      canvasCard.appendChild(bn);
+    }
+  }
+
+  bn.innerHTML = `
+    <div class="fb-text">
+      ${f.messages.map(function (m) {
+        return '<div>' + m.replace(/[<>&]/g, function(ch){
+          return {'<':'&lt;', '>':'&gt;', '&':'&amp;'}[ch];
+        }) + '</div>';
+      }).join('')}
+    </div>
+
+    <button class="fb-close" type="button">×</button>
+  `;
+
+  bn.querySelector('.fb-close').addEventListener('click', function () {
+    console.log('close click');
+    clearFaults();
+  });
+
+  bn.style.display = 'flex';
+
+  scheduleDraw();
 }
 function faultPulse() { return 0.5 + 0.5 * Math.sin(performance.now() / 180); }
 var openLoopBanner = null;
@@ -2935,6 +3519,7 @@ parent[k] = k;
 }
 });
 state.connections.forEach(function (conn) {
+if (conn.from.anchor || conn.to.anchor) return; // dangling end — не включати в солвер
 union(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
 });
 state.components.forEach(function (c) {
@@ -3007,54 +3592,70 @@ function resistanceOf(c) {
   if (c.type === 'led') return Math.max(5, c.props.R);
   if (c.type === 'ammeter') return 0.001;
   if (c.type === 'voltmeter') return 1e9;
-  if (c.type === 'switch' || c.type === 'pushbutton') return c.props.closed ? 0.001 : null;
+  if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') return c.props.closed ? 0.001 : null;
   return null;
 }
 
 var branches = [];
-state.components.forEach(function (c) {
-  var R = resistanceOf(c);
-  if (R == null) return;
-  branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, 1), R: R });
-});
-branches.forEach(function (b) { stampG(b.na, b.nb, 1/b.R); });
-
-vSources.forEach(function (v, k) {
-  var nplus = netOf(v.id, 0), nmin = netOf(v.id, 1);
-  var mRow = (N - 1) + k;
-  var ip = netIdx[nplus], im = netIdx[nmin];
-  if (ip >= 0) { A[mRow][ip] = 1; A[ip][mRow] = 1; }
-  if (im >= 0) { A[mRow][im] = -1; A[im][mRow] = -1; }
-  B[mRow] = v.props.V;
-});
-
-for (var p = 0; p < SIZE; p++) {
-  var maxA = Math.abs(A[p][p]); var piv = p;
-  for (var pp = p+1; pp < SIZE; pp++) {
-    if (Math.abs(A[pp][p]) > maxA) { maxA = Math.abs(A[pp][p]); piv = pp; }
-  }
-   if (!isFinite(maxA) || maxA < 1e-9) return null;
-  if (piv !== p) { var tmp = A[p]; A[p] = A[piv]; A[piv] = tmp; var tb = B[p]; B[p] = B[piv]; B[piv] = tb; }
-  for (var rr = p+1; rr < SIZE; rr++) {
-    var f = A[rr][p] / A[p][p];
-    if (f !== 0) {
-      for (var cc = p; cc < SIZE; cc++) A[rr][cc] -= f * A[p][cc];
-      B[rr] -= f * B[p];
-    }
-  }
-}
-var x = new Array(SIZE);
-for (var bk = SIZE-1; bk >= 0; bk--) {
-  var s2 = B[bk];
-  for (var ck = bk+1; ck < SIZE; ck++) s2 -= A[bk][ck] * x[ck];
-  var denom = A[bk][bk];
-  if (!isFinite(denom) || Math.abs(denom) < 1e-15) return null;
-  x[bk] = s2 / denom;
-  if (!isFinite(x[bk])) return null;
-}
-
 var voltages = new Array(N);
-for (var nn = 0; nn < N; nn++) voltages[nn] = (nn === groundNet) ? 0 : x[netIdx[nn]];
+
+// 2 проходи: 1-й для оцінки напрямку, 2-й для фіксації розімкнених LED
+for (var iter = 0; iter < 2; iter++) {
+  branches = [];
+  state.components.forEach(function (c) {
+    var R = resistanceOf(c);
+    if (c.type === 'led') {
+      var na = netOf(c.id, 0); // anode
+      var nb = netOf(c.id, 1); // cathode
+      // У першому проході вважаємо напругу позитивною (LED відкритий)
+      // У другому використовуємо обчислені потенціали
+      var Vak = (iter === 1 && voltages[na] != null && isFinite(voltages[na]))
+                ? (voltages[na] - voltages[nb])
+                : 5;
+      
+      // Якщо зворотна полярність -> розрив.
+      // Перевірку Vak < Vf прибрано, бо лінійний солвер дає Vak = I*R, що завжди < Vf.
+      if (Vak < 0) R = 1e9;
+    }
+    if (R == null) return;
+    branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, 1), R: R });
+  });
+
+  // Очищаємо та заново штампуємо матрицю
+  A = []; for (var r = 0; r < SIZE; r++) { A[r] = new Array(SIZE); for (var c2 = 0; c2 < SIZE; c2++) A[r][c2] = 0; }
+  B = new Array(SIZE); for (var z = 0; z < SIZE; z++) B[z] = 0;
+
+  branches.forEach(function (b) { stampG(b.na, b.nb, 1/b.R); });
+  vSources.forEach(function (v, k) {
+    var nplus = netOf(v.id, 0), nmin = netOf(v.id, 1);
+    var mRow = (N - 1) + k;
+    var ip = netIdx[nplus], im = netIdx[nmin];
+    if (ip >= 0) { A[mRow][ip] = 1; A[ip][mRow] = 1; }
+    if (im >= 0) { A[mRow][im] = -1; A[im][mRow] = -1; }
+    B[mRow] = v.props.V;
+  });
+
+  // Гаус (без змін)
+  for (var p = 0; p < SIZE; p++) {
+    var maxA = Math.abs(A[p][p]); var piv = p;
+    for (var pp = p+1; pp < SIZE; pp++) { if (Math.abs(A[pp][p]) > maxA) { maxA = Math.abs(A[pp][p]); piv = pp; } }
+    if (!isFinite(maxA) || maxA < 1e-9) return null;
+    if (piv !== p) { var tmp = A[p]; A[p] = A[piv]; A[piv] = tmp; var tb = B[p]; B[p] = B[piv]; B[piv] = tb; }
+    for (var rr = p+1; rr < SIZE; rr++) { var f = A[rr][p] / A[p][p]; if (f !== 0) { for (var cc = p; cc < SIZE; cc++) A[rr][cc] -= f * A[p][cc]; B[rr] -= f * B[p]; } }
+  }
+
+  var x = new Array(SIZE);
+  for (var bk = SIZE-1; bk >= 0; bk--) {
+    var s2 = B[bk]; for (var ck = bk+1; ck < SIZE; ck++) s2 -= A[bk][ck] * x[ck];
+    var denom = A[bk][bk];
+    if (!isFinite(denom) || Math.abs(denom) < 1e-15) return null;
+    x[bk] = s2 / denom; if (!isFinite(x[bk])) return null;
+  }
+
+  for (var nn = 0; nn < N; nn++) voltages[nn] = (nn === groundNet) ? 0 : x[netIdx[nn]];
+}
+
+// ⬇️ Далі залишаємо оригінальний код розрахунку струмів/потужностей без змін:
 var compV = {}, compI = {}, compP = {}, compCurrentDir = {};
 var portI = {};
 state.components.forEach(function (c) {
@@ -3117,7 +3718,7 @@ return {
   netOf: netOf
 };
 }
-var BRANCH_TYPES = ['resistor','rheostat','lamp','fan','buzzer','heater','led','ammeter','voltmeter','battery','switch','pushbutton'];
+var BRANCH_TYPES = ['resistor','rheostat','lamp','fan','buzzer','heater','led','ammeter','voltmeter','battery','switch','pushbutton','flasher'];
 function isBranchComp(c) { return c && BRANCH_TYPES.indexOf(c.type) >= 0; }
 function wireSignedCurrent(conn) {
 if (!sim || !sim.portI) return 0;
@@ -3155,6 +3756,7 @@ return _adjCache;
 }
 function netSliceCurrent(conn) {
 var key = function(c,p){ return c+'|'+p; };
+if (conn.from.anchor || conn.to.anchor) return 0;
 var startKey = key(conn.from.compId, conn.from.portIdx);
 var endKey   = key(conn.to.compId,   conn.to.portIdx);
 var skipId   = conn.id;
@@ -3648,28 +4250,230 @@ prebuiltTabs.querySelectorAll('.pill').forEach(function(p){ p.classList.toggle('
 if (circuitDesc) { circuitDesc.style.display = ''; circuitDesc.textContent = CIRCUIT_DESC[k] || ''; }
 fitAll();
 });
-/* ── Export PNG ─────────────────────────────────────────── */
-function exportPNG(withAnnotations) {
-var prev = annVisible;
-if (!withAnnotations) annVisible = false;
-draw();
-ctx.save();
-ctx.setTransform(1,0,0,1,0,0);
-ctx.fillStyle = 'rgba(255,160,0,0.6)';
-ctx.font = (11*DPR)+'px sans-serif';
-ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-ctx.fillText('mechsimulator.com', canvas.width-8, canvas.height-6);
-ctx.restore();
-var url = canvas.toDataURL('image/png');
-annVisible = prev;
-var a = document.createElement('a');
-a.href = url; a.download = 'ohms-law-circuit.png';
-a.click();
-scheduleDraw();
+
+/* ── Export PNG ─────────────────────────────────────── */
+function showSaveImageModal(defaultChecked) {
+  // Якщо модальне вікно вже відкрите — нічого не робимо
+  if (document.getElementById('save-image-modal')) return;
+
+  const light = isLightTheme();
+  const bg = light ? '#f8fafc' : '#1e293b';
+  const text = light ? '#0f172a' : '#ffffff';
+  const inputBg = light ? '#ffffff' : '#0f172a';
+  const inputBorder = light ? '#cbd5e1' : '#475569';
+  const inputText = light ? '#0f172a' : '#ffffff';
+  const cancelBg = light ? '#e2e8f0' : '#334155';
+  const cancelText = light ? '#1e293b' : '#ffffff';
+  const overlayBg = light ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)';
+
+  const modal = document.createElement('div');
+  modal.id = 'save-image-modal';
+  modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:${overlayBg};z-index:10000;display:flex;align-items:center;justify-content:center;`;
+
+  const box = document.createElement('div');
+  box.style.cssText = `background:${bg};color:${text};padding:24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,${light ? 0.15 : 0.4});width:340px;font-family:ui-sans-serif,system-ui,sans-serif;display:flex;flex-direction:column;gap:16px;`;
+
+  const title = document.createElement('h3');
+  title.textContent = 'Зберегти зображення';
+  title.style.cssText = `margin:0;font-size:18px;font-weight:600;color:${text};`;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Введіть назву файлу...';
+  input.value = 'circuit';
+  input.style.cssText = `padding:10px 12px;border:1px solid ${inputBorder};border-radius:6px;background:${inputBg};color:${inputText};font-size:14px;outline:none;`;
+  input.onfocus = () => input.style.borderColor = '#3b82f6';
+  input.onblur  = () => input.style.borderColor = inputBorder;
+
+  // Чекбокс "Зберегти з анотаціями"
+  const cbRow = document.createElement('div');
+  cbRow.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:14px;';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.id = 'save-img-ann-cb'; cb.checked = (defaultChecked !== false);
+  cb.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:#3b82f6;';
+  const cbLabel = document.createElement('label');
+  cbLabel.textContent = 'Зберегти з анотаціями';
+  cbLabel.style.cursor = 'pointer';
+  cbLabel.style.color = text;
+  cbLabel.prepend(cb);
+  cbRow.appendChild(cbLabel);
+
+  const btnContainer = document.createElement('div');
+  btnContainer.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;margin-top:8px;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Скасувати';
+  cancelBtn.style.cssText = `padding:8px 16px;background:${cancelBg};color:${cancelText};border:none;border-radius:6px;cursor:pointer;font-size:14px;`;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Зберегти';
+  saveBtn.style.cssText = `padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;`;
+
+  btnContainer.appendChild(cancelBtn);
+  btnContainer.appendChild(saveBtn);
+  box.appendChild(title);
+  box.appendChild(input);
+  box.appendChild(cbRow);
+  box.appendChild(btnContainer);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  input.focus();
+  input.select();
+
+  function closeModal() { document.body.removeChild(modal); }
+
+  cancelBtn.onclick = closeModal;
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') doSave();
+    if (e.key === 'Escape') closeModal();
+  };
+
+  function doSave() {
+    let filename = input.value.trim();
+    if (!filename) filename = 'circuit';
+    if (!filename.toLowerCase().endsWith('.png')) filename += '.png';
+    
+    const withAnnotations = document.getElementById('save-img-ann-cb').checked;
+    exportPNG(filename, withAnnotations);
+    closeModal();
+  }
+
+  saveBtn.onclick = doSave;
 }
-on('canvas-export-btn', 'click', function(){ exportPNG(true); });
-on('ctx-canvas-export', 'click', function(){ hideCtxMenus(); exportPNG(true); });
-on('ctx-canvas-export-clean', 'click', function(){ hideCtxMenus(); exportPNG(false); });
+
+function exportPNG(filename, withAnnotations) {
+  // 1. Створюємо ізольований канвас того ж розміру
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  var tCtx = tempCanvas.getContext('2d');
+
+  // 2. Зберігаємо поточні функції та контекст, щоб відновити їх після експорту
+  var savedCtx = ctx;
+  var origDrawGrid = drawGrid;
+  drawGrid = function() {}; // Тимчасово вимикаємо сітку
+
+  // 3. Переключаємо контекст малювання на тимчасовий канвас
+  ctx = tCtx;
+  var prevAnn = annVisible;
+  annVisible = withAnnotations;
+
+  // Тимчасово вимикаємо clearRect, щоб не стерти зафарбований фон
+  var origClearRect = tCtx.clearRect.bind(tCtx);
+  tCtx.clearRect = function() {};
+
+  // 4. Малюємо фон відповідно до активної теми
+  var bgColor = isLightTheme() ? '#f8fafc' : '#0f172a';
+  tCtx.fillStyle = bgColor;
+  tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+  // 5. Рендеримо схему (компоненти, дроти, анотації) поверх фону
+  draw();
+
+  // 6. Повертаємо оригінальний clearRect
+  tCtx.clearRect = origClearRect;
+
+  // 7. Додаємо водяний знак (колір також адаптується до теми)
+  tCtx.save();
+  tCtx.setTransform(1, 0, 0, 1, 0, 0);
+  tCtx.fillStyle = isLightTheme() ? 'rgba(0,0,0,0.4)' : 'rgba(255,160,0,0.6)';
+  tCtx.font = (11 * DPR) + 'px sans-serif';
+  tCtx.textAlign = 'right';
+  tCtx.textBaseline = 'bottom';
+  tCtx.fillText('ЕЛЕКТРОКОНСТРУКТОР', tempCanvas.width - 8, tempCanvas.height - 6);
+  tCtx.restore();
+
+  // 8. Відновлюємо стан додатка
+  annVisible = prevAnn;
+  ctx = savedCtx;
+  drawGrid = origDrawGrid;
+
+  // 9. Завантажуємо зображення
+  var url = tempCanvas.toDataURL('image/png');
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'circuit.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  scheduleDraw();
+}
+
+// Оновлюємо слухачі подій
+on('canvas-export-btn', 'click', function(){ showSaveImageModal(true); });
+on('ctx-canvas-export', 'click', function(){ hideCtxMenus(); showSaveImageModal(true); });
+on('ctx-canvas-export-clean', 'click', function(){ hideCtxMenus(); showSaveImageModal(false); });
+
+on('btn-print', 'click', printCircuit);
+on('ctx-canvas-print', 'click', function(){ hideCtxMenus(); printCircuit(); });
+
+/* ── Print Circuit ──────────────────────────────────────── */
+function printCircuit() {
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  var tCtx = tempCanvas.getContext('2d');
+
+  // 1. Зберігаємо поточну тему і примусово вмикаємо світлу для друку
+  var wasLight = isLightTheme();
+  if (!wasLight) document.body.classList.add('light-theme');
+
+  // 2. Малюємо схему на тимчасовий канвас з "правильними" кольорами
+  var savedCtx = ctx;
+  ctx = tCtx;
+  draw();
+  ctx = savedCtx;
+
+  // 3. Відновлюємо оригінальну тему
+  if (!wasLight) document.body.classList.remove('light-theme');
+
+  var dataURL = tempCanvas.toDataURL('image/png');
+  var printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Браузер заблокував спливаюче вікно. Дозвольте pop-ups для цього сайту, щоб роздрукувати схему.');
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="uk">
+    <head>
+      <meta charset="utf-8">
+      <title>Друк схеми</title>
+      <style>
+        @media print {
+          @page { margin: 1cm; }
+          body { margin: 0; }
+          img { width: 100%; height: auto; }
+          .controls { display: none; }
+        }
+        @media screen {
+          body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #e5e7eb; font-family: system-ui, sans-serif; }
+          img { max-width: 95vw; max-height: 90vh; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-radius: 6px; background: #fff; padding: 8px; }
+          .controls { margin-top: 20px; display: flex; gap: 12px; }
+          button { padding: 10px 20px; font-size: 15px; cursor: pointer; border: none; border-radius: 8px; background: #3b82f6; color: white; font-weight: 500; }
+          button:hover { background: #2563eb; }
+          button.secondary { background: #6b7280; }
+          button.secondary:hover { background: #4b5563; }
+        }
+      </style>
+    </head>
+    <body>
+      <img src="${dataURL}" alt="Електрична схема">
+      <div class="controls">
+        <button onclick="window.print()">🖨 Роздрукувати</button>
+        <button class="secondary" onclick="window.close()">Закрити</button>
+      </div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+
 /* ── Export CSV (readings table) ────────────────────────── */
 function csvCell(v) {
 if (v == null) return '';
@@ -3709,8 +4513,8 @@ rows.push(['З\'ЄДНАННЯ']);
 rows.push(['ID','Від (компонент:порт)','До (компонент:порт)']);
 state.connections.forEach(function(conn){
 rows.push([conn.id,
-conn.from.compId + ':' + conn.from.portIdx,
-conn.to.compId + ':' + conn.to.portIdx]);
+conn.from.anchor ? ('anchor:'+conn.from.anchor.x+','+conn.from.anchor.y) : conn.from.compId + ':' + conn.from.portIdx,
+conn.to.anchor   ? ('anchor:'+conn.to.anchor.x+','+conn.to.anchor.y)     : conn.to.compId   + ':' + conn.to.portIdx]);
 });
 var csv = rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
 var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
@@ -3874,25 +4678,122 @@ state.annShapes.length = 0;
 state.nextId = 1;
 }
 };
-//
+
 // ===============================
 // ЗБЕРЕЖЕННЯ / ЗАВАНТАЖЕННЯ СХЕМ
 // ===============================
-function exportCircuit() {
-const json = snapshot();
-const blob = new Blob(
-[json],
-{ type: 'application/json' }
-);
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = 'circuit.json';
-document.body.appendChild(a);
-a.click();
-a.remove();
-URL.revokeObjectURL(url);
+function showSaveModal() {
+  if (document.getElementById('save-circuit-modal')) return;
+
+  // Динамічні кольори залежно від теми
+  const light = isLightTheme();
+  const bg = light ? '#f8fafc' : '#1e293b';
+  const text = light ? '#0f172a' : '#ffffff';
+  const inputBg = light ? '#ffffff' : '#0f172a';
+  const inputBorder = light ? '#cbd5e1' : '#475569';
+  const inputText = light ? '#0f172a' : '#ffffff';
+  const cancelBg = light ? '#e2e8f0' : '#334155';
+  const cancelText = light ? '#1e293b' : '#ffffff';
+  const saveBg = '#3b82f6';
+  const saveText = '#ffffff';
+  const overlayBg = light ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)';
+
+  const modal = document.createElement('div');
+  modal.id = 'save-circuit-modal';
+  modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:${overlayBg};z-index:10000;display:flex;align-items:center;justify-content:center;`;
+
+  const box = document.createElement('div');
+  box.style.cssText = `background:${bg};color:${text};padding:24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,${light ? 0.15 : 0.4});width:340px;font-family:ui-sans-serif,system-ui,sans-serif;display:flex;flex-direction:column;gap:16px;`;
+
+  const title = document.createElement('h3');
+  title.textContent = 'Зберегти схему';
+  title.style.cssText = `margin:0;font-size:18px;font-weight:600;color:${text};`;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Введіть назву схеми...';
+  input.value = 'circuit';
+  input.style.cssText = `padding:10px 12px;border:1px solid ${inputBorder};border-radius:6px;background:${inputBg};color:${inputText};font-size:14px;outline:none;transition:border-color 0.2s;`;
+  input.onfocus = () => input.style.borderColor = '#3b82f6';
+  input.onblur  = () => input.style.borderColor = inputBorder;
+
+  const btnContainer = document.createElement('div');
+  btnContainer.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;margin-top:8px;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Скасувати';
+  cancelBtn.style.cssText = `padding:8px 16px;background:${cancelBg};color:${cancelText};border:none;border-radius:6px;cursor:pointer;font-size:14px;`;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Зберегти';
+  saveBtn.style.cssText = `padding:8px 16px;background:${saveBg};color:${saveText};border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;`;
+
+  btnContainer.appendChild(cancelBtn);
+  btnContainer.appendChild(saveBtn);
+  box.appendChild(title);
+  box.appendChild(input);
+  box.appendChild(btnContainer);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  input.focus();
+  input.select();
+
+  function closeModal() { 
+    document.body.removeChild(modal); 
+  }
+
+  cancelBtn.onclick = closeModal;
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') doSave();
+    if (e.key === 'Escape') closeModal();
+  };
+
+  function doSave() {
+    let filename = input.value.trim();
+    if (!filename) filename = 'circuit';
+    if (!filename.toLowerCase().endsWith('.json')) filename += '.json';
+    exportCircuit(filename);
+    closeModal();
+  }
+
+  saveBtn.onclick = doSave;
 }
+
+function exportCircuit(filename) {
+  const json = snapshot();
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'circuit.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ===============================
+// КНОПКИ
+// ===============================
+window.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = document.getElementById('btn-save');
+  const loadBtn = document.getElementById('btn-load');
+  const fileInput = document.getElementById('file-load');
+  
+  if (saveBtn) {
+    saveBtn.addEventListener('click', showSaveModal);
+  }
+  if (loadBtn && fileInput) {
+    loadBtn.addEventListener('click', () => { fileInput.click(); });
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) { importCircuit(file); }
+      fileInput.value = '';
+    });
+  }
+});
 function importCircuit(file) {
 const reader = new FileReader();
 reader.onload = function(e) {
@@ -3905,30 +4806,7 @@ try {
 };
 reader.readAsText(file);
 }
-// ===============================
-// КНОПКИ
-// ===============================
-window.addEventListener('DOMContentLoaded', () => {
-const saveBtn = document.getElementById('btn-save');
-const loadBtn = document.getElementById('btn-load');
-const fileInput = document.getElementById('file-load');
-if (saveBtn) {
-saveBtn.addEventListener('click', exportCircuit);
-}
-if (loadBtn && fileInput) {
-loadBtn.addEventListener('click', () => {
-  fileInput.click();
-});
 
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (file) {
-    importCircuit(file);
-  }
-  fileInput.value = '';
-});
-}
-});
 /* ── Init ────────────────────────────────────────────────── */
 drawPaletteIcons();
 resizeCanvas();
