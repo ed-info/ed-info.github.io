@@ -509,7 +509,30 @@
   .sidebar-wrapper.collapsed .sidebar::-webkit-scrollbar {
     width: 0;
   }
- 
+ .led-color-picker{
+  display:flex;
+  gap:10px;
+  margin-top:6px;
+}
+
+.led-color-btn{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:2px solid transparent;
+  cursor:pointer;
+  transition:0.15s;
+}
+
+.led-color-btn.active{
+  border:3px solid #ffffff;
+  box-shadow:0 0 10px rgba(255,255,255,0.7);
+  transform:scale(1.08);
+}
+
+.led-color-btn:hover{
+  transform:scale(1.05);
+}
 </style>
 </head>
 <body>
@@ -611,7 +634,7 @@
       <div class="tool-btn-group" id="sketch-group">
         <button class="tool-btn tool-btn-sketch" data-tool="sketch" title="Freehand Sketch">✏️</button><button class="tool-btn-drop" id="sketch-drop-toggle" title="Sketch color &amp; width">&#9662;</button>
         <div class="sketch-dropdown" id="sketch-dropdown" style="display:none;">
-          <div class="sketch-dd-label">Color</div>
+          <div class="sketch-dd-label">Колір</div>
           <div class="sketch-colors" id="sketch-colors">
             <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
             <button class="swatch" data-color="#ff5555" style="background:#ff5555" title="Red"></button>
@@ -620,7 +643,7 @@
             <button class="swatch" data-color="#55aaff" style="background:#55aaff" title="Blue"></button>
             <button class="swatch" data-color="#ffb86c" style="background:#ffb86c" title="Orange"></button>
           </div>
-          <div class="sketch-dd-label">Width</div>
+          <div class="sketch-dd-label">Товщина</div>
           <div class="sketch-widths" id="sketch-widths">
             <button class="width-btn active" data-width="2" title="Thin"><span class="wline wline-thin"></span></button>
             <button class="width-btn" data-width="4" title="Medium"><span class="wline wline-med"></span></button>
@@ -631,17 +654,17 @@
       <div class="tool-btn-group" id="shape-group">
         <button class="tool-btn tool-btn-shape" data-tool="shape" title="Shape Marking"><span id="shape-icon">☐</span></button><button class="tool-btn-drop" id="shape-drop-toggle" title="Shape options">&#9662;</button>
         <div class="shape-dropdown" id="shape-dropdown" style="display:none;">
-          <div class="sketch-dd-label">Shape</div>
+          <div class="sketch-dd-label">Фігури</div>
           <div class="shape-picker" id="shape-picker">
-            <button class="shape-pick" data-shape="arrow" title="Arrow">&#10140;</button>
-            <button class="shape-pick" data-shape="line" title="Line">&#9585;</button>
-            <button class="shape-pick active" data-shape="rect" title="Rectangle">☐</button>
-            <button class="shape-pick" data-shape="circle" title="Circle">&#9711;</button>
-            <button class="shape-pick" data-shape="ellipse" title="Ellipse">&#11053;</button>
-            <button class="shape-pick" data-shape="dblarrow" title="Double Arrow">&#10231;</button>
-            <button class="shape-pick" data-shape="text" title="Text Label">T</button>
+            <button class="shape-pick" data-shape="arrow" title="Стрілка">&#10140;</button>
+            <button class="shape-pick" data-shape="line" title="Лінія">&#9585;</button>
+            <button class="shape-pick active" data-shape="rect" title="Прямокутник">☐</button>
+            <button class="shape-pick" data-shape="circle" title="Коло">&#9711;</button>
+            <button class="shape-pick" data-shape="ellipse" title="Еліпс">&#11053;</button>
+            <button class="shape-pick" data-shape="dblarrow" title="Подвійна стрілка">&#10231;</button>
+            <button class="shape-pick" data-shape="text" title="Текстовий напис">T</button>
           </div>
-          <div class="sketch-dd-label">Color</div>
+          <div class="sketch-dd-label">Колір</div>
           <div class="sketch-colors shape-colors" id="shape-colors">
             <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
             <button class="swatch" data-color="#ff5555" style="background:#ff5555" title="Red"></button>
@@ -650,16 +673,16 @@
             <button class="swatch" data-color="#55aaff" style="background:#55aaff" title="Blue"></button>
             <button class="swatch" data-color="#ffb86c" style="background:#ffb86c" title="Orange"></button>
           </div>
-          <div class="sketch-dd-label">Stroke</div>
+          <div class="sketch-dd-label">Лінія</div>
           <div class="sketch-widths shape-widths" id="shape-widths">
             <button class="width-btn active" data-width="2" title="Thin"><span class="wline wline-thin"></span></button>
             <button class="width-btn" data-width="4" title="Medium"><span class="wline wline-med"></span></button>
             <button class="width-btn" data-width="7" title="Thick"><span class="wline wline-thick"></span></button>
           </div>
-          <div class="sketch-dd-label">Fill</div>
+          <div class="sketch-dd-label">Заповнення</div>
           <div class="shape-fill-row" id="shape-fill-btns">
-            <button class="fill-btn active" data-fill="false" title="Outline only">Outline</button>
-            <button class="fill-btn" data-fill="true" title="Filled shape">Filled</button>
+            <button class="fill-btn active" data-fill="false" title="Outline only">Обвести</button>
+            <button class="fill-btn" data-fill="true" title="Filled shape">Заповнити</button>
           </div>
         </div>
       </div>
@@ -706,21 +729,21 @@
   <div class="ctx-item" id="ctx-canvas-export">📸 Експорт PNG</div>
 </div>
 
-            <!-- Clear annotations dialog -->
+            <!-- Діалогове вікно підтвердження очищення -->
             <div class="confirm-overlay" id="clear-ann-confirm" style="display:none;">
               <div class="confirm-dialog">
                 <div class="confirm-icon">&#9888;</div>
-                <div class="confirm-title">Clear Annotations</div>
-                <div class="confirm-msg">What would you like to clear?</div>
+                <div class="confirm-title">Очистити анотації</div>
+                <div class="confirm-msg">Що ви хочете очистити?</div>
                 <select class="clear-select" id="clear-ann-category">
-                  <option value="all" selected>All Annotations</option>
-                  <option value="sketches">Sketches Only</option>
-                  <option value="shapes">Shapes &amp; Text Only</option>
+                  <option value="all" selected>Всі анотації</option>
+                  <option value="sketches">Лише начерки</option>
+                  <option value="shapes">Лише фігури та текст</option>
                 </select>
-                <div class="clear-hint" id="clear-ann-hint">Removes all sketches, shapes, and text annotations.</div>
+                <div class="clear-hint" id="clear-ann-hint">Видаляє всі начерки, фігури та текстові анотації.</div>
                 <div class="confirm-actions">
-                  <button class="btn btn-ghost" id="clear-ann-no">Cancel</button>
-                  <button class="btn btn-danger" id="clear-ann-yes">Clear</button>
+                  <button class="btn btn-ghost" id="clear-ann-no">Скасувати</button>
+                  <button class="btn btn-danger" id="clear-ann-yes">Очистити</button>
                 </div>
               </div>
             </div>
