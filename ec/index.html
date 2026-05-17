@@ -352,7 +352,7 @@
 
   .props-body label {
     display: block;
-    margin: 8px 0;
+    margin: 12px;
   }
 
   .props-body input, .props-body select {
@@ -533,12 +533,24 @@
 .led-color-btn:hover, .lamp-color-btn:hover{
   transform:scale(1.05);
 }
-.cp-head {
+.cp-head, .props-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-left:20px;
 }
-
+.props-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left:12px;
+}
+.cp-label {
+  margin-left:20px;
+}
+.prop-val {
+  margin-left:12px;
+}
 .cp-close {
 	position: absolute;
 	top: 0px;
@@ -561,6 +573,87 @@
 	border-bottom-right-radius: 0px;
 	border-bottom-left-radius: 10px;
 }
+        .comp-popover, .props-panel {
+            position: absolute;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            backdrop-filter: blur(0px);
+            overflow: hidden; /* важливо для заокруглення кутів контейнера, але ми контролюємо кнопки окремо */
+            display: flex;
+			flex-direction: column;
+			margin-top: auto;
+			padding: 0px;
+        }
+        .cp-actions {
+            display: flex;
+            flex-wrap: nowrap;
+            width: 100%;
+            height:30px;
+            margin-top: 8px;
+            padding: 0;
+            gap: 3px;
+        }
+		.cp-row {
+			padding-bottom: 4px;
+		}
+		
+        /* Базовий стиль для обох кнопок – прибираємо стандартне оформлення, залишаємо флекс рівномірно */
+        .cp-actions .btn {
+            flex: 1 1 0;       /* рівномірний розподіл простору */
+            width: 49%;        /* гарантія близько 49% кожна (але flex сам зрівняє) */
+            min-width: 0;      /* запобігає переповненню */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+            backdrop-filter: blur(0);
+            position: relative;
+        }
+
+        /* Іконки для кнопок (символи в оригіналі є: ↻ та 🗑, залишаємо як є) */
+        /* Додатковий стиль, щоб іконка та текст були на одній лінії */
+        .btn span, .btn {
+            white-space: nowrap;
+        }
+        /* Ліва кнопка "Повернути" – заокруглений лівий нижній кут (border-bottom-left-radius) */
+        .cp-actions .btn:first-child {
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 0px;
+            border-top-right-radius: 0px;
+            border-top-left-radius: 0px;
+            background: #5050ff;
+        }
+
+        /* Права кнопка "Видалити" – заокруглений правий нижній кут */
+        .cp-actions .btn:last-child {
+            border-bottom-right-radius: 24px;
+            border-bottom-left-radius: 0px;
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
+            background: #ff5050;
+        }
+
+        /* Зміна фону при наведенні для зворотного зв'язку */
+        .cp-actions .btn:first-child:hover {
+            background: #1f6390;
+            color:  #f0f9ff;
+        }
+        .cp-actions .btn:last-child:hover {
+            background:  #c62828;
+            color: #fff5f5;
+        }
+        .cp-actions .btn:active {
+            transform: scale(0.98);
+            transition: 0.05s;
+        }
 #fault-banner {
   pointer-events: auto !important;
   position: absolute; /* або relative, залежно від вашої верстки */
@@ -611,6 +704,7 @@
         <div class="sidebar-section">Джерела</div>
         <div class="palette">
           <div class="palette-item" draggable="true" data-type="battery"><img src="img/battery.png" class="palette-icon" alt="battery"><span class="palette-label">Батарея</span></div>
+          <div class="palette-item" draggable="true" data-type="vsource"><img src="img/vsource.png" class="palette-icon" alt="vsource"><span class="palette-label">Регульоване джерело</span></div>
           <div class="palette-item" draggable="true" data-type="ground"><img src="img/ground.png" class="palette-icon" alt="ground"><span class="palette-label">Заземлення</span></div>
         </div>
         <div class="sidebar-section">Пасивні елементи</div>
@@ -623,8 +717,10 @@
           <div class="palette-item" draggable="true" data-type="buzzer"><img src="img/buzzer.png" class="palette-icon" alt="buzzer"><span class="palette-label">Зуммер</span></div>
           <div class="palette-item" draggable="true" data-type="heater"><img src="img/heater.png" class="palette-icon" alt="heater"><span class="palette-label">Нагрівач</span></div>
           <div class="palette-item" draggable="true" data-type="switch"><img src="img/switch.png" class="palette-icon" alt="switch"><span class="palette-label">Вимикач</span></div>
+          <div class="palette-item" draggable="true" data-type="spdt"><img src="img/spdt.png" class="palette-icon" alt="spdt"><span class="palette-label">Перемикач</span></div>
           <div class="palette-item" draggable="true" data-type="pushbutton"><img src="img/pushbutton.png" class="palette-icon" alt="pushbutton"><span class="palette-label">Кнопка</span></div>
           <div class="palette-item" draggable="true" data-type="flasher"><img src="img/flasher.png" class="palette-icon" alt="flasher"><span  class="palette-label">Реле-переривник</span></div>
+          <div class="palette-item" draggable="true" data-type="fuse"><img src="img/fuse.png" class="palette-icon" alt="fuse"><span  class="palette-label">Запобіжник</span></div>
         </div>
         <div class="sidebar-section">Вимірювальні прилади</div>
         <div class="palette">
@@ -633,8 +729,7 @@
         </div>
         <div class="sidebar-section">З'єднання</div>
         <div class="palette">
-          <div class="palette-item" draggable="true" data-type="junction"><img src="img/junction.png" class="palette-icon" alt="junction"><span class="palette-label">Вузол</span></div>
-          <div class="palette-item" draggable="true" data-type="junction4"><img src="img/junction4.png" class="palette-icon" alt="junction4"><span class="palette-label">4-вихідний вузол</span></div>
+          <div class="palette-item" draggable="true" data-type="junction"><img src="img/junction.png" class="palette-icon" alt="junction"><span class="palette-label">Вузол</span></div>          
         </div>
       </div>
     </div>

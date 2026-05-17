@@ -162,12 +162,22 @@ changed = true; break outer;
 }
 }
 }
-function markDirty(){ circuitDirty = true; mergeConnectedDanglingWires(); purgeFullyDanglingWires(); if (typeof faults !== 'undefined' && faults) clearFaults(); }
+function markDirty(){
+  circuitDirty = true;
+
+  mergeConnectedDanglingWires();
+  purgeFullyDanglingWires();
+
+  if (typeof faults !== 'undefined' && faults)
+    clearFaults();
+
+}
 // undo stack
 var undoStack = [], redoStack = [];
 var MAX_UNDO = 30;
 function snapshot() {
 return JSON.stringify({
+_ecd: 'Electrical Circuit Designer',
 components: state.components,
 connections: state.connections,
 annStrokes: state.annStrokes,
@@ -183,6 +193,8 @@ markDirty();
 }
 function restore(snap) {
 var s = JSON.parse(snap);
+// Clean up vsource sliders before restoring
+Object.keys(_vsourceSliders).forEach(function(id){ removeVsourceSlider(+id); });
 state.components = s.components || [];
 state.connections = s.connections || [];
 state.annStrokes = s.annStrokes || [];
@@ -191,6 +203,7 @@ state.nextId = s.nextId || 1;
 selectedId = null;
 renderProps();
 markDirty();
+checkIsolatedComponents();
 scheduleDraw();
 }
 function doUndo() {
@@ -207,6 +220,7 @@ restore(redoStack.pop());
 // ports[] are in local (unrotated) coords relative to component center
 var COMP_DEFS = {
 battery:    { w: 80, h: 40, label: 'V',  ports: [{x:-40,y:0,name:'+'},{x:40,y:0,name:'-'}], props: { V: 9 } },
+vsource:    { w: 80, h: 60, label: 'VS', ports: [{x:-40,y:0,name:'+'},{x:40,y:0,name:'-'}], props: { V: 5, Vmin: 0, Vmax: 20 } },
 ground:     { w: 40, h: 40, label: 'GND',ports: [{x:0,y:-20,name:'n'}], props: {} },
 resistor:   { w: 80, h: 30, label: 'R',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 220 } },
 rheostat:   { w: 80, h: 30, label: 'R',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 100, Rmax: 1000 } },
@@ -216,18 +230,19 @@ fan:        { w: 70, h: 70, label: 'M',  ports: [{x:-35,y:0,name:'a'},{x:35,y:0,
 buzzer:     { w: 60, h: 50, label: 'BZ', ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { R: 120 } },
 heater:     { w: 80, h: 40, label: 'H',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { R: 12 } },
 switch:     { w: 70, h: 30, label: 'S',  ports: [{x:-35,y:0,name:'a'},{x:35,y:0,name:'b'}], props: { closed: false } },
-pushbutton: { w: 60, h: 30, label: 'PB', ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { closed: false } },
-flasher:    { w: 70, h: 30, label: 'FR', ports: [{x:-35,y:0,name:'a'},{x:35,y:0,name:'b'}], props: { closed: true, tOn: 0.5, tOff: 0.5 } },
+spdt:       { w: 70, h: 60, label: 'SPDT',ports: [{x:-35,y:0,name:'c'},{x:35,y:-10,name:'a'},{x:35,y:10,name:'b'}], props: { state: 0 } },
+pushbutton: { w: 60, h: 30, label: 'PB', ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: { closed: false, normallyOpen: true } },
+flasher:    { w: 70, h: 60, label: 'FR', ports: [{x:-35,y:0,name:'c'},{x:35,y:-10,name:'a'},{x:35,y:10,name:'b'}], props: { state: 0, tOn: 0.5, tOff: 0.5 } },
 ammeter:    { w: 60, h: 60, label: 'A',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: {} },
 voltmeter:  { w: 60, h: 60, label: 'V',  ports: [{x:-30,y:0,name:'a'},{x:30,y:0,name:'b'}], props: {} },
-junction:   { w: 20, h: 20, label: '',   ports: [{x:-10,y:0,name:'a'},{x:10,y:0,name:'b'},{x:0,y:-10,name:'c'}], props: {} },
-junction4:  { w: 20, h: 20, label: '',   ports: [{x:-10,y:0,name:'a'},{x:10,y:0,name:'b'},{x:0,y:-10,name:'c'},{x:0,y:10,name:'d'}], props: {} }
+junction:   { w: 20, h: 20, label: '',   ports: [{x:0,y:0,name:'n'},{x:0,y:0,name:'n'},{x:0,y:0,name:'n'},{x:0,y:0,name:'n'}], props: {} },
+fuse:       { w: 80, h: 30, label: 'F',  ports: [{x:-40,y:0,name:'a'},{x:40,y:0,name:'b'}], props: { Imax: 1.0, blown: false } }
 };
 var COMP_LABELS = {
-battery:'Батарея', ground:'Земля', resistor:'Резистор', rheostat:'Реостат',
+battery:'Батарея', vsource:'Рег. джерело', ground:'Земля', resistor:'Резистор', rheostat:'Реостат',
 lamp:'Лампа', led:'Світлодіод', fan:'Вентилятор', buzzer:'Зумер', heater:'Нагрівач',
-switch:'Вимикач', pushbutton:'Кнопка', flasher:'Реле-переривник', ammeter:'Амперметр', voltmeter:'Вольтметр',
-junction:'Вузол', junction4:'Вузол (4 порти)'
+switch:'Вимикач', spdt:'Перемикач', pushbutton:'Кнопка', flasher:'Реле-переривник', ammeter:'Амперметр', voltmeter:'Вольтметр',
+junction:'Вузол', fuse:'Запобіжник'
 };
 function makeComponent(type, x, y) {
 var def = COMP_DEFS[type];
@@ -353,128 +368,144 @@ if (a.x === b.x) return Math.abs(px - a.x) < tol;
 if (a.y === b.y) return Math.abs(py - a.y) < tol;
 return false;
 }
-// Try to split a wire when a 2-port component is dropped onto it.
-// Both ports of comp must lie on the same wire segment (within tol).
-// If so: remove the original wire, create wire from→port0 and port1→to.
+// Try to split a wire when a component is dropped onto it.
+// For junction (1-port): snaps centre to the nearest wire segment and splits it,
+//   connecting both new wire ends to the single port (portIdx 0).
+// For 2-port components: both ports must lie on the same segment.
 // Returns true if the split was performed.
 function trySnapComponentToWire(comp) {
-var def = COMP_DEFS[comp.type];
-if (!def || def.ports.length !== 2) return false; // only 2-port components
-var p0 = portWorld(comp, 0);
-var p1 = portWorld(comp, 1);
-var TOL = 14; // pixels in world coords
-for (var ci = 0; ci < state.connections.length; ci++) {
-var conn = state.connections[ci];
-var pts = connectionPoints(conn);
-if (!pts) continue;
-for (var si = 0; si < pts.length - 1; si++) {
-var a = pts[si], b = pts[si+1];
-if (pointOnSegment(p0.x, p0.y, a, b, TOL) && pointOnSegment(p1.x, p1.y, a, b, TOL)) {
-// Both ports lie on this segment — snap comp onto wire and split it
-// Snap component center to wire line
-if (a.x === b.x) { comp.x = a.x; } // vertical wire
-else { comp.y = a.y; }              // horizontal wire
-// Recalculate port positions after snap
-var sp0 = portWorld(comp, 0);
-var sp1 = portWorld(comp, 1);
-// Determine which port is closer to conn.from end
-var fromPt = pts[0];
-var d0from = Math.abs(sp0.x-fromPt.x)+Math.abs(sp0.y-fromPt.y);
-var d1from = Math.abs(sp1.x-fromPt.x)+Math.abs(sp1.y-fromPt.y);
-var nearFromPortIdx = (d0from < d1from) ? 0 : 1;
-var nearToPortIdx   = 1 - nearFromPortIdx;
-// Build replacement wires, preserving waypoints on each side
-var fromRef = conn.from;
-var toRef   = conn.to;
-// waypoints before split segment go to first wire; after to second
-var wpsFirst = [], wpsSecond = [];
-var segStart = si; // index in pts where the split segment starts
-for (var wi = 0; wi < (conn.waypoints||[]).length; wi++) {
-var wp = conn.waypoints[wi];
-// waypoints correspond to pts[1..pts.length-2]
-if (wi < segStart) wpsFirst.push(wp);
-else wpsSecond.push(wp);
+    var def = COMP_DEFS[comp.type];
+    if (!def) return false;
+    var isJunction = (comp.type === 'junction');
+    if (!isJunction && def.ports.length !== 2) return false;
+
+    var TOL = 14;
+    var found = false, connIdx = -1, segIdx = -1, segA, segB;
+
+    // 1. Шукаємо сегмент дроту, на який потрапив компонент
+    for (var ci = 0; ci < state.connections.length; ci++) {
+        var conn = state.connections[ci];
+        var pts = connectionPoints(conn);
+        if (!pts) continue;
+        for (var si = 0; si < pts.length - 1; si++) {
+            var a = pts[si], b = pts[si+1];
+            var cx = comp.x, cy = comp.y;
+            if (a.x === b.x) { // Вертикальний сегмент
+                if (Math.abs(cx - a.x) <= TOL && cy >= Math.min(a.y,b.y)-TOL && cy <= Math.max(a.y,b.y)+TOL) {
+                    comp.x = a.x;
+                    connIdx = ci; segIdx = si; segA = a; segB = b;
+                    found = true; break;
+                }
+            } else { // Горизонтальний сегмент
+                if (Math.abs(cy - a.y) <= TOL && cx >= Math.min(a.x,b.x)-TOL && cx <= Math.max(a.x,b.x)+TOL) {
+                    comp.y = a.y;
+                    connIdx = ci; segIdx = si; segA = a; segB = b;
+                    found = true; break;
+                }
+            }
+        }
+        if (found) break;
+    }
+    if (!found) return false;
+
+    var origConn = state.connections[connIdx];
+
+    // 2. Прив'язуємо центр junction до сегмента
+    if (segA.x === segB.x) { comp.x = segA.x; } else { comp.y = segA.y; }
+
+    if (isJunction) {
+        // Junction: 1 порт у центрі — розрізаємо дріт і обидва кінці з'єднуємо з портом 0.
+        // Waypoints: до segIdx → перший дріт, після → другий, на межі → відкидаємо.
+        var jWpsFirst = [], jWpsSecond = [];
+        (origConn.waypoints || []).forEach(function(wp) {
+            var wpIdx = -1;
+            for (var pi = 1; pi < pts.length - 1; pi++) {
+                if (Math.abs(pts[pi].x - wp.x) < 0.5 && Math.abs(pts[pi].y - wp.y) < 0.5) { wpIdx = pi; break; }
+            }
+            if (wpIdx < segIdx) jWpsFirst.push(wp);
+            else if (wpIdx > segIdx) jWpsSecond.push(wp);
+        });
+        state.connections.push({ id: state.nextId++, from: origConn.from, to:   { compId: comp.id, portIdx: 0 }, waypoints: jWpsFirst  });
+        state.connections.push({ id: state.nextId++, from: { compId: comp.id, portIdx: 0 }, to: origConn.to,   waypoints: jWpsSecond });
+        state.connections.splice(connIdx, 1);
+        return true;
+    }
+
+    // 2-портовий компонент: обидва порти мають лежати на сегменті
+    var portPositions = [];
+    def.ports.forEach(function(p, idx) {
+        var rp = rotatePoint(p.x, p.y, comp.rot);
+        portPositions.push({ idx: idx, x: comp.x + rp.x, y: comp.y + rp.y });
+    });
+    var connPorts = [];
+    var isVert = (segA.x === segB.x);
+    portPositions.forEach(function(pp) {
+        if (isVert  && Math.abs(pp.x - segA.x) < 2) connPorts.push(pp);
+        if (!isVert && Math.abs(pp.y - segA.y) < 2) connPorts.push(pp);
+    });
+    if (connPorts.length < 2) return false;
+    connPorts.sort(function(p1, p2) {
+        return (Math.abs(p1.x-segA.x)+Math.abs(p1.y-segA.y)) - (Math.abs(p2.x-segA.x)+Math.abs(p2.y-segA.y));
+    });
+    var nearPort = connPorts[0], farPort = connPorts[1];
+
+    // Розподіляємо waypoints: відкидаємо ті, що на межі сегмента розрізу
+    var wpsFirst = [], wpsSecond = [];
+    (origConn.waypoints || []).forEach(function(wp) {
+        var wpIdx = -1;
+        for (var pi = 1; pi < pts.length - 1; pi++) {
+            if (Math.abs(pts[pi].x - wp.x) < 0.5 && Math.abs(pts[pi].y - wp.y) < 0.5) { wpIdx = pi; break; }
+        }
+        if (wpIdx < segIdx) wpsFirst.push(wp);
+        else if (wpIdx > segIdx) wpsSecond.push(wp);
+    });
+    state.connections.push({ id: state.nextId++, from: origConn.from, to: { compId: comp.id, portIdx: nearPort.idx }, waypoints: wpsFirst  });
+    state.connections.push({ id: state.nextId++, from: { compId: comp.id, portIdx: farPort.idx }, to: origConn.to,   waypoints: wpsSecond });
+    state.connections.splice(connIdx, 1);
+    return true;
 }
-// wire 1: original-from → comp port nearFrom
-state.connections.push({
-id: state.nextId++,
-from: fromRef,
-to:   { compId: comp.id, portIdx: nearFromPortIdx },
-waypoints: wpsFirst
-});
-// wire 2: comp port nearTo → original-to
-state.connections.push({
-id: state.nextId++,
-from: { compId: comp.id, portIdx: nearToPortIdx },
-to:   toRef,
-waypoints: wpsSecond
-});
-// Remove original wire
-state.connections.splice(ci, 1);
-return true;
-}
-}
-}
-return false;
-}
-// Splice an existing connection at point p by inserting a 4-way junction.
-// Returns { jcomp, freePortIdx } so the caller can attach a wire to the perpendicular port.
-// freePortIdx prefers the side closest to `approach` (a world point of the incoming wire's previous vertex).
+// Splice an existing connection at point p by inserting a junction (single-port).
+// All three wires (from-side, to-side, new tap) connect to the junction's single port 0.
+// Returns { jcomp, freePort:0 } so the caller can attach the new wire to port 0.
 function tapIntoConnection(conn, p, approach) {
 var pts = connectionPoints(conn);
 if (!pts) return null;
-var bestIdx = -1, bestDist = Infinity, bestProj = null, bestOrient = null;
+var bestIdx = -1, bestDist = Infinity, bestProj = null;
 for (var j = 0; j < pts.length - 1; j++) {
 var a = pts[j], b = pts[j+1];
 if (a.x === b.x) {
 var py = Math.max(Math.min(a.y, b.y), Math.min(Math.max(a.y, b.y), p.y));
 var d = Math.abs(p.x - a.x);
-if (d < bestDist) { bestDist = d; bestIdx = j; bestProj = {x:a.x, y:py}; bestOrient = 'V'; }
+if (d < bestDist) { bestDist = d; bestIdx = j; bestProj = {x:a.x, y:py}; }
 } else if (a.y === b.y) {
 var px = Math.max(Math.min(a.x, b.x), Math.min(Math.max(a.x, b.x), p.x));
 var d2 = Math.abs(p.y - a.y);
-if (d2 < bestDist) { bestDist = d2; bestIdx = j; bestProj = {x:px, y:a.y}; bestOrient = 'H'; }
+if (d2 < bestDist) { bestDist = d2; bestIdx = j; bestProj = {x:px, y:a.y}; }
 }
 }
 if (bestIdx < 0) return null;
 var jx = Math.round(bestProj.x/10)*10, jy = Math.round(bestProj.y/10)*10;
-var jcomp = makeComponent('junction4', jx, jy);
+var jcomp = makeComponent('junction', jx, jy);
 state.components.push(jcomp);
 
-// junction4 ports: 0=a(left x=-10), 1=b(right x=+10), 2=c(top y=-10), 3=d(bottom y=+10)
-var portFrom, portTo, freePort;
-var fc = state.components.find(function(x){return x.id===conn.from.compId;});
-var fromW = fc ? portWorld(fc, conn.from.portIdx) : null;
-if (bestOrient === 'H') {
-  // original wire is horizontal — consume left/right ports for it
-  portFrom = (fromW && fromW.x < jx) ? 0 : 1;
-  portTo   = portFrom === 0 ? 1 : 0;
-  // perpendicular pair (top/bottom) free for tap; pick side near approach
-  freePort = (approach && approach.y > jy) ? 3 : 2;
-} else {
-  // vertical — consume top/bottom ports
-  portFrom = (fromW && fromW.y < jy) ? 2 : 3;
-  portTo   = portFrom === 2 ? 3 : 2;
-  freePort = (approach && approach.x > jx) ? 1 : 0;
-}
+// Розподіляємо waypoints між двома половинами розрізаного дроту
+var wpsFirst = [], wpsSecond = [];
+(conn.waypoints || []).forEach(function(wp) {
+  var wpIdx = -1;
+  for (var pi = 1; pi < pts.length - 1; pi++) {
+    if (Math.abs(pts[pi].x - wp.x) < 0.5 && Math.abs(pts[pi].y - wp.y) < 0.5) { wpIdx = pi; break; }
+  }
+  if (wpIdx >= 0 && wpIdx < bestIdx) wpsFirst.push(wp);
+  else if (wpIdx > bestIdx) wpsSecond.push(wp);
+});
 
-var origWps = (conn.waypoints || []).slice();
 var origIdx = state.connections.indexOf(conn);
 if (origIdx >= 0) state.connections.splice(origIdx, 1);
 
-state.connections.push({
-  id: state.nextId++,
-  from: conn.from,
-  to: { compId: jcomp.id, portIdx: portFrom },
-  waypoints: origWps
-} );
-state.connections.push({
-  id: state.nextId++,
-  from: { compId: jcomp.id, portIdx: portTo },
-  to: conn.to,
-  waypoints: []
-});
-return { jcomp: jcomp, freePort: freePort };
+// Обидва кінці розрізаного дроту з'єднуємо з єдиним портом junction
+state.connections.push({ id: state.nextId++, from: conn.from,                        to: { compId: jcomp.id, portIdx: 0 }, waypoints: wpsFirst  });
+state.connections.push({ id: state.nextId++, from: { compId: jcomp.id, portIdx: 0 }, to: conn.to,                          waypoints: wpsSecond });
+return { jcomp: jcomp, freePort: 0 };
 }
 function removeConnectionsForComponent(compId) {
 state.connections = state.connections.filter(function (c) {
@@ -504,7 +535,7 @@ var boxes = [];
 for (var i = 0; i < state.components.length; i++) {
 var c = state.components[i];
 if (exceptIds && exceptIds.indexOf(c.id) >= 0) continue;
-if (c.type === 'junction' || c.type === 'junction4' || c.type === 'ground') continue;
+if (c.type === 'junction' || c.type === 'ground') continue;
 var b = compBounds(c);
 boxes.push({ x: b.x - pad, y: b.y - pad, w: b.w + 2*pad, h: b.h + 2*pad });
 }
@@ -531,29 +562,36 @@ return false;
 // Build an orthogonal route between two stub points whose outgoing
 // axis we know (dirA, dirB are unit vectors).
 function routeBetweenStubs(p1, dirA, p2, dirB) {
-var hA = dirA.dx !== 0;
-var hB = dirB.dx !== 0;
-if (hA && hB) {
-if (p1.y === p2.y) return [];
-var midX = snapG((p1.x + p2.x) / 2);
-if (dirA.dx > 0 && midX < p1.x) midX = p1.x + 20;
-if (dirA.dx < 0 && midX > p1.x) midX = p1.x - 20;
-if (dirB.dx > 0 && midX < p2.x) midX = p2.x + 20;
-if (dirB.dx < 0 && midX > p2.x) midX = p2.x - 20;
-return [{ x: midX, y: p1.y }, { x: midX, y: p2.y }];
-}
-if (!hA && !hB) {
-if (p1.x === p2.x) return [];
-var midY = snapG((p1.y + p2.y) / 2);
-if (dirA.dy > 0 && midY < p1.y) midY = p1.y + 20;
-if (dirA.dy < 0 && midY > p1.y) midY = p1.y - 20;
-if (dirB.dy > 0 && midY < p2.y) midY = p2.y + 20;
-if (dirB.dy < 0 && midY > p2.y) midY = p2.y - 20;
-return [{ x: p1.x, y: midY }, { x: p2.x, y: midY }];
-}
-// mixed: single L corner
-if (hA && !hB) return [{ x: p2.x, y: p1.y }];
-return [{ x: p1.x, y: p2.y }];
+    var hA = dirA.dx !== 0;
+    var hB = dirB.dx !== 0;
+    
+    if (hA && hB) {
+        if (p1.y === p2.y) return [];
+        // 🔑 ВИПРАВЛЕННЯ: для вертикально розташованих портів 
+        // краще спочатку рухатись по Y, потім по X
+        var midY = snapG((p1.y + p2.y) / 2);
+        if (dirA.dy > 0 && midY < p1.y) midY = p1.y + 20;
+        if (dirA.dy < 0 && midY > p1.y) midY = p1.y - 20;
+        if (dirB.dy > 0 && midY < p2.y) midY = p2.y + 20;
+        if (dirB.dy < 0 && midY > p2.y) midY = p2.y - 20;
+        // Спочатку вниз/вгору, потім вбік
+        return [{ x: p1.x, y: midY }, { x: p2.x, y: midY }];
+    }
+    
+    if (!hA && !hB) {
+        if (p1.x === p2.x) return [];
+        var midX = snapG((p1.x + p2.x) / 2);
+        if (dirA.dx > 0 && midX < p1.x) midX = p1.x + 20;
+        if (dirA.dx < 0 && midX > p1.x) midX = p1.x - 20;
+        if (dirB.dx > 0 && midX < p2.x) midX = p2.x + 20;
+        if (dirB.dx < 0 && midX > p2.x) midX = p2.x - 20;
+        // Спочатку вбік, потім вниз/вгору
+        return [{ x: midX, y: p1.y }, { x: midX, y: p2.y }];
+    }
+    
+    // mixed: single L corner
+    if (hA && !hB) return [{ x: p2.x, y: p1.y }];
+    return [{ x: p1.x, y: p2.y }];
 }
 // Try a few detour candidates if the basic Z hits an obstacle.
 function detourAround(p1, dirA, p2, dirB, boxes) {
@@ -657,6 +695,41 @@ switch (type) {
     g.fillText('−', 14*s,  -7*s);
     break;
   }
+  case 'vsource': {
+    // Leads
+    g.beginPath();
+    g.moveTo(-w/2, 0); g.lineTo(-18*s, 0);
+    g.moveTo( w/2, 0); g.lineTo(  18*s, 0);
+    g.stroke();
+    // Circle body
+    var vr = 18*s;
+    g.beginPath();
+    g.arc(0, 0, vr, 0, Math.PI*2);
+    g.stroke();
+    // + and - signs
+    g.font = 'bold '+(9*s).toFixed(0)+'px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('+', -10*s, 0);
+    g.fillText('−',  10*s, 0);
+    // Arrow (diagonal inside circle — регульований символ)
+    g.lineWidth = Math.max(1, 1.5*s);
+    g.beginPath();
+    g.moveTo(-10*s,  12*s);
+    g.lineTo( 10*s-2, -12*s+2);
+    g.stroke();
+    g.lineWidth = Math.max(1, 2*s);
+    // Arrowhead
+    var ax = 10*s, ay = -12*s-0.5, adx = 20*s, ady = -24*s;
+    var al = Math.sqrt(adx*adx+ady*ady), nx = adx/al, ny = ady/al;
+    var px2 = -ny, py2 = nx, asz = 4*s;
+    g.beginPath();
+    g.moveTo(ax, ay);
+    g.lineTo(ax - nx*asz + px2*asz*0.5, ay - ny*asz + py2*asz*0.5);
+    g.lineTo(ax - nx*asz - px2*asz*0.5, ay - ny*asz - py2*asz*0.5);
+    g.closePath();
+    g.fill();
+    break;
+  }
   case 'ground': {
     g.beginPath();
     g.moveTo(0, -h/2); g.lineTo(0, 0);
@@ -675,6 +748,59 @@ switch (type) {
     g.beginPath();
     g.rect(-rw, -rh, rw*2, rh*2);
     g.stroke();
+    break;
+  }
+  case 'fuse': {
+    var fw = 20*s, fh = 9*s;
+    // Lead wires
+    g.beginPath();
+    g.moveTo(-w/2, 0); g.lineTo(-fw, 0);
+    g.moveTo( w/2, 0); g.lineTo(  fw, 0);
+    g.stroke();
+    // Outer body (same as resistor)
+    g.beginPath();
+    g.rect(-fw, -fh, fw*2, fh*2);
+    g.stroke();
+    // Inner wire filament
+    var blown = opts.blown || false;
+    var blinkOn = opts.blinkOn !== false; // for blink animation
+    g.save();
+    if (blown) {
+      // Broken filament — draw two halves with a gap in the middle
+      if (blinkOn) {
+        g.strokeStyle = 'rgba(255,80,40,1)';
+        g.shadowColor = '#ff5522';
+        g.shadowBlur = 8 * s;
+      } else {
+        g.strokeStyle = 'rgba(180,60,30,0.6)';
+        g.shadowBlur = 0;
+      }
+      g.lineWidth = Math.max(0.5, 0.8 * s);
+      // Left half
+      g.beginPath();
+      g.moveTo(-fw + s, 0);
+      g.lineTo(-4*s, 0);
+      g.stroke();
+      // Right half
+      g.beginPath();
+      g.moveTo(4*s, 0);
+      g.lineTo(fw - s, 0);
+      g.stroke();
+      // Break marks (short angled lines at break points)
+      g.beginPath();
+      g.moveTo(-4*s, 0); g.lineTo(-3*s, 3*s);
+      g.moveTo( 3*s, -3*s); g.lineTo( 4*s, 0);
+      g.stroke();
+    } else {
+      // Intact filament
+      g.strokeStyle = g.strokeStyle; // inherit component color
+      g.lineWidth = Math.max(0.5, 0.8 * s);
+      g.beginPath();
+      g.moveTo(-fw + s, 0);
+      g.lineTo( fw - s, 0);
+      g.stroke();
+    }
+    g.restore();
     break;
   }
   case 'rheostat': {
@@ -830,47 +956,73 @@ case 'led': {
     }
     break;
   }
-  case 'buzzer': {
-    var bzActive = opts.buzzing;
-    var bzColor = bzActive ? '#ffd740' : g.strokeStyle;
+case 'buzzer': {
+  var bzActive = opts.buzzing;
+  var bzColor = bzActive ? '#ffd740' : g.strokeStyle;
+
+  g.save();
+  g.strokeStyle = bzColor;
+  g.lineWidth   = Math.max(1.5, 2*s);
+  g.lineJoin    = 'round'; 
+  g.lineCap     = 'round';
+
+  var R    = 15*s;
+  var legH = 9*s;
+  var legW = 8*s;
+
+  g.beginPath();
+  g.moveTo(-R, -10);
+  g.lineTo( R, -10);
+  g.stroke();
+
+  g.beginPath();
+  g.arc(0, -10, R, Math.PI, 0, false);
+  g.stroke();
+
+  g.beginPath();
+  g.moveTo(-2*R, 0);
+  g.lineTo(  -R + legW, 0);
+  g.lineTo(-R + legW, -legH);
+  g.stroke();
+
+  g.beginPath();
+  g.moveTo(2*R, 0);
+  g.lineTo(R - legW, 0);
+  g.lineTo(R - legW, -legH);
+  g.stroke();
+
+  // Анімація звуку
+  if (bzActive) {
+
+    // Час для анімації
+    var t = performance.now() * 0.005;
+
     g.save();
-    g.strokeStyle = bzColor;
-    g.lineWidth   = Math.max(1.5, 2*s);
-    g.lineJoin    = 'round'; 
-    g.lineCap     = 'round';
-    var R   = 15*s;
-    var legH = 9*s;
-    var legW = 8*s;
-    g.beginPath();
-    g.moveTo(-R, -10);
-    g.lineTo( R, -10);
-    g.stroke();
-    g.beginPath();
-    g.arc(0, -10, R, Math.PI, 0, false);
-    g.stroke();
-    g.beginPath();
-    g.moveTo(-2*R, 0);
-    g.lineTo(  -R + legW, 0);
-    g.lineTo(-R + legW, -legH);
-    g.stroke();
-    g.beginPath();
-    g.moveTo(2*R, 0);
-    g.lineTo(R - legW, 0);
-    g.lineTo(R - legW, -legH);
-    g.stroke();
-    if (bzActive) {
-      g.save();
-      g.lineWidth = Math.max(1, 1.2*s);
-      [R*0.35, R*0.55].forEach(function(r) {
-        g.beginPath();
-        g.arc(0, -13, r, Math.PI, 0, false);
-        g.stroke();
-      });
-      g.restore();
-    }
+    g.lineWidth = Math.max(1, 1.2*s);
+
+    // Три хвилі
+    [0, 1, 2].forEach(function(i) {
+
+      // Фаза хвилі
+      var phase = (t + i * 0.45) % 1;
+
+      // Радіус розширення
+      var r = (R * 0.15) + phase * (R * 0.5);
+
+      // Прозорість згасає
+      g.globalAlpha = 1 - phase;
+
+      g.beginPath();
+      g.arc(0, -13, r, Math.PI + 0.4, -0.4, false);
+      g.stroke();
+    });
+
     g.restore();
-    break;
   }
+
+  g.restore();
+  break;
+}
   case 'heater': {
     var hw = 26*s, hh = 10*s;
     g.beginPath();
@@ -917,62 +1069,95 @@ case 'led': {
     g.stroke();
     break;
   }
+case 'spdt': {
+  g.beginPath(); g.moveTo(-w/2, 0); g.lineTo(-16*s, 0); g.stroke();
+  g.beginPath(); g.arc(-16*s, 0, 2.5*s, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.moveTo(w/2, -10*s); g.lineTo(12*s, -10*s); g.stroke();
+  g.beginPath(); g.arc(12*s, -10*s, 2.5*s, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.moveTo(w/2, 10*s); g.lineTo(12*s, 10*s); g.stroke();
+  g.beginPath(); g.arc(12*s, 10*s, 2.5*s, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.moveTo(-16*s, 0);
+  if (opts.state === 0) g.lineTo(12*s, -10*s);
+  else g.lineTo(12*s, 10*s);
+  g.stroke();
+  break;
+}  
   case 'pushbutton': {
+    var pbNO = (opts.normallyOpen !== false);
+    var pbContactsClosed = opts.closed;
+    // Зовнішні дроти
     g.beginPath();
     g.moveTo(-w/2, 0); g.lineTo(-14*s, 0);
     g.moveTo( w/2, 0); g.lineTo(  14*s, 0);
     g.stroke();
+    // Контактні точки
     g.beginPath();
-    g.arc(-14*s, 0, 2.5*s, 0, Math.PI*2);
-    g.fill();
+    g.arc(-14*s, 0, 2.5*s, 0, Math.PI*2); g.fill();
     g.beginPath();
-    g.arc( 14*s, 0, 2.5*s, 0, Math.PI*2);
-    g.fill();
+    g.arc( 14*s, 0, 2.5*s, 0, Math.PI*2); g.fill();
+    // Контактна перемичка
     g.beginPath();
-    if (opts.closed) {
-      g.moveTo(-14*s, 0); g.lineTo(14*s, 0);
+    if (pbContactsClosed) {
+      g.moveTo(-14*s, 0); g.lineTo(14*s, 0);          // замкнено — рівна
+    } else if (pbNO) {
+      g.moveTo(-14*s, 0); g.lineTo(14*s, -7*s);        // НР розімкнено — вгору
     } else {
-      g.moveTo(-14*s, 0); g.lineTo( 14*s, -7*s);
+      g.moveTo(-14*s, 0); g.lineTo(14*s, 7*s);         // НЗ розімкнено — вниз
     }
     g.stroke();
+    // Штовхач — завжди "шапка" зверху (-y)
+    // НР: спокій=піднятий (platY=-13), натиск=опущений (platY=-9)
+    // НЗ: спокій=опущений (platY=-9, шток довгий — торкається контакту), натиск=піднятий (platY=-13)
+var pressed = pbContactsClosed === pbNO; // true коли кнопка фізично натиснута
+var platY   = pressed ? -9*s : -13*s;
+
+var rodBotY;
+
+if (pbContactsClosed) {
+  // коли контакти замкнені — торкаємось горизонтального контакту
+  rodBotY = 0;
+} else {
+  // коли розімкнені
+  rodBotY = pbNO ? -4*s : 4*s;
+}
     g.beginPath();
-    g.moveTo(2, opts.closed ? 0 : -5*s);
-    g.lineTo(2,  opts.closed ? -9*s  :-13*s);
-    g.moveTo(-2, opts.closed ? 0 : -4*s);
-    g.lineTo(-2,  opts.closed ? -9*s  :-13*s);
-    g.moveTo(-5*s,  opts.closed ? -9*s  :-13*s); g.lineTo(-5*s,  opts.closed ? -6*s  :-10*s);
-    g.moveTo(5*s,  opts.closed ? -9*s  :-13*s); g.lineTo(5*s,  opts.closed ? -6*s  :-10*s);         
-    g.moveTo(-6*s, opts.closed ? -9*s :-13*s); g.lineTo(6*s, opts.closed ? -9*s  :-13*s);
+    // Шток (два паралельних стержні)
+    g.moveTo( 2, rodBotY); g.lineTo( 2, platY+1);
+    g.moveTo(-2, rodBotY); g.lineTo(-2, platY+1);
+    // Платформа ("шапка")
+    g.moveTo(-6*s, platY); g.lineTo(6*s, platY);
+    // Бічні "вушка" платформи
+    g.moveTo(-5*s, platY); g.lineTo(-5*s, platY + 3*s);
+    g.moveTo( 5*s, platY); g.lineTo( 5*s, platY + 3*s);
     g.stroke();
     break;
   }
 case 'flasher': {
-    // Зовнішні дроти
+    var flState = opts.state || 0; // 0=порт A, 1=порт B
+    // Зовнішній дріт: спільний вхід (лівий порт c)
     g.beginPath();
-    //g.moveTo(-w/2, 0); g.lineTo(-30 * s, 0);
-    g.moveTo(-w/2, 0); g.lineTo(-10 * s, 0);
-    g.moveTo( 10 * s, 0); g.lineTo( w/2, 0);
+    g.moveTo(-w/2, 0); g.lineTo(-16 * s, 0);
     g.stroke();
-
+    // Зовнішні дроти: вихід A (правий верхній) і B (правий нижній)
+    g.beginPath();
+    g.moveTo(w/2, -10 * s); g.lineTo(12 * s, -10 * s);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(w/2, 10 * s); g.lineTo(12 * s, 10 * s);
+    g.stroke();
     // Корпус реле (прямокутник)
     g.beginPath();
-    g.rect(-20 * s, -15 * s, 40 * s, 30 * s);
+    g.rect(-20 * s, -20 * s, 40 * s, 40 * s);
     g.stroke();
-
-    // Внутрішні точки контактів
-    var cx1 = -10 * s, cx2 = 10 * s;
+    // Точки контактів
+    g.beginPath(); g.arc(-16 * s, 0, 2.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(12 * s, -10 * s, 2.5 * s, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(12 * s,  10 * s, 2.5 * s, 0, Math.PI * 2); g.fill();
+    // Контактний важіль (перемикається між A і B)
     g.beginPath();
-    g.arc(cx1, 0, 2 * s, 0, Math.PI * 2); g.fill();
-    g.arc(cx2, 0, 2 * s, 0, Math.PI * 2); g.fill();
-
-    // Контактний важіль (змінює кут залежно від opts.closed)
-    g.beginPath();
-    g.moveTo(cx1, 0);
-    if (opts.closed) {
-        g.lineTo(cx2, 0);          // замкнено ───
-    } else {
-        g.lineTo(cx2 - 3 * s, -9 * s); // розімкнено ╱
-    }
+    g.moveTo(-16 * s, 0);
+    if (flState === 0) g.lineTo(12 * s, -10 * s); // -> A
+    else               g.lineTo(12 * s,  10 * s); // -> B
     g.stroke();
     break;
 }
@@ -983,6 +1168,10 @@ case 'flasher': {
     g.arc(0, 0, 18*s,  0, Math.PI*2);
     g.stroke();
     var reading = opts.reading;
+    // Counter-rotate so text is always horizontal regardless of component rotation
+    var counterRot = opts.counterRot || 0;
+    g.save();
+    if (counterRot) g.rotate(counterRot);
     if (reading != null) {
       var rVal, rUnit;
       if (typeof reading === 'object') { rVal = reading.val; rUnit = reading.unit; }
@@ -1000,6 +1189,7 @@ case 'flasher': {
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(type === 'ammeter' ? 'А' : 'V', 0, 0);
     }
+    g.restore();
     g.beginPath();
     g.moveTo(-w/2, 0); g.lineTo(-18*s, 0);
     g.moveTo( w/2, 0); g.lineTo( 18*s, 0);
@@ -1007,23 +1197,9 @@ case 'flasher': {
      break;
   }
   case 'junction':{
-	g.beginPath();
-	g.arc(0, 0, 4*s, 0, Math.PI*2);
-    g.fill();  
     g.beginPath();
-    g.moveTo(-w/2, 0); g.lineTo(w/2, 0);
-    g.moveTo( 0, 0); g.lineTo( 0,-w/2);
-    g.stroke();
-    break;
-  }
-  case 'junction4': {
-	g.beginPath();
-	g.arc(0, 0, 4*s, 0, Math.PI*2);
-    g.fill();  
-    g.beginPath();
-    g.moveTo(-w/2, 0); g.lineTo(w/2, 0);
-    g.moveTo( 0,w/2); g.lineTo( 0,-w/2);
-    g.stroke();
+    g.arc(0, 0, 5*s, 0, Math.PI*2);
+    g.fill();
     break;
   }
 }
@@ -1093,12 +1269,20 @@ ctx.rotate(c.rot * Math.PI/180);
 var isSel = c.id === selectedId;
 var isHover = c.id === hoverId;
 var isFault = faults && faults.compIds && faults.compIds[c.id];
+var isIsolated = !isFault && isolatedFaults && isolatedFaults.compIds && isolatedFaults.compIds[c.id];
 if (isFault) {
   var pulseC = faultPulse();
   ctx.strokeStyle = 'rgba(255,' + Math.round(40 + pulseC*60) + ',' + Math.round(40 + pulseC*40) + ',1)';
   ctx.shadowColor = '#ff3b3b';
   ctx.shadowBlur = (10 + pulseC * 14);
   ctx.lineWidth = (1 + pulseC * 1.2);
+} else if (isIsolated) {
+  var pulseI = faultPulse();
+  // Помаранчево-жовтий пульс — відмінний від червоного КЗ, але так само помітний
+  ctx.strokeStyle = 'rgba(255,' + Math.round(130 + pulseI*80) + ',' + Math.round(pulseI*30) + ',1)';
+  ctx.shadowColor = '#ff9800';
+  ctx.shadowBlur = (10 + pulseI * 16);
+  ctx.lineWidth = (1 + pulseI * 1.2);
 } else {
   ctx.strokeStyle = isSel ? '#ffa000' : (isHover ? themeColors().compHover : themeColors().comp);
 }
@@ -1108,22 +1292,29 @@ var opts = {};
 if (c.type === 'led') { opts.color = c.props.color || 'green'; }
 else if (c.type === 'lamp') { opts.color = c.props.color || 'yellow'; }
 
-if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') opts.closed = !!c.props.closed;
+if (c.type === 'switch' || c.type === 'pushbutton') opts.closed = !!c.props.closed;
+if (c.type === 'pushbutton') opts.normallyOpen = (c.props.normallyOpen !== false);
+if (c.type === 'spdt' || c.type === 'flasher') opts.state = c.props.state || 0;
+if (c.type === 'fuse') {
+  opts.blown = !!c.props.blown;
+  opts.blinkOn = !opts.blown || (Math.floor(performance.now() / 250) % 2 === 0);
+}
 if (isRunning && sim) {
   var p = Math.abs(sim.compP[c.id] || 0);
   if (c.type === 'lamp' || c.type === 'led' || c.type === 'heater') {
-    opts.glow = Math.max(0, Math.min(1, p / 2));
+    var iLamp = Math.abs(sim.compI[c.id] || 0);
+	opts.glow = iLamp > 0.001 ? Math.max(0, Math.min(1, p / 2)) : 0;
   }
   if (c.type === 'led') {
-        // LED світить лише за прямого струму (port 0 → port 1)
-        var dir = sim.compCurrentDir[c.id] || 0;
-        var i   = sim.compI[c.id] || 0;
-        if (dir > 0 && i > 0.0005) {
-          opts.glow = Math.max(0, Math.min(1, p / 2));
-        } else {
-          opts.glow = 0; // зворотний струм або замалий поріг → вимкнено
-        }
-      }  
+    var dir = sim.compCurrentDir[c.id] || 0;
+    var i   = sim.compI[c.id] || 0;
+    // ✅ FIX: LED світить тільки при прямому струмі > 0.5 мА
+    if (dir > 0 && i > 0.0005) {
+        opts.glow = Math.max(0, Math.min(1, p / 2));
+    } else {
+        opts.glow = 0; // Явно вимикаємо світіння
+    }
+  }  
   if ( c.type === 'fan' || c.type === 'buzzer') {
     var i = Math.abs(sim.compI[c.id] || 0);
     opts.rot = (performance.now() / 1000) * i * 40;
@@ -1136,9 +1327,12 @@ if (isRunning && sim) {
     opts.reading = autoMeter(Math.abs(sim.compV[c.id] || 0), 'В');
   }
 }
+if (c.type === 'ammeter' || c.type === 'voltmeter') {
+  opts.counterRot = -(c.rot || 0) * Math.PI / 180;
+}
 
 drawComponentShape(ctx, c.type, 1, opts);
-    if (def.label && c.type !== 'junction' && c.type !== 'junction4' && c.type !== 'ground') {
+    if (def.label && c.type !== 'junction' && c.type !== 'ground') {
       ctx.save(); // Зберігаємо трансформ компонента (з поточним поворотом)
       if (c.rot === 180) {
         ctx.rotate(-Math.PI); // Скасовуємо поворот 180° лише для тексту
@@ -1148,9 +1342,19 @@ drawComponentShape(ctx, c.type, 1, opts);
       ctx.fillStyle = themeColors().label;
       var lbl = def.label + (c.id ? c.id : '');
       var paramLbl = '';
-      if (c.type === 'battery') paramLbl = formatV(c.props.V);
+      if (c.type === 'battery' || c.type === 'vsource') paramLbl = formatV(c.props.V);
       else if (c.type === 'resistor' || c.type === 'rheostat' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') paramLbl = formatR(c.props.R);
       else if (c.type === 'led') paramLbl = formatR(c.props.R);
+      else if (c.type === 'fuse') {
+        if (c.props.blown) {
+          paramLbl = '❌' // ПЕРЕГОРІВ
+          ctx.fillStyle = 'rgba(255,80,40,1)';
+        } else {
+          var imaxA = c.props.Imax || 1;
+          var imaxDisp = imaxA >= 1 ? imaxA.toFixed(imaxA % 1 ? 1 : 0) + ' А' : (imaxA * 1000).toFixed(0) + ' мА';
+          paramLbl = 'макс ' + imaxDisp;
+        }
+      }
       if (paramLbl) lbl += ' · ' + paramLbl;
       ctx.fillText(lbl, 0, -def.h/2 - 4);
       ctx.restore(); // Повертаємо контекст до стану компонента
@@ -1250,10 +1454,11 @@ if (hoverPort && !pendingWire) {
   ctx.restore();
 }
 ctx.restore();
+updateVsourceSliders();
 }
 var _hSegs = [];
 var _connectedPorts = {};
-function drawVerticalWithHumps(x, y1, y2, connId) {
+function drawVerticalWithHumps(x, y1, y2, connId, skipInitialMove) {
 var sx = toSX(x) * DPR;
 var sgn = y2 > y1 ? 1 : -1;
 var crossings = [];
@@ -1268,7 +1473,7 @@ crossings.push(h.y);
 crossings.sort(function (p, q) { return (p - q) * sgn; });
 var humpR = 5 * DPR;
 var cy = toSY(y1) * DPR;
-ctx.moveTo(sx, cy);
+if (!skipInitialMove) ctx.moveTo(sx, cy);
 for (var k = 0; k < crossings.length; k++) {
 var cyHit = toSY(crossings[k]) * DPR;
 var beforeY = cyHit - sgn * humpR;
@@ -1296,17 +1501,23 @@ ctx.strokeStyle = 'rgba(255,' + Math.round(40 + pulse * 60) + ',' + Math.round(4
 ctx.shadowColor = '#ff3b3b';
 ctx.shadowBlur = (8 + pulse * 12) * DPR;
 } else {
-ctx.lineWidth = (isSel ? 3 : 2) * DPR;
+ctx.lineWidth = (isSel ? 3 : 2) * viewScale * DPR;
 ctx.strokeStyle = isSel ? '#ffa000' : (isHover ? themeColors().wireHover : themeColors().wire);
 }
+ctx.lineJoin = 'miter';
+ctx.miterLimit = 10;
 ctx.beginPath();
+var _needMove = true;
 for (var i = 0; i < pts.length - 1; i++) {
 var a = pts[i], b = pts[i+1];
 if (a.x === b.x && a.y !== b.y) {
-drawVerticalWithHumps(a.x, a.y, b.y, conn.id);
+// skipInitialMove when pen is already at (a.x,a.y) from a preceding horizontal segment
+drawVerticalWithHumps(a.x, a.y, b.y, conn.id, !_needMove);
+_needMove = false; // pen ends at (a.x, y2) — continue from there
 } else {
-if (i === 0) ctx.moveTo(toSX(a.x)*DPR, toSY(a.y)*DPR);
+if (_needMove) ctx.moveTo(toSX(a.x)*DPR, toSY(a.y)*DPR);
 ctx.lineTo(toSX(b.x)*DPR, toSY(b.y)*DPR);
+_needMove = false;
 }
 }
 ctx.stroke();
@@ -1318,7 +1529,7 @@ var isHoverDangle = hoverDangle && hoverDangle.conn === conn && hoverDangle.end 
 var isPendingTarget = pendingWire && !pendingWire._dangle;
 ctx.save();
 ctx.strokeStyle = (isHoverDangle || (isHoverDangle && isPendingTarget)) ? '#ffa000' : dangColor;
-ctx.lineWidth = (isHoverDangle ? 3 : 2) * DPR;
+ctx.lineWidth = (isHoverDangle ? 3 : 2) * viewScale * DPR;
 ctx.beginPath();
 ctx.arc(toSX(af.x)*DPR, toSY(af.y)*DPR, (isHoverDangle ? 7 : 5)*DPR, 0, Math.PI*2);
 ctx.stroke();
@@ -1329,7 +1540,7 @@ var at2 = conn.to.anchor;
 var isHoverDangle2 = hoverDangle && hoverDangle.conn === conn && hoverDangle.end === 'to';
 ctx.save();
 ctx.strokeStyle = isHoverDangle2 ? '#ffa000' : dangColor;
-ctx.lineWidth = (isHoverDangle2 ? 3 : 2) * DPR;
+ctx.lineWidth = (isHoverDangle2 ? 3 : 2) * viewScale * DPR;
 ctx.beginPath();
 ctx.arc(toSX(at2.x)*DPR, toSY(at2.y)*DPR, (isHoverDangle2 ? 7 : 5)*DPR, 0, Math.PI*2);
 ctx.stroke();
@@ -1359,7 +1570,7 @@ var speed = Math.min(120, 30 + absI * 200);
 var dir = I > 0 ? 1 : -1;
 var phase = ((performance.now() / 1000) * speed * dir) % spacing;
 if (phase < 0) phase += spacing;
-ctx.fillStyle = '#ffa000';
+ctx.fillStyle = isLightTheme() ? '#a26600' : '#ffa000';
 for (var d = phase; d < total; d += spacing) {
 var seg = 1;
 while (seg < segLens.length && segLens[seg] < d) seg++;
@@ -1369,7 +1580,7 @@ var t = segLen > 0 ? (d - segLens[seg-1]) / segLen : 0;
 var px = pts[seg-1].x + (pts[seg].x - pts[seg-1].x) * t;
 var py = pts[seg-1].y + (pts[seg].y - pts[seg-1].y) * t;
 ctx.beginPath();
-ctx.arc(toSX(px)*DPR, toSY(py)*DPR, 3*DPR, 0, Math.PI*2);
+ctx.arc(toSX(px)*DPR, toSY(py)*DPR, 2*viewScale*DPR, 0, Math.PI*2);
 ctx.fill();
 }
 }
@@ -1735,6 +1946,7 @@ ctx.fill();
 });
 ctx.restore();
 }
+
 /* ── Pointer handling ────────────────────────────────────── */
 function screenToWorldFromEvent(ev) {
 var rect = canvas.getBoundingClientRect();
@@ -1831,32 +2043,44 @@ return;
 }
 }
 if (port) {
-  if (!pendingWire) {
-    pendingWire = { from: { compId: port.compId, portIdx: port.portIdx }, waypoints: [], cursor: {x:port.x,y:port.y} };
-  } else {
-    if (pendingWire._dangle) {
-      // Finish a wire that started from a dangling end — attach to this port
-      saveUndo();
-      var dc = pendingWire._dangle;
-      if (dc.end === 'from') dc.conn.from = { compId: port.compId, portIdx: port.portIdx };
-      else dc.conn.to = { compId: port.compId, portIdx: port.portIdx };
-      pendingWire = null;
-      markDirty();
-    } else if (port.compId !== pendingWire.from.compId || port.portIdx !== pendingWire.from.portIdx) {
-      saveUndo();
-      state.connections.push({
-        id: state.nextId++,
-        from: pendingWire.from,
-        to: { compId: port.compId, portIdx: port.portIdx },
-        waypoints: pendingWire.waypoints
-       });
-      pendingWire = null;
-    } else {
-      pendingWire = null;
-    }
-  }
-  scheduleDraw();
-  return;
+      var portComp = state.components.find(function(x){ return x.id === port.compId; });
+      // Для junction: спочатку чекаємо реакцію (клік vs дріг)
+      if (!pendingWire && portComp && portComp.type === 'junction') {
+        selectedId = port.compId;
+        selectedConnId = null;
+        hideCompPopover();
+        drag = { kind: 'junction-pending', id: port.compId, startX: p.x, startY: p.y, moved: false };
+        canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
+        renderProps();
+        scheduleDraw();
+        return;
+      }
+      // Оригінальна логіка для інших портів (залишається без змін)
+      if (!pendingWire) {
+        pendingWire = { from: { compId: port.compId, portIdx: port.portIdx }, waypoints: [], cursor: {x:port.x,y:port.y} };
+      } else {
+        if (pendingWire._dangle) {
+          saveUndo();
+          var dc = pendingWire._dangle;
+          if (dc.end === 'from') dc.conn.from = { compId: port.compId, portIdx: port.portIdx };
+          else dc.conn.to = { compId: port.compId, portIdx: port.portIdx };
+          pendingWire = null;
+          markDirty();
+        } else if (port.compId !== pendingWire.from.compId || port.portIdx !== pendingWire.from.portIdx) {
+          saveUndo();
+          state.connections.push({
+            id: state.nextId++,
+            from: pendingWire.from,
+            to: { compId: port.compId, portIdx: port.portIdx },
+            waypoints: pendingWire.waypoints
+          });
+          pendingWire = null;
+        } else {
+          pendingWire = null;
+        }
+      }
+      scheduleDraw();
+      return;
 }
 if (pendingWire) {
   var tapConn = hitConnection(p.x, p.y, 8);
@@ -1904,46 +2128,45 @@ if (selectedConnId) {
 }
 var c = hitComponent(p.x, p.y);
 if (c) {
-  if ((isRunning || wasRunningBeforeFault) && (c.type === 'switch' || c.type === 'pushbutton')) {
-    if (c.type === 'switch') {
-      saveUndo();
-      c.props.closed = !c.props.closed;
-      markDirty();
-      try { sfx.click(); } catch(e) {}
-      // If we were paused due to a fault and switch is now open — resume simulation
-      if (wasRunningBeforeFault && !c.props.closed) {
-        wasRunningBeforeFault = false;
-        clearFaults();
-        isRunning = true;
-        document.getElementById('btn-run').style.display = 'none';
-        document.getElementById('btn-stop').style.display = 'block';
-        animStart = 0;
-        // Cancel any lingering flash loop and force-start the main animLoop
-        if (animRAF) { cancelAnimationFrame(animRAF); animRAF = 0; }
-        animRAF = requestAnimationFrame(animLoop);
+      if ((isRunning || wasRunningBeforeFault) && (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'spdt')) {
+        if (c.type === 'switch') {
+          saveUndo(); c.props.closed = !c.props.closed; markDirty();
+          try { sfx.click(); } catch(e) {}
+          if (wasRunningBeforeFault && !c.props.closed) {
+            wasRunningBeforeFault = false; clearFaults(); isRunning = true;
+            document.getElementById('btn-run').style.display = 'none';
+            document.getElementById('btn-stop').style.display = 'block';
+            animStart = 0;
+            if (animRAF) { cancelAnimationFrame(animRAF); animRAF = 0; }
+            animRAF = requestAnimationFrame(animLoop);
+          }
+        } else if (c.type === 'pushbutton') {
+          var pbIsNO = (c.props.normallyOpen !== false);
+          var pbPressedState = pbIsNO ? true : false; // NO: натиск = замкнено; NC: натиск = розімкнено
+          if (c.props.closed !== pbPressedState) { c.props.closed = pbPressedState; markDirty(); try { sfx.click(); } catch(e) {} }
+          drag = { kind: 'pushbutton-hold', id: c.id };
+          canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
+        } else if (c.type === 'spdt') {
+          saveUndo();
+          c.props.state = c.props.state === 0 ? 1 : 0;
+          markDirty();
+          try { sfx.click(); } catch(e) {}
+          // Якщо симуляцію було зупинено через КЗ, спробуємо відновити її
+          if (wasRunningBeforeFault) {
+            wasRunningBeforeFault = false; clearFaults(); isRunning = true;
+            document.getElementById('btn-run').style.display = 'none';
+            document.getElementById('btn-stop').style.display = 'block';
+            animStart = 0;
+            if (animRAF) { cancelAnimationFrame(animRAF); animRAF = 0; }
+            animRAF = requestAnimationFrame(animLoop);
+          }
+        }
+        selectedId = c.id; renderProps(); scheduleDraw(); return;
       }
-    } else {
-      if (!c.props.closed) {
-        c.props.closed = true;
-        markDirty();
-        try { sfx.click(); } catch(e) {}
-      }
-      drag = { kind: 'pushbutton-hold', id: c.id };
+      selectedId = c.id; selectedConnId = null;
+      drag = { kind:'move', id: c.id, dx: c.x - p.x, dy: c.y - p.y, moved: false };
       canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
-    }
-    selectedId = c.id;
-    renderProps();
-    scheduleDraw();
-    return;
-  }
-  selectedId = c.id;
-  selectedConnId = null;
-  drag = { kind:'move', id: c.id, dx: c.x - p.x, dy: c.y - p.y, moved: false };
-  canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
-  renderProps();
-  showCompPopover(c);
-  scheduleDraw();
-  return;
+      renderProps(); showCompPopover(c); scheduleDraw(); return;
 }
 var conn = hitConnection(p.x, p.y);
 if (conn) {
@@ -1988,139 +2211,186 @@ if (conn) {
 }
 }
 function onPointerMove(ev) {
-var p = screenToWorldFromEvent(ev);
-if (pendingWire) {
-  var sp = hitPort(p.x, p.y);
-  pendingWire.cursor = sp ? { x: sp.x, y: sp.y } : { x: Math.round(p.x/10)*10, y: Math.round(p.y/10)*10 };
-  hoverPort = sp;
-  scheduleDraw();
-  return;
-}
-var prevHover = hoverId, prevPort = hoverPort, prevConn = hoverConnId;
-if (!drag) {
-  var port = hitPort(p.x, p.y);
-  hoverPort = port;
-  hoverDangle = port ? null : hitDanglingEnd(p.x, p.y);
-  if (port) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
-  else if (hoverDangle) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
-  else {
-    var c = hitComponent(p.x, p.y);
-    hoverId = c ? c.id : null; 
-    if (!c) {
-      var hc = hitConnection(p.x, p.y);
-      hoverConnId = hc ? hc.id : null;
-    } else hoverConnId = null;
-    if (tool === 'pan') canvas.style.cursor = 'grab';
-    else if (tool === 'sketch') canvas.style.cursor = PENCIL_CURSOR;
-    else if (tool === 'shape') canvas.style.cursor = 'crosshair';
-    else canvas.style.cursor = (hoverId || hoverConnId) ? 'move' : 'crosshair';
-    if (tool === 'move') {
-      var sxScr = p.sx * DPR, syScr = p.sy * DPR;
-      if (annSel && selectionUI) {
-        var hCorner = hitCornerHandle(sxScr, syScr, selectionUI.corners);
-        if (hCorner >= 0) {
-          canvas.style.cursor = (hCorner === 0 || hCorner === 2) ? 'nwse-resize' : 'nesw-resize';
-        } else if (hitBtn(sxScr,syScr,selectionUI.delBtn) || hitBtn(sxScr, syScr,selectionUI.dupBtn) || hitBtn(sxScr,syScr,selectionUI.rotBtn)) {
-          canvas.style.cursor = 'pointer';
+  var p = screenToWorldFromEvent(ev);
+  
+  // 1. Обробка проводки дроту
+  if (pendingWire) {
+    var sp = hitPort(p.x, p.y);
+    pendingWire.cursor = sp ? { x: sp.x, y: sp.y } : { x: Math.round(p.x/10)*10, y: Math.round(p.y/10)*10 };
+    hoverPort = sp;
+    scheduleDraw();
+    return;
+  }
+  
+  // 2. Оновлення hover-станів (коли НЕ тягнемо)
+  var prevHover = hoverId, prevPort = hoverPort, prevConn = hoverConnId;
+  if (!drag) {
+    var port = hitPort(p.x, p.y);
+    hoverPort = port;
+    hoverDangle = port ? null : hitDanglingEnd(p.x, p.y);
+    if (port) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
+    else if (hoverDangle) { hoverId = null; hoverConnId = null; canvas.style.cursor = 'pointer'; }
+    else {
+      var c = hitComponent(p.x, p.y);
+      hoverId = c ? c.id : null; 
+      if (!c) {
+        var hc = hitConnection(p.x, p.y);
+        hoverConnId = hc ? hc.id : null;
+      } else hoverConnId = null;
+      if (tool === 'pan') canvas.style.cursor = 'grab';
+      else if (tool === 'sketch') canvas.style.cursor = PENCIL_CURSOR;
+      else if (tool === 'shape') canvas.style.cursor = 'crosshair';
+      else canvas.style.cursor = (hoverId || hoverConnId) ? 'move' : 'crosshair';
+      if (tool === 'move') {
+        var sxScr = p.sx * DPR, syScr = p.sy * DPR;
+        if (annSel && selectionUI) {
+          var hCorner = hitCornerHandle(sxScr, syScr, selectionUI.corners);
+          if (hCorner >= 0) {
+            canvas.style.cursor = (hCorner === 0 || hCorner === 2) ? 'nwse-resize' : 'nesw-resize';
+          } else if (hitBtn(sxScr,syScr,selectionUI.delBtn) || hitBtn(sxScr, syScr,selectionUI.dupBtn) || hitBtn(sxScr,syScr,selectionUI.rotBtn)) {
+            canvas.style.cursor = 'pointer';
+          } else if (hitAnyAnnotation(p.x, p.y)) {
+            canvas.style.cursor = 'move';
+          }
         } else if (hitAnyAnnotation(p.x, p.y)) {
           canvas.style.cursor = 'move';
         }
-      } else if (hitAnyAnnotation(p.x, p.y)) {
-        canvas.style.cursor = 'move';
       }
     }
+    if (hoverId !== prevHover || hoverPort !== prevPort || hoverConnId !== prevConn) scheduleDraw();
   }
-  if (hoverId !== prevHover || hoverPort !== prevPort || hoverConnId !== prevConn) scheduleDraw();
-}
-if (!drag) return;
-if (drag.kind === 'pan') {
-  viewOffX = drag.startOffX + (p.sx - drag.startX)/viewScale;
-  viewOffY = drag.startOffY + (p.sy - drag.startY)/viewScale;
-  scheduleDraw();
-  return;
-}
-if (drag.kind === 'move') {
-  var c2 = state.components.find(function(x){return x.id===drag.id;});
-  if (!c2) return;
-  if (!drag.moved) { saveUndo(); drag.moved = true; hideCompPopover(); }
-  c2.x = Math.round((p.x + drag.dx)/10)*10;
-  c2.y = Math.round((p.y + drag.dy)/10)*10;
-  scheduleDraw();
-}
-if (drag.kind === 'sketch') {
-  drag.stroke.points.push({x:p.x,y:p.y});
-  scheduleDraw();
-}
-if (drag.kind === 'shape-draw') {
-  drag.shape.w = p.x - drag.shape.x;
-  drag.shape.h = p.y - drag.shape.y;
-  scheduleDraw();
-}
-if (drag.kind === 'shape-move') {
-  if (!drag.moved) { saveUndo(); drag.moved = true; }
-  var sh = state.annShapes[drag.idx];
-  if (sh) { sh.x = p.x + drag.dx; sh.y = p.y + drag.dy; scheduleDraw(); }
-}
-if (drag.kind === 'waypoint-move') {
-  var cW = state.connections.find(function(x){ return x.id === drag.connId; });
-  if (cW && cW.waypoints && cW.waypoints[drag.wpIdx]) {
-    cW.waypoints[drag.wpIdx].x = Math.round(p.x/10)*10;
-    cW.waypoints[drag.wpIdx].y = Math.round(p.y/10)*10;
+  
+  // 3. ⬅️ ГАРАНТ: якщо не тягнемо — виходимо (drag може бути null)
+  if (!drag) return;
+  
+  // 4. ⬅️ Тепер БЕЗПЕЧНО перевіряти drag.kind:
+  if (drag.kind === 'junction-pending') {
+    var jc = state.components.find(function(x){return x.id===drag.id;});
+    if (!jc) { drag = null; scheduleDraw(); return; }
+    var ddx = p.x - drag.startX;
+    var ddy = p.y - drag.startY;
+    if (Math.abs(ddx) > 3 || Math.abs(ddy) > 3) {
+      // Переміщення >3px → переключаємось у режим move
+      drag.kind = 'move';
+      drag.dx = jc.x - p.x;
+      drag.dy = jc.y - p.y;
+      drag.moved = true;
+      hideCompPopover();
+      saveUndo();
+    }
+    scheduleDraw();
+    return;
+  }
+  
+  // 5. Решта обробників drag (оригінальний код)
+  if (drag.kind === 'pan') {
+    viewOffX = drag.startOffX + (p.sx - drag.startX)/viewScale;
+    viewOffY = drag.startOffY + (p.sy - drag.startY)/viewScale;
+    scheduleDraw();
+    return;
+  }
+  if (drag.kind === 'move') {
+    var c2 = state.components.find(function(x){return x.id===drag.id;});
+    if (!c2) return;
+    if (!drag.moved) { saveUndo(); drag.moved = true; hideCompPopover(); }
+    c2.x = Math.round((p.x + drag.dx)/10)*10;
+    c2.y = Math.round((p.y + drag.dy)/10)*10;
     scheduleDraw();
   }
-  return;
-}
-if (drag.kind === 'stroke-move') {
-  if (!drag.moved) { saveUndo(); drag.moved = true; }
-  var st = state.annStrokes[drag.idx];
-  if (st) {
-    var ddx = p.x - drag.sx, ddy = p.y - drag.sy;
-    st.points.forEach(function(pt){ pt.x += ddx; pt.y += ddy; });
-    drag.sx = p.x; drag.sy = p.y;
+  if (drag.kind === 'sketch') {
+    drag.stroke.points.push({x:p.x,y:p.y});
     scheduleDraw();
   }
-}
-if (drag.kind === 'ann-resize') {
-  if (!annSel) return;
-  if (annSel.type === 'shape') {
-    var sh2 = state.annShapes[annSel.idx]; if (!sh2) return;
-    var x1 = sh2.x, y1 = sh2.y, x2 = sh2.x + sh2.w, y2 = sh2.y + sh2.h;
-    if (drag.corner === 0) { sh2.x = p.x; sh2.y = p.y; sh2.w = x2 - p.x; sh2.h = y2 - p.y; }
-    else if (drag.corner === 1) { sh2.y = p.y; sh2.w = p.x - sh2.x; sh2.h = y2 - p.y; }
-    else if (drag.corner === 2) { sh2.w = p.x - sh2.x; sh2.h = p.y - sh2.y; }
-    else if (drag.corner === 3) { sh2.x = p.x; sh2.w = x2 - p.x; sh2.h = p.y - sh2.y; }
-    scheduleDraw();
-  } else {
-    var st2 = state.annStrokes[annSel.idx]; if (!st2) return;
-    var b = strokeBounds(st2);
-    var opp;
-    if (drag.corner === 0) opp = { x: b.x+b.w, y: b.y+b.h };
-    else if (drag.corner === 1) opp = { x: b.x, y: b.y+b.h };
-    else if (drag.corner === 2) opp = { x: b.x, y: b.y };
-    else opp = { x: b.x+b.w, y: b.y };
-    var nw = Math.abs(p.x - opp.x), nh = Math.abs(p.y - opp.y);
-    var sxF = b.w > 1 ? nw / b.w : 1, syF = b.h > 1 ? nh / b.h : 1;
-    if (!isFinite(sxF) || sxF < 0.05) sxF = 0.05;
-    if (!isFinite(syF) || syF < 0.05) syF = 0.05;
-    st2.points.forEach(function(pt){
-      pt.x = opp.x + (pt.x - opp.x) * sxF * (Math.sign(p.x-opp.x)||1) / (Math.sign(b.w)||1);
-      pt.y = opp.y + (pt.y - opp.y) * syF * (Math.sign(p.y-opp.y)||1) / (Math.sign(b.h)||1);
-    });
+  if (drag.kind === 'shape-draw') {
+    drag.shape.w = p.x - drag.shape.x;
+    drag.shape.h = p.y - drag.shape.y;
     scheduleDraw();
   }
-}
+  if (drag.kind === 'shape-move') {
+    if (!drag.moved) { saveUndo(); drag.moved = true; }
+    var sh = state.annShapes[drag.idx];
+    if (sh) { sh.x = p.x + drag.dx; sh.y = p.y + drag.dy; scheduleDraw(); }
+  }
+  if (drag.kind === 'waypoint-move') {
+    var cW = state.connections.find(function(x){ return x.id === drag.connId; });
+    if (cW && cW.waypoints && cW.waypoints[drag.wpIdx]) {
+      cW.waypoints[drag.wpIdx].x = Math.round(p.x/10)*10;
+      cW.waypoints[drag.wpIdx].y = Math.round(p.y/10)*10;
+      scheduleDraw();
+    }
+    return;
+  }
+  if (drag.kind === 'stroke-move') {
+    if (!drag.moved) { saveUndo(); drag.moved = true; }
+    var st = state.annStrokes[drag.idx];
+    if (st) {
+      var ddx = p.x - drag.sx, ddy = p.y - drag.sy;
+      st.points.forEach(function(pt){ pt.x += ddx; pt.y += ddy; });
+      drag.sx = p.x; drag.sy = p.y;
+      scheduleDraw();
+    }
+  }
+  if (drag.kind === 'ann-resize') {
+    if (!annSel) return;
+    if (annSel.type === 'shape') {
+      var sh2 = state.annShapes[annSel.idx]; if (!sh2) return;
+      var x1 = sh2.x, y1 = sh2.y, x2 = sh2.x + sh2.w, y2 = sh2.y + sh2.h;
+      if (drag.corner === 0) { sh2.x = p.x; sh2.y = p.y; sh2.w = x2 - p.x; sh2.h = y2 - p.y; }
+      else if (drag.corner === 1) { sh2.y = p.y; sh2.w = p.x - sh2.x; sh2.h = y2 - p.y; }
+      else if (drag.corner === 2) { sh2.w = p.x - sh2.x; sh2.h = p.y - sh2.y; }
+      else if (drag.corner === 3) { sh2.x = p.x; sh2.w = x2 - p.x; sh2.h = p.y - sh2.y; }
+      scheduleDraw();
+    } else {
+      var st2 = state.annStrokes[annSel.idx]; if (!st2) return;
+      var b = strokeBounds(st2);
+      var opp;
+      if (drag.corner === 0) opp = { x: b.x+b.w, y: b.y+b.h };
+      else if (drag.corner === 1) opp = { x: b.x, y: b.y+b.h };
+      else if (drag.corner === 2) opp = { x: b.x, y: b.y };
+      else opp = { x: b.x+b.w, y: b.y };
+      var nw = Math.abs(p.x - opp.x), nh = Math.abs(p.y - opp.y);
+      var sxF = b.w > 1 ? nw / b.w : 1, syF = b.h > 1 ? nh / b.h : 1;
+      if (!isFinite(sxF) || sxF < 0.05) sxF = 0.05;
+      if (!isFinite(syF) || syF < 0.05) syF = 0.05;
+      st2.points.forEach(function(pt){
+        pt.x = opp.x + (pt.x - opp.x) * sxF * (Math.sign(p.x-opp.x)||1) / (Math.sign(b.w)||1);
+        pt.y = opp.y + (pt.y - opp.y) * syF * (Math.sign(p.y-opp.y)||1) / (Math.sign(b.h)||1);
+      });
+      scheduleDraw();
+    }
+  }
 }
 function onPointerUp(ev) {
 if (drag) {
 try { canvas.releasePointerCapture(ev.pointerId); } catch(e){}
+    if (drag.kind === 'junction-pending') {
+      if (!drag.moved) {
+        var jc = state.components.find(function(x){return x.id===drag.id;});
+        if (jc) {
+          var pw = portWorld(jc, 0);
+          pendingWire = {
+            from: { compId: jc.id, portIdx: 0 },
+            waypoints: [],
+            cursor: { x: pw.x, y: pw.y }
+          };
+        }
+      }
+      drag = null;
+      scheduleDraw();
+      return;
+    }
 if (drag.kind === 'pushbutton-hold') {
 var pb = state.components.find(function(x){ return x.id === drag.id; });
-if (pb && pb.props.closed) {
-pb.props.closed = false;
+if (pb) {
+var pbNO2 = (pb.props.normallyOpen !== false);
+var pbRestState = pbNO2 ? false : true; // повернення у нормальний стан
+if (pb.props.closed !== pbRestState) {
+pb.props.closed = pbRestState;
 markDirty();
 try { sfx.click(); } catch(e) {}
 renderProps();
 scheduleDraw();
+}
 }
 drag = null;
 return;
@@ -2367,10 +2637,14 @@ var c = state.components.find(function(x){return x.id===selectedId;});
 if (!c) { propsPanel.style.display = 'none'; return; }
 propsPanel.style.display = '';
 var def = COMP_DEFS[c.type];
-var html = ' <div style="font-weight:600;color:var(--text);margin-bottom:6px;">'+
+var html = ' <div style="font-weight:600;color:var(--text);margin-bottom:6px;margin-left: 12px;">'+
 (COMP_LABELS[c.type]||c.type)+' #'+c.id+' </div>';
 if (c.type === 'battery') {
 html += propUnitSlider(c, 'V', 'Напруга', 'V');
+} else if (c.type === 'vsource') {
+html += propUnitSlider(c, 'V', 'Напруга', 'V');
+html += propNumber(c, 'Vmin', 'Мін. напруга (В)');
+html += propNumber(c, 'Vmax', 'Макс. напруга (В)');
 } else if (c.type === 'resistor') {
 html += propUnitSlider(c, 'R', 'Опір', 'R');
 } else if (c.type === 'rheostat') {
@@ -2415,18 +2689,37 @@ html +=
 
 '   </div>' +
 ' </label>';
+} else if (c.type === 'fuse') {
+    html += '<label><span class="prop-val">Макс.струм</span> ' +
+            '<input type="range" data-prop="Imax" min="0.5" max="10" step="0.1" value="'+c.props.Imax+'">' +
+            ' <span data-val="Imax">'+c.props.Imax.toFixed(1)+'</span> А</label>';
 } else if (c.type === 'switch' || c.type === 'pushbutton') {
+if (c.type === 'pushbutton') {
+var pbNOcur = (c.props.normallyOpen !== false);
+html += '<label><span class="prop-val">Тип контактів</span>' +
+'<select data-act="pb-contact-type" style="margin-left:6px;padding:2px 4px;">' +
+'<option value="no"' + (pbNOcur ? ' selected' : '') + '>НР (нормально розімкнені)</option>' +
+'<option value="nc"' + (!pbNOcur ? ' selected' : '') + '>НЗ (нормально замкнені)</option>' +
+'</select></label>';
+html += '<div><span class="prop-val">Стан: ' + (c.props.closed ? 'Замкнутий' : 'Розімкнено') + '</span>' +
+'<button class="btn btn-ghost" data-act="pb-press" style="margin-top:4px;margin-left:6px;">▶ Натиснути кнопку</button></div>';
+} else {
 html += ' <div> <span class="prop-val" >Стан: '+(c.props.closed?'⁣⁣⁣.Замкнутий':'Розімкнено')+' </span >'+
 ' <button class="btn btn-ghost" data-act="toggle" style="margin-top:4px;">Переключити </button ></div> ';
+}
+} else if (c.type === 'spdt') {
+  html += '<div><span class="prop-val">Положення: '+(c.props.state===0?'Вихід A':'Вихід B')+'</span>'+
+          '<button class="btn btn-ghost" data-act="toggle-spdt" style="margin-top:4px;">Переключити</button></div>';
 } else if (c.type === 'flasher') {
-    html += '<label><span class="prop-val">Початковий стан</span>'+
-            '<button class="btn btn-ghost" data-act="toggle-init" style="margin:4px 0;">'+ (c.props.closed ? 'Замкнено' : 'Розімкнено') +'</button></label>';
-    html += propNumber(c, 'tOn', 'Час замкненого (с)');
-    html += propNumber(c, 'tOff', 'Час розімкненого (с)');
+    var flCurState = c.props.state || 0;
+    html += '<label><span class="prop-val">Початковий вихід</span>'+
+            '<button class="btn btn-ghost" data-act="toggle-init" style="margin:4px 0;">'+ (flCurState === 0 ? 'Вихід A' : 'Вихід B') +'</button></label>';
+    html += propNumber(c, 'tOn', 'Час на A (с)');
+    html += propNumber(c, 'tOff', 'Час на B (с)');
 }
 
-html += ' <label > <button class="btn btn-ghost" data-act="rotate" >↻ Повернути 90° </button > '+
-' <button class="btn btn-ghost" data-act="delete" >🗑 Видалити </button > </label >';
+html += ' <div class="cp-actions"> <button class="btn btn-ghost" data-act="rotate" >↻ Повернути 90° </button > '+
+' <button class="btn btn-ghost" data-act="delete" >🗑 Видалити </button > </div>';
 propsBody.innerHTML = html;
 propsBody.querySelectorAll('input[data-prop]').forEach(function (inp) {
   inp.addEventListener('input', function () {
@@ -2443,6 +2736,8 @@ propsBody.querySelectorAll('input[data-prop]').forEach(function (inp) {
     }
     var span = propsBody.querySelector('[data-val="'+key+'"]');
     if (span) span.textContent = formatDispVal(val);
+    // Re-render props panel when vsource bounds change so V slider updates its range
+    if (key === 'Vmin' || key === 'Vmax') { markDirty(); renderProps(); scheduleDraw(); return; }
     markDirty();
     scheduleDraw();
   });
@@ -2456,6 +2751,16 @@ propsBody.querySelectorAll('select[data-unit]').forEach(function (sel) {
     c.props[unitKey] = newMul;
     renderProps();
     scheduleDraw();
+  });
+});
+propsBody.querySelectorAll('select[data-act="pb-contact-type"]').forEach(function(sel){
+  sel.addEventListener('change', function(){
+    saveUndo();
+    var isNO = sel.value === 'no';
+    c.props.normallyOpen = isNO;
+    // Скидаємо стан до нормального
+    c.props.closed = isNO ? false : true;
+    markDirty(); renderProps(); scheduleDraw();
   });
 });
 propsBody.querySelectorAll('.led-color-btn').forEach(function(btn){
@@ -2479,13 +2784,32 @@ propsBody.querySelectorAll('.lamp-color-btn').forEach(function(btn){
 propsBody.querySelectorAll('button[data-act]').forEach(function (b) {
   b.addEventListener('click', function () {
     var act = b.getAttribute('data-act');
-    if (act === 'toggle') { saveUndo(); c.props.closed = !c.props.closed; try{sfx.click();}catch(e){} renderProps(); scheduleDraw(); }
+    if (act === 'toggle') { saveUndo(); if (c.type === 'flasher') { c.props.state = (c.props.state || 0) === 0 ? 1 : 0; c.state._flInit = false; } else { c.props.closed = !c.props.closed; } try{sfx.click();}catch(e){} renderProps(); scheduleDraw(); }
+    else if (act === 'pb-press') {
+      // Симуляція натискання: замкнути НР, розімкнути НЗ, потім через 300мс відпустити
+      var pbIsNO3 = (c.props.normallyOpen !== false);
+      saveUndo();
+      c.props.closed = pbIsNO3 ? true : false;
+      try{sfx.click();}catch(e){}
+      markDirty(); renderProps(); scheduleDraw();
+      var pbId3 = c.id;
+      setTimeout(function(){
+        var pbComp = state.components.find(function(x){ return x.id === pbId3; });
+        if (pbComp) {
+          var no3 = (pbComp.props.normallyOpen !== false);
+          pbComp.props.closed = no3 ? false : true;
+          try{sfx.click();}catch(e){}
+          markDirty(); renderProps(); scheduleDraw();
+        }
+      }, 300);
+    }
     else if (act === 'rotate') { saveUndo(); c.rot = (c.rot + 90) % 360; scheduleDraw(); }
     else if (act === 'delete') { saveUndo(); deleteSelected(); }
-    else if (act === 'toggle-init') {
+    else if (act === 'toggle-spdt') { saveUndo(); c.props.state = c.props.state === 0 ? 1 : 0; renderProps(); scheduleDraw(); }
+        else if (act === 'toggle-init') {
 		saveUndo();
-		c.props.closed = !c.props.closed;
-		c.state._flasherInit = false; // скидаємо відлік часу
+		c.props.state = (c.props.state || 0) === 0 ? 1 : 0;
+		c.state._flInit = false; // скидаємо відлік часу
 		renderProps(); scheduleDraw();
 	}
     
@@ -2520,7 +2844,17 @@ else if (base >= 1e3) c.props[unitKey] = 1e3;
 else c.props[unitKey] = 1;
 }
 var mul = c.props[unitKey];
-var min = 1, max = 10000, step = stepForMul(mul);
+// For vsource voltage slider use Vmin/Vmax bounds (converted to current unit)
+var min, max;
+if (c.type === 'vsource' && kind === 'V') {
+  min = (c.props.Vmin != null ? c.props.Vmin : 0) / mul;
+  max = (c.props.Vmax != null ? c.props.Vmax : 20) / mul;
+  if (min < 0) min = 0;
+  if (max <= min) max = min + 1;
+} else {
+  min = 1; max = 10000;
+}
+var step = stepForMul(mul);
 var dispActual = (c.props[key] || 0) / mul;
 var dispSlider = Math.round(dispActual / step) * step;
 if (dispSlider < min) dispSlider = min;
@@ -2530,8 +2864,10 @@ var optsHtml = opts.map(function(o){
 return ' <option value="'+o.mul+'"'+(o.mul===mul?' selected':'')+'>'+o.label+'</option>';
 }).join('');
 return ' <label >'+label+
-'  <span class="prop-val" data-val="'+key+'">'+formatDispVal(dispActual)+'</span > '+
-' <select data-unit="'+key+'" style="margin-left:4px;">'+optsHtml+'</select>'+
+' <span style="display:inline-flex;align-items:center;gap:4px;">'+
+'  <span class="prop-val" data-val="'+key+'">'+formatDispVal(dispActual)+'</span>'+
+' <select data-unit="'+key+'">'+optsHtml+'</select>'+
+'</span>'+
 ' <input type="range" data-prop="'+key+'" data-mul="'+mul+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+dispSlider+'"> </label>';
 }
 function propNumber(c, key, label) {
@@ -2571,7 +2907,16 @@ else if (base >= 1e3) c.props[unitKey] = 1e3;
 else c.props[unitKey] = 1;
 }
 var mul = c.props[unitKey];
-var min = 1, max = 10000, step = stepForMul(mul);
+var min, max;
+if (c.type === 'vsource' && kind === 'V') {
+  min = (c.props.Vmin != null ? c.props.Vmin : 0) / mul;
+  max = (c.props.Vmax != null ? c.props.Vmax : 20) / mul;
+  if (min < 0) min = 0;
+  if (max <= min) max = min + 1;
+} else {
+  min = 1; max = 10000;
+}
+var step = stepForMul(mul);
 var dispActual = (c.props[key] || 0) / mul;
 var dispSlider = Math.min(max, Math.max(min, Math.round(dispActual / step) * step));
 var opts = unitOptionsFor(kind);
@@ -2593,24 +2938,44 @@ compPopoverFor = c.id;
 var html = ' <div class="cp-head">'+(COMP_LABELS[c.type]||c.type)+' #'+c.id+
 ' <button class="cp-close" type="button" title="Закрити">×</button > </div >';
 if (c.type === 'battery') html += compEditField(c, 'V', 'Напруга', 'V');
+else if (c.type === 'vsource') html += compEditField(c, 'V', 'Напруга', 'V');
 else if (c.type === 'resistor' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater')
-html += compEditField(c, 'R', 'Опір', 'R');
+	html += compEditField(c, 'R', 'Опір', 'R');
 else if (c.type === 'rheostat') {
-html += compEditField(c, 'R', 'Робочий опір', 'R');
-html += ' <div class="cp-label">Макс. опір (Ом) <input type="number" data-cp="Rmax" value="'+c.props.Rmax+'" step="any"> </div>';
-}
-else if (c.type === 'led') {
-html += ' <div class="cp-label">Пряма напруга (В) <input type="number" data-cp="Vf" value="'+c.props.Vf+'" step="any"> </div>';
-html += compEditField(c, 'R', 'Послідовний опір', 'R');
-}
-else if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') {
-html += ' <div class="cp-label">Стан:  <strong><span style="display: inline-block; width: 55px;">' + 
-        (c.props.closed ? 'Замкнено' : 'Розімкнено') + '</span></strong>'+
-' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити </button> </div>';
-    if (c.type === 'flasher') {
-        html += '<div class="cp-label">Час замк. (с) <input type="number" data-cp="tOn" value="'+c.props.tOn+'" step="0.1"></div>';
-        html += '<div class="cp-label">Час розімк. (с) <input type="number" data-cp="tOff" value="'+c.props.tOff+'" step="0.1"></div>';
-    }
+	html += compEditField(c, 'R', 'Робочий опір', 'R');
+	html += ' <div class="cp-label">Макс. опір (Ом) <input type="number" data-cp="Rmax" value="'+c.props.Rmax+'" step="any"> </div>';
+} else if (c.type === 'led') {
+	html += ' <div class="cp-label">Пряма напруга (В) <input type="number" data-cp="Vf" value="'+c.props.Vf+'" step="any"> </div>';
+	html += compEditField(c, 'R', 'Послідовний опір', 'R');
+} else if (c.type === 'spdt') {
+	html += '<div class="cp-label">Положення: <strong>' + (c.props.state === 0 ? 'Вихід A' : 'Вихід B') + '</strong>' +
+          '<button class="btn btn-ghost cp-act" data-act="toggle-spdt" type="button" style="margin-left:12px;">Переключити</button></div>';
+} else if (c.type === 'fuse') {
+    html += '<div class="cp-label">Макс. струм: <span class="cp-val">'+c.props.Imax.toFixed(1)+' А</span><br>' +
+            '<input type="range" data-cp-slider="Imax" min="0.5" max="10" step="0.1" value="'+c.props.Imax+'" style="width:100%;margin-top:4px;"></div>';
+} else if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') {
+	if (c.type === 'pushbutton') {
+		var pbNOpop = (c.props.normallyOpen !== false);
+		html += '<div class="cp-label">Тип контактів<br>' +
+			'<select data-cp-act="pb-contact-type" style="margin-top:4px;padding:3px 6px;width:100%;">' +
+			'<option value="no"' + (pbNOpop ? ' selected' : '') + '>НР (нормально розімкнені)</option>' +
+			'<option value="nc"' + (!pbNOpop ? ' selected' : '') + '>НЗ (нормально замкнені)</option>' +
+			'</select></div>';
+		html += '<div class="cp-label">Стан: <strong><span style="display:inline-block;width:60px;">' +
+			(c.props.closed ? 'Замкнено' : 'Розімкнено') + '</span></strong>' +
+			'<button class="btn btn-ghost cp-act" data-act="pb-press" type="button" style="margin-left:6px;">▶ Натиснути</button></div>';
+	} else if (c.type === 'flasher') {
+		var flPopState = c.props.state || 0;
+		html += ' <div class="cp-label">Вихід: <strong><span style="display:inline-block;width:55px;">' +
+		(flPopState === 0 ? 'A' : 'B') + '</span></strong>'+
+		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити</button></div>';
+        html += '<div class="cp-label">Час на A (с) <input type="number" data-cp="tOn" value="'+c.props.tOn+'" step="0.1"></div>';
+        html += '<div class="cp-label">Час на B (с) <input type="number" data-cp="tOff" value="'+c.props.tOff+'" step="0.1"></div>';
+	} else {
+		html += ' <div class="cp-label">Стан:  <strong><span style="display: inline-block; width: 55px;">' +
+		(c.props.closed ? 'Замкнено' : 'Розімкнено') + '</span></strong>'+
+		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити </button> </div>';
+	}
 
 }
 
@@ -2655,17 +3020,24 @@ compPopover.querySelectorAll('input[data-cp-text]').forEach(function (inp) {
     markDirty(); scheduleDraw(); renderProps();
   });
 });
+
 compPopover.querySelectorAll('input[data-cp-slider]').forEach(function (sld) {
-  sld.addEventListener('input', function () {
-    var key = sld.getAttribute('data-cp-slider');
-    var v = parseFloat(sld.value);
-    var mul = parseFloat(sld.getAttribute('data-mul')) || 1;
-    c.props[key] = Math.round(v * mul * 1e6) / 1e6;
-    var inp = compPopover.querySelector('input[data-cp-text="'+key+'"]');
-    if (inp) inp.value = formatDispVal(v);
-    markDirty(); scheduleDraw(); renderProps();
-  });
+    sld.addEventListener('input', function () {
+        var key = sld.getAttribute('data-cp-slider');
+        var v = parseFloat(sld.value);
+        var mul = parseFloat(sld.getAttribute('data-mul')) || 1;
+        c.props[key] = Math.round(v * mul * 1e6) / 1e6;
+        
+        // миттєве оновлення текстового значення для fuse (та інших компонентів з .cp-val)
+        var spanVal = compPopover.querySelector('.cp-val');
+        if (spanVal && key === 'Imax') spanVal.textContent = v.toFixed(1) + ' А';
+
+        var inp = compPopover.querySelector('input[data-cp-text="'+key+'"]');
+        if (inp) inp.value = formatDispVal(v);
+        markDirty(); scheduleDraw(); renderProps();
+    });
 });
+
 compPopover.querySelectorAll('select[data-cp-unit]').forEach(function (sel) {
   sel.addEventListener('change', function () {
     var key = sel.getAttribute('data-cp-unit');
@@ -2686,9 +3058,36 @@ compPopover.querySelectorAll('input[data-cp]').forEach(function (inp) {
 compPopover.querySelectorAll('button[data-act]').forEach(function (b) {
   b.addEventListener('click', function () {
     var act = b.getAttribute('data-act');
-    if (act === 'toggle') { saveUndo(); c.props.closed = !c.props.closed; try{sfx.click();}catch(e){} showCompPopover(c); renderProps(); scheduleDraw(); }
+    if (act === 'toggle') { saveUndo(); if (c.type === 'flasher') { c.props.state = (c.props.state || 0) === 0 ? 1 : 0; c.state._flInit = false; } else { c.props.closed = !c.props.closed; } try{sfx.click();}catch(e){} showCompPopover(c); renderProps(); scheduleDraw(); }
+    else if (act === 'pb-press') {
+      var pbIsNOpop = (c.props.normallyOpen !== false);
+      saveUndo();
+      c.props.closed = pbIsNOpop ? true : false;
+      try{sfx.click();}catch(e){}
+      markDirty(); showCompPopover(c); renderProps(); scheduleDraw();
+      var pbIdPop = c.id;
+      setTimeout(function(){
+        var pbC = state.components.find(function(x){ return x.id === pbIdPop; });
+        if (pbC) {
+          var noPop = (pbC.props.normallyOpen !== false);
+          pbC.props.closed = noPop ? false : true;
+          try{sfx.click();}catch(e){}
+          markDirty(); showCompPopover(pbC); renderProps(); scheduleDraw();
+        }
+      }, 300);
+    }
      else if (act === 'rotate') { saveUndo(); c.rot = (c.rot + 90) % 360; showCompPopover(c); scheduleDraw(); }
-    else if (act === 'delete') { saveUndo(); deleteSelected(); hideCompPopover(); }
+     else if (act === 'toggle-spdt') { saveUndo(); c.props.state = c.props.state === 0 ? 1 : 0; showCompPopover(c); scheduleDraw(); }
+     else if (act === 'delete') { saveUndo(); deleteSelected(); hideCompPopover(); }
+  });
+});
+compPopover.querySelectorAll('select[data-cp-act="pb-contact-type"]').forEach(function(sel){
+  sel.addEventListener('change', function(){
+    saveUndo();
+    var isNOpop2 = sel.value === 'no';
+    c.props.normallyOpen = isNOpop2;
+    c.props.closed = isNOpop2 ? false : true;
+    markDirty(); showCompPopover(c); renderProps(); scheduleDraw();
   });
 });
 }
@@ -2727,6 +3126,8 @@ conn.to = { anchor: { x: pw.x, y: pw.y } };
 }
 state.components = state.components.filter(function(x){return x.id!==selectedId;});
 purgeFullyDanglingWires();
+// Clean up vsource slider if deleted
+if (delComp && delComp.type === 'vsource') removeVsourceSlider(delId);
 selectedId = null;
 hideCompPopover();
 renderProps();
@@ -2740,13 +3141,17 @@ c.rot = (c.rot + 90) % 360;
 scheduleDraw();
 }
 function clearCanvas() {
-if (!state.components.length && !state.connections.length) return;
-saveUndo();
-state.components = [];
-state.connections = [];
-selectedId = null;
-renderProps();
-scheduleDraw();
+    if (!state.components.length && !state.connections.length) return;
+    saveUndo();
+    // Clean up vsource sliders
+    Object.keys(_vsourceSliders).forEach(function(id){ removeVsourceSlider(+id); });
+    state.components = [];
+    state.connections = [];
+    state.nextId = 1; // Скидаємо лічильник ID, щоб нумерація починалась спочатку
+    selectedId = null;
+    selectedConnId = null;
+    renderProps();
+    scheduleDraw();
 }
 /* ── Toolbar buttons ─────────────────────────────────────── */
 function on(id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
@@ -2769,50 +3174,48 @@ function updateFlashers(t) {
         if (!c.state._flInit) {
             c.state._flInit = true;
             c.state._lastT = t;
-            c.state._phase = c.props.closed ? 'on' : 'off';
+            // state=0 → фаза 'a' (tOn), state=1 → фаза 'b' (tOff)
+            c.state._phase = (c.props.state || 0) === 0 ? 'a' : 'b';
             c.state._powered = false;
         }
 
-        // Визначаємо, чи є живлення на флешері.
-        // Якщо флешер зараз розімкнений (фаза 'off'), струм через нього буде 0,
-        // але це не означає відсутність живлення — треба перевірити напругу на вузлах.
+        // Визначаємо живлення: є струм через спільний порт (0) або потенціал між c і будь-яким виходом
         var iVal = Math.abs(sim.compI[c.id] || 0);
         var poweredByCurrent = iVal > TH;
 
-        // Перевіряємо напругу між портами флешера (працює і коли він розімкнений)
         var hasPotential = false;
         if (sim.netOf && sim.voltages) {
-            var netA = sim.netOf(c.id, 0);
-            var netB = sim.netOf(c.id, 1);
+            var netC = sim.netOf(c.id, 0);
+            var netA = sim.netOf(c.id, 1);
+            var netB = sim.netOf(c.id, 2);
+            var vC = (netC != null && sim.voltages[netC] != null) ? sim.voltages[netC] : 0;
             var vA = (netA != null && sim.voltages[netA] != null) ? sim.voltages[netA] : 0;
-            var vB = (netB != null && sim.voltages[netB] != null) ? sim.voltages[netB] : 0;
-            hasPotential = Math.abs(vA - vB) > 0.05; // більше 50 мВ різниці
+            var vB2 = (netB != null && sim.voltages[netB] != null) ? sim.voltages[netB] : 0;
+            hasPotential = Math.abs(vC - vA) > 0.05 || Math.abs(vC - vB2) > 0.05;
         }
 
-        // Флешер вважається живленим, якщо: є струм (замкнений) АБО є напруга (розімкнений)
         var powered = poweredByCurrent || hasPotential;
 
         if (powered && !c.state._powered) {
-            // Струм/напруга щойно з'явилися → скидаємо до заданого початкового стану
-            c.state._phase = c.props.closed ? 'on' : 'off';
+            c.state._phase = (c.props.state || 0) === 0 ? 'a' : 'b';
             c.state._lastT = t;
             c.state._powered = true;
         } else if (!powered) {
-            // Живлення зникло повністю → таймер "заморожується"
             c.state._powered = false;
             c.state._lastT = t;
             continue;
         }
 
         var elapsed = (t - c.state._lastT) / 1000;
-        var dur = c.state._phase === 'on'
-            ? (parseFloat(c.props.tOn) || 0.5)
+        var dur = c.state._phase === 'a'
+            ? (parseFloat(c.props.tOn)  || 0.5)
             : (parseFloat(c.props.tOff) || 0.5);
         if (dur < 0.01) dur = 0.01;
 
         if (elapsed >= dur) {
-            c.props.closed = !c.props.closed;
-            c.state._phase = c.props.closed ? 'on' : 'off';
+            // Перемикаємо між портом A (state=0) і портом B (state=1)
+            c.props.state = c.state._phase === 'a' ? 1 : 0;
+            c.state._phase = c.props.state === 0 ? 'a' : 'b';
             c.state._lastT = t;
             changed = true;
         }
@@ -2851,9 +3254,57 @@ showFaults(fRuntime); // show warning banner but keep running
 }
 runSolve();
 circuitDirty = false;
+
+// Check fuses: blow any whose current exceeds Imax
+if (sim && sim.compI) {
+    var fuseBlewNow = false;
+    state.components.forEach(function(fc) {
+        if (fc.type !== 'fuse' || fc.props.blown) return;
+        var fi = Math.abs(sim.compI[fc.id] || 0);
+        if (fi > (fc.props.Imax || 1)) {
+            fc.props.blown = true;
+            fuseBlewNow = true;
+        }
+    });
+    if (fuseBlewNow) {
+        var blownFuses = state.components.filter(function(c){ return c.type==='fuse' && c.props.blown; });
+        var compIds = {};
+        blownFuses.forEach(function(f){ compIds[f.id] = true; });
+        
+        // Формуємо об'єкт помилки
+        faults = {
+            wireIds: {},
+            compIds: compIds,
+            messages: blownFuses.map(function(f){
+                return '⚡ Запобіжник #' + f.id + ' перегорів! Струм перевищив встановлене обмеження ' + f.props.Imax.toFixed(1) + ' А.';
+            })
+        };
+        
+        // ⚠️ НЕ викликаємо markDirty(), бо воно автоматично очищує faults!
+        circuitDirty = true; 
+        scheduleDraw(); // Оновлюємо вигляд одразу
+        showFaults(faults); // Показуємо банер
+
+        // Запускаємо анімацію миготіння
+        if (animRAF) cancelAnimationFrame(animRAF);
+        (function flashFault(){
+            if (!faults) { animRAF = 0; return; }
+            scheduleDraw();
+            animRAF = requestAnimationFrame(flashFault);
+        })();
+        
+        isRunning = false;
+        wasRunningBeforeFault = true;
+        document.getElementById('btn-run').style.display = 'block';
+        document.getElementById('btn-stop').style.display = 'none';
+        stopAllBuzzerTones();
+        
+        return; // 🔑 КРИТИЧНО: виходимо з animLoop, щоб він не перезатер animRAF і не зупинив миготіння
+    }
+}
 var f2 = checkPostSolveFaults(sim);
 if (f2 && f2._onlyOpenSwitch) {
-showOpenLoopInfo('Розімкнене коло — клацніть вимикач, щоб замкнути і запустити струм');
+showOpenLoopInfo('Розімкнене коло — клацніть вимикач, щоб його замкнути і запустити струм');
 } else {
 hideOpenLoopInfo();
 }
@@ -2863,7 +3314,29 @@ draw();
 animRAF = requestAnimationFrame(animLoop);
 }
 function startSim() {
-	state.components.forEach(function(c){ if(c.type==='flasher') c.state._flasherInit = false; });
+	state.components.forEach(function(c){ if(c.type==='flasher') c.state._flInit = false; });
+	// Перевірка ізольованих компонентів перед запуском симуляції
+    checkIsolatedComponents();
+    
+    if (isolatedFaults) {
+    
+      // Підсвічування вже виконується через drawComponent()
+      // Просто запускаємо анімацію миготіння
+      if (!animRAF) {
+        animRAF = requestAnimationFrame(function flash(){
+          if (!isolatedFaults) {
+            animRAF = 0;
+            return;
+          }
+    
+          scheduleDraw();
+          animRAF = requestAnimationFrame(flash);
+        });
+      }
+    
+      // Симуляцію НЕ запускаємо
+      return;
+    }
 	const wrapper = document.getElementById('sidebarWrapper');
 	const toggleBtn = document.getElementById('sidebarToggleBtn');
 	let sbIsCollapsed = localStorage.getItem('sidebarCollapsedFixed') === 'true';
@@ -2903,6 +3376,7 @@ function startSim() {
 			return;
 		}
 	}
+	_clearIsolatedFaults();
 	clearFaults();
 	runSolve();
 	var f2 = checkPostSolveFaults(sim);
@@ -3108,6 +3582,223 @@ var sim = null;
 function portKey(compId, portIdx) { return compId + ':' + portIdx; }
 /* ── Fault detection (short circuits, dangling sources) ── */
 var faults = null;
+
+/* ── Isolated component detection ────────────────────────
+   Компоненти, жоден порт яких не підключений до жодного дроту,
+   є повністю ізольованими від кола — солвер не може їх врахувати.
+   Ця перевірка виконується постійно (не лише при запуску), щоб
+   користувач бачив попередження одразу після розміщення компонента.
+─────────────────────────────────────────────────────────── */
+var isolatedFaults = null;
+var _isolatedFlashRAF = 0;
+
+function checkIsolatedComponents() {
+
+  var isolated = [];
+
+  // Компоненти, які ОБОВ'ЯЗКОВО мають бути повністю підключені
+  var circuitTypes = [
+    'battery',
+    'vsource',
+    'resistor',
+    'rheostat',
+    'lamp',
+    'led',
+    'fan',
+    'buzzer',
+    'heater',
+    'ammeter',
+    'voltmeter',
+    'switch',
+    'pushbutton',
+    'flasher',
+    'ground',
+    'spdt'
+  ];
+
+  state.components.forEach(function(c) {
+
+    if (circuitTypes.indexOf(c.type) < 0)
+      return;
+
+    var def = COMP_DEFS[c.type];
+    if (!def || !def.ports)
+      return;
+
+    var connectedPorts = 0;
+    var danglingPorts = [];
+
+    // Перевіряємо КОЖЕН порт
+    for (var pi = 0; pi < def.ports.length; pi++) {
+
+      var hasWire = state.connections.some(function(conn) {
+
+        if (conn.from.anchor || conn.to.anchor)
+          return false;
+
+        return (
+          (conn.from.compId === c.id && conn.from.portIdx === pi) ||
+          (conn.to.compId   === c.id && conn.to.portIdx   === pi)
+        );
+      });
+
+      if (hasWire) {
+        connectedPorts++;
+      } else {
+        danglingPorts.push(pi);
+      }
+    }
+
+    // Для spdt та flasher: вхідний порт (0) обов'язковий,
+    // але достатньо хоча б одного з вихідних портів (1 або 2).
+    if (c.type === 'spdt' || c.type === 'flasher') {
+      var inputConnected  = danglingPorts.indexOf(0) < 0;   // порт 'c' підключений
+      var out1Connected   = danglingPorts.indexOf(1) < 0;   // порт 'a' підключений
+      var out2Connected   = danglingPorts.indexOf(2) < 0;   // порт 'b' підключений
+      var hasError = !inputConnected || (!out1Connected && !out2Connected);
+      if (hasError) {
+        var badPorts = [];
+        if (!inputConnected) badPorts.push(0);
+        if (!out1Connected && !out2Connected) { badPorts.push(1); badPorts.push(2); }
+        isolated.push({ comp: c, dangling: badPorts });
+      }
+      return; // пропускаємо загальну перевірку нижче
+    }
+
+    // Помилка якщо:
+    // - жоден порт не підключений
+    // - АБО хоча б один порт не підключений
+    if (
+      connectedPorts === 0 ||
+      danglingPorts.length > 0
+    ) {
+      isolated.push({
+        comp: c,
+        dangling: danglingPorts
+      });
+    }
+  });
+
+  if (isolated.length === 0) {
+    _clearIsolatedFaults();
+    return;
+  }
+
+  var compIds = {};
+
+  isolated.forEach(function(item) {
+    compIds[item.comp.id] = true;
+  });
+
+  var names = isolated.map(function(item) {
+
+    var c = item.comp;
+
+    var label =
+      (COMP_LABELS[c.type] || c.type) +
+      '\u00a0#' + c.id;
+
+    if (item.dangling.length > 0) {
+      label += ' (не підключені порти: ' +
+               item.dangling.join(', ') + ')';
+    }
+
+    return label;
+
+  }).join(', ');
+
+  var newFault = {
+
+    wireIds: {},
+
+    compIds: compIds,
+
+    messages: [
+      '\u26a0\ufe0f Виявлено неповністю підключені компоненти: ' +
+      names +
+      '. Симуляцію неможливо виконати, доки всі порти компонентів не будуть підключені.'
+    ],
+
+    _isolated: true
+  };
+
+  // Якщо список не змінився — банер не оновлюємо
+  var sameIds =
+    isolatedFaults &&
+    Object.keys(isolatedFaults.compIds).sort().join(',') ===
+    Object.keys(newFault.compIds).sort().join(',');
+
+  if (!sameIds) {
+    isolatedFaults = newFault;
+    _showIsolatedBanner();
+  }
+
+  // Миготіння проблемних компонентів
+  if (!_isolatedFlashRAF) {
+
+    (function flash() {
+
+      if (!isolatedFaults) {
+        _isolatedFlashRAF = 0;
+        return;
+      }
+
+      scheduleDraw();
+
+      _isolatedFlashRAF =
+        requestAnimationFrame(flash);
+
+    })();
+  }
+}
+
+function _clearIsolatedFaults() {
+  if (!isolatedFaults) return;
+  isolatedFaults = null;
+  if (_isolatedFlashRAF) { cancelAnimationFrame(_isolatedFlashRAF); _isolatedFlashRAF = 0; }
+  var bn = document.getElementById('isolated-fault-banner');
+  if (bn) bn.style.display = 'none';
+  scheduleDraw();
+}
+
+function _showIsolatedBanner() {
+  if (!isolatedFaults) return;
+  var bn = document.getElementById('isolated-fault-banner');
+  if (!bn) {
+    bn = document.createElement('div');
+    bn.id = 'isolated-fault-banner';
+    bn.className = 'fault-banner fault-banner--isolated';
+    bn.style.cssText = [
+      'position:absolute', 'bottom:12px', 'left:12px',
+      'background:rgba(30,24,8,0.97)',
+      'border-left:5px solid #ff9800',
+      'padding:10px 14px 10px 12px',
+      'border-radius:10px',
+      'color:#ffe082',
+      'font-size:12px',
+      'max-width:500px',
+      'z-index:500',
+      'backdrop-filter:blur(10px)',
+      'display:flex',
+      'align-items:flex-start',
+      'gap:10px',
+      'box-shadow:0 4px 24px rgba(0,0,0,0.5)'
+    ].join(';');
+    if (canvasCard) canvasCard.appendChild(bn);
+  }
+  var msg = isolatedFaults.messages.map(function(m) {
+    return '<div>' + m.replace(/[<>&]/g, function(ch){
+      return {'<':'&lt;','>':'&gt;','&':'&amp;'}[ch];
+    }) + '</div>';
+  }).join('');
+  bn.innerHTML =
+    '<div style="flex:1">' + msg + '</div>' +
+    '<button style="background:none;border:none;color:#ffe082;cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 8px;flex-shrink:0" id="isolated-fault-close">\u00d7</button>';
+  bn.querySelector('#isolated-fault-close').addEventListener('click', function() {
+    _clearIsolatedFaults();
+  });
+  bn.style.display = 'flex';
+}
 function checkFaults() {
 var parent = {};
 function find(k) { while (parent[k] !== k) { parent[k] = parent[parent[k]]; k = parent[k]; } return k; }
@@ -3121,7 +3812,7 @@ if (conn.from.anchor || conn.to.anchor) return;
 union(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
 });
 state.components.forEach(function (c) {
-if (c.type === 'junction' || c.type === 'junction4') {
+if (c.type === 'junction') {
 var def = COMP_DEFS[c.type];
 for (var i = 1; i < def.ports.length; i++) union(portKey(c.id,0), portKey(c.id,i));
 }
@@ -3133,9 +3824,12 @@ union(portKey(c.id, 0), portKey(c.id, 1));
 if (c.type === 'ammeter') {
 union(portKey(c.id, 0), portKey(c.id, 1));
 }
+if (c.type === 'spdt') {
+  union(portKey(c.id, 0), portKey(c.id, (c.props.state === 0) ? 1 : 2));
+}
 });
 var wireIds = {}, compIds = {}, msgs = [];
-var batteries = state.components.filter(function (c) { return c.type === 'battery'; });
+var batteries = state.components.filter(function (c) { return c.type === 'battery' || c.type === 'vsource'; });
 
 // ── Voltmeter-in-series detection ──────────────────────────
 // Build a second union-find that excludes voltmeters.
@@ -3154,11 +3848,14 @@ var batteries = state.components.filter(function (c) { return c.type === 'batter
     union2(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
   });
   state.components.forEach(function(c) {
-    if (c.type === 'junction' || c.type === 'junction4') {
+    if (c.type === 'junction') {
       var def = COMP_DEFS[c.type];
       for (var i = 1; i < def.ports.length; i++) union2(portKey(c.id,0), portKey(c.id,i));
     }
     if ((c.type === 'switch' || c.type === 'pushbutton') && c.props.closed) union2(portKey(c.id,0), portKey(c.id,1));
+    if (c.type === 'spdt') {
+		union2(portKey(c.id, 0), portKey(c.id, (c.props.state === 0) ? 1 : 2));
+	}
     if (c.type === 'ammeter') union2(portKey(c.id,0), portKey(c.id,1));
     // voltmeter intentionally excluded
   });
@@ -3220,7 +3917,7 @@ batteries.forEach(function (b) {
       }
     });
     state.components.forEach(function (cc) {
-      if (cc.type === 'junction' || cc.type === 'junction4') {
+      if (cc.type === 'junction') {
         if (find(portKey(cc.id,0)) === sn) compIds[cc.id] = true;
       }
     });
@@ -3278,17 +3975,24 @@ ammeters.forEach(function (a) {
 });
 
 var seenPairs = {};
-state.connections.forEach(function (conn) {
-  if (conn.from.anchor || conn.to.anchor) return;
-  var a = conn.from.compId + ':' + conn.from.portIdx;
-  var b = conn.to.compId + ':' + conn.to.portIdx;
-  var k = a < b ? (a + '|' + b) : (b + '|' + a);
-  if (seenPairs[k]) {
-    wireIds[conn.id] = true; wireIds[seenPairs[k]] = true;
-    msgs.push('⚠ Два дроти з\'єднують ті самі порти — видаліть зайвий, щоб уникнути спотворення показників.');
-  } else {
-    seenPairs[k] = conn.id;
-  }
+    state.connections.forEach(function (conn) {
+      if (conn.from.anchor || conn.to.anchor) return;
+      
+      // Вузли спеціально призначені для з'єднання багатьох дротів в одну точку.
+      // Не викликаємо помилку "два дроти", якщо хоча б один кінець — junction.
+      var cFrom = state.components.find(function(c){return c.id===conn.from.compId;});
+      var cTo   = state.components.find(function(c){return c.id===conn.to.compId;});
+      if ((cFrom && cFrom.type === 'junction') || (cTo && cTo.type === 'junction')) return;
+
+      var a = conn.from.compId + ':' + conn.from.portIdx;
+      var b = conn.to.compId + ':' + conn.to.portIdx;
+      var k = a < b ? (a + '|' + b) : (b + '|' + a);
+      if (seenPairs[k]) {
+        wireIds[conn.id] = true; wireIds[seenPairs[k]] = true;
+        msgs.push('⚠ Два дроти з\'єднують ті самі порти — видаліть зайвий, щоб уникнути спотворення показників.');
+      } else {
+        seenPairs[k] = conn.id;
+      }
 });
 
 if (msgs.length === 0) return null;
@@ -3299,7 +4003,7 @@ if (vmSeriesOnly) result._voltmeterInSeries = true;
 return result;
 }
 function checkPostSolveFaults(s) {
-var batteries = state.components.filter(function (c) { return c.type === 'battery'; });
+var batteries = state.components.filter(function (c) { return c.type === 'battery' || c.type === 'vsource'; });
 if (batteries.length === 0) return null;
 var liveBatts = batteries.filter(function (b) { return Math.abs(b.props.V || 0) > 1e-9; });
 if (liveBatts.length === 0) return null;
@@ -3323,7 +4027,7 @@ if (!s) {
     // Пропускаємо не-гілкові елементи
     if (BRANCH_TYPES.indexOf(c.type) < 0) return;
     // Пропускаємо батареї — вони вже діагностуються окремо
-    if (c.type === 'battery') return;
+    if (c.type === 'battery' || c.type === 'vsource') return;
     // Рахуємо скільки портів підключені хоча б до одного дроту
     var connectedPorts = 0;
     for (var pi = 0; pi < def.ports.length; pi++) {
@@ -3334,7 +4038,20 @@ if (!s) {
       });
       if (hasConn) connectedPorts++;
     }
-    if (connectedPorts < def.ports.length) {
+    // Для spdt та flasher: вхідний порт (0) обов'язковий,
+    // але достатньо хоча б одного з вихідних (1 або 2).
+    if (c.type === 'spdt' || c.type === 'flasher') {
+      var _hasWireOnPort = function(pi2) {
+        return state.connections.some(function(conn) {
+          if (conn.from.anchor || conn.to.anchor) return false;
+          return (conn.from.compId === c.id && conn.from.portIdx === pi2) ||
+                 (conn.to.compId   === c.id && conn.to.portIdx   === pi2);
+        });
+      };
+      var _inOk  = _hasWireOnPort(0);
+      var _outOk = _hasWireOnPort(1) || _hasWireOnPort(2);
+      if (!_inOk || !_outOk) danglingComps.push(c);
+    } else if (connectedPorts < def.ports.length) {
       danglingComps.push(c);
     }
   });
@@ -3408,7 +4125,7 @@ var hasOpenSwitch = state.components.some(function(c){
 // Перевіряємо, чи є непідключені елементи (висячі порти)
 var hasDangling = state.components.some(function(c) {
   var def = COMP_DEFS[c.type];
-  if (!def || BRANCH_TYPES.indexOf(c.type) < 0 || c.type === 'battery') return false;
+  if (!def || BRANCH_TYPES.indexOf(c.type) < 0 || c.type === 'battery' || c.type === 'vsource') return false;
   for (var pi = 0; pi < def.ports.length; pi++) {
     var hasConn = state.connections.some(function(conn) {
       if (conn.from.anchor || conn.to.anchor) return false;
@@ -3427,22 +4144,27 @@ return result;
 }
 
 window.clearFaults = function() {
-  console.log('[clearFaults] Викликано');
-  
-  faults = null;
-  wasRunningBeforeFault = false; // 🔑 Головне: повертає інтерактивність полотну
+    faults = null;
+    wasRunningBeforeFault = false; // повертає інтерактивність полотну
 
-  // Примусово зупиняємо цикл анімації/миготіння, якщо він ще працює
-  if (typeof animRAF !== 'undefined' && animRAF) {
-    cancelAnimationFrame(animRAF);
-    animRAF = 0;
-  }
+    // Скидаємо стан перегорілих запобіжників
+    state.components.forEach(function(c) {
+        if (c.type === 'fuse' && c.props.blown) {
+            c.props.blown = false;
+        }
+    });
+    circuitDirty = true; // змусить солвер перерахувати коло з відновленими дротами
 
-  var bn = document.getElementById('fault-banner');
-  if (bn) bn.style.display = 'none';
-
-  scheduleDraw();
+    // Зупиняємо цикл миготіння, якщо він ще працює
+    if (typeof animRAF !== 'undefined' && animRAF) {
+        cancelAnimationFrame(animRAF);
+        animRAF = 0;
+    }
+    var bn = document.getElementById('fault-banner');
+    if (bn) bn.style.display = 'none';
+    scheduleDraw();
 }
+
 function showFaults(f) {
   console.log('[showFaults] Викликано');
 
@@ -3511,25 +4233,37 @@ function solve() {
 var parent = {};
 function find(k) { while (parent[k] !== k) { parent[k] = parent[parent[k]]; k = parent[k]; } return k; }
 function union(a,b){ a=find(a); b=find(b); if (a!==b) parent[a]=b; }
+// Допоміжна функція: чи підключений конкретний порт до дроту
+function portHasWire(compId, portIdx) {
+  return state.connections.some(function(conn) {
+    if (conn.from.anchor || conn.to.anchor) return false;
+    return (conn.from.compId === compId && conn.from.portIdx === portIdx) ||
+           (conn.to.compId   === compId && conn.to.portIdx   === portIdx);
+  });
+}
 state.components.forEach(function (c) {
 var def = COMP_DEFS[c.type];
 for (var i = 0; i < def.ports.length; i++) {
-var k = portKey(c.id, i);
-parent[k] = k;
+  // Для spdt/flasher пропускаємо непідключені порти — вони не повинні потрапляти в матрицю
+  if ((c.type === 'spdt' || c.type === 'flasher') && !portHasWire(c.id, i)) continue;
+  var k = portKey(c.id, i);
+  parent[k] = k;
 }
 });
 state.connections.forEach(function (conn) {
 if (conn.from.anchor || conn.to.anchor) return; // dangling end — не включати в солвер
 union(portKey(conn.from.compId, conn.from.portIdx), portKey(conn.to.compId, conn.to.portIdx));
 });
+
 state.components.forEach(function (c) {
-if (c.type === 'junction' || c.type === 'junction4') {
-var def = COMP_DEFS[c.type];
-for (var i = 1; i < def.ports.length; i++) {
-union(portKey(c.id, 0), portKey(c.id, i));
-}
-}
+    if ((c.type === 'switch' || c.type === 'pushbutton') && !c.props.closed) {
+        // Не додавати цей компонент до гілок - він розриває коло
+        return;
+    }	
+// junction має 1 порт — union не потрібен
+if ((c.type === 'switch' || false) && false) {} // placeholder
 });
+
 var netIdMap = {}, nets = [];
 Object.keys(parent).forEach(function (k) {
   var r = find(k);
@@ -3544,7 +4278,7 @@ for (var i = 0; i < state.components.length; i++) {
 }
 if (groundNet < 0) {
   for (var j = 0; j < state.components.length; j++) {
-    if (state.components[j].type === 'battery') { groundNet = netOf(state.components[j].id, 1); break; }
+    if (state.components[j].type === 'battery' || state.components[j].type === 'vsource') { groundNet = netOf(state.components[j].id, 1); break; }
   }
 }
 if (groundNet < 0) return null;
@@ -3553,7 +4287,7 @@ var vSources = [];
 var vSeenKeys = {};
 var vAliases = {};
 state.components.forEach(function (c) {
-  if (c.type !== 'battery') return;
+  if (c.type !== 'battery' && c.type !== 'vsource') return;
   var nplus = netOf(c.id, 0), nmin = netOf(c.id, 1);
   var V = c.props.V || 0;
   var fwdKey = nplus + '|' + nmin + '|' + V.toFixed(9);
@@ -3592,7 +4326,8 @@ function resistanceOf(c) {
   if (c.type === 'led') return Math.max(5, c.props.R);
   if (c.type === 'ammeter') return 0.001;
   if (c.type === 'voltmeter') return 1e9;
-  if (c.type === 'switch' || c.type === 'pushbutton' || c.type === 'flasher') return c.props.closed ? 0.001 : null;
+  if (c.type === 'switch' || c.type === 'pushbutton') return c.props.closed ? 0.001 : null;
+  if (c.type === 'fuse') return c.props.blown ? null : 0.001; // blown fuse = open circuit
   return null;
 }
 
@@ -3603,6 +4338,32 @@ var voltages = new Array(N);
 for (var iter = 0; iter < 2; iter++) {
   branches = [];
   state.components.forEach(function (c) {
+
+  // ✅ FIX: Обробка SPDT перемикача (3 порти)
+   if (c.type === 'spdt') {
+    var s = c.props.state || 0;
+    var pB = s === 0 ? 1 : 2;
+    var _spdtOutOk = state.connections.some(function(conn) {
+      if (conn.from.anchor || conn.to.anchor) return false;
+      return (conn.from.compId === c.id && conn.from.portIdx === pB) ||
+             (conn.to.compId   === c.id && conn.to.portIdx   === pB);
+    });
+    if (_spdtOutOk) branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, pB), R: 0.001, portA: 0, portB: pB });
+    return;
+   }
+   // Flasher: 3-портовий (порт 0=c, 1=a, 2=b)
+   if (c.type === 'flasher') {
+    var flS = c.props.state || 0;
+    var flPB = flS === 0 ? 1 : 2;
+    var _flOutOk = state.connections.some(function(conn) {
+      if (conn.from.anchor || conn.to.anchor) return false;
+      return (conn.from.compId === c.id && conn.from.portIdx === flPB) ||
+             (conn.to.compId   === c.id && conn.to.portIdx   === flPB);
+    });
+    if (_flOutOk) branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, flPB), R: 0.001, portA: 0, portB: flPB });
+    return;
+   }
+  
     var R = resistanceOf(c);
     if (c.type === 'led') {
       var na = netOf(c.id, 0); // anode
@@ -3620,6 +4381,23 @@ for (var iter = 0; iter < 2; iter++) {
     if (R == null) return;
     branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, 1), R: R });
   });
+
+  // ✅ FIX: перевірка зв'язності графу гілок.
+  // Якщо якийсь нет не досягається від groundNet через гілки+джерела
+  // (наприклад, через розімкнутий вимикач), матриця технічно не сингулярна,
+  // але результат фізично безглуздий — лампа "світить" без струму.
+  var netAdj = {};
+  for (var ni = 0; ni < N; ni++) netAdj[ni] = {};
+  branches.forEach(function(b) { netAdj[b.na][b.nb] = true; netAdj[b.nb][b.na] = true; });
+  vSources.forEach(function(v) { var np = netOf(v.id,0), nm = netOf(v.id,1); netAdj[np][nm] = true; netAdj[nm][np] = true; });
+  var bfsVisited = {}; var bfsQueue = [groundNet]; bfsVisited[groundNet] = true;
+  while (bfsQueue.length) {
+    var bfsCur = bfsQueue.shift();
+    Object.keys(netAdj[bfsCur]).forEach(function(nb){ var nbn = +nb; if (!bfsVisited[nbn]) { bfsVisited[nbn] = true; bfsQueue.push(nbn); } });
+  }
+  var disconnected = false;
+  branches.forEach(function(b) { if (!bfsVisited[b.na] || !bfsVisited[b.nb]) disconnected = true; });
+  if (disconnected) return null;
 
   // Очищаємо та заново штампуємо матрицю
   A = []; for (var r = 0; r < SIZE; r++) { A[r] = new Array(SIZE); for (var c2 = 0; c2 < SIZE; c2++) A[r][c2] = 0; }
@@ -3670,8 +4448,15 @@ branches.forEach(function (b) {
   compI[b.comp.id] = Math.abs(i);
   compP[b.comp.id] = Math.abs(v*i);
   compCurrentDir[b.comp.id] = i;
-  portI[b.comp.id][0] = i;
-  portI[b.comp.id][1] = -i;
+  // Для spdt/flasher: гілка з'єднує порт 0 (c) з активним виходом (1 або 2).
+  // Визначаємо індекси з гілки щоб правильно записати portI для 3-портових компонентів.
+  if ((b.comp.type === 'spdt' || b.comp.type === 'flasher') && b.portA != null && b.portB != null) {
+    portI[b.comp.id][b.portA] = i;
+    portI[b.comp.id][b.portB] = -i;
+  } else {
+    portI[b.comp.id][0] = i;
+    portI[b.comp.id][1] = -i;
+  }
 });
 var maxIbAbs = 0, pNetDelivered = 0;
 vSources.forEach(function (v, k) {
@@ -3718,7 +4503,7 @@ return {
   netOf: netOf
 };
 }
-var BRANCH_TYPES = ['resistor','rheostat','lamp','fan','buzzer','heater','led','ammeter','voltmeter','battery','switch','pushbutton','flasher'];
+var BRANCH_TYPES = ['resistor','rheostat','lamp','fan','buzzer','heater','led','ammeter','voltmeter','battery','vsource','switch','pushbutton','flasher', 'spdt', 'fuse'];
 function isBranchComp(c) { return c && BRANCH_TYPES.indexOf(c.type) >= 0; }
 function wireSignedCurrent(conn) {
 if (!sim || !sim.portI) return 0;
@@ -3734,16 +4519,8 @@ var a = key(cn.from.compId, cn.from.portIdx);
 var b = key(cn.to.compId, cn.to.portIdx);
 addEdge(a, b, cn.id); addEdge(b, a, cn.id);
 });
-state.components.forEach(function (c) {
-if (c.type === 'junction' || c.type === 'junction4') {
-var def = COMP_DEFS[c.type];
-for (var i = 1; i < def.ports.length; i++) {
-var sId = 's' + c.id + '_' + i;
-addEdge(key(c.id, 0), key(c.id, i), sId);
-addEdge(key(c.id, i), key(c.id, 0), sId);
-}
-}
-});
+// junction має 1 порт — внутрішні ребра не потрібні
+
 return adj;
 }
 function getAdj() {
@@ -3783,10 +4560,27 @@ if (!visited[n.other]) { visited[n.other] = true; queue.push(n.other); }
 return totalI;
 }
 function runSolve() {
-try { sim = solve(); }
-catch (e) { console.error('Solver error', e); sim = null; }
-updateReadouts();
-scheduleDraw();
+  // Тимчасово видаляємо junction зі списку компонентів для розрахунку
+  var originalComponents = state.components;
+  var nonJunctionComponents = state.components.filter(function(c) {
+    return c.type !== 'junction';
+  });
+  
+  // Підміняємо компоненти
+  state.components = nonJunctionComponents;
+  
+  try { 
+    sim = solve(); 
+  } catch (e) { 
+    console.error('Solver error', e); 
+    sim = null; 
+  }
+  
+  // Повертаємо junction назад
+  state.components = originalComponents;
+  
+  updateReadouts();
+  scheduleDraw();
 }
 function updateReadouts() {
 var rv = document.getElementById('r-v');
@@ -4137,7 +4931,7 @@ bridge: function(){
 var b = addComp('battery', 60, 280, {V:12});
 var a = addComp('ammeter', 200, 280);
 var jT = addComp('junction', 440, 160);
-var jB = addComp('junction4', 440, 400);
+var jB = addComp('junction', 440, 400);
 var jL = addComp('junction', 320, 280);
 var jR = addComp('junction', 560, 280);
 var r1 = addComp('resistor', 380, 220, {R:1000});
@@ -4164,8 +4958,8 @@ addConn(b, 1, g, 0, [{x:20,y:280},{x:20,y:460},{x:660,y:460},{x:660,y:400}]);
 'multi-lamp': function(){
 var b = addComp('battery', 60, 260, {V:12});
 var aT = addComp('ammeter', 200, 260);
-var jL = addComp('junction4', 320, 260);
-var jR = addComp('junction4', 760, 260);
+var jL = addComp('junction', 320, 260);
+var jR = addComp('junction', 760, 260);
 var s1 = addComp('switch', 420, 160, {closed:true});
 var a1 = addComp('ammeter', 560, 160);
 var l1 = addComp('lamp', 680, 160, {R:48});
@@ -4199,12 +4993,12 @@ addConn(b, 1, g, 0, [{x:20,y:260},{x:20,y:480},{x:860,y:480},{x:860,y:420}]);
 'two-loop': function(){
 var b = addComp('battery', 60, 260, {V:12});
 var aT = addComp('ammeter', 200, 260);
-var jL = addComp('junction4', 340, 260);
+var jL = addComp('junction', 340, 260);
 var r1 = addComp('resistor', 460, 160, {R:220});
 var aU = addComp('ammeter', 600, 160);
 var r2 = addComp('resistor', 460, 360, {R:330});
 var aD = addComp('ammeter', 600, 360);
-var jR = addComp('junction4', 740, 260);
+var jR = addComp('junction', 740, 260);
 var r3 = addComp('resistor', 740, 380, {R:100});
 var vm = addComp('voltmeter', 460, 480);
 var g = addComp('ground', 860, 440);
@@ -4668,6 +5462,7 @@ state: state,
 solve: function(){ return solve(); },
 checkFaults: function(){ return checkFaults(); },
 checkPostSolveFaults: function(s){ return checkPostSolveFaults(s); },
+checkIsolatedComponents: checkIsolatedComponents,
 addComp: addComp,
 addConn: addConn,
 reset: function(){
@@ -4676,6 +5471,7 @@ state.connections.length = 0;
 state.annStrokes.length = 0;
 state.annShapes.length = 0;
 state.nextId = 1;
+_clearIsolatedFaults();
 }
 };
 
@@ -4753,7 +5549,7 @@ function showSaveModal() {
   function doSave() {
     let filename = input.value.trim();
     if (!filename) filename = 'circuit';
-    if (!filename.toLowerCase().endsWith('.json')) filename += '.json';
+    if (!filename.toLowerCase().endsWith('.ecd')) filename += '.ecd';
     exportCircuit(filename);
     closeModal();
   }
@@ -4767,7 +5563,7 @@ function exportCircuit(filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename || 'circuit.json';
+  a.download = filename || 'circuit.ecd';
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -4786,6 +5582,7 @@ window.addEventListener('DOMContentLoaded', () => {
     saveBtn.addEventListener('click', showSaveModal);
   }
   if (loadBtn && fileInput) {
+    fileInput.setAttribute('accept', '.ecd');
     loadBtn.addEventListener('click', () => { fileInput.click(); });
     fileInput.addEventListener('change', e => {
       const file = e.target.files[0];
@@ -4798,7 +5595,13 @@ function importCircuit(file) {
 const reader = new FileReader();
 reader.onload = function(e) {
 try {
-  restore(e.target.result);
+  var text = e.target.result;
+  var parsed = JSON.parse(text);
+  if (!parsed._ecd || parsed._ecd !== 'Electrical Circuit Designer') {
+    alert('Файл не належить Electrical Circuit Designer і не може бути відкритий.');
+    return;
+  }
+  restore(text);
 } catch(err) {
   console.error(err);
   alert('Помилка завантаження схеми');
@@ -4808,15 +5611,150 @@ reader.readAsText(file);
 }
 
 /* ── Init ────────────────────────────────────────────────── */
+/* ── VSSource overlay sliders ────────────────────────────── */
+// Inject CSS for vsource slider thumb
+(function() {
+  var st = document.createElement('style');
+  st.textContent = [
+    '.vsource-sld::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#ffa000;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.5);cursor:pointer;}',
+    '.vsource-sld::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#ffa000;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.5);cursor:pointer;border:none;}',
+    '.vsource-slider-wrap{transition:opacity 0.15s;}',
+  ].join('');
+  document.head.appendChild(st);
+})();
+var _vsourceSliders = {}; // compId → DOM element
+
+function getOrCreateVsourceSlider(c) {
+  if (_vsourceSliders[c.id]) return _vsourceSliders[c.id];
+
+  var wrap = document.createElement('div');
+  wrap.className = 'vsource-slider-wrap';
+  wrap.setAttribute('data-vsid', c.id);
+  wrap.style.cssText = [
+    'position:absolute',
+    'display:flex',
+    'align-items:center',
+    'pointer-events:auto',
+    'z-index:200',
+    'transform:translate(-50%,-50%)',
+    'user-select:none'
+  ].join(';');
+
+  var sld = document.createElement('input');
+  sld.type = 'range';
+  sld.className = 'vsource-sld';
+  sld.style.cssText = [
+    'width:68px',
+    'height:6px',
+    'cursor:pointer',
+    '-webkit-appearance:none',
+    'appearance:none',
+    'background:linear-gradient(to right,#ffa000 0%,#ffa000 50%,rgba(255,160,0,0.25) 50%,rgba(255,160,0,0.25) 100%)',
+    'border-radius:3px',
+    'outline:none',
+    'margin:0'
+  ].join(';');
+
+  function updateSliderBg() {
+    var mn = parseFloat(sld.min)||0, mx = parseFloat(sld.max)||20;
+    var pct = mx > mn ? ((parseFloat(sld.value)-mn)/(mx-mn)*100).toFixed(1) : 50;
+    sld.style.background = 'linear-gradient(to right,#ffa000 0%,#ffa000 '+pct+'%,rgba(255,160,0,0.25) '+pct+'%,rgba(255,160,0,0.25) 100%)';
+  }
+
+  function syncFromComp() {
+    var mn = c.props.Vmin != null ? c.props.Vmin : 0;
+    var mx = c.props.Vmax != null ? c.props.Vmax : 20;
+    sld.min = mn; sld.max = mx;
+    sld.step = mx - mn <= 5 ? 0.1 : (mx - mn <= 20 ? 0.5 : 1);
+    sld.value = Math.max(mn, Math.min(mx, c.props.V || 0));
+    updateSliderBg();
+  }
+
+  syncFromComp();
+  wrap._syncFromComp = syncFromComp;
+
+  sld.addEventListener('input', function(e) {
+    e.stopPropagation();
+    var v = parseFloat(sld.value);
+    if (isNaN(v)) return;
+    c.props.V = v;
+    updateSliderBg();
+    markDirty();
+    scheduleDraw();
+    renderProps();
+  });
+
+  // Prevent canvas pan/drag from firing on slider
+  sld.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  sld.addEventListener('touchstart', function(e) { e.stopPropagation(); }, {passive:true});
+
+  wrap.appendChild(sld);
+  if (canvasCard) canvasCard.appendChild(wrap);
+  _vsourceSliders[c.id] = wrap;
+  return wrap;
+}
+
+function removeVsourceSlider(compId) {
+  var el = _vsourceSliders[compId];
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+  delete _vsourceSliders[compId];
+}
+
+function updateVsourceSliders() {
+  var seen = {};
+  state.components.forEach(function(c) {
+    if (c.type !== 'vsource') return;
+    seen[c.id] = true;
+    var wrap = getOrCreateVsourceSlider(c);
+    // Sync range in case Vmin/Vmax changed
+    if (wrap._syncFromComp) wrap._syncFromComp();
+
+    // Position: centre of component in CSS pixels relative to canvasCard
+    var cardRect = canvasCard ? canvasCard.getBoundingClientRect() : {left:0,top:0};
+    var canvRect = canvas ? canvas.getBoundingClientRect() : cardRect;
+    var sx = toSX(c.x) + (canvRect.left - cardRect.left);
+    var sy = toSY(c.y) + (canvRect.top  - cardRect.top);
+
+    // Always place slider directly below the component centre in screen space, never rotated
+    var sliderOffsetY = 22 * viewScale + 14;
+    wrap.style.left = sx + 'px';
+    wrap.style.top  = (sy + sliderOffsetY) + 'px';
+    wrap.style.display = '';
+    wrap.style.transform = 'translate(-50%,-50%)';
+  });
+
+  // Remove sliders for deleted vsource components
+  Object.keys(_vsourceSliders).forEach(function(id) {
+    if (!seen[+id]) removeVsourceSlider(+id);
+  });
+}
+
+// Clean up when component is deleted
+var _origDeleteSelected = null;
+
 drawPaletteIcons();
 resizeCanvas();
 viewOffX = 40; viewOffY = 40;
 try {
-if (PREBUILT.single) {
-PREBUILT.single();
-var defPill = prebuiltTabs && prebuiltTabs.querySelector('[data-circuit="single"]');
+var _prebuiltKeys = Object.keys(PREBUILT);
+var _urlParam = new URLSearchParams(window.location.search).get('prebuilt');
+var _prebuiltKey;
+if (_urlParam !== null) {
+  var _idx = parseInt(_urlParam, 10);
+  // 1-based index; fallback to first if out of range or NaN
+  if (!isNaN(_idx) && _idx >= 1 && _idx <= _prebuiltKeys.length) {
+    _prebuiltKey = _prebuiltKeys[_idx - 1];
+  } else {
+    _prebuiltKey = _prebuiltKeys[0];
+  }
+} else {
+  _prebuiltKey = 'single';
+}
+if (PREBUILT[_prebuiltKey]) {
+PREBUILT[_prebuiltKey]();
+var defPill = prebuiltTabs && prebuiltTabs.querySelector('[data-circuit="'+_prebuiltKey+'"]');
 if (defPill) defPill.classList.add('active');
-if (circuitDesc) { circuitDesc.style.display = ''; circuitDesc.textContent = CIRCUIT_DESC.single || ''; }
+if (circuitDesc) { circuitDesc.style.display = ''; circuitDesc.textContent = CIRCUIT_DESC[_prebuiltKey] || ''; }
 fitAll();
 }
 } catch (e) { /* non-fatal — just show empty canvas */ }
