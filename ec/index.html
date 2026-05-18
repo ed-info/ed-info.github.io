@@ -5,6 +5,132 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>⚡ Електросимулятор кола постійного струму</title>
 <style>
+  /* ===== ЗАСТАВКА ===== */
+  #splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    pointer-events: all;
+  }
+
+  #splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #splash-screen.hidden {
+    display: none;
+  }
+
+  .splash-glow-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 30% 40%, rgba(255,200,50,0.08) 0%, rgba(0,0,0,0) 70%);
+  }
+
+  .splash-title-wrapper {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: splashIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes splashIn {
+    from { opacity: 0; transform: scale(0.88) translateY(18px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .splash-electric-title {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.05em;
+    font-weight: 900;
+    font-size: clamp(2rem, 12vw, 5rem);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    background-color: #0b1120;
+    padding: 0.2em 0.4em;
+    border-radius: 2rem;
+    box-shadow: 0 25px 35px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .splash-gradient-word {
+    background: linear-gradient(135deg, #FFD966, #FFB347, #FF8C42, #F4A261, #FFB347);
+    background-size: 180% 180%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+    animation: splashGradientFlow 3s ease infinite;
+  }
+
+  @keyframes splashGradientFlow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .splash-lightning-bolt {
+    display: inline-block;
+    color: #FFE600;
+    text-shadow: 0 0 6px #ffaa00, 0 0 12px #ffcc33, 0 2px 5px rgba(0,0,0,0.3);
+    margin: 0 0.03em;
+    animation: splashLightningPulse 0.7s infinite alternate;
+  }
+
+  @keyframes splashLightningPulse {
+    from { text-shadow: 0 0 4px #ffdd44, 0 0 8px #ffcc22, 0 2px 4px black; transform: scale(1); }
+    to   { text-shadow: 0 0 14px #ffea80, 0 0 24px #ffcc33, 0 2px 8px black; transform: scale(1.1); }
+  }
+
+  .splash-subtitle {
+    margin-top: 1.2rem;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: #7e8aa8;
+    font-weight: 500;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .splash-loader {
+    margin-top: 2.5rem;
+    width: 160px;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .splash-loader-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ffb347, #FFE600);
+    border-radius: 2px;
+    animation: splashLoad 1.8s ease forwards;
+  }
+
+  @keyframes splashLoad {
+    from { width: 0%; }
+    to   { width: 100%; }
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   /* ===== ТЕМИ: ТЕМНА / СВІТЛА ===== */
@@ -695,6 +821,22 @@
 </style>
 </head>
 <body>
+
+<!-- ===== ЗАСТАВКА ===== -->
+<div id="splash-screen">
+  <div class="splash-glow-bg"></div>
+  <div class="splash-title-wrapper">
+    <div class="splash-electric-title">
+      <span class="splash-gradient-word">ЕЛЕКТРО</span>
+      <span class="splash-lightning-bolt">⚡</span>
+      <span class="splash-gradient-word">КОНСТРУКТОР</span>
+    </div>
+    <div class="splash-subtitle">⚡ energy of creation ⚡</div>
+    <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+  </div>
+</div>
+<!-- ===== / ЗАСТАВКА ===== -->
+
 <div class="app">
   <!-- Обгортка сайдбару з кнопкою всередині (позиціонування відносно неї) -->
 <div class="sidebar-wrapper" id="sidebarWrapper">
@@ -714,7 +856,7 @@
           <div class="palette-item" draggable="true" data-type="lamp"><img src="img/lamp.png" class="palette-icon" alt="lamp"><span class="palette-label">Лампа</span></div>
           <div class="palette-item" draggable="true" data-type="led"><img src="img/led.png" class="palette-icon" alt="led"><span class="palette-label">Світлодіод</span></div>
           <div class="palette-item" draggable="true" data-type="fan"><img src="img/fan.png" class="palette-icon" alt="fan"><span class="palette-label">Вентилятор</span></div>
-          <div class="palette-item" draggable="true" data-type="buzzer"><img src="img/buzzer.png" class="palette-icon" alt="buzzer"><span class="palette-label">Зуммер</span></div>
+          <div class="palette-item" draggable="true" data-type="buzzer"><img src="img/buzzer.png" class="palette-icon" alt="buzzer"><span class="palette-label">Дзвоник</span></div>
           <div class="palette-item" draggable="true" data-type="heater"><img src="img/heater.png" class="palette-icon" alt="heater"><span class="palette-label">Нагрівач</span></div>
           <div class="palette-item" draggable="true" data-type="switch"><img src="img/switch.png" class="palette-icon" alt="switch"><span class="palette-label">Вимикач</span></div>
           <div class="palette-item" draggable="true" data-type="spdt"><img src="img/spdt.png" class="palette-icon" alt="spdt"><span class="palette-label">Перемикач</span></div>
@@ -726,10 +868,6 @@
         <div class="palette">
           <div class="palette-item" draggable="true" data-type="ammeter"><img src="img/ammeter.png" class="palette-icon" alt="ammeter"><span class="palette-label">Амперметр</span></div>
           <div class="palette-item" draggable="true" data-type="voltmeter"><img src="img/voltmeter.png" class="palette-icon" alt="voltmeter"><span class="palette-label">Вольтметр</span></div>
-        </div>
-        <div class="sidebar-section">З'єднання</div>
-        <div class="palette">
-          <div class="palette-item" draggable="true" data-type="junction"><img src="img/junction.png" class="palette-icon" alt="junction"><span class="palette-label">Вузол</span></div>          
         </div>
       </div>
     </div>
@@ -918,6 +1056,18 @@
 
 <script>
 	
+// ===== ЗАСТАВКА: прибираємо через 2 секунди =====
+(function() {
+  const splash = document.getElementById('splash-screen');
+  if (!splash) return;
+  setTimeout(function() {
+    splash.classList.add('fade-out');
+    setTimeout(function() {
+      splash.classList.add('hidden');
+    }, 520); // після завершення transition (0.5s)
+  }, 2000);
+})();
+
 function annotationPanel() {
     var panel = document.getElementById("mark-bar");
     
