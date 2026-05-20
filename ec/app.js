@@ -106,11 +106,83 @@ var drag = null; // {kind:'move'|'pan'|'sketch'|'shape-draw'|'shape-move', ...}
 // solver dirty flag — set whenever circuit topology or component params change
 var circuitDirty = true;
 function purgeFullyDanglingWires() {
-var before = state.connections.length;
-state.connections = state.connections.filter(function(conn) {
-return !(conn.from.anchor && conn.to.anchor);
-});
-if (state.connections.length !== before) scheduleDraw();
+    var before = state.connections.length;
+    
+    // Допоміжна функція: перевіряє, чи є в цій точці існуючий Junction
+    function isAnchorValidJunction(anchor) {
+        if (!anchor) return false;
+        for (var i = 0; i < state.junctions.length; i++) {
+            var j = state.junctions[i];
+            if (Math.abs(j.x - anchor.x) < 2 && Math.abs(j.y - anchor.y) < 2) return true;
+        }
+        return false;
+    }
+
+    state.connections = state.connections.filter(function(conn) {
+        var fAnchor = conn.from.anchor;
+        var tAnchor = conn.to.anchor;
+        
+        // Якщо дріт має якорі на обох кінцях
+        if (fAnchor && tAnchor) {
+            var j1 = isAnchorValidJunction(fAnchor);
+            var j2 = isAnchorValidJunction(tAnchor);
+            
+            // Якщо обидва кінці вказують на реальні junctions — ЗАЛИШАЄМО дріт
+            if (j1 && j2) return true;
+            
+            // Якщо хоча б один "сирота" (немає junction) — видаляємо
+            return false;
+        }
+        
+        // В інших випадках (дріт від компонента до чогось) залишаємо
+        return true;
+    });
+    
+    if (state.connections.length !== before) scheduleDraw();
+}
+//
+function purgeOrphanedJunctions() {
+    var changed = false;    
+    // Знаходимо всі координати і скільки разів до них підключені дроти
+    var anchorCount = {};
+    state.connections.forEach(function(conn) {
+        if (conn.from.anchor) {
+            var key = Math.round(conn.from.anchor.x) + ',' + Math.round(conn.from.anchor.y);
+            anchorCount[key] = (anchorCount[key] || 0) + 1;
+        }
+        if (conn.to.anchor) {
+            var key2 = Math.round(conn.to.anchor.x) + ',' + Math.round(conn.to.anchor.y);
+            anchorCount[key2] = (anchorCount[key2] || 0) + 1;
+        }
+    });    
+    // Видаляємо вузли, до яких нічого не підключено або підключено лише один дріт
+    // (вузол-"артефакт" — без підключених дротів або з одним дротом є осиротілим)
+    state.junctions = state.junctions.filter(function(junc) {
+        var key = Math.round(junc.x) + ',' + Math.round(junc.y);
+        var count = anchorCount[key] || 0;
+        if (count < 2) {
+            changed = true;
+            // Якщо цей вузол був виділений - знімаємо виділення
+            if (selectedId === junc.id) {
+                selectedId = null;
+            }
+            // Скидаємо pendingWire якщо він вів до/від цього вузла
+            if (pendingWire && pendingWire.from && pendingWire.from.anchor) {
+                var ax = Math.round(pendingWire.from.anchor.x);
+                var ay = Math.round(pendingWire.from.anchor.y);
+                if (ax === Math.round(junc.x) && ay === Math.round(junc.y)) {
+                    pendingWire = null;
+                }
+            }
+            return false;
+        }
+        return true;
+    });
+    
+    if (changed) {
+        renderProps();
+        scheduleDraw();
+    }
 }
 // When a dangling anchor on one wire is connected to a port/anchor on another,
 // merge the two wires into one to avoid invisible mid-wire "joints".
@@ -178,15 +250,18 @@ changed = true; break outer;
 }
 }
 function markDirty(){
-  circuitDirty = true;
-  _adjCache = null;        
-  _adjCacheKey = 0;
-
-  mergeConnectedDanglingWires();
-  purgeFullyDanglingWires();
-
-  if (typeof faults !== 'undefined' && faults)
-    clearFaults();
+    circuitDirty = true;
+    _adjCache = null; 
+    _adjCacheKey = 0;
+    mergeConnectedDanglingWires();
+    purgeFullyDanglingWires();
+    purgeOrphanedJunctions(); 
+    if (typeof faults !== 'undefined' && faults)
+        clearFaults();
+	if (isRunning && sim) {
+        buildWireCurrents();
+        scheduleDraw();
+    }
 }
 // undo stack
 var undoStack = [], redoStack = [];
@@ -262,6 +337,57 @@ lamp:'Лампа', led:'Світлодіод', fan:'Вентилятор', buzze
 switch:'Вимикач', spdt:'Перемикач', pushbutton:'Кнопка', flasher:'Реле-переривник', ammeter:'Амперметр', voltmeter:'Вольтметр',
 junction:'Вузол', fuse:'Запобіжник'
 };
+// Returns the display sequential number for a component (same-label order in state.components)
+function getCompDisplayNum(comp) {
+  var def = COMP_DEFS[comp.type];
+  if (!def || !def.label || comp.type === 'ground') return comp.id;
+  var lbl = def.label;
+  var count = 0;
+  for (var _i = 0; _i < state.components.length; _i++) {
+    var _c2 = state.components[_i];
+    var _d2 = COMP_DEFS[_c2.type];
+    if (_d2 && _d2.label === lbl && _c2.type !== 'ground') {
+      count++;
+      if (_c2.id === comp.id) return count;
+    }
+  }
+  return comp.id;
+}
+// Кеш порядкових номерів для відображення мітки: compId → порядковий номер серед однотипних.
+// Оновлюється перед кожним малюванням через buildCompDisplayNum().
+var _compDisplayNum = {};
+function buildCompDisplayNum() {
+  _compDisplayNum = {};
+  var labelCounters = {};
+  for (var _ci = 0; _ci < state.components.length; _ci++) {
+    var _c = state.components[_ci];
+    var _def = COMP_DEFS[_c.type];
+    if (!_def || !_def.label || _c.type === 'ground') continue;
+    var _lbl = _def.label;
+    labelCounters[_lbl] = (labelCounters[_lbl] || 0) + 1;
+    _compDisplayNum[_c.id] = labelCounters[_lbl];
+  }
+}
+// ── SPDT/Flasher effective-port helper ───────────────────────
+// Returns info about which output ports of an spdt/flasher are connected.
+// {out1Ok, out2Ok, singlePort: 1|2|null}
+// singlePort != null means the component operates in degraded 2-port mode:
+//   spdt  → acts as a simple switch: closed when state points to singlePort, open otherwise
+//   flasher → oscillates on/off on singlePort only (no port switching)
+function spdtPortStatus(c) {
+  var out1Ok = state.connections.some(function(conn) {
+    return (conn.from.compId === c.id && conn.from.portIdx === 1 && !conn.from.anchor) ||
+           (conn.to.compId   === c.id && conn.to.portIdx   === 1 && !conn.to.anchor);
+  });
+  var out2Ok = state.connections.some(function(conn) {
+    return (conn.from.compId === c.id && conn.from.portIdx === 2 && !conn.from.anchor) ||
+           (conn.to.compId   === c.id && conn.to.portIdx   === 2 && !conn.to.anchor);
+  });
+  var singlePort = null;
+  if (out1Ok && !out2Ok) singlePort = 1;
+  if (out2Ok && !out1Ok) singlePort = 2;
+  return { out1Ok: out1Ok, out2Ok: out2Ok, singlePort: singlePort };
+}
 function makeComponent(type, x, y) {
 var def = COMP_DEFS[type];
 if (!def) return null;
@@ -393,6 +519,72 @@ if (px < minX || px > maxX || py < minY || py > maxY) return false;
 if (a.x === b.x) return Math.abs(px - a.x) < tol;
 if (a.y === b.y) return Math.abs(py - a.y) < tol;
 return false;
+}
+//
+/**
+ * Шукає найближчий дріт до вузла (junc), прив'язує вузол до дроту
+ * і розрізає дріт у цій точці.
+ */
+function trySnapJunctionToWire(junc) {
+    var TOL = 22;
+    var found = false, connIdx = -1, bestDist = Infinity, bestProj = null;
+
+    // 1. Знаходимо найближчий сегмент дроту
+    for (var ci = 0; ci < state.connections.length; ci++) {
+        var conn = state.connections[ci];
+        var cpts = connectionPoints(conn);
+        if (!cpts) continue;
+
+        for (var si = 0; si < cpts.length - 1; si++) {
+            var a = cpts[si], b = cpts[si+1];
+            
+            var dist = 0, proj = null;
+            
+            // Перевірка вертикального сегмента
+            if (Math.abs(a.x - b.x) < 3) { 
+                if (Math.abs(junc.x - a.x) <= TOL && 
+                    junc.y >= Math.min(a.y,b.y)-TOL && 
+                    junc.y <= Math.max(a.y,b.y)+TOL) {
+                     dist = Math.abs(junc.x - a.x);
+                     proj = { x: a.x, y: junc.y };
+                }
+            } 
+            // Перевірка горизонтального сегмента
+            else if (Math.abs(a.y - b.y) < 3) { 
+                if (Math.abs(junc.y - a.y) <= TOL && 
+                    junc.x >= Math.min(a.x,b.x)-TOL && 
+                    junc.x <= Math.max(a.x,b.x)+TOL) {
+                     dist = Math.abs(junc.y - a.y);
+                     proj = { x: junc.x, y: a.y };
+                }
+            }
+
+            if (proj && dist < bestDist) {
+                bestDist = dist;
+                connIdx = ci;
+                found = true;
+                bestProj = proj;
+            }
+        }
+    }
+
+    if (!found) return false;
+
+    // 2. Прив'язка до сітки
+    var snappedX = Math.round(bestProj.x / 10) * 10;
+    var snappedY = Math.round(bestProj.y / 10) * 10;
+    
+    // 3. Розрізаємо дріт (tapIntoConnection створить новий правильний вузол)
+    var conn = state.connections[connIdx];
+    var tap = tapIntoConnection(conn, { x: snappedX, y: snappedY }, bestProj);
+    
+    if (tap) {
+        // Видаляємо старий "падаючий" вузол, оскільки tapIntoConnection створив новий
+        state.junctions = state.junctions.filter(function(j) { return j.id !== junc.id; });
+        if (selectedId === junc.id) selectedId = tap.junc.id;
+        return true;
+    }
+    return false;
 }
 // Split a wire when a junction is dropped onto it.
 // Snaps junction to the nearest segment, splits the wire into two halves,
@@ -773,26 +965,27 @@ function autoRouteWire(fromComp, fromPort, toComp, toPort, existingWaypoints) {
     }
     return out;
 }
-/* ── Palette icons (schematic mini-drawings) ─────────────── */
+//  Palette icons (schematic mini-drawings) 
 function drawPaletteIcons() {
-var items = palette.querySelectorAll('.palette-item');
-items.forEach(function (it) {
-var type = it.getAttribute('data-type');
-var cv = it.querySelector('canvas.palette-icon');
-if (!cv) return;
-var g = cv.getContext('2d');
-var w = cv.width, h = cv.height;
-g.clearRect(0,0,w,h);
-g.save();
-g.translate(w/2, h/2);
-g.strokeStyle = '#ffa000';
-g.fillStyle = '#ffa000';
-g.lineWidth = 1.5;
-drawComponentShape(g, type, 0.45);
-g.restore();
-});
+    var items = palette.querySelectorAll('.palette-item');
+    items.forEach(function(it) {
+        var type = it.getAttribute('data-type');
+        var cv = it.querySelector('canvas.palette-icon');
+        if (!cv) return;
+        var g = cv.getContext('2d');
+        var w = cv.width,
+            h = cv.height;
+        g.clearRect(0, 0, w, h);
+        g.save();
+        g.translate(w / 2, h / 2);
+        g.strokeStyle = '#ffa000';
+        g.fillStyle = '#ffa000';
+        g.lineWidth = 1.5;
+        drawComponentShape(g, type, 0.45);
+        g.restore();
+    });
 }
-/* ── Component drawing ───────────────────────────────────── */
+// Component drawing
 function drawComponentShape(g, type, s, opts) {
 s = s || 1;
 opts = opts || {};
@@ -822,8 +1015,8 @@ switch (type) {
     });
     g.font = 'bold '+(9*s).toFixed(0)+'px sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-    g.fillText('+', -14*s, -13*s);
-    g.fillText('−', 14*s,  -7*s);
+    g.fillText('+', -20*s, -7*s);
+    g.fillText('−', 17*s,  -7*s);
     break;
   }
   case 'vsource': {
@@ -1129,16 +1322,12 @@ case 'buzzer': {
 
     g.save();
     g.lineWidth = Math.max(1, 1.2*s);
-
     // Три хвилі
     [0, 1, 2].forEach(function(i) {
-
       // Фаза хвилі
       var phase = (t + i * 0.45) % 1;
-
       // Радіус розширення
       var r = (R * 0.15) + phase * (R * 0.5);
-
       // Прозорість згасає
       g.globalAlpha = 1 - phase;
 
@@ -1337,7 +1526,8 @@ case 'flasher': {
       var valFont = rVal.length > 5 ? 7 : (rVal.length > 4 ? 8 : 9);
       g.font = 'bold '+(valFont*s).toFixed(0)+'px sans-serif';
       g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillStyle = '#ffa000';
+      g.fillStyle = '#ff4000';
+      if (isLightTheme()) { g.fillStyle = '#880000' }
       g.fillText(rVal, 0, -3*s);
       g.font = (7*s).toFixed(0)+'px sans-serif';
       g.fillStyle = g.strokeStyle;
@@ -1357,7 +1547,7 @@ case 'flasher': {
   case 'junction':{ break; } // junctions are now in state.junctions, drawn separately
 }
 }
-/* ── Theme-aware colors ──────────────────────────────────── */
+// Theme-aware colors 
 function isLightTheme() {
 return document.body.classList.contains('light-theme');
 }
@@ -1366,12 +1556,12 @@ if (isLightTheme()) {
 return {
 comp:       '#1a2040',
 compHover:  '#3a4070',
-compSel:    '#ffa000',
+compSel:    '#cca000',
 label:      '#4a5580',
 port:       '#1565c0',
 wire:       '#1565c0',
 wireHover:  '#1e88e5',
-wireSel:    '#ffa000',
+wireSel:    '#cca000',
 grid:       'rgba(60,80,120,0.10)',
 };
 }
@@ -1387,183 +1577,176 @@ wireSel:    '#ffa000',
 grid:       'rgba(136,160,200,0.08)',
 };
 }
-/* ── Rendering ───────────────────────────────────────────── */
+// Rendering 
 var drawScheduled = false;
 function scheduleDraw() {
-if (drawScheduled) return;
-drawScheduled = true;
-requestAnimationFrame(function () { drawScheduled = false; draw(); });
+    if (drawScheduled) return;
+    drawScheduled = true;
+    requestAnimationFrame(function() {
+        drawScheduled = false;
+        draw();
+    });
 }
 function drawGrid() {
-var step = 20;
-var leftW = toWX(0), rightW = toWX(cssW);
-var topW = toWY(0), botW = toWY(cssH);
-var x0 = Math.floor(leftW/step)*step;
-var y0 = Math.floor(topW/step)*step;
-ctx.strokeStyle = themeColors().grid;
-ctx.lineWidth = 1;
-ctx.beginPath();
-for (var x = x0; x <= rightW; x += step) {
-ctx.moveTo(toSX(x)*DPR, 0);
-ctx.lineTo(toSX(x)*DPR, cssH*DPR);
-}
-for (var y = y0; y <= botW; y += step) {
-ctx.moveTo(0, toSY(y)*DPR);
-ctx.lineTo(cssW*DPR, toSY(y)*DPR);
-}
-ctx.stroke();
+    var step = 20;
+    var leftW = toWX(0),
+        rightW = toWX(cssW);
+    var topW = toWY(0),
+        botW = toWY(cssH);
+    var x0 = Math.floor(leftW / step) * step;
+    var y0 = Math.floor(topW / step) * step;
+    ctx.strokeStyle = themeColors().grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var x = x0; x <= rightW; x += step) {
+        ctx.moveTo(toSX(x) * DPR, 0);
+        ctx.lineTo(toSX(x) * DPR, cssH * DPR);
+    }
+    for (var y = y0; y <= botW; y += step) {
+        ctx.moveTo(0, toSY(y) * DPR);
+        ctx.lineTo(cssW * DPR, toSY(y) * DPR);
+    }
+    ctx.stroke();
 }
 function drawComponent(c) {
-var def = COMP_DEFS[c.type];
-ctx.save();
-ctx.translate(toSX(c.x)*DPR, toSY(c.y)*DPR);
-ctx.scale(viewScale*DPR, viewScale*DPR);
-ctx.rotate(c.rot * Math.PI/180);
-var isSel = c.id === selectedId;
-var isHover = c.id === hoverId;
-var isFault = faults && faults.compIds && faults.compIds[c.id];
-var isIsolated = !isFault && isolatedFaults && isolatedFaults.compIds && isolatedFaults.compIds[c.id];
-if (isFault) {
-  var pulseC = faultPulse();
-  ctx.strokeStyle = 'rgba(255,' + Math.round(40 + pulseC*60) + ',' + Math.round(40 + pulseC*40) + ',1)';
-  ctx.shadowColor = '#ff3b3b';
-  ctx.shadowBlur = (10 + pulseC * 14);
-  ctx.lineWidth = (1 + pulseC * 1.2);
-} else if (isIsolated) {
-  var pulseI = faultPulse();
-  // Помаранчево-жовтий пульс — відмінний від червоного КЗ, але так само помітний
-  ctx.strokeStyle = 'rgba(255,' + Math.round(130 + pulseI*80) + ',' + Math.round(pulseI*30) + ',1)';
-  ctx.shadowColor = '#ff9800';
-  ctx.shadowBlur = (10 + pulseI * 16);
-  ctx.lineWidth = (1 + pulseI * 1.2);
-} else {
-  ctx.strokeStyle = isSel ? '#ffa000' : (isHover ? themeColors().compHover : themeColors().comp);
-}
-ctx.fillStyle = ctx.strokeStyle;
-
-var opts = {};
-if (c.type === 'led') { opts.color = c.props.color || 'green'; }
-else if (c.type === 'lamp') { opts.color = c.props.color || 'yellow'; }
-
-if (c.type === 'switch' || c.type === 'pushbutton') opts.closed = !!c.props.closed;
-if (c.type === 'pushbutton') opts.normallyOpen = (c.props.normallyOpen !== false);
-if (c.type === 'spdt' || c.type === 'flasher') opts.state = c.props.state || 0;
-if (c.type === 'fuse') {
-  opts.blown = !!c.props.blown;
-  opts.blinkOn = !opts.blown || (Math.floor(performance.now() / 250) % 2 === 0);
-}
-if (isRunning && sim) {
-  var p = Math.abs(sim.compP[c.id] || 0);
-  if (c.type === 'lamp' || c.type === 'led' || c.type === 'heater') {
-    var iLamp = Math.abs(sim.compI[c.id] || 0);
-	opts.glow = iLamp > 0.001 ? Math.max(0, Math.min(1, p / 2)) : 0;
-  }
-  if (c.type === 'led') {
-    var dir = sim.compCurrentDir[c.id] || 0;
-    var i   = sim.compI[c.id] || 0;
-    // ✅ FIX: LED світить тільки при прямому струмі > 0.5 мА
-    if (dir > 0 && i > 0.0005) {
-        opts.glow = Math.max(0, Math.min(1, p / 2));
+    var def = COMP_DEFS[c.type];
+    ctx.save();
+    ctx.translate(toSX(c.x) * DPR, toSY(c.y) * DPR);
+    ctx.scale(viewScale * DPR, viewScale * DPR);
+    ctx.rotate(c.rot * Math.PI / 180);
+    var isSel = c.id === selectedId;
+    var isHover = c.id === hoverId;
+    var isFault = faults && faults.compIds && faults.compIds[c.id];
+    var isIsolated = !isFault && isolatedFaults && isolatedFaults.compIds && isolatedFaults.compIds[c.id];
+    if (isFault) {
+        var pulseC = faultPulse();
+        ctx.strokeStyle = 'rgba(255,' + Math.round(40 + pulseC * 60) + ',' + Math.round(40 + pulseC * 40) + ',1)';
+        ctx.shadowColor = '#ff3b3b';
+        ctx.shadowBlur = (10 + pulseC * 14);
+        ctx.lineWidth = (1 + pulseC * 1.2);
+    } else if (isIsolated) {
+        var pulseI = faultPulse();
+        // Помаранчево-жовтий пульс — відмінний від червоного КЗ, але так само помітний
+        ctx.strokeStyle = 'rgba(255,' + Math.round(130 + pulseI * 80) + ',' + Math.round(pulseI * 30) + ',1)';
+        ctx.shadowColor = '#ff9800';
+        ctx.shadowBlur = (10 + pulseI * 16);
+        ctx.lineWidth = (1 + pulseI * 1.2);
     } else {
-        opts.glow = 0; // Явно вимикаємо світіння
+        ctx.strokeStyle = isSel ? '#ffa000' : (isHover ? themeColors().compHover : themeColors().comp);
     }
-  }  
-  if ( c.type === 'fan' || c.type === 'buzzer') {
-    var i = Math.abs(sim.compI[c.id] || 0);
-    opts.rot = (performance.now() / 1000) * i * 40;
-    if (c.type === 'buzzer') opts.buzzing  = i > 0.0001;
-  }
-  if (c.type === 'ammeter') {
-    opts.reading = autoMeter(Math.abs(sim.compI[c.id] || 0), 'А');
-  }
-  if (c.type === 'voltmeter') {
-    opts.reading = autoMeter(Math.abs(sim.compV[c.id] || 0), 'В');
-  }
-}
-if (c.type === 'ammeter' || c.type === 'voltmeter') {
-  opts.counterRot = -(c.rot || 0) * Math.PI / 180;
-}
-
-drawComponentShape(ctx, c.type, 1, opts);
-    if (def.label && c.type !== 'ground') {
-      ctx.save(); // Зберігаємо трансформ компонента (з поточним поворотом)
-      if (c.rot === 180) {
-        ctx.rotate(-Math.PI); // Скасовуємо поворот 180° лише для тексту
-      }
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = themeColors().label;
-      var lbl = def.label + (c.id ? c.id : '');
-      var paramLbl = '';
-      if (c.type === 'battery' || c.type === 'vsource') paramLbl = formatV(c.props.V);
-      else if (c.type === 'resistor' || c.type === 'rheostat' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') paramLbl = formatR(c.props.R);
-      else if (c.type === 'led') paramLbl = formatR(c.props.R);
-      else if (c.type === 'fuse') {
-        if (c.props.blown) {
-          paramLbl = '❌' // ПЕРЕГОРІВ
-          ctx.fillStyle = 'rgba(255,80,40,1)';
-        } else {
-          var imaxA = c.props.Imax || 1;
-          var imaxDisp = imaxA >= 1 ? imaxA.toFixed(imaxA % 1 ? 1 : 0) + ' А' : (imaxA * 1000).toFixed(0) + ' мА';
-          paramLbl = 'макс ' + imaxDisp;
+    ctx.fillStyle = ctx.strokeStyle;
+    var opts = {};
+    if (c.type === 'led') {
+        opts.color = c.props.color || 'green';
+    } else if (c.type === 'lamp') {
+        opts.color = c.props.color || 'yellow';
+    }
+    if (c.type === 'switch' || c.type === 'pushbutton') opts.closed = !!c.props.closed;
+    if (c.type === 'pushbutton') opts.normallyOpen = (c.props.normallyOpen !== false);
+    if (c.type === 'spdt' || c.type === 'flasher') opts.state = c.props.state || 0;
+    if (c.type === 'fuse') {
+        opts.blown = !!c.props.blown;
+        opts.blinkOn = !opts.blown || (Math.floor(performance.now() / 250) % 2 === 0);
+    }
+    if (isRunning && sim) {
+        var p = Math.abs(sim.compP[c.id] || 0);
+        if (c.type === 'lamp' || c.type === 'led' || c.type === 'heater') {
+            var iLamp = Math.abs(sim.compI[c.id] || 0);
+            opts.glow = iLamp > 0.001 ? Math.max(0, Math.min(1, p / 2)) : 0;
         }
-      }
-      if (paramLbl) lbl += ' · ' + paramLbl;
-      ctx.fillText(lbl, 0, -def.h/2 - 4);
-      ctx.restore(); // Повертаємо контекст до стану компонента
+        if (c.type === 'led') {
+            var dir = sim.compCurrentDir[c.id] || 0;
+            var i = sim.compI[c.id] || 0;
+            // ✅ FIX: LED світить тільки при прямому струмі > 0.5 мА
+            if (dir > 0 && i > 0.0005) {
+                opts.glow = Math.max(0, Math.min(1, p / 2));
+            } else {
+                opts.glow = 0; // Явно вимикаємо світіння
+            }
+        }
+        if (c.type === 'fan' || c.type === 'buzzer') {
+            var i = Math.abs(sim.compI[c.id] || 0);
+            opts.rot = (performance.now() / 1000) * i * 40;
+            if (c.type === 'buzzer') opts.buzzing = i > 0.0001;
+        }
+        if (c.type === 'ammeter') {
+            opts.reading = autoMeter(Math.abs(sim.compI[c.id] || 0), 'А');
+        }
+        if (c.type === 'voltmeter') {
+            opts.reading = autoMeter(Math.abs(sim.compV[c.id] || 0), 'В');
+        }
+    }
+    if (c.type === 'ammeter' || c.type === 'voltmeter') {
+        opts.counterRot = -(c.rot || 0) * Math.PI / 180;
+    }
+    drawComponentShape(ctx, c.type, 1, opts);
+    if (def.label && c.type !== 'ground') {
+        ctx.save(); // Зберігаємо трансформ компонента (з поточним поворотом)
+        if (c.rot === 180) {
+            ctx.rotate(-Math.PI); // Скасовуємо поворот 180° лише для тексту
+        }
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = themeColors().label;
+        var lbl = def.label + ((_compDisplayNum && _compDisplayNum[c.id] != null) ? _compDisplayNum[c.id] : (c.id ? c.id : ''));
+        var paramLbl = '';
+        if (c.type === 'battery' || c.type === 'vsource') paramLbl = formatV(c.props.V);
+        else if (c.type === 'resistor' || c.type === 'rheostat' || c.type === 'lamp' || c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') paramLbl = formatR(c.props.R);
+        else if (c.type === 'led') paramLbl = formatR(c.props.R);
+        else if (c.type === 'fuse') {
+            if (c.props.blown) {
+                paramLbl = '❌' // ПЕРЕГОРІВ
+                ctx.fillStyle = 'rgba(255,80,40,1)';
+            } else {
+                var imaxA = c.props.Imax || 1;
+                var imaxDisp = imaxA >= 1 ? imaxA.toFixed(imaxA % 1 ? 1 : 0) + ' А' : (imaxA * 1000).toFixed(0) + ' мА';
+                paramLbl = 'max ' + imaxDisp;
+            }
+        }
+        if (paramLbl) lbl += ' · ' + paramLbl;
+        ctx.fillText(lbl, 0, -def.h / 2 - 1);
+        ctx.restore(); // Повертаємо контекст до стану компонента
     }
     ctx.restore(); // Завершуємо контекст компонента
-
-if (isSel) {
-  var b = compBounds(c);
-  ctx.save();
-  ctx.strokeStyle = '#ffa000';
-  ctx.setLineDash([4,3]);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(
-    toSX(b.x)*DPR - 3, toSY(b.y)*DPR - 3,
-    b.w*viewScale*DPR + 6, b.h*viewScale*DPR + 6
-  );
-  ctx.restore();
+    if (isSel) {
+        var b = compBounds(c);
+        ctx.save();
+        ctx.strokeStyle = '#ffa000';
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(toSX(b.x) * DPR - 3, toSY(b.y) * DPR - 3, b.w * viewScale * DPR + 6, b.h * viewScale * DPR + 6);
+        ctx.restore();
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset to screen coords — use toSX/toSY explicitly
+    for (var i = 0; i < def.ports.length; i++) {
+        var pw = portWorld(c, i);
+        var pk = c.id + ':' + i;
+        var isConnected = !!(_connectedPorts && _connectedPorts[pk]);
+        var sx = toSX(pw.x) * DPR;
+        var sy = toSY(pw.y) * DPR;
+        ctx.beginPath();
+        if (isConnected) {
+            // Підключений порт — великий
+            ctx.arc(sx, sy, 6 * DPR, 0, Math.PI * 2);
+            ctx.fillStyle = isSel ? '#ffa000' : themeColors().wire;
+            ctx.fill();
+            // невеликий внутрішній кружок
+            ctx.beginPath();
+            ctx.arc(sx, sy, 2.5 * DPR, 0, Math.PI * 2);
+            ctx.fillStyle = isLightTheme() ? '#f0f4ff' : '#0d1120';
+            ctx.fill();
+        } else {
+            // Вільний порт — малий
+            ctx.arc(sx, sy, 3 * DPR, 0, Math.PI * 2);
+            ctx.fillStyle = isSel ? '#ffa000' : '#ff9800';
+            ctx.fill();
+        }
+    }
+    ctx.restore();
 }
 
-ctx.save();
-ctx.setTransform(1,0,0,1,0,0); // reset to screen coords — use toSX/toSY explicitly
-for (var i = 0; i < def.ports.length; i++) {
-  var pw = portWorld(c, i);
-  var pk = c.id + ':' + i;
-  var isConnected = !!(_connectedPorts && _connectedPorts[pk]);
-  var sx = toSX(pw.x) * DPR;
-  var sy = toSY(pw.y) * DPR;
-ctx.beginPath();
-
-if (isConnected) {
-  // Підключений порт — великий
-  ctx.arc(sx, sy, 6 * DPR, 0, Math.PI * 2);
-
-  ctx.fillStyle = isSel ? '#ffa000' : themeColors().wire;
-  ctx.fill();
-
-  // невеликий внутрішній кружок
-  ctx.beginPath();
-  ctx.arc(sx, sy, 2.5 * DPR, 0, Math.PI * 2);
-
-  ctx.fillStyle = isLightTheme()
-    ? '#f0f4ff'
-    : '#0d1120';
-
-  ctx.fill();
-
-} else {
-  // Вільний порт — малий
-  ctx.arc(sx, sy, 3 * DPR, 0, Math.PI * 2);
-
-  ctx.fillStyle = isSel ? '#ffa000' : '#ff9800';
-  ctx.fill();
-}
-}
-ctx.restore();
-}
 function draw() {
 if (!cssW) return;
 ctx.save();
@@ -1591,6 +1774,8 @@ for (var ci0 = 0; ci0 < state.connections.length; ci0++) {
 for (var ci = 0; ci < state.connections.length; ci++) {
   drawConnection(state.connections[ci]);
 }
+// Кеш оновлюється перед малюванням через buildCompDisplayNum()
+buildCompDisplayNum();
 for (var i = 0; i < state.components.length; i++) {
   drawComponent(state.components[i]);
 }
@@ -1744,7 +1929,20 @@ if (conn.waypoints && conn.waypoints.length) {
 }
 if (isRunning && sim) {
 
-var I = wireSignedCurrent(conn);
+// Не показуємо анімацію на дротах вольтметра (майже нескінченний опір — реального струму немає)
+var _skipFlow = false;
+(function() {
+  var ends = [conn.from, conn.to];
+  for (var _ei = 0; _ei < ends.length; _ei++) {
+    var _ep = ends[_ei];
+    if (_ep.compId !== undefined) {
+      var _ec = state.components.find(function(x){ return x.id === _ep.compId; });
+      if (_ec && _ec.type === 'voltmeter') { _skipFlow = true; return; }
+    }
+  }
+})();
+
+var I = _skipFlow ? 0 : wireSignedCurrent(conn);
 var absI = Math.abs(I);
 if (absI > 1e-6) {
     var segLens = [0], total = 0;
@@ -1777,7 +1975,7 @@ if (absI > 1e-6) {
 }
 ctx.restore();
 }
-/* ── Annotation drawing ─────────────────────────────────── */
+// Annotation drawing 
 var selectionUI = { corners: null, delBtn: null, dupBtn: null, rotBtn: null, kind: null };
 function strokeBounds(s) {
 var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -2105,9 +2303,25 @@ scheduleDraw();
 }
 function drawPendingWire() {
 if (!pendingWire || !pendingWire.cursor) return;
-var fc = state.components.find(function(x){return x.id===pendingWire.from.compId;});
-if (!fc) return;
-var pts = [portWorld(fc, pendingWire.from.portIdx)];
+var startPt;
+if (pendingWire.from.anchor) {
+  // Anchor-based start (from junction or dangling end)
+  // Verify the anchor still exists as a valid junction; cancel if not
+  var anchorValid = state.junctions.some(function(j) {
+    return Math.abs(j.x - pendingWire.from.anchor.x) < 2 && Math.abs(j.y - pendingWire.from.anchor.y) < 2;
+  });
+  if (!anchorValid) {
+    // The junction was deleted — cancel the pending wire silently
+    pendingWire = null;
+    return;
+  }
+  startPt = { x: pendingWire.from.anchor.x, y: pendingWire.from.anchor.y };
+} else {
+  var fc = state.components.find(function(x){return x.id===pendingWire.from.compId;});
+  if (!fc) { pendingWire = null; return; }
+  startPt = portWorld(fc, pendingWire.from.portIdx);
+}
+var pts = [startPt];
 pendingWire.waypoints.forEach(function(wp){ pts.push({x:wp.x,y:wp.y}); });
 pts.push(pendingWire.cursor);
 var ortho = [pts[0]];
@@ -2278,6 +2492,21 @@ if (port) {
       return;
 }
 if (pendingWire) {
+    //Allow snapping wire end to a Junction
+    var jHit = hitJunction(p.x, p.y);
+    if (jHit) {
+        saveUndo();
+        state.connections.push({
+            id: state.nextId++,
+            from: pendingWire.from,
+            to: { anchor: { x: jHit.x, y: jHit.y } },
+            waypoints: pendingWire.waypoints
+        });
+        pendingWire = null;
+        markDirty();
+        scheduleDraw();
+        return;
+    }	
     var tapConn = hitConnection(p.x, p.y, 8);
     if (tapConn) {	
         var approach;
@@ -2631,20 +2860,21 @@ function onPointerUp(ev) {
 if (drag) {
 try { canvas.releasePointerCapture(ev.pointerId); } catch(e){}
     if (drag.kind === 'junction-pending' || drag.kind === 'junction-move') {
-      if (!drag.moved) {
-        // Click on junction — start a new wire from its anchor coords
+        // Перевіряємо, чи існує вузол досі (могли видалити через Delete під час drag або кліку)
         var jcUp = state.junctions.find(function(j){return j.id===drag.id;});
-        if (jcUp) {
-          pendingWire = {
-            from: { anchor: { x: jcUp.x, y: jcUp.y } },
-            waypoints: [],
-            cursor: { x: jcUp.x, y: jcUp.y }
-          };
+        
+        if (!drag.moved && jcUp) {
+            // Тільки якщо НЕ перетягували І вузол ще існує — починаємо малювати дріт
+            pendingWire = {
+                from: { anchor: { x: jcUp.x, y: jcUp.y } },
+                waypoints: [],
+                cursor: { x: jcUp.x, y: jcUp.y }
+            };
         }
-      }
-      drag = null;
-      scheduleDraw();
-      return;
+        
+        drag = null;
+        scheduleDraw();
+        return;
     }
 if (drag.kind === 'pushbutton-hold') {
 var pb = state.components.find(function(x){ return x.id === drag.id; });
@@ -2963,7 +3193,7 @@ if (!c) { propsPanel.style.display = 'none'; return; }
 propsPanel.style.display = '';
 var def = COMP_DEFS[c.type];
 var html = ' <div style="font-weight:600;color:var(--text);margin-bottom:6px;margin-left: 12px;">'+
-(COMP_LABELS[c.type]||c.type)+' #'+c.id+' </div>';
+(COMP_LABELS[c.type]||c.type)+' #'+getCompDisplayNum(c)+' </div>';
 if (c.type === 'battery') {
 html += propUnitSlider(c, 'V', 'Напруга', 'V');
 } else if (c.type === 'vsource') {
@@ -2986,7 +3216,7 @@ html += propNumber(c, 'Rmax', 'Макс. опір (Ом)');
     ];
     html += ' <label><span class="prop-val">Колір лампи</span><div class="led-color-picker">';
     lampColors.forEach(function(clr){
-        html += ' <button class="lamp-color-btn ' + (c.props.color === clr.name ? 'active' : '') + '" data-lamp-color="' + clr.name + '" style="background:' + clr.hex + ';"></button>';
+        html += ' <button class="lamp-color-btn ' + (c.props.color === clr.name ? 'active' : '') + '" data-lamp-color="' + clr.name + '" style="background:' + clr.hex + ';border: 1px solid #555555;"></button>';
     });
     html += '</div></label>';
 } else if (c.type === 'fan' || c.type === 'buzzer' || c.type === 'heater') {
@@ -3030,11 +3260,11 @@ html += '<div><span class="prop-val">Стан: ' + (c.props.closed ? 'Замкн
 '<button class="btn btn-ghost" data-act="pb-press" style="margin-top:4px;margin-left:6px;">▶ Натиснути кнопку</button></div>';
 } else {
 html += ' <div> <span class="prop-val" >Стан: '+(c.props.closed?'⁣⁣⁣.Замкнутий':'Розімкнено')+' </span >'+
-' <button class="btn btn-ghost" data-act="toggle" style="margin-top:4px;">Переключити </button ></div> ';
+' <button class="btn btn-ghost" data-act="toggle" style="margin-top:4px;margin-left: 20px;">↕ Змінити </button ></div> ';
 }
 } else if (c.type === 'spdt') {
   html += '<div><span class="prop-val">Положення: '+(c.props.state===0?'Вихід A':'Вихід B')+'</span>'+
-          '<button class="btn btn-ghost" data-act="toggle-spdt" style="margin-top:4px;">Переключити</button></div>';
+          '<button class="btn btn-ghost" data-act="toggle-spdt" style="margin-top:4px;margin-left: 20px;">↕ Змінити</button></div>';
 } else if (c.type === 'flasher') {
     var flCurState = c.props.state || 0;
     html += '<label><span class="prop-val">Початковий вихід</span>'+
@@ -3043,7 +3273,7 @@ html += ' <div> <span class="prop-val" >Стан: '+(c.props.closed?'⁣⁣⁣.�
     html += propNumber(c, 'tOff', 'Час на B (с)');
 }
 
-html += ' <div class="cp-actions"> <button class="btn btn-ghost" data-act="rotate" >↻ Повернути 90° </button > '+
+html += ' <div class="cp-actions"> <button class="btn btn-ghost" data-act="rotate" >↻ Поворот на 90° </button > '+
 ' <button class="btn btn-ghost" data-act="delete" >🗑 Видалити </button > </div>';
 propsBody.innerHTML = html;
 propsBody.querySelectorAll('input[data-prop]').forEach(function (inp) {
@@ -3260,7 +3490,7 @@ function showCompPopover(c) {
 if (!c) { hideCompPopover(); return; }
 ensureCompPopover();
 compPopoverFor = c.id;
-var html = ' <div class="cp-head">'+(COMP_LABELS[c.type]||c.type)+' #'+c.id+
+var html = ' <div class="cp-head">'+(COMP_LABELS[c.type]||c.type)+' #'+getCompDisplayNum(c)+
 ' <button class="cp-close" type="button" title="Закрити">×</button > </div >';
 if (c.type === 'battery') html += compEditField(c, 'V', 'Напруга', 'V');
 else if (c.type === 'vsource') html += compEditField(c, 'V', 'Напруга', 'V');
@@ -3274,7 +3504,7 @@ else if (c.type === 'rheostat') {
 	html += compEditField(c, 'R', 'Послідовний опір', 'R');
 } else if (c.type === 'spdt') {
 	html += '<div class="cp-label">Положення: <strong>' + (c.props.state === 0 ? 'Вихід A' : 'Вихід B') + '</strong>' +
-          '<button class="btn btn-ghost cp-act" data-act="toggle-spdt" type="button" style="margin-left:12px;">Переключити</button></div>';
+          '<button class="btn btn-ghost cp-act" data-act="toggle-spdt" type="button" style="margin-left:20px;">↕ Змінити</button></div>';
 } else if (c.type === 'fuse') {
     html += '<div class="cp-label">Макс. струм: <span class="cp-val">'+c.props.Imax.toFixed(1)+' А</span><br>' +
             '<input type="range" data-cp-slider="Imax" min="0.5" max="10" step="0.1" value="'+c.props.Imax+'" style="width:100%;margin-top:4px;"></div>';
@@ -3293,19 +3523,19 @@ else if (c.type === 'rheostat') {
 		var flPopState = c.props.state || 0;
 		html += ' <div class="cp-label">Вихід: <strong><span style="display:inline-block;width:55px;">' +
 		(flPopState === 0 ? 'A' : 'B') + '</span></strong>'+
-		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити</button></div>';
+		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:20px;">↕ Змінити</button></div>';
         html += '<div class="cp-label">Час на A (с) <input type="number" data-cp="tOn" value="'+c.props.tOn+'" step="0.1"></div>';
         html += '<div class="cp-label">Час на B (с) <input type="number" data-cp="tOff" value="'+c.props.tOff+'" step="0.1"></div>';
 	} else {
 		html += ' <div class="cp-label">Стан:  <strong><span style="display: inline-block; width: 55px;">' +
 		(c.props.closed ? 'Замкнено' : 'Розімкнено') + '</span></strong>'+
-		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:12px;">Переключити </button> </div>';
+		' <button class="btn btn-ghost cp-act" data-act="toggle" type="button" style="margin-left:20px;">↕ Змінити </button> </div>';
 	}
 
 }
 
 html += ' <div class="cp-actions">'+
-' <button class="btn btn-ghost cp-act" data-act="rotate" type="button">↻ Повернути </button>'+
+' <button class="btn btn-ghost cp-act" data-act="rotate" type="button">↻ Поворот на 90°</button>'+
 ' <button class="btn btn-ghost cp-act" data-act="delete" type="button">🗑 Видалити </button>'+
 ' </div>';
 compPopover.innerHTML = html;
@@ -3432,6 +3662,8 @@ function deleteSelected() {
     saveUndo();
     state.connections = state.connections.filter(function(x){return x.id!==selectedConnId;});
     selectedConnId = null;
+    pendingWire = null;
+    markDirty(); // calls purgeOrphanedJunctions internally
     scheduleDraw();
     return;
   }
@@ -3443,65 +3675,31 @@ function deleteSelected() {
   // 3. Видалення вузла (Junction) — ВИПРАВЛЕНА ЛОГІКА З ЗЛИТТЯМ ДРОТІВ
   var delJunc = state.junctions.find(function(j){ return j.id === delId; }); 
   console.log("state.junctions0=",state.junctions)
-  if (delJunc) {
-      // Крок 1: Знайти всі дроти, приєднані до цього вузла
-      var connected = [];
-      var connIndices = [];
-      var incoming = null, outgoing = null;
-      
-      state.connections.forEach(function(conn, idx) {
-          var isFrom = (conn.from.anchor && Math.round(conn.from.anchor.x) === delJunc.x && Math.round(conn.from.anchor.y) === delJunc.y);
-          var isTo   = (conn.to.anchor && Math.round(conn.to.anchor.x) === delJunc.x && Math.round(conn.to.anchor.y) === delJunc.y);
-          
-          if (isFrom || isTo) {
-              connected.push(conn);
-              connIndices.push(idx);
-              
-              if (isTo) incoming = conn;   // Дріт закінчується на вузлі
-              if (isFrom) outgoing = conn; // Дріт починається на вузлі
-          }
-      });
-  
-      // Крок 2: Логіка злиття (Merge), якщо є вхідний і вихідний дріт
-      if (incoming && outgoing) {
-          // Створюємо новий дріт: від початку вхідного -> до кінця вихідного
-          var newConn = {
-              id: state.nextId++,
-              from: incoming.from,
-              to: outgoing.to,
-              waypoints: (incoming.waypoints || []).concat(outgoing.waypoints || [])
-          };
-          
-          // Видаляємо старі дроти (у зворотному порядку індексів)
-          connIndices.sort(function(a, b){ return b - a; }).forEach(function(idx) {
-              state.connections.splice(idx, 1);
-          });
-          
-          // Додаємо новий об'єднаний дріт
-          state.connections.push(newConn);
-      } else {
-          // Якщо не можна злити — видаляємо ВСІ дроти з якорем на цьому вузлі
-          connIndices.sort(function(a, b){ return b - a; }).forEach(function(idx) {
-              state.connections.splice(idx, 1);
-          });
-      }
-  
-      // Крок 3: Видаляємо сам вузол
-      state.junctions = state.junctions.filter(function(j){ return j.id !== delJunc.id; });
-      
-      //Повне скидання стану виділення
-      selectedId = null;
-      selectedConnId = null;
-      hoverId = null;
-      hoverPort = null;
-      hoverConnId = null;
-      pendingWire = null;
-      hideCompPopover();
-      renderProps(); // Тепер renderProps побачить selectedId === null і сховає панель
-      markDirty();
-      scheduleDraw();
-      return;
-  }
+    if (delJunc) {
+        saveUndo();
+        
+        // Просто видаляємо вузол.
+        // Дроти, що вели до нього, залишаться з {anchor: {x,y}}.
+        // Функція purgeFullyDanglingWires потім прибере ті, що ведуть у нікуди,
+        // але залишить ті, що з'єднують два існуючі junctions.
+        state.junctions = state.junctions.filter(function(j){ return j.id !== delJunc.id; });
+        
+        // ✅ КРИТИЧНО: скидаємо pendingWire, щоб уникнути "дротів-привидів"
+        pendingWire = null;
+        
+        // Скидаємо виділення
+        selectedId = null;
+        selectedConnId = null;
+        hoverId = null;
+        hoverPort = null;
+        hoverConnId = null;
+        
+        hideCompPopover();
+        renderProps();
+        markDirty(); // Це викличе purgeFullyDanglingWires
+        scheduleDraw();
+        return;
+    }
 
   // 4. Видалення компонента (оригінальна логіка)
   var delComp = state.components.find(function(x){return x.id===delId;});
@@ -3521,6 +3719,11 @@ function deleteSelected() {
   state.components = state.components.filter(function(x){return x.id!==selectedId;});
   purgeFullyDanglingWires();
   
+  // Скидаємо pendingWire якщо він вів від видаленого компонента
+  if (pendingWire && pendingWire.from && pendingWire.from.compId === delId) {
+    pendingWire = null;
+  }
+  
   // Clean up vsource slider if deleted
   if (delComp && delComp.type === 'vsource') removeVsourceSlider(delId);
   
@@ -3537,15 +3740,17 @@ c.rot = (c.rot + 90) % 360;
 scheduleDraw();
 }
 function clearCanvas() {
-    if (!state.components.length && !state.connections.length) return;
+    if (!state.components.length && !state.connections.length && !state.junctions.length) return;
     saveUndo();
     // Clean up vsource sliders
     Object.keys(_vsourceSliders).forEach(function(id){ removeVsourceSlider(+id); });
     state.components = [];
     state.connections = [];
+    state.junctions = [];
     state.nextId = 1; // Скидаємо лічильник ID, щоб нумерація починалась спочатку
     selectedId = null;
     selectedConnId = null;
+    pendingWire = null;
     renderProps();
     scheduleDraw();
 }
@@ -3573,6 +3778,7 @@ function updateFlashers(t) {
             // state=0 → фаза 'a' (tOn), state=1 → фаза 'b' (tOff)
             c.state._phase = (c.props.state || 0) === 0 ? 'a' : 'b';
             c.state._powered = false;
+            c.state._pauseStart = null;
         }
 
         // Визначаємо живлення: є струм через спільний порт (0) або потенціал між c і будь-яким виходом
@@ -3593,12 +3799,16 @@ function updateFlashers(t) {
         var powered = poweredByCurrent || hasPotential;
 
         if (powered && !c.state._powered) {
-            c.state._phase = (c.props.state || 0) === 0 ? 'a' : 'b';
-            c.state._lastT = t;
+            // Flasher отримав живлення після паузи — зміщуємо _lastT на час паузи,
+            // щоб накопичений до паузи час не скинувся.
+            var pausedFor = t - (c.state._pauseStart || t);
+            c.state._lastT = (c.state._lastT || t) + pausedFor;
+            c.state._pauseStart = null;
             c.state._powered = true;
         } else if (!powered) {
+            // Немає живлення — зберігаємо момент початку паузи, але НЕ скидаємо таймер
+            if (c.state._powered) c.state._pauseStart = t;
             c.state._powered = false;
-            c.state._lastT = t;
             continue;
         }
 
@@ -3609,9 +3819,19 @@ function updateFlashers(t) {
         if (dur < 0.01) dur = 0.01;
 
         if (elapsed >= dur) {
-            // Перемикаємо між портом A (state=0) і портом B (state=1)
-            c.props.state = c.state._phase === 'a' ? 1 : 0;
-            c.state._phase = c.props.state === 0 ? 'a' : 'b';
+            var ps = spdtPortStatus(c);
+            if (ps.singlePort !== null) {
+                // Деградований режим: перемикаємо замкнено/розімкнено на одному порту
+                // state=0 → активна фаза 'a' (замкнено на singlePort якщо singlePort===1, інакше розімкнено)
+                // Для спрощення: просто перемикаємо state між 0 і 1,
+                // але в MNA це означає: якщо activeFase вказує на singlePort → замкнено, інакше → розімкнено
+                c.props.state = c.state._phase === 'a' ? 1 : 0;
+                c.state._phase = c.props.state === 0 ? 'a' : 'b';
+            } else {
+                // Нормальний режим: перемикаємо між портом A (state=0) і портом B (state=1)
+                c.props.state = c.state._phase === 'a' ? 1 : 0;
+                c.state._phase = c.props.state === 0 ? 'a' : 'b';
+            }
             c.state._lastT = t;
             changed = true;
         }
@@ -3630,7 +3850,7 @@ if (circuitDirty || !sim) {
 var fRuntime = checkFaults();
 if (fRuntime && !fRuntime._voltmeterInSeries) {
 circuitDirty = false;
-sim = null;
+sim = null; _wireCurrent = {};
 isRunning = false;
 wasRunningBeforeFault = true;
 document.getElementById('btn-run').style.display = 'block';
@@ -3695,12 +3915,13 @@ if (sim && sim.compI) {
         document.getElementById('btn-stop').style.display = 'none';
         stopAllBuzzerTones();
         
-        return; // 🔑 КРИТИЧНО: виходимо з animLoop, щоб він не перезатер animRAF і не зупинив миготіння
+        return; //КРИТИЧНО: виходимо з animLoop, щоб він не перезатер animRAF і не зупинив миготіння
     }
 }
 var f2 = checkPostSolveFaults(sim);
 if (f2 && f2._onlyOpenSwitch) {
-showOpenLoopInfo('Розімкнене коло — клацніть вимикач, щоб його замкнути і запустити струм');
+var hasSpdtOpen = state.components.some(function(c){ return c.type === 'spdt' || c.type === 'flasher'; });
+showOpenLoopInfo('Розімкнене коло — клацніть вимикач/перемикач, щоб замкнути коло і запустити струм');
 } else {
 hideOpenLoopInfo();
 }
@@ -3729,7 +3950,7 @@ function startSim() {
           animRAF = requestAnimationFrame(flash);
         });
       }
-    
+  
       // Симуляцію НЕ запускаємо
       return;
     }
@@ -3775,21 +3996,30 @@ function startSim() {
 	_clearIsolatedFaults();
 	clearFaults();
 	runSolve();
-	var f2 = checkPostSolveFaults(sim);
-	if (f2) {
-		var onlyOpenSwitch = f2._onlyOpenSwitch;
-		if (!onlyOpenSwitch) {
-			sim = null;
-			showFaults(f2);
-			if (!animRAF) animRAF = requestAnimationFrame(function flash(){
-				if (!faults) { animRAF = 0; return; }
-				scheduleDraw();
-				animRAF = requestAnimationFrame(flash);
-			});
-		return;
-	}
-showOpenLoopInfo('Розімкнене коло — клацніть вимикач, щоб замкнути і запустити струм');
-}
+  var f2 = checkPostSolveFaults(sim);
+  console.log('[DBG startSim] sim=', sim ? 'OK totalI='+sim.totalI : 'NULL', 'f2=', f2 ? JSON.stringify({msgs:f2.messages.map(function(m){return m.substr(0,60);}), onlyOpen:f2._onlyOpenSwitch}) : null);
+  if (f2) {
+    // якщо солвер повернув результат, але струм ~0 — це розімкнене коло,
+    // а не критична помилка. Дозволяємо симуляції працювати далі.
+    var isOpenCircuit = sim && sim.totalI < 1e-6;
+    var isHardFault = !isOpenCircuit && !f2._onlyOpenSwitch;
+
+    if (isHardFault) {
+      sim = null;
+      showFaults(f2);
+      if (!animRAF) animRAF = requestAnimationFrame(function flash(){
+        if (!faults) { animRAF = 0; return; }
+        scheduleDraw();
+        animRAF = requestAnimationFrame(flash);
+      });
+      return; // Зупиняємо ТІЛЬКИ при реальних помилках (КЗ, висячі компоненти тощо)
+    }
+    
+    // М'яке попередження (розімкнене коло) — показуємо підказку, але НЕ викликаємо return
+    showOpenLoopInfo(state.components.some(function(c){ return c.type === 'spdt' || c.type === 'flasher'; })
+      ? 'Розімкнене коло — клацніть вимикач/перемикач, щоб замкнути і запустити струм'
+      : 'Розімкнене коло — клацніть вимикач, щоб замкнути і запустити струм');
+  }
 isRunning = true;
 updateEditButtonsVisibility();
 document.getElementById('btn-run').style.display = 'none';
@@ -4045,10 +4275,12 @@ function checkIsolatedComponents() {
 
     // Для spdt та flasher: вхідний порт (0) обов'язковий,
     // але достатньо хоча б одного з вихідних портів (1 або 2).
+    // Якщо лише один вихід підключений — це деградований режим (дозволено).
     if (c.type === 'spdt' || c.type === 'flasher') {
       var inputConnected  = danglingPorts.indexOf(0) < 0;   // порт 'c' підключений
       var out1Connected   = danglingPorts.indexOf(1) < 0;   // порт 'a' підключений
       var out2Connected   = danglingPorts.indexOf(2) < 0;   // порт 'b' підключений
+      // Помилка лише якщо вхід не підключений, АБО жоден з виходів не підключений
       var hasError = !inputConnected || (!out1Connected && !out2Connected);
       if (hasError) {
         var badPorts = [];
@@ -4056,6 +4288,7 @@ function checkIsolatedComponents() {
         if (!out1Connected && !out2Connected) { badPorts.push(1); badPorts.push(2); }
         isolated.push({ comp: c, dangling: badPorts });
       }
+      // Якщо лише один вихід підключений — деградований режим, помилки немає
       return; // пропускаємо загальну перевірку нижче
     }
 
@@ -4249,7 +4482,20 @@ function buildUnionFind(excludeVoltmeter) {
   state.components.forEach(function(c) {
     if ((c.type === 'switch' || c.type === 'pushbutton') && c.props.closed) union(portKey(c.id,0), portKey(c.id,1));
     if (c.type === 'ammeter') union(portKey(c.id,0), portKey(c.id,1));
-    if (c.type === 'spdt') union(portKey(c.id,0), portKey(c.id,(c.props.state===0)?1:2));
+    if (c.type === 'spdt') {
+      var _ps = spdtPortStatus(c);
+      if (_ps.singlePort !== null) {
+        // Деградований режим: як простий вимикач.
+        // Замкнено лише якщо активний стан вказує на підключений порт.
+        var _activePort = (c.props.state === 0) ? 1 : 2;
+        if (_activePort === _ps.singlePort) {
+          union(portKey(c.id,0), portKey(c.id,_ps.singlePort));
+        }
+        // Інакше — розімкнено, union не робимо
+      } else {
+        union(portKey(c.id,0), portKey(c.id,(c.props.state===0)?1:2));
+      }
+    }
   });
   return { find: find, parent: parent };
 }
@@ -4428,12 +4674,40 @@ if (liveBatts.length === 0) return null;
 var wireIds = {}, compIds = {}, msgs = [];
 
 if (!s) {
-  // Перевіряємо, чи є вимикачі/кнопки, які розривають коло
+  // Перевіряємо, чи є вимикачі/кнопки/SPDT, які розривають коло
   var hasOpenSwitch2 = state.components.some(function(c) {
-    return (c.type === 'switch' || c.type === 'pushbutton') && !c.props.closed;
+    if (c.type === 'switch' || c.type === 'pushbutton') return !c.props.closed;
+if (c.type === 'spdt' || c.type === 'flasher') {
+    // ✅ FIX: Перевіряємо, чи підключений хоча б один вихід (1 або 2)
+    var out1Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 1) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 1);
+    });
+    var out2Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 2) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 2);
+    });
+    // "Відкритий" (розриває коло) тільки якщо ОБИДВА виходи не підключені
+    return !(out1Connected || out2Connected);
+}
+    return false;
   });
   var hasClosedSwitch2 = state.components.some(function(c) {
-    return (c.type === 'switch' || c.type === 'pushbutton') && c.props.closed;
+    if (c.type === 'switch' || c.type === 'pushbutton') return c.props.closed;
+if (c.type === 'spdt' || c.type === 'flasher') {
+    // ✅ FIX: Перевіряємо, чи підключений хоча б один вихід (1 або 2)
+    var out1Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 1) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 1);
+    });
+    var out2Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 2) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 2);
+    });
+    // "Відкритий" (розриває коло) тільки якщо ОБИДВА виходи не підключені
+    return !(out1Connected || out2Connected);
+}
+    return false;
   });
 
   // Виявляємо "висячі" елементи — підключені менш ніж двома дротами
@@ -4455,24 +4729,33 @@ if (!s) {
       });
       if (hasConn) connectedPorts++;
     }
-    // Для spdt та flasher: вхідний порт (0) обов'язковий,
-    // але достатньо хоча б одного з вихідних (1 або 2).
-    if (c.type === 'spdt' || c.type === 'flasher') {
-      var _hasWireOnPort = function(pi2) {
+    // Для spdt та flasher: неактивний вихід — НОРМА конструкції, не висячий порт.
+    // Якщо лише один вихід підключений — деградований режим (дозволено).
+    // Помилка лише якщо common (0) або обидва виходи не підключені взагалі.
+if (c.type === 'spdt' || c.type === 'flasher') {
+    var _hasWireOnPort = function(pi2) {
         return state.connections.some(function(conn) {
-          if (conn.from.anchor || conn.to.anchor) return false;
-          return (conn.from.compId === c.id && conn.from.portIdx === pi2) ||
-                 (conn.to.compId   === c.id && conn.to.portIdx   === pi2);
+            if (conn.from.anchor || conn.to.anchor) return false;
+            return (conn.from.compId === c.id && conn.from.portIdx === pi2) ||
+                   (conn.to.compId   === c.id && conn.to.portIdx   === pi2);
         });
-      };
-      var _inOk  = _hasWireOnPort(0);
-      var _outOk = _hasWireOnPort(1) || _hasWireOnPort(2);
-      if (!_inOk || !_outOk) danglingComps.push(c);
-    } else if (connectedPorts < def.ports.length) {
-      danglingComps.push(c);
+    };
+    var _inOk  = _hasWireOnPort(0);
+    var _out1Ok = _hasWireOnPort(1);
+    var _out2Ok = _hasWireOnPort(2);
+    // Помилка: немає входу, або жоден вихід не підключений
+    if (!_inOk || (!_out1Ok && !_out2Ok)) {
+        danglingComps.push(c);
     }
+    // Якщо лише один вихід підключений — деградований режим, не помилка
+    return;
+}
+else if (connectedPorts < def.ports.length) {
+    danglingComps.push(c);
+}
   });
 
+  console.log('[DBG !s] danglingComps='+danglingComps.map(function(c){return c.type+'#'+c.id;})+ ' hasOpenSwitch2='+hasOpenSwitch2);
   if (danglingComps.length > 0) {
     // Є реально непідключені елементи
     danglingComps.forEach(function(c) { compIds[c.id] = true; });
@@ -4488,8 +4771,8 @@ if (!s) {
     // Солвер не зміг розрахувати з іншої причини
     liveBatts.forEach(function (b) { compIds[b.id] = true; });
     if (hasOpenSwitch2) {
-      // Основна причина — розімкнутий вимикач
-      msgs.push('⚠ Коло розімкнене — замкніть вимикач, щоб струм міг протікати.');
+      // Основна причина — розімкнутий перемикач/SPDT
+      msgs.push('⚠ Коло розімкнене — перемкніть вимикач або SPDT, щоб замкнути контур.');
     } else {
       msgs.push('⚠ Система не може розрахувати цю схему — ймовірно, є неприєднані компоненти або сингулярна конфігурація. Перевірте з\'єднання.');
     }
@@ -4522,9 +4805,22 @@ if (!s) {
   });
   var hasVm = state.components.some(function (c) { return c.type === 'voltmeter'; });
   var hasOpenSwitch = state.components.some(function (c) { 
-    return (c.type === 'switch' || c.type === 'pushbutton') && !c.props.closed;
+    if (c.type === 'switch' || c.type === 'pushbutton') return !c.props.closed;
+    if (c.type === 'spdt' || c.type === 'flasher') {
+      // SPDT "відкритий" якщо активний вихід взагалі не підключений до жодного дроту
+      var sp2 = c.props.state || 0;
+      var ap2 = sp2 === 0 ? 1 : 2;
+      return !state.connections.some(function(conn) {
+        return !conn.from.anchor && !conn.to.anchor &&
+          ((conn.from.compId === c.id && conn.from.portIdx === ap2) ||
+           (conn.to.compId   === c.id && conn.to.portIdx   === ap2));
+      });
+    }
+    return false;
   });
+  var hasSpdt = state.components.some(function(c) { return c.type === 'spdt' || c.type === 'flasher'; });
   var hint = hasVm ? ' Вольтметр має дуже великий опір — він не може бути єдиним шляхом проходження струму, його слід підключати паралельно до вимірюваної ділянки.' :
+              (hasOpenSwitch && hasSpdt) ? ' SPDT-перемикач направлений на непідключену гілку — переключіть його.' :
               hasOpenSwitch ? ' Розімкнутий вимикач розриває коло — замкніть його або приберіть з основного шляху струму.' :
              ' Переконайтеся, що кожен компонент поєднаний у спільне коло з батареєю без розривів.';
   msgs.push('⚠ Струм не проходить по колу, оскільки воно не має замкненого провідного контуру.' + hint);
@@ -4533,16 +4829,35 @@ if (!s) {
 if (msgs.length === 0) return null;
 var result = { wireIds: wireIds, compIds: compIds, messages: msgs };
 
-// _onlyOpenSwitch = розімкнутий вимикач є ЄДИНОЮ причиною (немає непідключених елементів)
+  //перевірка відкритих перемикачів
+// перевіряємо ВСІ дроти, включаючи anchor
+// ✅ ВИПРАВЛЕННЯ: hasOpenSwitch має перевіряти СТАН перемикача, а не підключення дротів
 var hasOpenSwitch = state.components.some(function(c){
-  return (c.type === 'switch' || c.type === 'pushbutton') &&
-         !c.props.closed;
+  if (c.type === 'switch' || c.type === 'pushbutton') {
+    // Перемикач розімкнений якщо closed === false
+    return !c.props.closed;
+  }
+if (c.type === 'spdt' || c.type === 'flasher') {
+    // ✅ FIX: Перевіряємо, чи підключений хоча б один вихід (1 або 2)
+    var out1Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 1) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 1);
+    });
+    var out2Connected = state.connections.some(function(conn) {
+        return (conn.from.compId === c.id && conn.from.portIdx === 2) ||
+               (conn.to.compId   === c.id && conn.to.portIdx   === 2);
+    });
+    // "Відкритий" (розриває коло) тільки якщо ОБИДВА виходи не підключені
+    return !(out1Connected || out2Connected);
+}
+  return false;
 });
 
-// Перевіряємо, чи є непідключені елементи (висячі порти)
+// Перевіряємо чи є реально непідключені компоненти (висячі порти)
 var hasDangling = state.components.some(function(c) {
   var def = COMP_DEFS[c.type];
   if (!def || BRANCH_TYPES.indexOf(c.type) < 0 || c.type === 'battery' || c.type === 'vsource') return false;
+  if (c.type === 'spdt' || c.type === 'flasher') return false; // не "висячі" — це перемикачі
   for (var pi = 0; pi < def.ports.length; pi++) {
     var hasConn = state.connections.some(function(conn) {
       return (conn.from.compId === c.id && conn.from.portIdx === pi) ||
@@ -4553,6 +4868,40 @@ var hasDangling = state.components.some(function(c) {
   return false;
 });
 
+console.log('[DBG checkPost] hasOpenSwitch='+hasOpenSwitch+' hasDangling='+hasDangling+' msgs='+JSON.stringify(msgs.map(function(m){return m.substr(0,60);})));
+
+// _onlyOpenSwitch = true ТІЛЬКИ якщо є розімкнені перемикачі І немає висячих компонентів
+if (hasOpenSwitch && !hasDangling) {
+  result._onlyOpenSwitch = true;
+}
+// Допоміжні функції:
+function isSpdtClosed(c) {
+    var s = c.props.state || 0;
+    var activePort = s === 0 ? 1 : 2;
+    return state.connections.some(conn => 
+        !conn.from.anchor && !conn.to.anchor &&
+        ((conn.from.compId === c.id && conn.from.portIdx === activePort) ||
+         (conn.to.compId === c.id && conn.to.portIdx === activePort))
+    );
+}
+
+// Перевіряємо, чи є непідключені елементи (висячі порти).
+// SPDT/flasher виключаємо повністю — їх "розімкненість" обробляється через hasOpenSwitch.
+var hasDangling = state.components.some(function(c) {
+  var def = COMP_DEFS[c.type];
+  if (!def || BRANCH_TYPES.indexOf(c.type) < 0 || c.type === 'battery' || c.type === 'vsource') return false;
+  if (c.type === 'spdt' || c.type === 'flasher') return false; // не "висячі" — це перемикачі
+  for (var pi = 0; pi < def.ports.length; pi++) {
+    var hasConn = state.connections.some(function(conn) {
+      return (conn.from.compId === c.id && conn.from.portIdx === pi) ||
+             (conn.to.compId === c.id && conn.to.portIdx === pi);
+    });
+    if (!hasConn) return true;
+  }
+  return false;
+});
+
+console.log('[DBG checkPost] hasOpenSwitch='+hasOpenSwitch+' hasDangling='+hasDangling+' msgs='+JSON.stringify(msgs.map(function(m){return m.substr(0,60);})));
 if (hasOpenSwitch && !hasDangling) {
   result._onlyOpenSwitch = true;
 }
@@ -4654,14 +5003,41 @@ function union(a,b){ a=find(a); b=find(b); if (a!==b) parent[a]=b; }
 
 // ── Step 1: register every component port as its own net ──────────────────
 function portHasWire(compId, portIdx) {
-  return state.connections.some(function(conn) {
-    return (conn.from.compId === compId && conn.from.portIdx === portIdx) ||
-           (conn.to.compId   === compId && conn.to.portIdx   === portIdx);
-  });
+    return state.connections.some(function(conn) {
+        // Пряме з'єднання
+        if ((conn.from.compId === compId && conn.from.portIdx === portIdx) ||
+            (conn.to.compId   === compId && conn.to.portIdx   === portIdx)) {
+            return true;
+        }
+        // З'єднання через anchor
+        if ((conn.from.anchor && conn.to.compId === compId && conn.to.portIdx === portIdx) ||
+            (conn.to.anchor   && conn.from.compId === compId && conn.from.portIdx === portIdx)) {
+            return true;
+        }
+        return false;
+    });
 }
+// Визначаємо неактивні порти SPDT/flasher — їх не реєструємо в MNA
+var _spdtInactivePorts = {}; // "compId:portIdx" → true
+state.components.forEach(function(c) {
+  if (c.type !== 'spdt' && c.type !== 'flasher') return;
+  var ps = spdtPortStatus(c);
+  if (ps.singlePort !== null) {
+    // Деградований режим: непідключений вихід — неактивний
+    var disconnectedPort = ps.singlePort === 1 ? 2 : 1;
+    _spdtInactivePorts[c.id + ':' + disconnectedPort] = true;
+  } else {
+    // Нормальний режим: неактивний = протилежний від поточного state
+    var sp = c.props.state || 0;
+    var inactivePort = sp === 0 ? 2 : 1;
+    _spdtInactivePorts[c.id + ':' + inactivePort] = true;
+  }
+});
 state.components.forEach(function (c) {
   var def = COMP_DEFS[c.type];
   for (var i = 0; i < def.ports.length; i++) {
+    // Неактивний порт SPDT не реєструємо — він не бере участі в MNA
+    if (_spdtInactivePorts[c.id + ':' + i]) continue;
     if ((c.type === 'spdt' || c.type === 'flasher') && !portHasWire(c.id, i)) continue;
     var k = portKey(c.id, i);
     parent[k] = k;
@@ -4681,8 +5057,11 @@ state.connections.forEach(function(conn) {
   if (conn.from.anchor) { var k = connKey(conn.from); parent[k] = k; }
   if (conn.to.anchor)   { var k = connKey(conn.to);   parent[k] = k; }
 });
-// Union wire endpoints
+// Union wire endpoints (пропускаємо дроти до неактивних портів SPDT)
 state.connections.forEach(function(conn) {
+  // Якщо один з кінців — неактивний порт SPDT — не union-имо
+  if (!conn.from.anchor && _spdtInactivePorts[conn.from.compId + ':' + conn.from.portIdx]) return;
+  if (!conn.to.anchor   && _spdtInactivePorts[conn.to.compId   + ':' + conn.to.portIdx  ]) return;
   var ka = connKey(conn.from), kb = connKey(conn.to);
   if (parent[ka] == null || parent[kb] == null) return;
   union(ka, kb);
@@ -4816,30 +5195,86 @@ for (var iter = 0; iter < 2; iter++) {
   branches = [];
   state.components.forEach(function (c) {
 
-  // ✅ FIX: Обробка SPDT перемикача (3 порти)
-   if (c.type === 'spdt') {
+
+// === ОБРОБКА SPDT / FLASHER ===
+// Активна гілка: common (0) → активний вихід, R=0.001.
+// Якщо активний вихід не підключений дротом — гілку не додаємо (розімкнено).
+// ========================================
+// SPDT / FLASHER
+// ========================================
+
+if (c.type === 'spdt' || c.type === 'flasher') {
+
+    var ps = spdtPortStatus(c);
+
+    // ------------------------------------
+    // Деградований режим: лише один вихід підключений
+    // ------------------------------------
+    if (ps.singlePort !== null) {
+        var _sp = ps.singlePort;
+        var _na = netOf(c.id, 0);
+        var _nb = netOf(c.id, _sp);
+        if (_na == null || _nb == null) return;
+
+        if (c.type === 'spdt') {
+            // Деградований режим як простий вимикач:
+            // замкнено лише якщо активний стан вказує на підключений порт
+            var _spdtActive = (c.props.state === 0) ? 1 : 2;
+            if (_spdtActive === _sp) {
+                branches.push({ comp: c, na: _na, nb: _nb, R: 0.001, portA: 0, portB: _sp });
+            }
+            // Інакше розімкнено — нічого не додаємо
+        } else {
+            // flasher: залежно від state — може бути замкнено або розімкнено,
+            // але перемикається тільки через цей один вихід
+            var _flState = c.props.state || 0;
+            // state=0 → активна фаза 'a' → підключаємо якщо singlePort===1
+            // state=1 → активна фаза 'b' → підключаємо якщо singlePort===2
+            var _flActive = (_flState === 0) ? 1 : 2;
+            if (_flActive === _sp) {
+                branches.push({ comp: c, na: _na, nb: _nb, R: 0.001, portA: 0, portB: _sp });
+            }
+            // Якщо активна фаза вказує на непідключений порт — розімкнено (нічого не додаємо)
+        }
+        return;
+    }
+
+    // ------------------------------------
+    // Нормальний режим: обидва виходи підключені
+    // ------------------------------------
     var s = c.props.state || 0;
-    var pB = s === 0 ? 1 : 2;
-    var _spdtOutOk = state.connections.some(function(conn) {
-      if (conn.from.anchor || conn.to.anchor) return false;
-      return (conn.from.compId === c.id && conn.from.portIdx === pB) ||
-             (conn.to.compId   === c.id && conn.to.portIdx   === pB);
+    var pActive = (s === 0) ? 1 : 2;
+
+    var na = netOf(c.id, 0);
+    var nb = netOf(c.id, pActive);
+
+    var activeConnected = state.connections.some(function(conn) {
+        return (
+            (!conn.from.anchor &&
+             conn.from.compId === c.id &&
+             conn.from.portIdx === pActive)
+            ||
+            (!conn.to.anchor &&
+             conn.to.compId === c.id &&
+             conn.to.portIdx === pActive)
+        );
     });
-    if (_spdtOutOk) branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, pB), R: 0.001, portA: 0, portB: pB });
-    return;
-   }
-   // Flasher: 3-портовий (порт 0=c, 1=a, 2=b)
-   if (c.type === 'flasher') {
-    var flS = c.props.state || 0;
-    var flPB = flS === 0 ? 1 : 2;
-    var _flOutOk = state.connections.some(function(conn) {
-      if (conn.from.anchor || conn.to.anchor) return false;
-      return (conn.from.compId === c.id && conn.from.portIdx === flPB) ||
-             (conn.to.compId   === c.id && conn.to.portIdx   === flPB);
+
+    if (!activeConnected) {
+        return;
+    }
+
+    branches.push({
+        comp: c,
+        na: na,
+        nb: nb,
+        R: 0.001,
+        portA: 0,
+        portB: pActive
     });
-    if (_flOutOk) branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, flPB), R: 0.001, portA: 0, portB: flPB });
+
     return;
-   }
+}
   
     var R = resistanceOf(c);
     if (c.type === 'led') {
@@ -4859,22 +5294,112 @@ for (var iter = 0; iter < 2; iter++) {
     branches.push({ comp: c, na: netOf(c.id, 0), nb: netOf(c.id, 1), R: R });
   });
 
-  // ✅ FIX: перевірка зв'язності графу гілок.
+  // Перевірка зв'язності графу гілок.
   // Якщо якийсь нет не досягається від groundNet через гілки+джерела
   // (наприклад, через розімкнутий вимикач), матриця технічно не сингулярна,
   // але результат фізично безглуздий — лампа "світить" без струму.
   var netAdj = {};
   for (var ni = 0; ni < N; ni++) netAdj[ni] = {};
-  branches.forEach(function(b) { netAdj[b.na][b.nb] = true; netAdj[b.nb][b.na] = true; });
-  vSources.forEach(function(v) { var np = netOf(v.id,0), nm = netOf(v.id,1); netAdj[np][nm] = true; netAdj[nm][np] = true; });
+  branches.forEach(function(b) { 
+      if (b.na != null && b.nb != null && b.na >= 0 && b.nb >= 0) {
+          netAdj[b.na][b.nb] = true; 
+          netAdj[b.nb][b.na] = true; 
+      }
+  });
+  vSources.forEach(function(v) { 
+      var np = netOf(v.id,0), nm = netOf(v.id,1);
+      if (np != null && nm != null && np >= 0 && nm >= 0) {
+          netAdj[np][nm] = true; 
+          netAdj[nm][np] = true; 
+      }
+  });
   var bfsVisited = {}; var bfsQueue = [groundNet]; bfsVisited[groundNet] = true;
   while (bfsQueue.length) {
-    var bfsCur = bfsQueue.shift();
-    Object.keys(netAdj[bfsCur]).forEach(function(nb){ var nbn = +nb; if (!bfsVisited[nbn]) { bfsVisited[nbn] = true; bfsQueue.push(nbn); } });
+      var bfsCur = bfsQueue.shift();
+      if (netAdj[bfsCur]) {  // ← Додано перевірку
+          Object.keys(netAdj[bfsCur]).forEach(function(nb){ 
+              var nbn = +nb; 
+              if (!bfsVisited[nbn]) { 
+                  bfsVisited[nbn] = true; 
+                  bfsQueue.push(nbn); 
+              } 
+          });
+      }
   }
-  var disconnected = false;
-  branches.forEach(function(b) { if (!bfsVisited[b.na] || !bfsVisited[b.nb]) disconnected = true; });
-  if (disconnected) return null;
+// ========================================
+// ПЕРЕВІРКА РОЗІМКНЕНОГО КОЛА
+// ========================================
+
+var disconnected = false;
+var controllableOpen = false;
+
+branches.forEach(function(b) {
+
+    if (b.na == null || b.nb == null) return;
+    if (b.na < 0 || b.nb < 0) return;
+
+    var aVisited = !!bfsVisited[b.na];
+    var bVisited = !!bfsVisited[b.nb];
+
+    // Гілка підключена нормально
+    if (aVisited && bVisited) return;
+
+    // ====================================
+    // ДОЗВОЛЕНІ РОЗРИВИ
+    // ====================================
+
+    if (b.comp) {
+
+        var t = b.comp.type;
+
+        // Звичайний вимикач
+        if (t === 'switch') {
+            controllableOpen = true;
+            return;
+        }
+
+        // Кнопка
+        if (t === 'pushbutton') {
+            controllableOpen = true;
+            return;
+        }
+
+        // SPDT перемикач
+        if (t === 'spdt') {
+            controllableOpen = true;
+            return;
+        }
+
+        // Flasher (переривник)
+        if (t === 'flasher') {
+            controllableOpen = true;
+            return;
+        }
+    }
+
+    // ====================================
+    // СПРАВЖНІЙ ОБРИВ
+    // ====================================
+
+    disconnected = true;
+});
+
+// ========================================
+// ОБРОБКА РЕЗУЛЬТАТУ
+// ========================================
+
+// Реальний обрив
+if (disconnected) {
+
+    showToast(
+        "🔓 Розімкнене коло — клацніть вимикач/перемикач, щоб замкнути коло і запустити струм"
+    );
+
+    return null;
+}
+
+// Якщо є лише керований розрив —
+// симуляцію НЕ зупиняємо
 
   // Очищаємо та заново штампуємо матрицю
   A = []; for (var r = 0; r < SIZE; r++) { A[r] = new Array(SIZE); for (var c2 = 0; c2 < SIZE; c2++) A[r][c2] = 0; }
@@ -4982,29 +5507,186 @@ return {
 }
 var BRANCH_TYPES = ['resistor','rheostat','lamp','fan','buzzer','heater','led','ammeter','voltmeter','battery','vsource','switch','pushbutton','flasher', 'spdt', 'fuse'];
 function isBranchComp(c) { return c && BRANCH_TYPES.indexOf(c.type) >= 0; }
-function wireSignedCurrent(conn) {
-  if (!sim || !sim.portI) return 0;
+// Мапа wireId → signedCurrent, заповнюється після кожного solve()
+var _wireCurrent = {};
 
-  // 1. Якщо дріт починається від компонента — беремо струм, що ВИХОДИТЬ з порту в дріт
-  if (conn.from.compId !== undefined) {
-    var c = conn.from.compId;
-    var p = conn.from.portIdx;
-    var portCurrentIntoComp = (sim.portI[c] && sim.portI[c][p]) || 0;
-    // -portCurrentIntoComp = струм, що тече з компонента в дріт
-    return -portCurrentIntoComp;
-  }
+// Будує _wireCurrent для ВСІХ дротів після solve().
+// Використовує nets solver'а — НЕ поширює струм "заразно" через junction.
+function buildWireCurrents() {
+    _wireCurrent = {};
+    if (!sim || !sim.portI) return;
 
-  // 2. Якщо дріт закінчується на компоненті (і from — junction/anchor)
-  if (conn.to.compId !== undefined) {
-    var c = conn.to.compId;
-    var p = conn.to.portIdx;
-    var portCurrentIntoComp = (sim.portI[c] && sim.portI[c][p]) || 0;
-    // Струм у дроті тече в компонент → знак = portCurrentIntoComp
-    return portCurrentIntoComp;
-  }
+    // --- Крок 1: будуємо карту "координата anchor → net" через BFS по сітці дротів ---
+    // Для кожної унікальної anchor-точки знаходимо її net, обходячи ланцюжок
+    // дротів поки не дійдемо до compId-кінця (де sim.netOf() дає відповідь).
+    // Це вирішує проблему ланцюжків: compPort→anchor1→anchor2→anchor3→...
 
-  return 0;
+    // Збираємо всі унікальні anchor-координати
+    var anchorNetCache = {}; // "x,y" → net index
+
+    function anchorKey(x, y) { return Math.round(x) + ',' + Math.round(y); }
+
+    function coordsMatch(ax, ay, bx, by) {
+        return Math.abs(ax - bx) < 4 && Math.abs(ay - by) < 4;
+    }
+
+    // BFS від anchor-точки: обходимо сусідні дроти поки не знайдемо compId-кінець
+    function resolveAnchorNet(startX, startY, visitedKeys) {
+        if (!visitedKeys) visitedKeys = {};
+        var key = anchorKey(startX, startY);
+        if (visitedKeys[key]) return null;
+        visitedKeys[key] = true;
+
+        // Перевіряємо, чи є компонентний порт прямо в цій точці
+        for (var ci = 0; ci < state.components.length; ci++) {
+            var c = state.components[ci];
+            var def = COMP_DEFS[c.type];
+            for (var pi = 0; pi < def.ports.length; pi++) {
+                var pw = portWorld(c, pi);
+                if (coordsMatch(pw.x, pw.y, startX, startY)) {
+                    var n = sim.netOf(c.id, pi);
+                    if (n != null) return n;
+                }
+            }
+        }
+
+        // Шукаємо дроти, що мають anchor-кінець у цій точці
+        for (var wi = 0; wi < state.connections.length; wi++) {
+            var conn = state.connections[wi];
+
+            // Якщо from-anchor збігається з нашою точкою
+            if (conn.from.anchor &&
+                coordsMatch(conn.from.anchor.x, conn.from.anchor.y, startX, startY)) {
+                // to-кінець цього дроту — компонент?
+                if (conn.to.compId !== undefined) {
+                    var n2 = sim.netOf(conn.to.compId, conn.to.portIdx);
+                    if (n2 != null) return n2;
+                }
+                // to-кінець — anchor? Рекурсивно йдемо далі
+                if (conn.to.anchor) {
+                    var n3 = resolveAnchorNet(conn.to.anchor.x, conn.to.anchor.y, visitedKeys);
+                    if (n3 != null) return n3;
+                }
+            }
+
+            // Якщо to-anchor збігається з нашою точкою
+            if (conn.to.anchor &&
+                coordsMatch(conn.to.anchor.x, conn.to.anchor.y, startX, startY)) {
+                // from-кінець цього дроту — компонент?
+                if (conn.from.compId !== undefined) {
+                    var n4 = sim.netOf(conn.from.compId, conn.from.portIdx);
+                    if (n4 != null) return n4;
+                }
+                // from-кінець — anchor? Рекурсивно йдемо далі
+                if (conn.from.anchor) {
+                    var n5 = resolveAnchorNet(conn.from.anchor.x, conn.from.anchor.y, visitedKeys);
+                    if (n5 != null) return n5;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Повертає net для будь-якого кінця з'єднання
+    function endNet(ep) {
+        if (ep.compId !== undefined) {
+            return sim.netOf(ep.compId, ep.portIdx);
+        }
+        if (ep.anchor) {
+            var k = anchorKey(ep.anchor.x, ep.anchor.y);
+            if (anchorNetCache[k] !== undefined) return anchorNetCache[k];
+            var n = resolveAnchorNet(ep.anchor.x, ep.anchor.y, {});
+            anchorNetCache[k] = (n != null) ? n : null;
+            return anchorNetCache[k];
+        }
+        return null;
+    }
+
+    // --- Крок 2: для кожного дроту визначаємо струм ---
+    // Правило: струм дроту = portI компонента на його кінці.
+    // Для anchor→anchor: знаходимо net обох кінців, і шукаємо струм через компонент
+    // між цими nets, АЛЕ тільки якщо nets різні (інакше — провід у рамках одного
+    // потенціального вузла, струм = 0 у провіднику без опору).
+    // КЛЮЧОВА відмінність від старого коду: ми НІКОЛИ не копіюємо струм між дротами —
+    // тільки беремо його з portI (яке solver встановив у 0 для розімкнених гілок).
+
+    state.connections.forEach(function(conn) {
+        var I = 0;
+        var fromIsComp = conn.from.compId !== undefined;
+        var toIsComp   = conn.to.compId   !== undefined;
+
+        if (fromIsComp && toIsComp) {
+            // Обидва кінці — компоненти. Напряму з portI.
+            I = -(sim.portI[conn.from.compId]?.[conn.from.portIdx] || 0);
+
+        } else if (fromIsComp) {
+            // from — компонент, to — anchor (junction).
+            // portI from-компонента вже = 0 якщо гілка розімкнена — просто беремо його.
+            I = -(sim.portI[conn.from.compId]?.[conn.from.portIdx] || 0);
+
+        } else if (toIsComp) {
+            // to — компонент, from — anchor (junction).
+            I = (sim.portI[conn.to.compId]?.[conn.to.portIdx] || 0);
+
+        } else {
+            // Обидва кінці — anchors (junction→junction дріт).
+            // Використовуємо nets для знаходження струму.
+            var netA = endNet(conn.from);
+            var netB = endNet(conn.to);
+
+            if (netA !== null && netB !== null) {
+                if (netA === netB) {
+                    // Той самий net — провідник між двома точками одного вузла.
+                    // Шукаємо через який компонент тече струм "через" цей дріт
+                    // за допомогою перевірки сусідніх дротів.
+                    // Знаходимо дріт-сусід у точці from.anchor з compId-кінцем
+                    var ax = conn.from.anchor.x, ay = conn.from.anchor.y;
+                    for (var ni = 0; ni < state.connections.length; ni++) {
+                        var nb = state.connections[ni];
+                        if (nb.id === conn.id) continue;
+                        // Сусід торкається нашого from-anchor?
+                        var touchFrom = (nb.from.anchor && coordsMatch(nb.from.anchor.x, nb.from.anchor.y, ax, ay));
+                        var touchTo   = (nb.to.anchor   && coordsMatch(nb.to.anchor.x,   nb.to.anchor.y,   ax, ay));
+                        if (!touchFrom && !touchTo) continue;
+                        // Цей сусідній дріт має compId-кінець?
+                        if (nb.from.compId !== undefined) {
+                            var candI = -(sim.portI[nb.from.compId]?.[nb.from.portIdx] || 0);
+                            if (Math.abs(candI) > 1e-9) { I = candI; break; }
+                        }
+                        if (nb.to.compId !== undefined) {
+                            var candI2 = (sim.portI[nb.to.compId]?.[nb.to.portIdx] || 0);
+                            if (Math.abs(candI2) > 1e-9) { I = candI2; break; }
+                        }
+                    }
+                } else {
+                    // Різні nets — дріт перетинає межу між двома вузлами схеми.
+                    // Знаходимо компонент між netA і netB.
+                    for (var bi = 0; bi < state.components.length; bi++) {
+                        var bc = state.components[bi];
+                        if (!sim.portI[bc.id]) continue;
+                        var bdef = COMP_DEFS[bc.type];
+                        if (bdef.ports.length < 2) continue;
+                        var n0 = sim.netOf(bc.id, 0);
+                        var n1 = sim.netOf(bc.id, 1);
+                        if ((n0 === netA && n1 === netB) || (n0 === netB && n1 === netA)) {
+                            var rawI = sim.portI[bc.id][0] || 0;
+                            // Знак: якщо струм тече від netA до netB (n0=netA, rawI>0 → витікає з порту 0)
+                            I = (n0 === netA) ? -rawI : rawI;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        _wireCurrent[conn.id] = I;
+    });
 }
+function wireSignedCurrent(conn) {
+    if (!isRunning || !sim) return 0;
+    return _wireCurrent[conn.id] !== undefined ? _wireCurrent[conn.id] : 0;
+}
+
 var _adjCache = null, _adjCacheKey = 0;
 function buildAdj() {
 var key = function(c,p){ return c+'|'+p; };
@@ -5062,8 +5744,9 @@ function runSolve() {
     sim = solve(); 
   } catch (e) { 
     console.error('Solver error', e); 
-    sim = null; 
+    sim = null; _wireCurrent = {};
   }
+  buildWireCurrents();
   updateReadouts();
   scheduleDraw();
 }
@@ -5098,7 +5781,7 @@ if (rrt) rrt.textContent = isFinite(sim.Req) ? formatR(sim.Req) : '∞';
 if (rp) rp.textContent = sim.totalP.toFixed(3);
 if (rs) rs.textContent = 'Симуляція';
 }
-/* ── Annotation toolbar ────────────────────────────────── */
+// Annotation toolbar
 var PENCIL_CURSOR = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z' fill='%23fff' stroke='%23000' stroke-width='.8'/%3E%3Cpath d='M20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='%23fff' stroke='%23000' stroke-width='.8'/%3E%3C/svg%3E\") 2 22, crosshair";
 var markBar = document.getElementById('mark-bar');
 function setTool(t) {
@@ -5260,282 +5943,39 @@ textInput.addEventListener('keydown', function(ev){
 if (ev.key === 'Enter' || ev.key === 'Escape') textInput.blur();
 });
 }
-/* SLICE 5 — Prebuilt / Export */
-/* ── Prebuilt circuits ─────────────────────────────────── */
-function addComp(type, x, y, props, rot) {
-var c = makeComponent(type, x, y);
-if (props) for (var k in props) c.props[k] = props[k];
-if (rot) c.rot = rot;
-state.components.push(c);
-return c;
-}
-function addConn(a, pa, b, pb, wps) {
-  function ep(obj, portIdx) {
-    // Junction has x,y but no ports — use anchor endpoint
-    if (obj._isJunction || (state.junctions.indexOf(obj) >= 0)) return { anchor: { x: obj.x, y: obj.y } };
-    return { compId: obj.id, portIdx: portIdx };
-  }
-  state.connections.push({ id:state.nextId++, from:ep(a,pa), to:ep(b,pb), waypoints:wps||[] });
-}
-var PREBUILT = {
-single: function(){
-var b = addComp('battery', 50, 210, {V:9});
-var a = addComp('ammeter', 250, 210);
-var r = addComp('resistor', 170, 350, {R:220});
-var vm = addComp('voltmeter', 170, 280);
-addConn(b, 1, a, 0, []);
-addConn(b, 0, r, 0, [{x:-20, y:350}]);
-addConn(a, 1, r, 1, [{x:320, y:210}, {x:320, y:350}]);
-addConn(vm, 0, r, 0, []);
-addConn(vm, 1, r, 1, []);
-},
-series : function(){
-var b = addComp('battery', 80, 220, {V:12});
-var a = addComp('ammeter', 220, 220);
-var r1 = addComp('resistor', 380, 220, {R:220});
-var r2 = addComp('resistor', 560, 220, {R:330});
-var vm = addComp('voltmeter', 380, 360);
-var g = addComp('ground', 320, 400);
-addConn(b, 0, a, 0);
-addConn(a, 1, r1, 0);
-addConn(r1, 1, r2, 0);
-addConn(r2, 1, g, 0, [{x:620,y:220},{x:620,y:380},{x:320,y:380}]);
-addConn(b, 1, g, 0, [{x:40,y:220},{x:40,y:380},{x:320,y:380}]);
-addConn(r1, 0, vm, 0, [{x:340,y:220},{x:340,y:360}]);
-addConn(r1, 1, vm, 1, [{x:420,y:220},{x:420,y:300},{x:410,y:300},{x:410,y:360}]);
-},
-parallel: function(){
-var b = addComp('battery', 60, 240, {V:9});
-var a = addComp('ammeter', 200, 240);
-var jL = (function(){ var _j={id:state.nextId++,x:320,y:240}; state.junctions.push(_j); return _j; })();
-var r1 = addComp('resistor', 440, 180, {R:220});
-var r2 = addComp('resistor', 440, 300, {R:330});
-var jR = (function(){ var _j={id:state.nextId++,x:560,y:240}; state.junctions.push(_j); return _j; })();
-var vm = addComp('voltmeter', 440, 400);
-var g = addComp('ground', 660, 380);
-addConn(b, 0, a, 0);
-addConn(a, 1, jL, 0);
-addConn(jL, 1, r1, 0, [{x:340,y:240},{x:340,y:180},{x:400,y:180}]);
-addConn(jL, 1, r2, 0, [{x:340,y:240},{x:340,y:300},{x:400,y:300}]);
-addConn(r1, 1, jR, 0, [{x:480,y:180},{x:580,y:180},{x:580,y:240},{x:570,y:240}]);
-addConn(r2, 1, jR, 0, [{x:480,y:300},{x:580,y:300},{x:580,y:240},{x:570,y:240}]);
-addConn(jR, 1, g, 0, [{x:580,y:240},{x:660,y:240},{x:660,y:360}]);
-addConn(b, 1, g, 0, [{x:20,y:240},{x:20,y:420},{x:660,y:420},{x:660,y:360}]);
-addConn(jL, 2, vm, 0, [{x:320,y:230},{x:320,y:400},{x:400,y:400}]);
-addConn(jR, 2, vm, 1, [{x:560,y:230},{x:560,y:400},{x:480,y:400}]);
-},
-mixed: function(){
-var b = addComp('battery', 60, 220, {V:12});
-var a = addComp('ammeter', 200, 220);
-var r1 = addComp('resistor', 340, 220, {R:100});
-var jL = (function(){ var _j={id:state.nextId++,x:440,y:220}; state.junctions.push(_j); return _j; })();
-var r2 = addComp('resistor', 560, 160, {R:220});
-var r3 = addComp('resistor', 560, 280, {R:330});
-var jR = (function(){ var _j={id:state.nextId++,x:680,y:220}; state.junctions.push(_j); return _j; })();
-var vm = addComp('voltmeter', 560, 400);
-var g = addComp('ground', 760, 360);
-addConn(b, 0, a, 0);
-addConn(a, 1, r1, 0);
-addConn(r1, 1, jL, 0);
-addConn(jL, 1, r2, 0, [{x:460,y:220},{x:460,y:160},{x:520,y:160}]);
-addConn(r2, 1, jR, 0, [{x:600,y:160},{x:700,y:160},{x:700,y:220},{x:690,y:220}]);
-addConn(jL, 1, r3, 0, [{x:460,y:220},{x:460,y:280},{x:520,y:280}]);
-addConn(r3, 1, jR, 0, [{x:600,y:280},{x:700,y:280},{x:700,y:220},{x:690,y:220}]);
-addConn(jR, 1, g, 0, [{x:700,y:220},{x:760,y:220},{x:760,y:340}]);
-addConn(b, 1, g, 0, [{x:20,y:220},{x:20,y:420},{x:760,y:420},{x:760,y:340}]);
-addConn(jL, 2, vm, 0, [{x:440,y:210},{x:440,y:400},{x:520,y:400}]);
-addConn(jR, 2, vm, 1, [{x:680,y:210},{x:680,y:400},{x:600,y:400}]);
-},
-led: function(){
-var b = addComp('battery', 80, 200, {V:5});
-var a = addComp('ammeter', 220, 200);
-var r = addComp('resistor', 360, 200, {R:330});
-var d = addComp('led', 520, 200, {R:30});
-var vm = addComp('voltmeter', 520, 340);
-var g = addComp('ground', 280, 380);
-addConn(b, 0, a, 0);
-addConn(a, 1, r, 0);
-addConn(r, 1, d, 0);
-addConn(d, 1, g, 0, [{x:580,y:200},{x:580,y:360},{x:280,y:360}]);
-addConn(b, 1, g, 0, [{x:40,y:200},{x:40,y:360},{x:280,y:360}]);
-addConn(d, 0, vm, 0, [{x:480,y:200},{x:480,y:340}]);
-addConn(d, 1, vm, 1, [{x:580,y:200},{x:580,y:280},{x:560,y:280},{x:560,y:340}]);
-},
-'lamp-switch': function(){
-var b = addComp('battery', 80, 200, {V:12});
-var a = addComp('ammeter', 220, 200);
-var s = addComp('switch', 360, 200, {closed:false});
-var l = addComp('lamp', 500, 200);
-var vm = addComp('voltmeter', 500, 360);
-var g = addComp('ground', 320, 400);
-addConn(b, 0, a, 0);
-addConn(a, 1, s, 0);
-addConn(s, 1, l, 0);
-addConn(l, 1, g, 0, [{x:560,y:200},{x:560,y:380},{x:320,y:380}]);
-addConn(b, 1, g, 0, [{x:40,y:200},{x:40,y:380},{x:320,y:380}]);
-addConn(l, 0, vm, 0, [{x:470,y:200},{x:470,y:360}]);
-addConn(l, 1, vm, 1, [{x:560,y:200},{x:560,y:300},{x:530,y:300},{x:530,y:360}]);
-},
-fan: function(){
-var b = addComp('battery', 80, 200, {V:12});
-var a = addComp('ammeter', 220, 200); 
-var s = addComp('switch', 360, 200, {closed:true});
-var f = addComp('fan', 500, 200, {R:50});
-var vm = addComp('voltmeter', 500, 380);
-var g = addComp('ground', 320, 420);
-addConn(b, 0, a, 0);
-addConn(a, 1, s, 0);
-addConn(s, 1, f, 0);
-addConn(f, 1, g, 0, [{x:570,y:200},{x:570,y:400},{x:320,y:400}]);
-addConn(b, 1, g, 0, [{x:40,y:200},{x:40,y:400},{x:320,y:400}]);
-addConn(f, 0, vm, 0, [{x:465,y:200},{x:465,y:380}]);
-addConn(f, 1, vm, 1, [{x:570,y:200},{x:570,y:320},{x:535,y:320},{x:535,y:380}]);
-},
-'ammeter-voltmeter': function(){
-var b = addComp('battery', 100, 200, {V:9});
-var a = addComp('ammeter', 240, 200);
-var r = addComp('resistor', 400, 200, {R:220});
-var vm = addComp('voltmeter', 400, 320);
-var g = addComp('ground', 240, 360);
-addConn(b, 0, a, 0);
-addConn(a, 1, r, 0);
-addConn(r, 1, g, 0, [{x:460,y:200},{x:460,y:340},{x:240,y:340}]);
-addConn(b, 1, g, 0, [{x:60,y:200},{x:60,y:340},{x:240,y:340}]);
-addConn(r, 0, vm, 0, [{x:360,y:200},{x:360,y:320}]);
-addConn(r, 1, vm, 1, [{x:460,y:200},{x:460,y:320}]);
-},
-divider: function(){
-var b = addComp('battery', 120, 200, {V:12});
-var r1 = addComp('resistor', 300, 140, {R:1000});
-var r2 = addComp('resistor', 300, 260, {R:2000});
-var vm = addComp('voltmeter', 460, 260);
-var g = addComp('ground', 120, 360);
-addConn(b, 0, r1, 0, [{x:240,y:160},{x:260,y:140}]);
-addConn(r1, 1, r2, 1, [{x:360,y:140},{x:360,y:260}]);
-addConn(r2, 0, b, 1, [{x:260,y:260},{x:80,y:260},{x:80,y:200}]);
-addConn(r2, 1, vm, 0, [{x:360,y:260},{x:420,y:260}]);
-addConn(r2, 0, vm, 1, [{x:260,y:260},{x:260,y:340},{x:500,y:340},{x:500,y:260}]);
-addConn(b, 1, g, 0, [{x:80,y:260},{x:120,y:340}]);
-},
-bridge: function(){
-var b = addComp('battery', 60, 280, {V:12});
-var a = addComp('ammeter', 200, 280);
-var jT = (function(){ var _j={id:state.nextId++,x:440,y:160}; state.junctions.push(_j); return _j; })();
-var jB = (function(){ var _j={id:state.nextId++,x:440,y:400}; state.junctions.push(_j); return _j; })();
-var jL = (function(){ var _j={id:state.nextId++,x:320,y:280}; state.junctions.push(_j); return _j; })();
-var jR = (function(){ var _j={id:state.nextId++,x:560,y:280}; state.junctions.push(_j); return _j; })();
-var r1 = addComp('resistor', 380, 220, {R:1000});
-var r2 = addComp('resistor', 500, 220, {R:2200});
-var r3 = addComp('resistor', 380, 340, {R:1000});
-var r4 = addComp('resistor', 500, 340, {R:2200});
-var vm = addComp('voltmeter', 440, 280);
-var g = addComp('ground', 660, 420);
-addConn(b, 0, a, 0);
-addConn(a, 1, jT, 2, [{x:280,y:280},{x:280,y:160},{x:440,y:160},{x:440,y:150}]);
-addConn(jL, 2, r1, 0, [{x:320,y:270},{x:320,y:220},{x:340,y:220}]);
-addConn(r1, 1, jT, 0, [{x:420,y:220},{x:430,y:220},{x:430,y:160}]);
-addConn(jT, 1, r2, 0, [{x:450,y:160},{x:450,y:220},{x:460,y:220}]);
-addConn(r2, 1, jR, 2, [{x:540,y:220},{x:560,y:220},{x:560,y:270}]);
-addConn(jL, 1, r3, 0, [{x:330,y:280},{x:330,y:340},{x:340,y:340}]);
-addConn(r3, 1, jB, 0, [{x:420,y:340},{x:430,y:340},{x:430,y:400}]);
-addConn(jB, 1, r4, 0, [{x:450,y:400},{x:450,y:340},{x:460,y:340}]);
-addConn(r4, 1, jR, 0, [{x:540,y:340},{x:550,y:340},{x:550,y:280}]);
-addConn(jL, 1, vm, 0, [{x:330,y:280},{x:410,y:280}]);
-addConn(jR, 0, vm, 1, [{x:550,y:280},{x:470,y:280}]);
-addConn(jB, 3, g, 0, [{x:440,y:410},{x:440,y:440},{x:660,y:440},{x:660,y:400}]);
-addConn(b, 1, g, 0, [{x:20,y:280},{x:20,y:460},{x:660,y:460},{x:660,y:400}]);
-},
-'multi-lamp': function(){
-var b = addComp('battery', 60, 260, {V:12});
-var aT = addComp('ammeter', 200, 260);
-var jL = (function(){ var _j={id:state.nextId++,x:320,y:260}; state.junctions.push(_j); return _j; })();
-var jR = (function(){ var _j={id:state.nextId++,x:760,y:260}; state.junctions.push(_j); return _j; })();
-var s1 = addComp('switch', 420, 160, {closed:true});
-var a1 = addComp('ammeter', 560, 160);
-var l1 = addComp('lamp', 680, 160, {R:48});
-var s2 = addComp('switch', 420, 260, {closed:true});
-var a2 = addComp('ammeter', 560, 260);
-var l2 = addComp('lamp', 680, 260, {R:48});
-var s3 = addComp('switch', 420, 360, {closed:false});
-var a3 = addComp('ammeter', 560, 360);
-var l3 = addComp('lamp', 680, 360, {R:48});
-var vm = addComp('voltmeter', 540, 460);
-var g = addComp('ground', 860, 440);
-addConn(b, 0, aT, 0);
-addConn(aT, 1, jL, 0);
-addConn(jL, 2, s1, 0, [{x:320,y:250},{x:320,y:160},{x:385,y:160}]);
-addConn(s1, 1, a1, 0);
-addConn(a1, 1, l1, 0);
-addConn(l1, 1, jR, 2, [{x:710,y:160},{x:760,y:160},{x:760,y:250}]);
-addConn(jL, 1, s2, 0);
-addConn(s2, 1, a2, 0);
-addConn(a2, 1, l2, 0);
-addConn(l2, 1, jR, 0);
-addConn(jL, 3, s3, 0, [{x:320,y:270},{x:320,y:360},{x:385,y:360}]);
-addConn(s3, 1, a3, 0);
-addConn(a3, 1, l3, 0);
-addConn(l3, 1, jR, 3, [{x:710,y:360},{x:760,y:360},{x:760,y:270}]);
-addConn(jL, 3, vm, 0, [{x:320,y:270},{x:320,y:460},{x:500,y:460}]);
-addConn(jR, 3, vm, 1, [{x:760,y:270},{x:760,y:460},{x:580,y:460}]);
-addConn(jR, 1, g, 0, [{x:780,y:260},{x:860,y:260},{x:860,y:420}]);
-addConn(b, 1, g, 0, [{x:20,y:260},{x:20,y:480},{x:860,y:480},{x:860,y:420}]);
-},
-'two-loop': function(){
-var b = addComp('battery', 60, 260, {V:12});
-var aT = addComp('ammeter', 200, 260);
-var jL = (function(){ var _j={id:state.nextId++,x:340,y:260}; state.junctions.push(_j); return _j; })();
-var r1 = addComp('resistor', 460, 160, {R:220});
-var aU = addComp('ammeter', 600, 160);
-var r2 = addComp('resistor', 460, 360, {R:330});
-var aD = addComp('ammeter', 600, 360);
-var jR = (function(){ var _j={id:state.nextId++,x:740,y:260}; state.junctions.push(_j); return _j; })();
-var r3 = addComp('resistor', 740, 380, {R:100});
-var vm = addComp('voltmeter', 460, 480);
-var g = addComp('ground', 860, 440);
-addConn(b, 0, aT, 0);
-addConn(aT, 1, jL, 0);
-addConn(jL, 2, r1, 0, [{x:340,y:250},{x:340,y:160},{x:420,y:160}]);
-addConn(r1, 1, aU, 0);
-addConn(aU, 1, jR, 2, [{x:630,y:160},{x:740,y:160},{x:740,y:250}]);
-addConn(jL, 3, r2, 0, [{x:340,y:270},{x:340,y:360},{x:420,y:360}]);
-addConn(r2, 1, aD, 0);
-addConn(aD, 1, jR, 3, [{x:630,y:360},{x:740,y:360},{x:740,y:270}]);
-addConn(jR, 1, r3, 1, [{x:760,y:260},{x:790,y:260},{x:790,y:380},{x:780,y:380}]);
-addConn(r3, 0, g, 0, [{x:700,y:380},{x:680,y:380},{x:680,y:440},{x:860,y:440},{x:860,y:420}]);
-addConn(r1, 0, vm, 0, [{x:420,y:160},{x:400,y:160},{x:400,y:480},{x:420,y:480}]);
-addConn(r1, 1, vm, 1, [{x:500,y:160},{x:520,y:160},{x:520,y:480},{x:500,y:480}]);
-addConn(b, 1, g, 0, [{x:20,y:260},{x:20,y:500},{x:860,y:500},{x:860,y:420}]);
-}
-};
-var prebuiltTabs = document.getElementById('prebuilt-tabs');
-var circuitDesc = document.getElementById('circuit-desc');
-var CIRCUIT_DESC = {
-single:'Просте коло з одним резистором. Закон Ома V = IR в найпростішому вигляді.',
-series:'Два резистори послідовно. Однаковий струм, напруги додаються.',
-parallel:'Два резистори паралельно. Однакова напруга, струми додаються.',
-mixed: 'R₁ послідовно з (R₂ || R₃). Змішане з\'єднання.',
-led:'Світлодіод із струмообмежувальним резистором. Не підключайте LED без резистора!',
-'lamp-switch':'Лампа керується вимикачем. Переключіть вимикач для увімкнення.',
-fan:'Вентилятор (двигун постійного струму) керується вимикачем.',
-'ammeter-voltmeter':'Амперметр послідовно, вольтметр паралельно до резистора.',
-divider:'Подільник напруги: V_out = V·R₂/(R₁+R₂). Вольтметр показує V_out.',
-bridge:'Міст Вітстона — 4 резистори у формі ромба. При R₁/R₃ = R₂/R₄ міст збалансований і вольтметр (гальванометр) показує нуль. Розбалансуйте один резистор, щоб побачити відхилення.',
-'multi-lamp':'Три паралельні лампи, кожна зі своїм вимикачем та амперметром. Перемикайте незалежно — головний амперметр дорівнює сумі гілкових (1-й закон Кірхгофа).',
-'two-loop':'Двоконтурна мережа із спільним зворотним провідником через R₃. Демонструє 1-й закон Кірхгофа: I_заг = I₁ + I₂ у лівому вузлі.'
-};
-if (prebuiltTabs) prebuiltTabs.addEventListener('click', function(e){
-var b = e.target.closest('.pill'); if (!b) return;
-var k = b.getAttribute('data-circuit');
-if (!PREBUILT[k]) return;
-saveUndo();
-clearCanvas();
-PREBUILT[k]();
-prebuiltTabs.querySelectorAll('.pill').forEach(function(p){ p.classList.toggle('active', p===b); });
-if (circuitDesc) { circuitDesc.style.display = ''; circuitDesc.textContent = CIRCUIT_DESC[k] || ''; }
-fitAll();
-});
 
-/* ── Export PNG ─────────────────────────────────────── */
+// Вбудовані приклади (compact JSON) ─────────────────── */
+window.ExampleLoader = {
+    load: function(compactJson) {
+        saveUndo(); // додати в стек undo для можливості скасувати
+        console.log("ex:",decode(compactJson));
+        restore(decode(compactJson));
+        return;
+    }
+};
+window.Examples = [
+// 1 lamp
+'{"components":[{"id":1,"_t":"battery","x":40,"y":300,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":2,"_t":"switch","x":150,"y":300,"_r":0,"_p":{"closed":false},"_s":{}},{"id":3,"_t":"lamp","x":100,"y":180,"_r":0,"_p":{"R":48,"color":"yellow","Runit":1},"_s":{}}],"connections":[{"id":4,"_f":{"_ci":1,"_pi":0},"to":{"_ci":3,"_pi":0},"_w":[{"x":-20,"y":300},{"x":-20,"y":180}]},{"id":5,"_f":{"_ci":1,"_pi":1},"to":{"_ci":2,"_pi":0},"_w":[]},{"id":6,"_f":{"_ci":2,"_pi":1},"to":{"_ci":3,"_pi":1},"_w":[{"x":220,"y":300},{"x":220,"y":180}]}],"junctions":[],"annStrokes":[],"annShapes":[],"nextId":7}',
+// 2 lamp
+'{"components":[{"id":1,"_t":"battery","x":110,"y":320,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":2,"_t":"switch","x":70,"y":180,"_r":0,"_p":{"closed":false},"_s":{}},{"id":3,"_t":"lamp","x":160,"y":180,"_r":0,"_p":{"R":48,"color":"yellow","Runit":1},"_s":{}},{"id":7,"_t":"lamp","x":160,"y":240,"_r":0,"_p":{"R":48,"color":"yellow","Runit":1},"_s":{}},{"id":8,"_t":"switch","x":70,"y":240,"_r":0,"_p":{"closed":false},"_s":{}}],"connections":[{"id":11,"_f":{"_ci":1,"_pi":0},"to":{"_a":{"x":0,"y":240}},"_w":[{"x":0,"y":320}]},{"id":12,"_f":{"_a":{"x":0,"y":240}},"to":{"_ci":2,"_pi":0},"_w":[{"x":0,"y":180}]},{"id":13,"_f":{"_ci":8,"_pi":0},"to":{"_a":{"x":0,"y":240}},"_w":[]},{"id":14,"_f":{"_ci":2,"_pi":1},"to":{"_ci":3,"_pi":0},"_w":[]},{"id":15,"_f":{"_ci":8,"_pi":1},"to":{"_ci":7,"_pi":0},"_w":[]},{"id":18,"_f":{"_ci":1,"_pi":1},"to":{"_a":{"x":240,"y":240}},"_w":[{"x":240,"y":320}]},{"id":19,"_f":{"_a":{"x":240,"y":240}},"to":{"_ci":3,"_pi":1},"_w":[{"x":240,"y":180}]},{"id":20,"_f":{"_ci":7,"_pi":1},"to":{"_a":{"x":240,"y":240}},"_w":[]}],"junctions":[{"id":10,"x":0,"y":240},{"id":17,"x":240,"y":240}],"annStrokes":[],"annShapes":[],"nextId":21}',
+//Ohm law
+'{"components":[{"id":1,"_t":"vsource","x":110,"y":320,"_r":0,"_p":{"V":5,"Vmin":0,"Vmax":20,"Vunit":1},"_s":{}},{"id":2,"_t":"resistor","x":110,"y":230,"_r":0,"_p":{"R":220,"Runit":1},"_s":{}},{"id":3,"_t":"voltmeter","x":110,"y":160,"_r":0,"_p":{},"_s":{}},{"id":4,"_t":"ammeter","x":200,"y":230,"_r":0,"_p":{},"_s":{}},{"id":5,"_t":"switch","x":200,"y":320,"_r":0,"_p":{"closed":false},"_s":{}}],"connections":[{"id":6,"_f":{"_ci":1,"_pi":1},"to":{"_ci":5,"_pi":0},"_w":[]},{"id":7,"_f":{"_ci":5,"_pi":1},"to":{"_ci":4,"_pi":1},"_w":[{"x":260,"y":320},{"x":260,"y":230}]},{"id":8,"_f":{"_ci":4,"_pi":0},"to":{"_ci":2,"_pi":1},"_w":[]},{"id":9,"_f":{"_ci":2,"_pi":0},"to":{"_ci":1,"_pi":0},"_w":[{"x":0,"y":230},{"x":0,"y":320}]},{"id":10,"_f":{"_ci":3,"_pi":0},"to":{"_ci":2,"_pi":0},"_w":[{"x":70,"y":160}]},{"id":11,"_f":{"_ci":3,"_pi":1},"to":{"_ci":2,"_pi":1},"_w":[{"x":150,"y":160}]}],"junctions":[],"annStrokes":[],"annShapes":[],"nextId":12}',
+// flasher
+'{"components":[{"id":1,"_t":"battery","x":10,"y":200,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":26,"_t":"lamp","x":190,"y":220,"_r":0,"_p":{"R":48,"color":"red","Runit":1},"_s":{}},{"id":27,"_t":"lamp","x":190,"y":290,"_r":0,"_p":{"R":48,"color":"green","Runit":1},"_s":{}},{"id":36,"_t":"flasher","x":110,"y":260,"_r":0,"_p":{"_s":1,"tOn":0.5,"tOff":0.5},"_s":{"_flInit":true,"_lastT":732443.48,"_phase":"b","_powered":false}},{"id":50,"_t":"switch","x":60,"y":360,"_r":0,"_p":{"closed":false},"_s":{}}],"connections":[{"id":28,"_f":{"_ci":36,"_pi":2},"to":{"_ci":27,"_pi":0},"_w":[{"x":160,"y":270}]},{"id":29,"_f":{"_ci":36,"_pi":1},"to":{"_ci":26,"_pi":0},"_w":[{"x":160,"y":250}]},{"id":31,"_f":{"_ci":1,"_pi":1},"to":{"_ci":36,"_pi":0},"_w":[{"x":50,"y":260}]},{"id":48,"_f":{"_a":{"x":240,"y":290}},"to":{"_ci":26,"_pi":1},"_w":[{"x":240,"y":220}]},{"id":49,"_f":{"_ci":27,"_pi":1},"to":{"_a":{"x":240,"y":290}},"_w":[]},{"id":51,"_f":{"_ci":1,"_pi":0},"to":{"_ci":50,"_pi":0},"_w":[{"x":-60,"y":200},{"x":-60,"y":360}]},{"id":52,"_f":{"_ci":50,"_pi":1},"to":{"_a":{"x":240,"y":290}},"_w":[{"x":240,"y":360}]}],"junctions":[{"id":46,"x":240,"y":290}],"annStrokes":[],"annShapes":[],"nextId":53}',
+// garland
+'{"components":[{"id":1,"_t":"lamp","x":-20,"y":220,"_r":0,"_p":{"R":48,"color":"yellow","Runit":1},"_s":{}},{"id":2,"_t":"lamp","x":50,"y":220,"_r":0,"_p":{"R":48,"color":"green","Runit":1},"_s":{}},{"id":3,"_t":"lamp","x":120,"y":220,"_r":0,"_p":{"R":48,"color":"blue","Runit":1},"_s":{}},{"id":4,"_t":"lamp","x":190,"y":220,"_r":0,"_p":{"R":48,"color":"white","Runit":1},"_s":{}},{"id":5,"_t":"lamp","x":-90,"y":220,"_r":0,"_p":{"R":48,"color":"red","Runit":1},"_s":{}},{"id":10,"_t":"battery","x":-80,"y":320,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":11,"_t":"switch","x":50,"y":320,"_r":0,"_p":{"closed":true},"_s":{}}],"connections":[{"id":6,"_f":{"_ci":5,"_pi":1},"to":{"_ci":1,"_pi":0},"_w":[]},{"id":7,"_f":{"_ci":1,"_pi":1},"to":{"_ci":2,"_pi":0},"_w":[]},{"id":8,"_f":{"_ci":2,"_pi":1},"to":{"_ci":3,"_pi":0},"_w":[]},{"id":9,"_f":{"_ci":3,"_pi":1},"to":{"_ci":4,"_pi":0},"_w":[]},{"id":12,"_f":{"_ci":10,"_pi":0},"to":{"_ci":5,"_pi":0},"_w":[{"x":-140,"y":320},{"x":-140,"y":220}]},{"id":13,"_f":{"_ci":10,"_pi":1},"to":{"_ci":11,"_pi":0},"_w":[]},{"id":14,"_f":{"_ci":11,"_pi":1},"to":{"_ci":4,"_pi":1},"_w":[{"x":240,"y":320},{"x":240,"y":220}]}],"junctions":[],"annStrokes":[],"annShapes":[],"nextId":15}',
+// buzzer
+'{"components":[{"id":1,"_t":"battery","x":100,"y":200,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":11,"_t":"buzzer","x":200,"y":320,"_r":0,"_p":{"R":120,"Runit":1},"_s":{}},{"id":13,"_t":"pushbutton","x":100,"y":320,"_r":0,"_p":{"closed":false,"normallyOpen":true},"_s":{}}],"connections":[{"id":4,"_f":{"_ci":1,"_pi":0},"to":{"_ci":13,"_pi":0},"_w":[{"x":0,"y":200},{"x":0,"y":320}]},{"id":12,"_f":{"_ci":1,"_pi":1},"to":{"_ci":11,"_pi":1},"_w":[{"x":260,"y":200},{"x":260,"y":320}]},{"id":14,"_f":{"_ci":13,"_pi":1},"to":{"_ci":11,"_pi":0},"_w":[]}],"junctions":[],"annStrokes":[],"annShapes":[],"nextId":15}',
+// fan
+'{"components":[{"id":1,"_t":"battery","x":100,"y":200,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":15,"_t":"fan","x":200,"y":320,"_r":0,"_p":{"R":24,"Runit":1},"_s":{}},{"id":16,"_t":"switch","x":100,"y":320,"_r":0,"_p":{"closed":false},"_s":{}}],"connections":[{"id":4,"_f":{"_ci":1,"_pi":0},"to":{"_ci":16,"_pi":0},"_w":[{"x":0,"y":200},{"x":0,"y":320}]},{"id":12,"_f":{"_ci":1,"_pi":1},"to":{"_ci":15,"_pi":1},"_w":[{"x":260,"y":200},{"x":260,"y":320}]},{"id":14,"_f":{"_ci":16,"_pi":1},"to":{"_ci":15,"_pi":0},"_w":[]}],"junctions":[],"annStrokes":[],"annShapes":[],"nextId":17}',
+// fuse
+'{"components":[{"id":1,"_t":"battery","x":50,"y":210,"_r":0,"_p":{"V":9},"_s":{}},{"id":2,"_t":"ammeter","x":250,"y":210,"_r":0,"_p":{},"_s":{}},{"id":3,"_t":"resistor","x":170,"y":350,"_r":0,"_p":{"R":1,"Runit":1},"_s":{}},{"id":4,"_t":"voltmeter","x":170,"y":280,"_r":0,"_p":{},"_s":{}},{"id":10,"_t":"fuse","x":140,"y":210,"_r":0,"_p":{"Imax":1,"blown":false},"_s":{}}],"connections":[{"id":6,"_f":{"_ci":1,"_pi":0},"to":{"_ci":3,"_pi":0},"_w":[{"x":-20,"y":350}]},{"id":7,"_f":{"_ci":2,"_pi":1},"to":{"_ci":3,"_pi":1},"_w":[{"x":320,"y":210},{"x":320,"y":350}]},{"id":8,"_f":{"_ci":4,"_pi":0},"to":{"_ci":3,"_pi":0},"_w":[]},{"id":9,"_f":{"_ci":4,"_pi":1},"to":{"_ci":3,"_pi":1},"_w":[]},{"id":11,"_f":{"_ci":1,"_pi":1},"to":{"_ci":10,"_pi":0},"_w":[]},{"id":12,"_f":{"_ci":10,"_pi":1},"to":{"_ci":2,"_pi":0},"_w":[]}],"annStrokes":[],"annShapes":[],"nextId":13}',
+// series
+'{"components":[{"id":1,"_t":"battery","x":-10,"y":380,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":26,"_t":"resistor","x":50,"y":220,"_r":0,"_p":{"R":220,"Runit":1},"_s":{}},{"id":27,"_t":"ammeter","x":-30,"y":220,"_r":0,"_p":{},"_s":{}},{"id":28,"_t":"ammeter","x":130,"y":220,"_r":0,"_p":{},"_s":{}},{"id":29,"_t":"resistor","x":210,"y":220,"_r":0,"_p":{"R":880,"Runit":1},"_s":{}},{"id":33,"_t":"switch","x":100,"y":380,"_r":0,"_p":{"closed":true},"_s":{}},{"id":34,"_t":"voltmeter","x":50,"y":280,"_r":0,"_p":{},"_s":{}},{"id":35,"_t":"voltmeter","x":210,"y":280,"_r":0,"_p":{},"_s":{}},{"id":41,"_t":"ammeter","x":210,"y":380,"_r":0,"_p":{},"_s":{}},{"id":45,"_t":"voltmeter","x":130,"y":320,"_r":0,"_p":{},"_s":{}}],"connections":[{"id":30,"_f":{"_ci":27,"_pi":1},"to":{"_ci":26,"_pi":0},"_w":[]},{"id":31,"_f":{"_ci":26,"_pi":1},"to":{"_ci":28,"_pi":0},"_w":[]},{"id":32,"_f":{"_ci":28,"_pi":1},"to":{"_ci":29,"_pi":0},"_w":[]},{"id":36,"_f":{"_ci":34,"_pi":0},"to":{"_ci":26,"_pi":0},"_w":[{"x":10,"y":280}]},{"id":37,"_f":{"_ci":34,"_pi":1},"to":{"_ci":26,"_pi":1},"_w":[{"x":90,"y":280}]},{"id":38,"_f":{"_ci":35,"_pi":0},"to":{"_ci":29,"_pi":0},"_w":[{"x":170,"y":280}]},{"id":39,"_f":{"_ci":35,"_pi":1},"to":{"_ci":29,"_pi":1},"_w":[{"x":250,"y":280}]},{"id":40,"_f":{"_ci":33,"_pi":0},"to":{"_ci":1,"_pi":1},"_w":[]},{"id":42,"_f":{"_ci":33,"_pi":1},"to":{"_ci":41,"_pi":0},"_w":[]},{"id":47,"_f":{"_ci":27,"_pi":0},"to":{"_a":{"x":-80,"y":320}},"_w":[{"x":-80,"y":220}]},{"id":48,"_f":{"_a":{"x":-80,"y":320}},"to":{"_ci":1,"_pi":0},"_w":[{"x":-80,"y":380}]},{"id":49,"_f":{"_ci":45,"_pi":0},"to":{"_a":{"x":-80,"y":320}},"_w":[]},{"id":51,"_f":{"_ci":29,"_pi":1},"to":{"_a":{"x":290,"y":320}},"_w":[{"x":290,"y":220}]},{"id":52,"_f":{"_a":{"x":290,"y":320}},"to":{"_ci":41,"_pi":1},"_w":[{"x":290,"y":380}]},{"id":53,"_f":{"_ci":45,"_pi":1},"to":{"_a":{"x":290,"y":320}},"_w":[]}],"junctions":[{"id":46,"x":-80,"y":320},{"id":50,"x":290,"y":320}],"annStrokes":[],"annShapes":[],"nextId":54}',
+// paralel
+'{"components":[{"id":1,"_t":"battery","x":-40,"y":390,"_r":0,"_p":{"V":9,"Vunit":1},"_s":{}},{"id":2,"_t":"resistor","x":160,"y":220,"_r":0,"_p":{"R":220,"Runit":1},"_s":{}},{"id":3,"_t":"voltmeter","x":160,"y":170,"_r":0,"_p":{},"_s":{}},{"id":4,"_t":"resistor","x":160,"y":330,"_r":0,"_p":{"R":220,"Runit":1},"_s":{}},{"id":5,"_t":"voltmeter","x":160,"y":280,"_r":0,"_p":{},"_s":{}},{"id":6,"_t":"ammeter","x":70,"y":220,"_r":0,"_p":{},"_s":{}},{"id":7,"_t":"ammeter","x":70,"y":330,"_r":0,"_p":{},"_s":{}},{"id":8,"_t":"switch","x":60,"y":390,"_r":0,"_p":{"closed":true},"_s":{}},{"id":9,"_t":"ammeter","x":150,"y":390,"_r":0,"_p":{},"_s":{}},{"id":10,"_t":"voltmeter","x":240,"y":360,"_r":0,"_p":{},"_s":{}}],"connections":[{"id":12,"_f":{"_ci":6,"_pi":1},"to":{"_ci":2,"_pi":0},"_w":[]},{"id":13,"_f":{"_ci":7,"_pi":1},"to":{"_ci":4,"_pi":0},"_w":[]},{"id":14,"_f":{"_ci":4,"_pi":0},"to":{"_ci":5,"_pi":0},"_w":[{"x":120,"y":280}]},{"id":15,"_f":{"_ci":2,"_pi":0},"to":{"_ci":3,"_pi":0},"_w":[{"x":120,"y":170}]},{"id":17,"_f":{"_ci":9,"_pi":0},"to":{"_ci":8,"_pi":1},"_w":[]},{"id":18,"_f":{"_ci":8,"_pi":0},"to":{"_ci":1,"_pi":1},"_w":[]},{"id":20,"_f":{"_ci":6,"_pi":0},"to":{"_a":{"x":40,"y":270}},"_w":[]},{"id":21,"_f":{"_a":{"x":40,"y":270}},"to":{"_ci":7,"_pi":0},"_w":[]},{"id":24,"_f":{"_ci":2,"_pi":1},"to":{"_a":{"x":300,"y":330}},"_w":[{"x":300,"y":220}]},{"id":26,"_f":{"_ci":4,"_pi":1},"to":{"_a":{"x":300,"y":330}},"_w":[]},{"id":27,"_f":{"_ci":5,"_pi":1},"to":{"_ci":4,"_pi":1},"_w":[{"x":200,"y":280}]},{"id":28,"_f":{"_ci":3,"_pi":1},"to":{"_ci":2,"_pi":1},"_w":[{"x":200,"y":170}]},{"id":30,"_f":{"_ci":1,"_pi":0},"to":{"_a":{"x":-100,"y":360}},"_w":[{"x":-100,"y":390}]},{"id":31,"_f":{"_a":{"x":-100,"y":360}},"to":{"_a":{"x":40,"y":270}},"_w":[{"x":-100,"y":270}]},{"id":32,"_f":{"_ci":10,"_pi":0},"to":{"_a":{"x":-100,"y":360}},"_w":[]},{"id":34,"_f":{"_a":{"x":300,"y":330}},"to":{"_a":{"x":300,"y":360}},"_w":[]},{"id":35,"_f":{"_a":{"x":300,"y":360}},"to":{"_ci":9,"_pi":1},"_w":[{"x":300,"y":390}]},{"id":36,"_f":{"_ci":10,"_pi":1},"to":{"_a":{"x":300,"y":360}},"_w":[]}],"junctions":[{"id":19,"x":40,"y":270},{"id":23,"x":300,"y":330},{"id":29,"x":-100,"y":360},{"id":33,"x":300,"y":360}],"annStrokes":[],"annShapes":[],"nextId":37}'
+]
+// Export PNG
 function showSaveImageModal(defaultChecked) {
   // Якщо модальне вікно вже відкрите — нічого не робимо
   if (document.getElementById('save-image-modal')) return;
@@ -5700,17 +6140,14 @@ function printCircuit() {
   tempCanvas.width = canvas.width;
   tempCanvas.height = canvas.height;
   var tCtx = tempCanvas.getContext('2d');
-
   // 1. Зберігаємо поточну тему і примусово вмикаємо світлу для друку
   var wasLight = isLightTheme();
   if (!wasLight) document.body.classList.add('light-theme');
-
   // 2. Малюємо схему на тимчасовий канвас з "правильними" кольорами
   var savedCtx = ctx;
   ctx = tCtx;
   draw();
   ctx = savedCtx;
-
   // 3. Відновлюємо оригінальну тему
   if (!wasLight) document.body.classList.remove('light-theme');
 
@@ -5953,8 +6390,6 @@ solve: function(){ return solve(); },
 checkFaults: function(){ return checkFaults(); },
 checkPostSolveFaults: function(s){ return checkPostSolveFaults(s); },
 checkIsolatedComponents: checkIsolatedComponents,
-addComp: addComp,
-addConn: addConn,
 reset: function(){
 state.components.length = 0;
 state.connections.length = 0;
@@ -5965,9 +6400,7 @@ _clearIsolatedFaults();
 }
 };
 
-// ===============================
 // ЗБЕРЕЖЕННЯ / ЗАВАНТАЖЕННЯ СХЕМ
-// ===============================
 function showSaveModal() {
   if (document.getElementById('save-circuit-modal')) return;
 
@@ -6060,9 +6493,7 @@ function exportCircuit(filename) {
   URL.revokeObjectURL(url);
 }
 
-// ===============================
 // КНОПКИ
-// ===============================
 window.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.getElementById('btn-save');
   const loadBtn = document.getElementById('btn-load');
@@ -6122,8 +6553,33 @@ function updateEditButtonsVisibility() {
         }
     });
 }
+// Відновлення упакованого json
+function decode(text) {
+    const reverseDictionary = {
+        "_p": "props",
+        "_t": "type",
+        "_w": "waypoints",
+        "_ci": "compId",
+        "_pi": "portIdx",
+        "_s": "state",
+        "_r": "rot",
+        "_a": "anchor",
+        "_f": "from"
+    };
+    
+    let result = text;
+    
+    for (const [code, original] of Object.entries(reverseDictionary)) {
+        // Відновлюємо код назад у слово в подвійних лапках
+        const regex = new RegExp(`"${code}"`, 'g');
+        result = result.replace(regex, `"${original}"`);
+    }
+    
+    return result;
+}
+
 /* ── Init ────────────────────────────────────────────────── */
-/* ── VSSource overlay sliders ────────────────────────────── */
+// VSSource overlay sliders 
 // Inject CSS for vsource slider thumb
 (function() {
   var st = document.createElement('style');
@@ -6220,13 +6676,11 @@ function updateVsourceSliders() {
     var wrap = getOrCreateVsourceSlider(c);
     // Sync range in case Vmin/Vmax changed
     if (wrap._syncFromComp) wrap._syncFromComp();
-
     // Position: centre of component in CSS pixels relative to canvasCard
     var cardRect = canvasCard ? canvasCard.getBoundingClientRect() : {left:0,top:0};
     var canvRect = canvas ? canvas.getBoundingClientRect() : cardRect;
     var sx = toSX(c.x) + (canvRect.left - cardRect.left);
     var sy = toSY(c.y) + (canvRect.top  - cardRect.top);
-
     // Always place slider directly below the component centre in screen space, never rotated
     var sliderOffsetY = 22 * viewScale + 14;
     wrap.style.left = sx + 'px';
@@ -6247,29 +6701,30 @@ var _origDeleteSelected = null;
 drawPaletteIcons();
 resizeCanvas();
 viewOffX = 40; viewOffY = 40;
-try {
-var _prebuiltKeys = Object.keys(PREBUILT);
-var _urlParam = new URLSearchParams(window.location.search).get('prebuilt');
-var _prebuiltKey;
-if (_urlParam !== null) {
-  var _idx = parseInt(_urlParam, 10);
-  // 1-based index; fallback to first if out of range or NaN
-  if (!isNaN(_idx) && _idx >= 1 && _idx <= _prebuiltKeys.length) {
-    _prebuiltKey = _prebuiltKeys[_idx - 1];
-  } else {
-    _prebuiltKey = _prebuiltKeys[0];
-  }
-} else {
-  _prebuiltKey = 'single';
-}
-if (PREBUILT[_prebuiltKey]) {
-PREBUILT[_prebuiltKey]();
-var defPill = prebuiltTabs && prebuiltTabs.querySelector('[data-circuit="'+_prebuiltKey+'"]');
-if (defPill) defPill.classList.add('active');
-if (circuitDesc) { circuitDesc.style.display = ''; circuitDesc.textContent = CIRCUIT_DESC[_prebuiltKey] || ''; }
-fitAll();
-}
-} catch (e) { /* non-fatal — just show empty canvas */ }
+
+// Auto-load example via ?example=N (default: 1)
+    try {
+        var params = new URLSearchParams(window.location.search);
+        // Якщо параметр відсутній або некоректний → використовуємо 1
+        var index = parseInt(params.get('example'), 10) || 1;
+        // Обмеження діапазону
+        index = Math.min(Math.max(index, 1), window.Examples.length);
+        // Перевірка доступності loader
+        if (!window.ExampleLoader?.load || !window.Examples?.length) {
+            console.warn('ExampleLoader або Examples недоступні');
+            return;
+        }
+        // Завантаження після ініціалізації інтерфейсу
+        setTimeout(function () {
+            window.ExampleLoader.load(window.Examples[index - 1]);
+            fitAll?.();
+
+            console.log('Loaded example #' + index);
+        }, 50);
+
+    } catch (e) {
+        console.warn('Failed to load example:', e);
+    }
 scheduleDraw();
 window.scheduleDraw = scheduleDraw;
 window.redrawCanvas = draw;
