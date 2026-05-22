@@ -1,0 +1,299 @@
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:      #12141a;
+    --panel:   #1a1d27;
+    --surface: #21263a;
+    --border:  #2e3550;
+    --text:    #c8d0e8;
+    --text-dim:#6878a0;
+    --accent:  #4f9eff;
+    --accent2: #ff6b6b;
+    --accent3: #6bffb8;
+    --edit-glow: #ffaa44;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    height: 52px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+  }
+  .topbar-logo span { color: var(--accent2); }
+  .topbar-sep { width: 1px; height: 28px; background: var(--border); }
+
+  .toolbar-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /*
+  .tool-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'IBM Plex Sans', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .tool-btn:hover { border-color: var(--accent); background: #2a2f42; }
+  .tool-btn.active { border-color: var(--accent); background: #2a3a6a; color: white; box-shadow: 0 0 0 1px var(--accent); }
+  */
+  .color-preview { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: #d42020; }
+  .topbar-coord {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent3);
+    background: var(--surface);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    min-width: 130px;
+    text-align: center;
+  }
+  .mode-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+.main {
+    flex: 1;
+    display: flex;
+    /* Змінено на auto, щоб з'явилася прокрутка, якщо екран вузький */
+    overflow: auto; 
+    /* Змінено на flex-start, щоб контент починався зліва, а не центрувався з обрізанням */
+    justify-content: flex-start; 
+    align-items: center;
+    background: #0a0c12;
+    /* Додано невеликий відступ, щоб полотно не прилипало до краю вікна */
+    padding: 20px; 
+    gap: 20px; /* Відступ між полотном і редактором */
+}
+  .graphics-wrap {
+    width: 1024px;
+    height: 768px;
+    flex-shrink: 0;
+    position: relative;
+    background: #f0f2f7;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .canvas-outer { position: relative; width: 100%; height: 100%; }
+  canvas { position: absolute; top: 0; left: 0; width: 1024px; height: 768px; display: block; }
+  #bgCanvas      { z-index: 1; }
+  #gridCanvas    { z-index: 2; }
+  #axisCanvas    { z-index: 3; pointer-events: none; }
+  #linesCanvas   { z-index: 4; pointer-events: none; }
+  #overlayCanvas { z-index: 5; pointer-events: none; }
+  #hitCanvas {
+	z-index: 6;
+	opacity: 0.001;
+	cursor: crosshair;
+	pointer-events: auto;
+	}
+
+  .editor-panel {
+  width: auto;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-left: 12px;
+  border-radius: 8px;
+  height: 768px;
+  }
+  .editor-header {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .editor-filename { color: var(--text); font-weight: 600; font-size: 12px; margin-left: 4px; }
+
+  #codeEditor {
+  flex: 1;
+  background: #0d1017;
+  color: #e8edf8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 14px 16px;
+  border: none;
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+  margin-left: 0px;
+  }
+  .axis-controls {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+  .ac-row { display: flex; align-items: center; gap: 6px; }
+  .ac-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); min-width: 44px; }
+  .ac-label b { color: var(--accent); }
+  .ac-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 4px 8px;
+    text-align: right;
+    outline: none;
+  }
+  .ac-input:focus { border-color: var(--accent); }
+  .btn-clear {
+    margin: 0 14px 10px;
+    padding: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-clear:hover { border-color: var(--accent2); color: var(--accent2); }
+  .edit-status {
+    margin: 0 14px 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent3);
+    text-align: center;
+  }
+.lang-select {
+  margin-left: auto;
+  background: #1a1d27;
+  color: #a8b4d0;
+  border: 1px solid #2c3a55;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  outline: none;
+}
+.lang-select:hover { border-color: #4a6fa5; color: #c8d4f0; }
+.lang-select option { background: #1a1d27; }
+.editor-header { display: flex; align-items: center; gap: 6px; }
+.bg-image-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+}
+
+/* Icon tool buttons */
+.tool-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.tool-btn:hover {
+  background: rgba(74, 111, 165, 0.25);
+}
+.tool-btn.active {
+  background: rgba(74, 111, 165, 0.45);
+  box-shadow: 0 0 0 2px #4a6fa5;
+}
+.tool-btn img {
+  width: 26px;
+  height: 26px;
+  display: block;
+  filter: brightness(0.85) saturate(0.8);
+  transition: filter 0.15s;
+}
+.tool-btn:hover img,
+.tool-btn.active img {
+  filter: brightness(1.15) saturate(1.1);
+}
+
+/* Color preview dot on color buttons */
+.tool-btn .color-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.4);
+  pointer-events: none;
+}
+
+/* Tooltip */
+.tool-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1d27;
+  color: #c8d4f0;
+  border: 1px solid #2c3a55;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999;
+}

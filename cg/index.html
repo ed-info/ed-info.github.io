@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CodeGraph</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">Code<span>Graph</span></div>
+  <div class="topbar-sep"></div>
+  <div class="toolbar-buttons">
+    <button class="tool-btn" id="lineColorBtn" title="Колір лінії">
+      <img src="img/pen.png" alt="Колір лінії">
+      <div class="color-dot" id="lineColorPreview" style="background:#d42020"></div>
+    </button>
+    <input type="color" id="lineColorPicker" style="display:none">
+    <button class="tool-btn" id="fillColorBtn" title="Колір заливки">
+      <img src="img/paint.png" alt="Заливка">
+      <div class="color-dot" id="fillColorPreview" style="background:transparent; border:1px dashed #aaa"></div>
+    </button>
+    <input type="color" id="fillColorPicker" style="display:none">
+    <div class="topbar-sep" style="height:24px"></div>
+    <button class="tool-btn active" id="modeLineBtn" title="Лінія"><img src="img/lines.png" alt="Лінія"></button>
+    <button class="tool-btn" id="modePolylineBtn" title="Ламана"><img src="img/plines.png" alt="Ламана"></button>
+    <button class="tool-btn" id="modePolygonBtn" title="Багатокутник"><img src="img/polygs.png" alt="Багатокутник"></button>
+    <button class="tool-btn" id="modeRectBtn" title="Прямокутник"><img src="img/rects.png" alt="Прямокутник"></button>
+    <button class="tool-btn" id="modeEllipseBtn" title="Еліпс"><img src="img/ellips.png" alt="Еліпс"></button>
+  </div>
+  <div class="bg-image-controls" id="bgImageControls">
+    <button class="tool-btn" id="bgImageBtn" title="Зображення-підкладка"><img src="img/imgs.png" alt="Підкладка"></button>
+    <button class="tool-btn" id="bgImageClear" title="Прибрати підкладку"><img src="img/clear.png" alt="Прибрати підкладку"></button>
+    <input type="file" id="bgImageFile" accept="image/*" style="display:none">
+    <label class="ac-label" style="font-size:11px;color:#aaa;margin-left:4px">Прозорість:</label>
+    <input type="range" id="bgOpacity" min="5" max="60" value="25" style="width:70px;cursor:pointer;accent-color:#4a6fa5">
+
+
+
+  </div>
+  <div class="mode-badge" id="modeBadge" style="display:none">📏 Лінія</div>
+  <div class="topbar-coord" id="liveCoord">(–, –)</div>
+</div>
+
+<div class="main">
+  <div class="graphics-wrap">
+    <div class="canvas-outer">
+      <canvas id="bgCanvas" width="1024" height="768"></canvas>
+      <canvas id="gridCanvas" width="1024" height="768"></canvas>
+      <canvas id="axisCanvas" width="1024" height="768"></canvas>
+      <canvas id="linesCanvas" width="1024" height="768"></canvas>
+      <canvas id="overlayCanvas" width="1024" height="768"></canvas>
+      <canvas id="hitCanvas" width="1024" height="768"></canvas>
+    </div>
+  </div>
+  <div class="editor-panel">
+    <div class="editor-header">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <span class="editor-filename" id="editorFilename">drawing.js</span>
+      <select id="langSelect" class="lang-select">
+        <option value="canvas">JS Canvas</option>
+        <option value="p5">p5.js</option>
+        <option value="tkinter">Python Tkinter</option>
+        <option value="simplegraphics">Python SimpleGraphics</option>
+        <option value="pygame">Python Pygame</option>
+        <option value="svg">SVG</option>
+      </select>
+    </div>
+    <textarea id="codeEditor" spellcheck="false" placeholder="// Код генерується автоматично"></textarea>
+    <button id="btnCopy" style="margin-top: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">📋 Копіювати</button>
+    <div class="edit-status" id="editStatus">Клацніть по вершині/куту для редагування</div>
+    <div class="axis-controls">
+      <div class="ac-row"><span class="ac-label"><b>X</b> початок</span><input class="ac-input" type="number" id="xMin" value="0" step="1"></div>
+      <div class="ac-row"><span class="ac-label"><b>Y</b> початок</span><input class="ac-input" type="number" id="yMin" value="0" step="1"></div>
+    </div>
+    <input type="hidden" id="xMax" value="800">
+    <input type="hidden" id="yMax" value="600">
+    <button class="btn-clear" id="btnClear">✕ Очистити полотно та редактор</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+// Active button highlighting for mode buttons
+(function() {
+  const modeButtons = {
+    'line':     document.getElementById('modeLineBtn'),
+    'polyline': document.getElementById('modePolylineBtn'),
+    'polygon':  document.getElementById('modePolygonBtn'),
+    'rect':     document.getElementById('modeRectBtn'),
+    'ellipse':  document.getElementById('modeEllipseBtn'),
+  };
+
+  function setActiveMode(mode) {
+    Object.entries(modeButtons).forEach(([m, btn]) => {
+      btn.classList.toggle('active', m === mode);
+    });
+  }
+
+  // Intercept mode button clicks to update active state
+  Object.entries(modeButtons).forEach(([mode, btn]) => {
+    btn.addEventListener('click', () => setActiveMode(mode), true);
+  });
+
+  // Initialize — 'line' is default
+  setActiveMode('line');
+})();
+</script>
+</body>
+</html>
