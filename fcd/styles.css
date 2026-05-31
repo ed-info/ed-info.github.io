@@ -1,0 +1,129 @@
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            overflow: hidden;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #library {
+            width: 220px;
+            background: #031430;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        #library h3 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .library-item {
+            margin: 15px 0;
+            cursor: grab;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .library-item:active {
+            cursor: grabbing;
+        }
+
+        .library-item:hover {
+            transform: scale(1.05);
+        }
+
+        .library-canvas {
+            background: #031430;
+            border-radius: 8px;
+            width: 100%;
+            height: 80px;
+            display: block;
+        }
+
+        #tools {
+            width: 220px;
+            background:  #031430;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px;
+            background: #232F72;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 87px;
+            height: 87px;#btn-close-output
+        }
+
+        button:hover {
+            background: #229954;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        #output {
+            background: white;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #canvas-container {
+            flex: 1;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        canvas {
+            background: #fafafa;
+            display: block;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 10px;
+            left: 240px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 20;
+        }
