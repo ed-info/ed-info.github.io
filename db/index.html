@@ -1,1 +1,638 @@
 
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Перевір себе — Структура реляційної БД</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --surface: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #4A5B7C;
+    --line: #D6E0F2;
+    --line-strong: #B9C6E3;
+    --accent: #3B5BDB;
+    --accent-soft: #E7ECFC;
+    --success: #1F9D63;
+    --success-soft: #E4F6EC;
+    --warning: #C97418;
+    --warning-soft: #FBEEDD;
+    --danger: #C0392E;
+    --danger-soft: #FBEAE7;
+    --radius: 14px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px;
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+    display: flex;
+    justify-content: center;
+  }
+  .wrap{ width: 100%; max-width: 720px; }
+
+  .top{
+    text-align:center;
+    margin-bottom: 22px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    display:inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  h1{
+    font-size: clamp(24px, 4vw, 32px);
+    line-height: 1.15;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* progress columns — table header metaphor */
+  .cols{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 26px 0 22px;
+  }
+  .col{
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 9px 6px;
+    text-align: center;
+    transition: background .25s, border-color .25s, color .25s;
+  }
+  .col .name{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: .02em;
+    color: var(--ink-soft);
+    display:block;
+    line-height:1.3;
+  }
+  .col .dot{
+    width:8px; height:8px; border-radius: 50%;
+    background: var(--line-strong);
+    margin: 6px auto 0;
+  }
+  .col.active{ border-color: var(--accent); background: var(--accent-soft); }
+  .col.active .name{ color: var(--accent); }
+  .col.done-high .dot{ background: var(--success); }
+  .col.done-mid .dot{ background: var(--warning); }
+  .col.done-low .dot{ background: var(--danger); }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    padding: 26px 24px;
+    box-shadow: 0 1px 2px rgba(22,35,63,.04), 0 10px 30px -18px rgba(22,35,63,.18);
+  }
+
+  .field-tag{
+    display:inline-flex;
+    align-items:center;
+    gap: 7px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .field-tag .swatch{
+    width:9px;height:9px;border-radius:2px;background:var(--accent);
+  }
+
+  .qtext{
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin: 0 0 18px;
+  }
+
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+  .opt{
+    text-align:left;
+    background: var(--surface);
+    border: 1.5px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+  }
+  .opt:hover{ border-color: var(--accent); background: var(--accent-soft); }
+  .opt:focus-visible{ outline: 3px solid var(--accent); outline-offset: 2px; }
+  .opt:active{ transform: scale(0.995); }
+  .opt.correct{ border-color: var(--success); background: var(--success-soft); }
+  .opt.wrong{ border-color: var(--danger); background: var(--danger-soft); }
+  .opt[disabled]{ cursor: default; }
+  .opt.dim{ opacity: .5; }
+
+  .feedback{
+    margin-top: 16px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    display:none;
+  }
+  .feedback.show{ display:block; animation: rise .25s ease; }
+  .feedback.good{ background: var(--success-soft); color: #175C3D; border: 1px solid #BFE6D2; }
+  .feedback.bad{ background: var(--danger-soft); color: #7C231B; border: 1px solid #F0C4BE; }
+  .feedback strong{ display:block; margin-bottom: 3px; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; font-family: 'IBM Plex Mono', monospace; }
+
+  .recap{
+    background: var(--warning-soft);
+    border: 1px solid #F0D6AE;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  .recap strong{
+    display:block; font-family:'IBM Plex Mono', monospace; font-size: 12px;
+    text-transform: uppercase; letter-spacing:.04em; color: var(--warning); margin-bottom:6px;
+  }
+
+  .nextbar{
+    margin-top: 20px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .btn{
+    font-family:'Manrope', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    background: var(--ink);
+    color: #fff;
+    border:none;
+    border-radius: 10px;
+    padding: 11px 20px;
+    cursor:pointer;
+    display:none;
+    align-items:center;
+    gap:8px;
+    transition: background .15s, transform .1s;
+  }
+  .btn.show{ display:inline-flex; animation: rise .25s ease; }
+  .btn:hover{ background: var(--accent); }
+  .btn:focus-visible{ outline: 3px solid var(--accent); outline-offset: 2px; }
+  .btn:active{ transform: scale(0.98); }
+  .btn.ghost{
+    background: transparent; color: var(--ink); border: 1.5px solid var(--line-strong);
+  }
+  .btn.ghost:hover{ background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  .start-actions{ display:flex; justify-content:center; margin-top: 22px; }
+
+  @keyframes rise{ from{ opacity:0; transform: translateY(4px); } to{ opacity:1; transform:none; } }
+
+  /* ===== results record card ===== */
+  .record{
+    margin-top: 4px;
+  }
+  .record-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing:.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .record-table{
+    width:100%;
+    border-collapse: collapse;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    overflow:hidden;
+  }
+  .record-table th, .record-table td{
+    border: 1px solid var(--line);
+    padding: 10px 8px;
+    font-size: 12.5px;
+    text-align:center;
+  }
+  .record-table th{
+    background: var(--ink);
+    color:#fff;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size: 10.5px;
+    letter-spacing:.03em;
+  }
+  .record-table td{ font-weight:700; }
+  .lvl-high{ color: var(--success); }
+  .lvl-mid{ color: var(--warning); }
+  .lvl-low{ color: var(--danger); }
+
+  .overall{
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 12px;
+    text-align:center;
+  }
+  .overall.high{ background: var(--success-soft); border:1px solid #BFE6D2; }
+  .overall.mid{ background: var(--warning-soft); border:1px solid #F0D6AE; }
+  .overall.low{ background: var(--danger-soft); border:1px solid #F0C4BE; }
+  .overall .level{ font-size: 20px; font-weight:800; margin-bottom:4px; }
+  .overall .desc{ font-size: 14.5px; color: var(--ink-soft); }
+
+  .reco{
+    margin-top: 18px;
+  }
+  .reco h3{
+    font-size: 14px;
+    font-family:'IBM Plex Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing:.03em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+  .reco ul{ margin:0; padding-left: 20px; }
+  .reco li{ font-size: 14.5px; line-height:1.6; margin-bottom: 6px; }
+
+  .restartbar{ display:flex; justify-content:center; margin-top: 24px; }
+
+  @media (max-width: 520px){
+    .cols{ grid-template-columns: repeat(2,1fr); }
+    .card{ padding: 20px 16px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span class="eyebrow">Активний чек-лист</span>
+    <h1>Перевір себе: структура реляційної БД</h1>
+    <p class="sub">Таблиці, поля, записи, типи даних. Обирай варіант — застосунок сам поведе тебе далі, залежно від відповіді.</p>
+  </div>
+
+  <div class="cols" id="cols"></div>
+
+  <div class="card" id="card"></div>
+
+</div>
+
+<script>
+const BLOCKS = [
+  {
+    key: "structure",
+    name: "Структура",
+    confidence: {
+      q: "Чи можеш ти своїми словами пояснити різницю між поняттями «таблиця», «поле» і «запис»?",
+      yes: "Так, впевнено",
+      no: "Не зовсім, хочу повторити"
+    },
+    recap: "<strong>Коротке нагадування</strong>Таблиця — сукупність даних про один тип об'єктів. Поле — стовпець таблиці, одна характеристика об'єкта. Запис — рядок таблиці, повний набір даних про один конкретний об'єкт.",
+    checks: [
+      {
+        q: "У таблиці «Книги» є стовпець «Автор». Як він називається?",
+        options: ["Поле", "Запис", "Тип даних"],
+        correct: 0,
+        good: "Так! Стовпець таблиці — це поле, він описує одну характеристику об'єкта.",
+        bad: "Не зовсім. Стовпець таблиці називають полем — він описує одну характеристику об'єкта, а не рядок із даними."
+      },
+      {
+        q: "Рядок таблиці «Книги», що містить усі дані про конкретну книгу «Кобзар», — це…",
+        options: ["Поле", "Запис", "База даних"],
+        correct: 1,
+        good: "Правильно! Повний набір даних про один об'єкт — це запис.",
+        bad: "Ні. Рядок із повним набором даних про один конкретний об'єкт називають записом."
+      }
+    ]
+  },
+  {
+    key: "types",
+    name: "Типи даних",
+    confidence: {
+      q: "Чи впевнено ти обираєш тип даних (текстовий, числовий, дата/час, логічний…) для нового поля?",
+      yes: "Так, впевнено",
+      no: "Не зовсім, хочу повторити"
+    },
+    recap: "<strong>Коротке нагадування</strong>Текстовий — короткий текст (назви, ПІБ, номери телефонів). Числовий — числа для обчислень. Дата/Час — дати й час. Логічний — лише два значення (так/ні). Грошовий — суми коштів.",
+    checks: [
+      {
+        q: "Яким типом даних варто зберігати номер телефону?",
+        options: ["Числовий", "Текстовий", "Логічний"],
+        correct: 1,
+        good: "Так! Номер телефону не використовують для обчислень і в ньому можуть бути дужки чи провідний нуль — тому це текстовий тип.",
+        bad: "Ні. Номер телефону не рахують — і в ньому можуть бути дужки чи провідний нуль. Правильний вибір — текстовий тип."
+      },
+      {
+        q: "Яким типом даних варто зберігати поле «Наявна довідка від лікаря»?",
+        options: ["Текстовий", "Числовий", "Логічний"],
+        correct: 2,
+        good: "Правильно! Поле з рівно двома можливими значеннями (так/ні) — це логічний тип.",
+        bad: "Ні. Поле, яке має лише два можливі значення (так/ні), зберігають як логічний тип."
+      }
+    ]
+  },
+  {
+    key: "design",
+    name: "Проєктування",
+    confidence: {
+      q: "Чи можеш ти самостійно визначити перелік полів для нової таблиці (наприклад, для «Спортивної секції»)?",
+      yes: "Так, впевнено",
+      no: "Не зовсім, хочу повторити"
+    },
+    recap: "<strong>Коротке нагадування</strong>Перш ніж проєктувати таблицю, визнач: про який об'єкт вона зберігає дані, і які саме характеристики цього об'єкта дійсно потрібні для роботи з даними.",
+    checks: [
+      {
+        q: "Яке поле НЕ належить до таблиці «Книги» шкільної бібліотеки?",
+        options: ["Рік видання", "Кількість сторінок", "Улюблена страва бібліотекаря"],
+        correct: 2,
+        good: "Так! Поле має описувати сам об'єкт таблиці (книгу), а не сторонню інформацію.",
+        bad: "Ні. Поле таблиці має описувати саме об'єкт таблиці — книгу, а не сторонню інформацію про бібліотекаря."
+      },
+      {
+        q: "У таблиці «Учасники гуртка» потрібно зберігати вік кожного учасника. Скільки полів для цього знадобиться?",
+        options: ["1 поле «Вік»", "2 поля: «Вік» і «Не вік»", "Вік зберігати не потрібно"],
+        correct: 0,
+        good: "Правильно! Кожна окрема характеристика об'єкта — це рівно одне поле.",
+        bad: "Ні. Кожна характеристика об'єкта оформлюється як одне поле — досить поля «Вік»."
+      }
+    ]
+  },
+  {
+    key: "errors",
+    name: "Пошук помилок",
+    confidence: {
+      q: "Чи впевнено ти можеш знайти помилку в чужій структурі таблиці?",
+      yes: "Так, впевнено",
+      no: "Не зовсім, хочу повторити"
+    },
+    recap: "<strong>Коротке нагадування</strong>Щоб знайти помилку, для кожного поля запитай: «Що саме тут зберігається і що з цим потрібно робити — рахувати, сортувати, порівнювати?» Тип, який не відповідає відповіді, — помилка.",
+    checks: [
+      {
+        q: "У таблиці «Учасники секції» поле «Стаж занять (років)» має тип Дата/Час. Це помилка?",
+        options: ["Так, помилка — потрібен числовий тип", "Ні, усе правильно"],
+        correct: 0,
+        good: "Так! Стаж у роках — це число, тому правильний тип — числовий.",
+        bad: "Це помилка. Стаж занять у роках — число, а не дата, тому правильний тип — числовий."
+      },
+      {
+        q: "Поле «Ціна квитка» має тип Логічний. Це помилка?",
+        options: ["Так, помилка — потрібен грошовий тип", "Ні, усе правильно"],
+        correct: 0,
+        good: "Правильно! Ціна — грошове значення, логічний тип годиться лише для так/ні.",
+        bad: "Це помилка. Ціна — грошове значення, а логічний тип підходить лише для полів із двома значеннями (так/ні)."
+      }
+    ]
+  }
+];
+
+let blockIdx = 0;
+let stepState = "confidence"; // confidence -> recap? -> check0 -> check1 -> blockDone
+let checkIdx = 0;
+let confidenceNo = false;
+let scores = []; // per block: {correct, total}
+let currentScore = 0;
+
+const cardEl = document.getElementById("card");
+const colsEl = document.getElementById("cols");
+
+function renderCols(){
+  colsEl.innerHTML = "";
+  BLOCKS.forEach((b, i) => {
+    const div = document.createElement("div");
+    let cls = "col";
+    if (i === blockIdx && blockIdx < BLOCKS.length) cls += " active";
+    if (scores[i]) {
+      const pct = scores[i].correct / scores[i].total;
+      if (pct === 1) cls += " done-high";
+      else if (pct > 0) cls += " done-mid";
+      else cls += " done-low";
+    }
+    div.className = cls;
+    div.innerHTML = `<span class="name">${b.name}</span><span class="dot"></span>`;
+    colsEl.appendChild(div);
+  });
+}
+
+function startScreen(){
+  cardEl.innerHTML = `
+    <div class="field-tag"><span class="swatch"></span>4 записи · 8 практичних перевірок</div>
+    <p class="qtext" style="font-size:16px;font-weight:600;">
+      Ти пройдеш 4 короткі блоки — по кожному з них спершу оціниш власну впевненість,
+      а потім пройдеш 1–2 практичні перевірки. Наприкінці отримаєш свій особистий
+      «запис» у таблиці рівня знань і поради, що варто повторити.
+    </p>
+    <div class="start-actions">
+      <button class="btn show" id="startBtn">Почати перевірку →</button>
+    </div>
+  `;
+  document.getElementById("startBtn").addEventListener("click", () => {
+    blockIdx = 0; stepState = "confidence"; renderCols(); renderBlockConfidence();
+  });
+}
+
+function renderBlockConfidence(){
+  const b = BLOCKS[blockIdx];
+  confidenceNo = false;
+  currentScore = 0;
+  checkIdx = 0;
+  renderCols();
+  cardEl.innerHTML = `
+    <div class="field-tag"><span class="swatch"></span>Блок ${blockIdx+1} з ${BLOCKS.length} · ${b.name} · самооцінка</div>
+    <p class="qtext">${b.confidence.q}</p>
+    <div class="options" id="opts">
+      <button class="opt" data-v="yes">${b.confidence.yes}</button>
+      <button class="opt" data-v="no">${b.confidence.no}</button>
+    </div>
+    <div class="feedback" id="fb"></div>
+    <div class="nextbar"><button class="btn" id="nextBtn">Далі →</button></div>
+  `;
+  const opts = cardEl.querySelectorAll(".opt");
+  opts.forEach(o => o.addEventListener("click", () => {
+    opts.forEach(x => x.setAttribute("disabled","true"));
+    if (o.dataset.v === "no"){
+      confidenceNo = true;
+      o.classList.add("wrong");
+    } else {
+      o.classList.add("correct");
+    }
+    opts.forEach(x => { if (x!==o) x.classList.add("dim"); });
+    document.getElementById("nextBtn").classList.add("show");
+  }));
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (confidenceNo) renderRecap(); else renderCheck();
+  });
+}
+
+function renderRecap(){
+  const b = BLOCKS[blockIdx];
+  cardEl.innerHTML = `
+    <div class="field-tag"><span class="swatch"></span>Блок ${blockIdx+1} з ${BLOCKS.length} · ${b.name} · нагадування</div>
+    <div class="recap">${b.recap}</div>
+    <div class="nextbar"><button class="btn show" id="nextBtn">До перевірки →</button></div>
+  `;
+  document.getElementById("nextBtn").addEventListener("click", renderCheck);
+}
+
+function renderCheck(){
+  const b = BLOCKS[blockIdx];
+  const c = b.checks[checkIdx];
+  cardEl.innerHTML = `
+    <div class="field-tag"><span class="swatch"></span>Блок ${blockIdx+1} з ${BLOCKS.length} · ${b.name} · перевірка ${checkIdx+1} з ${b.checks.length}</div>
+    <p class="qtext">${c.q}</p>
+    <div class="options" id="opts">
+      ${c.options.map((op,i) => `<button class="opt" data-i="${i}">${op}</button>`).join("")}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <div class="nextbar"><button class="btn" id="nextBtn">Далі →</button></div>
+  `;
+  const opts = cardEl.querySelectorAll(".opt");
+  const fb = document.getElementById("fb");
+  opts.forEach(o => o.addEventListener("click", () => {
+    const i = Number(o.dataset.i);
+    opts.forEach(x => x.setAttribute("disabled","true"));
+    const correctOpt = cardEl.querySelector(`.opt[data-i="${c.correct}"]`);
+    if (i === c.correct){
+      o.classList.add("correct");
+      currentScore++;
+      fb.className = "feedback show good";
+      fb.innerHTML = `<strong>Влучно</strong>${c.good}`;
+    } else {
+      o.classList.add("wrong");
+      correctOpt.classList.add("correct");
+      fb.className = "feedback show bad";
+      fb.innerHTML = `<strong>Уточнення</strong>${c.bad}`;
+    }
+    opts.forEach(x => { if (Number(x.dataset.i)!==c.correct && x!==o) x.classList.add("dim"); });
+    document.getElementById("nextBtn").classList.add("show");
+  }));
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    checkIdx++;
+    if (checkIdx < b.checks.length) renderCheck();
+    else finishBlock();
+  });
+}
+
+function finishBlock(){
+  const b = BLOCKS[blockIdx];
+  scores[blockIdx] = { correct: currentScore, total: b.checks.length };
+  blockIdx++;
+  renderCols();
+  if (blockIdx < BLOCKS.length){
+    renderBlockConfidence();
+  } else {
+    renderResults();
+  }
+}
+
+function levelFor(pct){
+  if (pct === 1) return { cls:"high", label:"Високий" };
+  if (pct > 0) return { cls:"mid", label:"Середній" };
+  return { cls:"low", label:"Початковий" };
+}
+
+const RECS = {
+  structure: {
+    high: "Спробуй пояснити відмінність поля й запису однокласнику своїми словами — це закріпить розуміння.",
+    mid: "Повтори означення в опорному конспекті «Типи даних полів» (Додаток 2) і виконай вправу «Жива таблиця».",
+    low: "Поверніся до опорного конспекту «Типи даних полів» (Додаток 2) і виконай вправу 1 «Жива таблиця» ще раз."
+  },
+  types: {
+    high: "Спробуй свій приклад поля для кожного з 6 типів даних без підказки.",
+    mid: "Перегляньте разом Комплект А з вправи 2 «Розклади за типом» і повторіть спірні приклади.",
+    low: "Виконай вправу 2 «Розклади за типом» (Комплект А) — вона тренує саме впізнавання типів."
+  },
+  design: {
+    high: "Спроєктуй таблицю для нової предметної області повністю самостійно, без зразка.",
+    mid: "Виконай вправу 4 «Спроєктуй таблицю на аркуші» для однієї нової предметної області.",
+    low: "Поверніся до Завдання 1 робочого аркуша (Додаток 3) і пройди його ще раз крок за кроком."
+  },
+  errors: {
+    high: "Створи власну таблицю з навмисною помилкою для однокласника — це завдання підвищеної складності.",
+    mid: "Виконай вправу 3 «Мисливці за помилками» (Картки 1–3) для додаткової практики.",
+    low: "Повтори Завдання 2 «Знайди помилку» з робочого аркуша (Додаток 3) разом із учителем."
+  }
+};
+
+function renderResults(){
+  renderCols();
+  let totalCorrect = 0, totalMax = 0;
+  const rows = BLOCKS.map((b,i) => {
+    const s = scores[i];
+    totalCorrect += s.correct; totalMax += s.total;
+    const pct = s.correct / s.total;
+    const lvl = levelFor(pct);
+    return { name: b.name, key: b.key, lvl, pct, score: s };
+  });
+
+  const overallPct = totalCorrect / totalMax;
+  const overall = overallPct === 1
+    ? { cls:"high", level:"Високий рівень готовності", desc:"Ти впевнено орієнтуєшся в структурі реляційної БД і типах даних. Можеш братися за складніші завдання." }
+    : overallPct >= 0.5
+      ? { cls:"mid", level:"Середній рівень — є що підтягнути", desc:"Базові поняття зрозумілі, але варто потренуватись у окремих темах — дивись рекомендації нижче." }
+      : { cls:"low", level:"Початковий рівень — варто повторити тему", desc:"Радимо повернутись до конспекту й пройти рекомендовані вправи, перш ніж рухатись далі." };
+
+  const recoItems = rows
+    .filter(r => r.lvl.cls !== "high")
+    .map(r => `<li><strong>${r.name}:</strong> ${RECS[r.key][r.lvl.cls === "mid" ? "mid" : "low"]}</li>`)
+    .join("");
+  const recoBlock = recoItems
+    ? `<div class="reco"><h3>Що варто повторити</h3><ul>${recoItems}</ul></div>`
+    : `<div class="reco"><h3>Що варто повторити</h3><ul><li>Усе на високому рівні — спробуй додаткові завдання з рекомендацій вище для кожного блоку.</li></ul></div>`;
+
+  cardEl.innerHTML = `
+    <div class="field-tag"><span class="swatch"></span>Результат · твій запис у таблиці «Рівень знань»</div>
+    <div class="record">
+      <div class="record-title">Таблиця: Рівень_знань · Запис 1 з 1</div>
+      <table class="record-table">
+        <thead><tr>${rows.map(r=>`<th>${r.name}</th>`).join("")}</tr></thead>
+        <tbody><tr>${rows.map(r=>`<td class="lvl-${r.lvl.cls}">${r.lvl.label}<br><span style="font-weight:500;opacity:.7">${r.score.correct}/${r.score.total}</span></td>`).join("")}</tr></tbody>
+      </table>
+    </div>
+    <div class="overall ${overall.cls}">
+      <div class="level">${overall.level}</div>
+      <div class="desc">${overall.desc}</div>
+    </div>
+    ${recoBlock}
+    <div class="restartbar"><button class="btn ghost show" id="restartBtn">Пройти ще раз ↺</button></div>
+  `;
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    scores = []; blockIdx = 0; startScreen();
+  });
+}
+
+startScreen();
+</script>
+</body>
+</html>
