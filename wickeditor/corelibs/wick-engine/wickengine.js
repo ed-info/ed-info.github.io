@@ -1,5 +1,5 @@
 /*Wick Engine https://github.com/Wicklets/wick-engine*/
-var WICK_ENGINE_BUILD_VERSION = "2026.8.22.17.3.31";
+var WICK_ENGINE_BUILD_VERSION = "2026.8.23.11.51.22";
 /*!
  * Paper.js v0.12.4 - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
@@ -55499,22 +55499,8 @@ Wick.SoundAsset = class extends Wick.FileAsset {
 
 };
 /*
- * Copyright 2020 WICKLETS LLC
- *
- * This file is part of Wick Engine.
- *
- * Wick Engine is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Wick Engine is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Wick Engine.  If not, see <https://www.gnu.org/licenses/>.
+ * Copyright 2026 WICKLETS LLC
+ * * This file is part of Wick Engine.
  */
 Wick.SVGAsset = class extends Wick.FileAsset {
   /**
@@ -55601,7 +55587,7 @@ Wick.SVGAsset = class extends Wick.FileAsset {
 
 
   static walkItems(item) {
-    // create paths for all the path items, this also needs to be done for the following item.className=:
+    // 2026 create paths for all the path items, this also needs to be done for the following item.className=:
     // 'Group', 'Layer', 'Path', 'CompoundPath', 'Shape', 'Raster', 'SymbolItem', 'PointText'
     // I think path automatically handles this, but maybe not layer or group
     var wickItem = null; // Groups (clips) and layers do this differently so they must be handled separately
@@ -55628,7 +55614,22 @@ Wick.SVGAsset = class extends Wick.FileAsset {
         }
       });
     } else if (item instanceof paper.Group) {
-      wickItem = new Wick.Clip();
+      // Compute the bounding box center of this group's paper.js geometry
+      // BEFORE we tear it apart into Wick objects, so we can use it as the
+      // new Clip's transformation origin. Without this, the Clip defaults
+      // to an origin of (0,0), which for imported SVG content usually lands
+      // in the top-left corner of the artwork instead of its center. That
+      // mismatched pivot is what the canvas Selection widget uses as the
+      // center of scaling, causing resize handles near that corner to
+      // compute wildly incorrect (sometimes inverted) scale factors.
+      var groupBounds = item.bounds;
+      var center = groupBounds.center;
+      wickItem = new Wick.Clip({
+        transformation: new Wick.Transformation({
+          x: center.x,
+          y: center.y
+        })
+      });
       var wickObjects = [];
       var layers = [];
       var groupChildren = Array.from(item.children); //prevent any side effects
@@ -55645,7 +55646,10 @@ Wick.SVGAsset = class extends Wick.FileAsset {
         } else {
           wickObjects.push(walkItem);
         }
-      });
+      }); // addObjects repositions each object by subtracting the Clip's
+      // transformation (now the center we just computed), so the content
+      // ends up correctly centered around the Clip's local origin.
+
       wickItem.addObjects(wickObjects); //add the items to the project
       // add layers after onjects so the objexts don't get bound to the new layer
 
@@ -63845,7 +63849,12 @@ Wick.View.Timeline = class extends Wick.View {
   render() {
     this.frameLayers = [];
     var layersInRenderOrder = this.model.layers.filter(layer => {
-      return layer.project.isPublished || !layer.hidden;
+      // A layer's project can be null here if this Timeline belongs to a
+      // Clip that hasn't been attached to a Wick.Project yet (e.g. while
+      // still being constructed by SVGAsset.walkItems/addClip's pre-render
+      // step). In that case there's no "isPublished" state to check yet,
+      // so just fall back to the layer's own hidden flag.
+      return !layer.project || layer.project.isPublished || !layer.hidden;
     }).reverse();
     layersInRenderOrder.forEach(layer => {
       layer.view.render();
@@ -63901,7 +63910,7 @@ Wick.View.Layer = class extends Wick.View {
 
 
     this.activeFrameLayers.forEach(layer => {
-      if (this.model.project.playing || !this.model.parentClip.isFocus) {
+      if (!this.model.project || this.model.project.playing || !this.model.parentClip.isFocus) {
         layer.locked = false;
       } else {
         layer.locked = this.model.locked;
