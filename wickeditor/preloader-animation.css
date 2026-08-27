@@ -15,18 +15,24 @@
 
 .flashy {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 45%;
+    left: 48%;
     margin-left: -50px;
     margin-top: -50px;
-    width: 100px;
-    height: 100px;
+    width: 160px;
+    height: 160px;
     animation: float .6s ease-in-out infinite alternate;
+}
+
+.flashy img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .flashy-shadow {
     position: absolute;
-    top: calc(50% + 70px);
+    top: calc(50% + 120px);
     left: 50%;
     margin-left: -45px;
     margin-top: -22.5px;
@@ -37,7 +43,7 @@
 
 .text {
     position: absolute;
-    top: calc(50% + 100px);
+    top: calc(50% + 140px);
     left: 50%;
     margin-left: -100px;
     width: 200px;
