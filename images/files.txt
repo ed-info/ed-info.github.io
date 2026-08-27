@@ -153,7 +153,6 @@ images/gifs/fx1.gif
 images/gifs/gear.gif
 images/gifs/happy1.gif
 images/gifs/happy2.gif
-images/gifs/text.txt
 images/gifs/walking bad.gif
 images/gifs/walking boy.gif
 images/gifs/walkingcat2.gif
@@ -218,7 +217,6 @@ images/ui/ShopIcon4.png
 images/ui/ShopIcon5.png
 images/ui/ShopIcon6.png
 images/ui/ShopIcon7.png
-images/ui/text.txt
 images/ui/TitleRibbon.png
 images/ui/Up0.png
 images/ui/Up1.png
