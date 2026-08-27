@@ -135,3 +135,124 @@ images/aliens/alien2.png
 images/aliens/alien3.png
 images/aliens/alien_duck.png
 images/aliens/alien6.png
+images/gifs/bird flapping.gif
+images/gifs/boss1.gif
+images/gifs/boss2.gif
+images/gifs/cat1.gif
+images/gifs/cat2.gif
+images/gifs/enemy1.gif
+images/gifs/enemy2.gif
+images/gifs/enemy3.gif
+images/gifs/explosion1.gif
+images/gifs/explosion2.gif
+images/gifs/fly1.gif
+images/gifs/fly2.gif
+images/gifs/flying bee.gif
+images/gifs/flying bird.gif
+images/gifs/fx1.gif
+images/gifs/gear.gif
+images/gifs/happy1.gif
+images/gifs/happy2.gif
+images/gifs/text.txt
+images/gifs/walking bad.gif
+images/gifs/walking boy.gif
+images/gifs/walkingcat2.gif
+images/gifs/walking cat.gif
+images/gifs/walking flamingo.gif
+images/bullets/Artboard 1 copy 2.png
+images/bullets/Artboard 1 copy.png
+images/bullets/Artboard 1.png
+images/bullets/Projectile1.png
+images/bullets/Projectile2.png
+images/bullets/Projectile3.png
+images/ui/0Bar.png
+images/ui/1Bar.png
+images/ui/2Bar.png
+images/ui/3Bar.png
+images/ui/4Bar.png
+images/ui/5Bar.png
+images/ui/AddBtn.png
+images/ui/AddonBtnyellow.png
+images/ui/AddonIcon2.png
+images/ui/AddonIcon3.png
+images/ui/AddonIcon4.png
+images/ui/AddonIcon6.png
+images/ui/AddonIcon8.png
+images/ui/AddOnSlotBtn.png
+images/ui/BgPaused.png
+images/ui/BlueShopBox.png
+images/ui/BtnGreenAdd.png
+images/ui/BtnGreenAdd Pressed.png
+images/ui/BtnGreen.png
+images/ui/BtnGreenPressed.png
+images/ui/BtnHelpOff.png
+images/ui/BtnHelp.png
+images/ui/BtnMusicOff.png
+images/ui/BtnMusic.png
+images/ui/BtnOrange.png
+images/ui/BtnOrangePressed.png
+images/ui/BtnShopDisable.png
+images/ui/BtnShopYellow.png
+images/ui/BtnSound Off.png
+images/ui/BtnSound.png
+images/ui/CoinBar.png
+images/ui/CoinIcon.png
+images/ui/GemsBarBg.png
+images/ui/GemsIcon.png
+images/ui/GreenLevel.png
+images/ui/Icon_Cat.png
+images/ui/Icon_home.png
+images/ui/Icon_Shop.png
+images/ui/LockedBoxHelp.png
+images/ui/LockedCatBox.png
+images/ui/LockedLevel.png
+images/ui/OrangeBTNAdsLoad.png
+images/ui/OrangeBTNAds.png
+images/ui/OrangeLvl.png
+images/ui/ScrollBarPlus.png
+images/ui/SettingBtn.png
+images/ui/ShopIcon1.png
+images/ui/ShopIcon2.png
+images/ui/ShopIcon3.png
+images/ui/ShopIcon4.png
+images/ui/ShopIcon5.png
+images/ui/ShopIcon6.png
+images/ui/ShopIcon7.png
+images/ui/text.txt
+images/ui/TitleRibbon.png
+images/ui/Up0.png
+images/ui/Up1.png
+images/ui/Up2.png
+images/ui/Up3.png
+images/ui/Uplogo10.png
+images/ui/Uplogo11.png
+images/ui/Uplogo12.png
+images/ui/Uplogo13.png
+images/ui/Uplogo14.png
+images/ui/Uplogo15.png
+images/ui/Uplogo1.png
+images/ui/Uplogo2.png
+images/ui/Uplogo3.png
+images/ui/Uplogo4.png
+images/ui/Uplogo5.png
+images/ui/Uplogo6.png
+images/ui/Uplogo7.png
+images/ui/Uplogo8.png
+images/ui/Uplogo9.png
+images/ui/YellowBox.png
+images/mix/Pad_01_1.png
+images/mix/Pad_01_2.png
+images/mix/Pad_02_1.png
+images/mix/Pad_02_2.png
+images/mix/Pad_03_1.png
+images/mix/Pad_03_2.png
+images/mix/Pad_04_1.png
+images/mix/Pad_04_2.png
+images/mix/Prop_1.png
+images/mix/Prop_2.png
+images/mix/Prop_3.png
+images/mix/Prop_4.png
+images/mix/Prop_5.png
+images/mix/Prop_6.png
+images/mix/Prop_7.png
+images/mix/Prop_8.png
