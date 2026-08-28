@@ -1,0 +1,12 @@
+wickobjs/button.wickobj:An interactive button with three states (up, over, down) that responds to mouse hover and click.
+wickobjs/checkbox.wickobj:A checkbox for toggling an option on or off in the project interface.
+wickobjs/digitalClock.wickobj:A digital clock that displays the current computer time.
+wickobjs/followMouse.wickobj:An object that automatically follows the mouse cursor.
+wickobjs/keyboardControl.wickobj:A character or object controllable with the arrow keys.
+wickobjs/link.wickobj:A clickable link that opens an external URL.
+wickobjs/minuteClock.wickobj:An analog one-minute timer.
+wickobjs/multiframeclip.wickobj:A multi-frame clip for simple frame-by-frame animation.
+wickobjs/slider.wickobj:A slider for adjusting a numeric value (such as volume or speed).
+wickobjs/textInput.wickobj:A text input field that lets the user type text.
+wickobjs/vCam.wickobj:A virtual camera that defines the portion of the stage the viewer sees (can be moved, scaled, and rotated).
+wickobjs/LukeTools.wickobj:A community-made toolkit and add-on pack (behaviors, imports, bones, etc.) that extends the editor’s capabilities.
