@@ -1,0 +1,248 @@
+sounds/UI/sci_fi_disallow.wav
+sounds/UI/sci_fi_cancel.wav
+sounds/UI/synth_error.wav
+sounds/UI/sci_fi_confirm.wav
+sounds/UI/synth_confirmation.wav
+sounds/UI/sci_fi_hover.wav
+sounds/UI/sci_fi_select.wav
+sounds/UI/select_3.wav
+sounds/UI/synth_cancel.wav
+sounds/UI/click_double_on.wav
+sounds/UI/select_2.wav
+sounds/UI/click_double_off_2.wav
+sounds/UI/pop_4.wav
+sounds/UI/sci_fi_deselect.wav
+sounds/UI/synth_warning.wav
+sounds/UI/sci_fi_select_big.wav
+sounds/UI/toggle_on.wav
+sounds/UI/toggle_off.wav
+sounds/UI/pop_1.wav
+sounds/UI/click_double_off.wav
+sounds/UI/cancel.wav
+sounds/UI/sci_fi_hover_high.wav
+sounds/UI/sci_fi_error.wav
+sounds/UI/click_double_on_2.wav
+sounds/UI/synth_shut_down.wav
+sounds/UI/pop_2.wav
+sounds/UI/synth_process_complete.wav
+sounds/UI/select_4.wav
+sounds/UI/pop_3.wav
+sounds/UI/select_1.wav
+sounds/Environment/door_open.wav
+sounds/Environment/gurgling.wav
+sounds/Environment/water_drop_synthetic.wav
+sounds/Environment/clock_tick_only.wav
+sounds/Environment/door_close.wav
+sounds/Environment/zipper_up.wav
+sounds/Environment/lock_lock.wav
+sounds/Environment/water_babbling_loop.wav
+sounds/Environment/clock_tock_only.wav
+sounds/Environment/zipper_down.wav
+sounds/Environment/clock_ticking.wav
+sounds/Environment/ambient_wind.wav
+sounds/Environment/fire_lighting.wav
+sounds/Environment/lock_unlock.wav
+sounds/Environment/creaky_door_long.wav
+sounds/Environment/lock_quick.wav
+sounds/Environment/creaky_door_short.wav
+sounds/Environment/water_boiling_loop.wav
+sounds/Environment/air_burst.wav
+sounds/Environment/water_splashing.wav
+sounds/Environment/door_knock.wav
+sounds/Environment/ice_in_water.wav
+sounds/Environment/water_drop_medium.wav
+sounds/Environment/water_dripping.wav
+sounds/Weapons/weapon_equip.wav
+sounds/Weapons/sword_unsheath.wav
+sounds/Weapons/sword_drop.wav
+sounds/Weapons/weapon_upgrade.wav
+sounds/Weapons/harsh_thud.wav
+sounds/Weapons/shot_muffled.wav
+sounds/Weapons/sword_sharpen.wav
+sounds/Weapons/weapon_drop.wav
+sounds/Weapons/sword_light.wav
+sounds/Weapons/sword_clash.wav
+sounds/Weapons/weapon_unequip.wav
+sounds/Weapons/sword_slice.wav
+sounds/Weapons/weapon_pick_up.wav
+sounds/Weapons/weapon_equip_short.wav
+sounds/Weapons/sword_clash_2.wav
+sounds/Other/munching_food.wav
+sounds/Other/tap.wav
+sounds/Other/hurt.wav
+sounds/Other/coin.wav
+sounds/Other/finger_click.wav
+sounds/Other/whoosh_2.wav
+sounds/Other/whoosh_1.wav
+sounds/Other/snap.wav
+sounds/Other/applause.wav
+sounds/Other/jump.wav
+sounds/Other/controller_button_press.wav
+sounds/Other/controller_button_press_2.wav
+sounds/Other/elastic_twang.wav
+sounds/Other/itching.wav
+sounds/Other/white_noise_short.wav
+sounds/Other/explosion.wav
+sounds/Other/paste.wav
+sounds/Other/drink_slurp.wav
+sounds/Other/slide_and_click.wav
+sounds/Other/white_noise_long.wav
+sounds/Other/subtle_knock.wav
+sounds/Other/power_up.wav
+sounds/Other/record_scratch.wav
+sounds/Other/light_match.wav
+sounds/Other/ghost_long.wav
+sounds/Other/keyboard_typing.wav
+sounds/Combat and Gore/crunch_splat_2.wav
+sounds/Combat and Gore/squelching_2.wav
+sounds/Combat and Gore/bone_snap.wav
+sounds/Combat and Gore/punch.wav
+sounds/Combat and Gore/squelching_1.wav
+sounds/Combat and Gore/swipe.wav
+sounds/Combat and Gore/punch_3.wav
+sounds/Combat and Gore/squelching_3.wav
+sounds/Combat and Gore/punch_2.wav
+sounds/Combat and Gore/crunch.wav
+sounds/Combat and Gore/squelching_4.wav
+sounds/Combat and Gore/crunch_quick.wav
+sounds/Combat and Gore/splat_quick.wav
+sounds/Combat and Gore/splat_double_quick.wav
+sounds/Combat and Gore/kick.wav
+sounds/Combat and Gore/crunch_splat.wav
+sounds/Combat and Gore/slap.wav
+sounds/Retro/grow_big.wav
+sounds/Retro/throw.wav
+sounds/Retro/hurt.wav
+sounds/Retro/coin.wav
+sounds/Retro/punch.wav
+sounds/Retro/menu_blip.wav
+sounds/Retro/lose.wav
+sounds/Retro/undesired_effect.wav
+sounds/Retro/coin_2.wav
+sounds/Retro/jump_square.wav
+sounds/Retro/jump.wav
+sounds/Retro/coin_3.wav
+sounds/Retro/explosion_medium.wav
+sounds/Retro/wobble.wav
+sounds/Retro/power_down_2.wav
+sounds/Retro/fall_quick.wav
+sounds/Retro/explosion_large.wav
+sounds/Retro/power_down.wav
+sounds/Retro/explosion_quick.wav
+sounds/Retro/jump_short.wav
+sounds/Retro/power_up_2.wav
+sounds/Retro/explosion_small.wav
+sounds/Retro/power_up.wav
+sounds/Retro/ghost.wav
+sounds/Retro/coin_4.wav
+sounds/Musical Effects/8_bit_level_complete.wav
+sounds/Musical Effects/8_bit_positive_long.wav
+sounds/Musical Effects/harpsichord_mystery.wav
+sounds/Musical Effects/harpsichord_level_start.wav
+sounds/Musical Effects/xylophone_negative_quick.wav
+sounds/Musical Effects/steel_drums_negative_long.wav
+sounds/Musical Effects/8_bit_level_start.wav
+sounds/Musical Effects/harpsichord_negative_quick.wav
+sounds/Musical Effects/grand_piano_level_complete.wav
+sounds/Musical Effects/8_bit_chime_quick.wav
+sounds/Musical Effects/sitar_mystery.wav
+sounds/Musical Effects/brass_level_complete.wav
+sounds/Musical Effects/synth_bass_level_start.wav
+sounds/Musical Effects/sitar_level_complete.wav
+sounds/Musical Effects/sitar_negative.wav
+sounds/Musical Effects/sitar_chime_quick.wav
+sounds/Musical Effects/vibraphone_chime_positive.wav
+sounds/Musical Effects/steel_drums_level_start.wav
+sounds/Musical Effects/steel_drums_positive_long.wav
+sounds/Musical Effects/music_box_positive_long.wav
+sounds/Musical Effects/xylophone_positive_long.wav
+sounds/Musical Effects/synth_bass_negative_quick.wav
+sounds/Musical Effects/sitar_negative_long.wav
+sounds/Musical Effects/grand_piano_chime_positive.wav
+sounds/Musical Effects/synth_bass_chime_positive.wav
+sounds/Musical Effects/music_box_negative_quick.wav
+sounds/Musical Effects/xylophone_inn.wav
+sounds/Musical Effects/xylophone_level_start.wav
+sounds/Musical Effects/brass_negative.wav
+sounds/Musical Effects/synth_bass_positive_long.wav
+sounds/Musical Effects/music_box_defeated.wav
+sounds/Musical Effects/steel_drums_defeated.wav
+sounds/Musical Effects/grand_piano_negative_long.wav
+sounds/Musical Effects/xylophone_defeated.wav
+sounds/Musical Effects/music_box_mystery.wav
+sounds/Musical Effects/steel_drums_inn.wav
+sounds/Musical Effects/grand_piano_negative_quick.wav
+sounds/Musical Effects/harpsichord_negative.wav
+sounds/Musical Effects/music_box_level_start.wav
+sounds/Musical Effects/vibraphone_level_complete.wav
+sounds/Musical Effects/sitar_defeated.wav
+sounds/Musical Effects/grand_piano_positive_long.wav
+sounds/Musical Effects/synth_bass_chime_quick.wav
+sounds/Musical Effects/vibraphone_negative_quick.wav
+sounds/Musical Effects/8_bit_chime_positive.wav
+sounds/Musical Effects/synth_bass_mystery.wav
+sounds/Musical Effects/steel_drums_level_complete.wav
+sounds/Musical Effects/harpsichord_negative_long.wav
+sounds/Musical Effects/vibraphone_inn.wav
+sounds/Musical Effects/harpsichord_positive_long.wav
+sounds/Musical Effects/grand_piano_level_start.wav
+sounds/Musical Effects/xylophone_negative_long.wav
+sounds/Musical Effects/sitar_positive_long.wav
+sounds/Musical Effects/8_bit_negative_long.wav
+sounds/Musical Effects/synth_bass_defeated.wav
+sounds/Musical Effects/steel_drums_mystery.wav
+sounds/Musical Effects/brass_inn.wav
+sounds/Musical Effects/harpsichord_level_complete.wav
+sounds/Musical Effects/sitar_inn.wav
+sounds/Musical Effects/xylophone_level_complete.wav
+sounds/Musical Effects/brass_defeated.wav
+sounds/Musical Effects/8_bit_negative.wav
+sounds/Musical Effects/harpsichord_defeated.wav
+sounds/Musical Effects/harpsichord_chime_quick.wav
+sounds/Musical Effects/sitar_level_start.wav
+sounds/Musical Effects/harpsichord_chime_positive.wav
+sounds/Musical Effects/steel_drums_negative.wav
+sounds/Musical Effects/grand_piano_defeated.wav
+sounds/Musical Effects/horror_sting.wav
+sounds/Musical Effects/synth_bass_negative_long.wav
+sounds/Musical Effects/8_bit_negative_quick.wav
+sounds/Musical Effects/brass_negative_long.wav
+sounds/Musical Effects/8_bit_inn.wav
+sounds/Musical Effects/xylophone_negative.wav
+sounds/Musical Effects/steel_drums_chime_quick.wav
+sounds/Musical Effects/8_bit_mystery.wav
+sounds/Musical Effects/brass_chime_positive.wav
+sounds/Musical Effects/synth_bass_negative.wav
+sounds/Musical Effects/vibraphone_level_start.wav
+sounds/Musical Effects/music_box_negative_long.wav
+sounds/Musical Effects/music_box_negative.wav
+sounds/Musical Effects/xylophone_chime_quick.wav
+sounds/Musical Effects/grand_piano_negative.wav
+sounds/Musical Effects/sitar_negative_quick.wav
+sounds/Musical Effects/brass_chime_quick.wav
+sounds/Musical Effects/vibraphone_negative_long.wav
+sounds/Musical Effects/sitar_chime_positive.wav
+sounds/Musical Effects/brass_mystery.wav
+sounds/Musical Effects/vibraphone_defeated.wav
+sounds/Musical Effects/grand_piano_chime_quick.wav
+sounds/Musical Effects/music_box_inn.wav
+sounds/Musical Effects/vibraphone_mystery.wav
+sounds/Musical Effects/music_box_chime_positive.wav
+sounds/Musical Effects/harpsichord_inn.wav
+sounds/Musical Effects/synth_bass_level_complete.wav
+sounds/Musical Effects/brass_negative_quick.wav
+sounds/Musical Effects/music_box_chime_quick.wav
+sounds/Musical Effects/8_bit_defeated.wav
+sounds/Musical Effects/vibraphone_chime_quick.wav
+sounds/Musical Effects/grand_piano_inn.wav
+sounds/Musical Effects/grand_piano_mystery.wav
+sounds/Musical Effects/xylophone_mystery.wav
+sounds/Musical Effects/brass_level_start.wav
+sounds/Musical Effects/music_box_level_complete.wav
+sounds/Musical Effects/synth_bass_inn.wav
+sounds/Musical Effects/vibraphone_positive_long.wav
+sounds/Musical Effects/steel_drums_chime_positive.wav
+sounds/Musical Effects/xylophone_chime_positive.wav
+sounds/Musical Effects/brass_positive_long.wav
+sounds/Musical Effects/vibraphone_negative.wav
+sounds/Musical Effects/steel_drums_negative_quick.wav
