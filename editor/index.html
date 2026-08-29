@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
-<title>Editor ~ Real-time, responsive HTML/CSS/JS code editor</title>
+<title>HTML/CSS/JS code editor</title>
 
 <!--general meta information-->
 <meta charset="utf-8">
@@ -49,6 +49,15 @@
 
 <!--requried styles-->
 <link rel="stylesheet" href="./css/styles.css">
+
+<!--set saved theme before paint-->
+<script>
+    try {
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    } catch (e) {}
+</script>
 
 <!--loading indicator-->
 <script>
@@ -131,7 +140,7 @@
 <main id="wrapper">
     <section id="utils">
         <div class="logo">
-            <a href="https://github.com/markhillard/Editor" title="Editor on GitHub">E</a>
+            <a href="https://github.com/markhillard/Editor" title="Editor on GitHub"><img src="./images/editor.png" alt="Editor"></a>
         </div>
         <div class="code-swap">
             <span class="toggle-view">view<span class="fa fa-chevron-down"></span></span>
@@ -141,15 +150,8 @@
             <span class="help-html" href="#">HELP</span>
             <span class="toggle-preview" href="#">preview<span class="fa fa-eye"></span></span>
         </div>
-        <div class="font-size">
-            <label class="fa-layers fa-fw" for="fs">
-                <span class="fa-solid fa-font"></span>
-                <span class="fa-solid fa-percent" data-fa-transform="shrink-7 up-2 right-12"></span>
-            </label>
-            <input id="fs" type="number" min="50" max="200" value="100">
-        </div>
         <div class="code-tools">
-            <span class="toggle-tools">tools<span class="fa-solid fa-fw fa-chevron-down"></span></span>
+            <span class="toggle-tools" title="Tools">🧰</span>
             <span class="toggle-lineWrapping html">wrap<span class="fa-solid fa-fw fa-toggle-off"></span></span>
             <span class="toggle-lineWrapping css">wrap<span class="fa-solid fa-fw fa-toggle-off"></span></span>
             <span class="toggle-lineWrapping js">wrap<span class="fa-solid fa-fw fa-toggle-off"></span></span>
@@ -161,6 +163,14 @@
             <span class="clear-editor">clear<span class="fa-solid fa-fw fa-eraser"></span></span>
             <span class="run-script">run<span class="fa-solid fa-fw fa-bolt"></span></span>
             <span class="save">save<span class="fa-solid fa-fw fa-file-download"></span></span>
+            <span class="toggle-theme">theme<span class="fa-solid fa-fw fa-sun"></span></span>
+            <span class="font-size">
+                <label class="fa-layers fa-fw" for="fs" style="height:24px;left:24px;top:18px;">
+                    <span class="fa-solid fa-font"></span>
+                    <span class="fa-solid fa-percent" data-fa-transform="shrink-7 up-2 right-12"></span>
+                </label>
+                <input id="fs" type="number" min="50" max="200" value="100">
+            </span>
         </div>
         <div class="cdnjs-search">
             <input class="query" type="text" placeholder="cdnjs...">
@@ -177,11 +187,12 @@
             <div class="code-pane-js">
                 <textarea id="jscode" name="jscode"></textarea>
             </div>
-            <div class="help-pane" style="width: 100%;height: 100%;">
-            <iframe id="help" name="help" src="./html.html" sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-scripts" allowfullscreen="true" allowtransparency="true" allowpaymentrequest="true" style="width: 100%;height: 100%;"></iframe>
+            <div class="help-pane">
+            <iframe id="help" name="help" src="./html.html" sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts" allowfullscreen="true" allowtransparency="true" allowpaymentrequest="true"></iframe>
         
         </div>
         </div>
+        <div class="drag-divider"><span class="drag-grip"></span></div>
         <div class="preview-pane">
             <iframe id="preview" name="preview" src="./preview.html" sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts" allowfullscreen="true" allowtransparency="true" allowpaymentrequest="true"></iframe>
             <span class="preview-width"></span>

@@ -27,7 +27,20 @@
 // make jQuery play nice
 var E = $.noConflict(true);
 
+// detect touch devices
+if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+    document.documentElement.className += ' touch';
+}
+
 E(document).ready(function () {
+    
+    // ensure fold helpers resolve for the editor modes (auto range finder)
+    if (window.CodeMirror && CodeMirror.fold && CodeMirror.registerHelper) {
+        CodeMirror.registerHelper('fold', 'javascript', CodeMirror.fold.brace);
+        CodeMirror.registerHelper('fold', 'css', CodeMirror.fold.brace);
+        CodeMirror.registerHelper('fold', 'xml', CodeMirror.fold.xml);
+        CodeMirror.registerHelper('fold', 'htmlmixed', CodeMirror.fold.xml);
+    }
     
     // INITIALIZE CODEMIRROR
     // ------------------------------
@@ -103,11 +116,231 @@ E(document).ready(function () {
         lint: false
     });
     
+    // gutter reveal at left edge
+    var gutterRevealZone = 64;
+    function updateGutterWidth(editor) {
+        var g = editor.getWrapperElement().querySelector('.CodeMirror-gutters');
+        if (g) {
+            editor.getWrapperElement().style.setProperty('--gutter-w', g.getBoundingClientRect().width + 'px');
+        }
+    }
+    function bindGutterReveal(editor) {
+        updateGutterWidth(editor);
+        var wrap = editor.getWrapperElement();
+        wrap.addEventListener('mousemove', function (e) {
+            var r = wrap.getBoundingClientRect();
+            wrap.classList.toggle('show-gutter', (e.clientX - r.left) <= gutterRevealZone);
+        });
+        wrap.addEventListener('mouseleave', function () {
+            wrap.classList.remove('show-gutter');
+        });
+        if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+            wrap.addEventListener('touchstart', function (e) {
+                var t = e.touches[0];
+                var r = wrap.getBoundingClientRect();
+                wrap.classList.toggle('show-gutter', (t.clientX - r.left) <= gutterRevealZone);
+            }, { passive: true });
+        }
+    }
+    // numbers layer pinned to the gutter strip
+    function createGutterVeil(editor) {
+        var wrap = editor.getWrapperElement();
+        var veil = document.createElement('div');
+        veil.className = 'gutter-veil';
+        var sheet = document.createElement('div');
+        sheet.className = 'gutter-veil-lines';
+        veil.appendChild(sheet);
+        wrap.appendChild(veil);
+        
+        function adoptGutters() {
+            var guts = wrap.querySelector('.CodeMirror-gutters');
+            if (!guts) {
+                return;
+            }
+            if (guts.parentNode !== veil) {
+                veil.appendChild(guts);
+            }
+            var w = guts.getBoundingClientRect().width;
+            veil.style.width = w + 'px';
+            wrap.style.setProperty('--gutter-w', w + 'px');
+            var gcs = getComputedStyle(guts);
+            veil.style.backgroundColor = gcs.backgroundColor;
+            veil.style.borderRight = '1px solid ' + gcs.borderRightColor;
+            var ref = wrap.querySelector('.CodeMirror-linenumber');
+            if (ref) {
+                var cs = getComputedStyle(ref);
+                veil.style.fontFamily = cs.fontFamily;
+                veil.style.fontSize = cs.fontSize;
+                veil.style.fontWeight = cs.fontWeight;
+                veil.style.color = cs.color;
+                veil.style.lineHeight = cs.lineHeight;
+            }
+        }
+        
+        var foldColumnLeft = null;
+        function foldColumn() {
+            var col = wrap.querySelector('.CodeMirror-gutters .CodeMirror-foldgutter');
+            if (col) {
+                foldColumnLeft = col.offsetLeft;
+                return foldColumnLeft;
+            }
+            var dl = editor.display;
+            var v = dl.gutterLeft && dl.gutterLeft['CodeMirror-foldgutter'];
+            if (v) {
+                foldColumnLeft = v;
+                return foldColumnLeft;
+            }
+            foldColumnLeft = dl.gutters.offsetWidth || null;
+            return foldColumnLeft || 0;
+        }
+        // те саме, але для колонки CodeMirror-lint-markers
+        var lintColumnLeft = null;
+        function lintColumn() {
+            var col = wrap.querySelector('.CodeMirror-gutters .CodeMirror-lint-markers');
+            if (col) {
+                lintColumnLeft = col.offsetLeft;
+                return lintColumnLeft;
+            }
+            var dl = editor.display;
+            var v = dl.gutterLeft && dl.gutterLeft['CodeMirror-lint-markers'];
+            lintColumnLeft = v || 0;
+            return lintColumnLeft;
+        }
+        
+        function render() {
+            adoptGutters();
+            updateGutterWidth(editor);
+            var scInfo = editor.getScrollInfo();
+            sheet.style.transform = 'translateY(' + (-scInfo.top) + 'px)';
+            var margin = 5;
+            var from = Math.max(0, editor.lineAtHeight(scInfo.top, 'local') - margin);
+            var to = Math.min(editor.lineCount(), editor.lineAtHeight(scInfo.top + scInfo.clientHeight, 'local') + 1 + margin);
+            var sig = [];
+            for (var i = from; i < to; i++) {
+                var glh = editor.getLineHandle(i);
+                if (glh.height === 0) { // прихований (згорнутий) рядок — пропускаємо
+                    sig.push('H');
+                    continue;
+                }
+                var gm = glh.gutterMarkers;
+                var mm = gm && gm['CodeMirror-foldgutter'];
+                sig.push(mm ? (mm.className && mm.className.indexOf('folded') >= 0 ? 'F' : 'O') : '-');
+            }
+            sig = sig.join('');
+            if (sheet.children.length && from === sheet._from && to === sheet._to && sig === sheet._sig) {
+                return;
+            }
+            var textH = editor.defaultTextHeight();
+            var frag = document.createDocumentFragment();
+            for (var i = from; i < to; i++) {
+                var lh = editor.getLineHandle(i);
+                if (lh.height === 0) { // прихований (згорнутий) рядок — не малюємо номер/іконки
+                    continue;
+                }
+                var top = editor.heightAtLine(i, 'local') + 'px';
+                var sp = document.createElement('span');
+                sp.textContent = String(i + 1);
+                sp.style.top = top;
+                sp.style.height = textH + 'px';
+                sp.style.lineHeight = textH + 'px';
+                frag.appendChild(sp);
+                var mm = lh.gutterMarkers && lh.gutterMarkers['CodeMirror-foldgutter'];
+                if (mm) {
+                    var fs = document.createElement('span');
+                    fs.className = 'gutter-veil-fold ' + mm.className;
+                    var glyphH = parseFloat(getComputedStyle(veil).fontSize) || textH;
+                    fs.style.top = (parseFloat(top) + (textH - glyphH) / 2) + 'px';
+                    fs.style.left = foldColumn() + 'px';
+                    frag.appendChild(fs);
+                }
+                var lmark = lh.gutterMarkers && lh.gutterMarkers['CodeMirror-lint-markers'];
+                if (lmark) {
+                    var ls = document.createElement('span');
+                    ls.className = 'gutter-veil-lint ' + lmark.className;
+                    ls.style.top = top;
+                    ls.style.height = textH + 'px';
+                    ls.style.left = lintColumn() + 'px';
+                    frag.appendChild(ls);
+                }
+            }
+            sheet.innerHTML = '';
+            sheet.appendChild(frag);
+            sheet._from = from;
+            sheet._to = to;
+            sheet._sig = sig;
+            if (!sheet.children.length && !sheet._retried) {
+                sheet._retried = true;
+                window.setTimeout(render, 120);
+            }
+        }
+        
+        veil.addEventListener('mousedown', function (e) {
+            var st = editor.state.foldGutter;
+            if (!st) {
+                return;
+            }
+            var r = veil.getBoundingClientRect();
+            if (e.clientX - r.left < foldColumn() || e.clientX - r.left > r.width) {
+                return;
+            }
+            var sc = editor.getScrollInfo();
+            var line = editor.lineAtHeight(e.clientY - r.top + sc.top, 'local');
+            var Pos = CodeMirror.Pos;
+            var folded = null;
+            var marks = editor.findMarks(Pos(line, 0), Pos(line + 1, 0));
+            for (var i = 0; i < marks.length; i++) {
+                if (marks[i].__isFold) {
+                    var fp = marks[i].find(-1);
+                    if (fp && fp.line === line) {
+                        folded = marks[i];
+                        break;
+                    }
+                }
+            }
+            if (folded) {
+                folded.clear();
+            } else {
+                editor.foldCode(Pos(line, 0), st.options);
+            }
+            render();
+            window.setTimeout(render, 800);
+        });
+        
+        editor.on('scroll', render);
+        editor.on('viewportChange', function () {
+            render();
+            window.setTimeout(render, 500);
+        });
+        editor.on('refresh', function () {
+            render();
+            window.setTimeout(render, 700);
+        });
+        editor.on('gutterChanged', function () {
+            render();
+            window.setTimeout(render, 650);
+        });
+        editor.on('change', function () {
+            render();
+            window.setTimeout(render, 650);
+        });
+        editor.on('fold', render);
+        editor.on('unfold', render);
+        render();
+    }
+    
+    bindGutterReveal(editorHTML);
+    bindGutterReveal(editorCSS);
+    bindGutterReveal(editorJS);
+    createGutterVeil(editorHTML);
+    createGutterVeil(editorCSS);
+    createGutterVeil(editorJS);
+    
     // font size
     var fontSize = E('.font-size input');
     function updateFontSize(editor, size) {
         editor.getWrapperElement().style['font-size'] = size + '%';
         editor.refresh();
+        updateGutterWidth(editor);
     }
     
     
@@ -326,6 +559,8 @@ E(document).ready(function () {
     // drag handle to resize code pane
     var resizeHandle = E('.code-pane'),
         widthBox = E('.preview-width'),
+        previewPane = E('.preview-pane'),
+        previewIframe = previewPane.find('iframe'),
         windowWidth = E(window).width();
         
     resizeHandle.resizable({
@@ -337,11 +572,20 @@ E(document).ready(function () {
                 previewWidth = windowWidth - currentWidth - 16;
             widthBox.text(previewWidth + 'px');
         },
+        start: function (e, ui) {
+            // disable pointer-events BEFORE the first move, otherwise the
+            // very first pixel of movement over the iframe swallows the
+            // mousemove/mouseup and the drag gets stuck ("залипає") or
+            // stops responding past that point (used to target .next(),
+            // but .drag-divider now sits between .code-pane and
+            // .preview-pane in the markup, so that call was silently
+            // finding no iframe at all and doing nothing)
+            previewIframe.css('pointer-events', 'none');
+        },
         resize: function (e, ui) {
             var currentWidth = ui.size.width,
                 previewWidth = windowWidth - currentWidth - 16;
-            ui.element.next().css('width', windowWidth - currentWidth + 'px');
-            ui.element.next().find('iframe').css('pointer-events', 'none');
+            previewPane.css('width', windowWidth - currentWidth + 'px');
             widthBox.show();
             if (currentWidth <= 0) {
                 widthBox.text(windowWidth - 16 + 'px');
@@ -350,13 +594,129 @@ E(document).ready(function () {
             }
         },
         stop: function (e, ui) {
-            ui.element.next().find('iframe').css('pointer-events', 'inherit');
+            previewIframe.css('pointer-events', 'inherit');
             widthBox.hide();
             editorHTML.refresh();
             editorCSS.refresh();
             editorJS.refresh();
         }
     });
+    
+    // safety net: if the mouse button is released while the cursor is over
+    // the preview iframe, jQuery UI's own document-level mouseup can be
+    // missed and the resizable stays "engaged" forever. Whenever a
+    // mousemove reports no button held, replay a mouseup so jQuery UI's
+    // handler (a no-op if it isn't resizing) can clean up its state.
+    E(document).on('mousemove.resizableSafety', function (e) {
+        if (e.buttons === 0) {
+            E(document).trigger('mouseup');
+        }
+    });
+    
+    // relocate cdnjs search into the tools menu on mobile
+    // (font-size now lives permanently inside .code-tools)
+    function relocateUtils() {
+        var mobile = E(window).width() <= 800,
+            tools = E('.code-tools');
+        if (mobile) {
+            if (E('.cdnjs-search').parent()[0] !== tools[0]) {
+                tools.append(E('.cdnjs-search'));
+            }
+        } else {
+            if (E('.cdnjs-search').parent()[0] === tools[0]) {
+                E('.cdnjs-search').insertAfter(tools);
+            }
+            var pane = E('.code-pane')[0];
+            if (pane && pane.style.width === '100%') {
+                pane.style.width = '';
+            }
+            if (pane && pane.style.height) {
+                pane.style.height = '';
+            }
+        }
+    }
+    
+    // run relocate utils on load and on resize
+    relocateUtils();
+    E(window).on('resize', function () {
+        relocateUtils();
+    });
+    
+    // drag divider between code and preview panes on mobile
+    var editorEl = E('#editor')[0],
+        codePaneEl = document.getElementById('codepane'),
+        dividerEl = document.querySelector('.drag-divider'),
+        previewIframeEl = document.getElementById('preview'),
+        dividerHeight = 16,
+        minCodePx = 60,
+        minPreviewPx = 60,
+        dragging = false,
+        startDragY = 0,
+        startDragHeight = 0;
+    
+    function beginDrag(e) {
+        if (E(window).width() > 800) return;
+        dragging = true;
+        startDragY = e.clientY;
+        startDragHeight = codePaneEl.getBoundingClientRect().height;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        // disable pointer-events on the preview iframe for the WHOLE drag
+        // (not just from the first move onward) - otherwise as soon as the
+        // cursor slides over the still-interactive iframe (e.g. dragging
+        // back down to grow the preview pane), it swallows mousemove/mouseup
+        // and the divider stops responding or "sticks"
+        if (previewIframeEl) previewIframeEl.style.pointerEvents = 'none';
+        e.preventDefault();
+    }
+    
+    function moveDrag(e) {
+        if (!dragging) return;
+        // if the button was released while the pointer was over the iframe,
+        // the mouseup/pointerup never reached us - detect that here instead
+        // of letting the drag stay "stuck" on every later mouse movement
+        if (e.buttons === 0) {
+            endDrag();
+            return;
+        }
+        var editorH = editorEl.getBoundingClientRect().height,
+            maxH = editorH - dividerHeight - minPreviewPx,
+            h = startDragHeight + (e.clientY - startDragY);
+        h = Math.max(minCodePx, Math.min(h, maxH));
+        codePaneEl.style.height = h + 'px';
+        e.preventDefault();
+    }
+    
+    function endDrag() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (previewIframeEl) previewIframeEl.style.pointerEvents = '';
+        editorHTML.refresh();
+        editorCSS.refresh();
+        editorJS.refresh();
+    }
+    
+    if (dividerEl) {
+        if (window.PointerEvent) {
+            dividerEl.addEventListener('pointerdown', beginDrag);
+            document.addEventListener('pointermove', moveDrag);
+            document.addEventListener('pointerup', endDrag);
+            document.addEventListener('pointercancel', endDrag);
+        } else {
+            dividerEl.addEventListener('mousedown', beginDrag);
+            dividerEl.addEventListener('touchstart', function (e) {
+                if (e.touches[0]) beginDrag(e.touches[0]);
+            }, { passive: false });
+            document.addEventListener('mousemove', moveDrag);
+            document.addEventListener('touchmove', function (e) {
+                if (e.touches[0]) moveDrag(e.touches[0]);
+            }, { passive: false });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+    }
     
     
     // GENERAL FUNCTIONS
@@ -377,7 +737,6 @@ E(document).ready(function () {
     }
     
     E('.code-swap span').not('.toggle-view').on('click', function () {
-		
         var codeHTML = E('.code-pane-html'),
             codeCSS = E('.code-pane-css'),
             codeJS = E('.code-pane-js'),
@@ -387,21 +746,16 @@ E(document).ready(function () {
             preview = E('.preview-pane');
         
         E(this).addClass('active').siblings().removeClass('active');
- 		document.getElementById("codepane").style.width = "50%";         
+        document.getElementById("codepane").style.width = E(window).width() <= 800 ? "100%" : "50%";
+        E('.help-pane').removeClass('active');
         
         if (E(this).is(':contains("HTML")')) {
- 
             swapOn(codeHTML);
             swapOn(wrapHTML);
             swapOff(codeCSS);
             swapOff(wrapCSS);
             swapOff(codeJS);
             swapOff(wrapJS);
-            if (E(window).width() <= 800) {
-                swapOff(preview);
-            } else {
-                swapOn(preview);
-            }
         } else if (E(this).is(':contains("CSS")')) {
             swapOn(codeCSS);
             swapOn(wrapCSS);
@@ -409,11 +763,6 @@ E(document).ready(function () {
             swapOff(wrapHTML);
             swapOff(codeJS);
             swapOff(wrapJS);
-            if (E(window).width() <= 800) {
-                swapOff(preview);
-            } else {
-                swapOn(preview);
-            }
         } else if (E(this).is(':contains("JS")')) {
             swapOn(codeJS);
             swapOn(wrapJS);
@@ -421,13 +770,7 @@ E(document).ready(function () {
             swapOff(wrapHTML);
             swapOff(codeCSS);
             swapOff(wrapCSS);
-            if (E(window).width() <= 800) {
-                swapOff(preview);
-            } else {
-                swapOn(preview);
-            }
         } else if (E(this).is(':contains("preview")')) {
-            swapOn(preview);
             swapOff(codeHTML);
             swapOff(wrapHTML);
             swapOff(codeCSS);
@@ -435,6 +778,12 @@ E(document).ready(function () {
             swapOff(codeJS);
             swapOff(wrapJS);
         }
+        
+        swapOn(preview);
+        
+        editorHTML.refresh();
+        editorCSS.refresh();
+        editorJS.refresh();
     });
     
     // expanding scrollbars
@@ -453,6 +802,67 @@ E(document).ready(function () {
         vScroll.removeClass('hold');
         hScroll.removeClass('hold');
     });
+    
+    // touch drag of overlay scrollbars (mobile)
+    function bindOverlayScrollbarTouch() {
+        var bars = document.querySelectorAll('.CodeMirror-overlayscroll-horizontal, .CodeMirror-overlayscroll-vertical');
+        Array.prototype.forEach.call(bars, function (bar) {
+            var state = null;
+            function wrapper() {
+                var el = bar;
+                while (el && el.className.indexOf('CodeMirror ') !== 0) { el = el.parentNode; }
+                return el;
+            }
+            bar.addEventListener('touchstart', function (e) {
+                if (e.touches.length !== 1) { return; }
+                var cm = wrapper();
+                if (!cm) { return; }
+                var scroller = cm.querySelector('.CodeMirror-scroll'),
+                    horizontal = bar.className.indexOf('horizontal') >= 0;
+                state = {
+                    scroller: scroller,
+                    horizontal: horizontal,
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                    left: scroller.scrollLeft,
+                    top: scroller.scrollTop,
+                    moved: false
+                };
+                e.preventDefault();
+            }, { passive: false });
+            bar.addEventListener('touchmove', function (e) {
+                if (!state) { return; }
+                e.preventDefault();
+                state.moved = true;
+                var t = e.touches[0];
+                if (state.horizontal) {
+                    if (state.scroller.scrollWidth > state.scroller.clientWidth) {
+                        state.scroller.scrollLeft = state.left + (t.clientX - state.x) * (state.scroller.scrollWidth / state.scroller.clientWidth);
+                    }
+                } else {
+                    if (state.scroller.scrollHeight > state.scroller.clientHeight) {
+                        state.scroller.scrollTop = state.top + (t.clientY - state.y) * (state.scroller.scrollHeight / state.scroller.clientHeight);
+                    }
+                }
+            }, { passive: false });
+            function end() {
+                if (!state) { return; }
+                var st = state;
+                state = null;
+                var r = bar.getBoundingClientRect();
+                if (!st.moved && r.width && r.height) {
+                    if (st.horizontal) {
+                        st.scroller.scrollLeft = (st.x - r.left) / r.width * (st.scroller.scrollWidth - st.scroller.clientWidth);
+                    } else {
+                        st.scroller.scrollTop = (st.y - r.top) / r.height * (st.scroller.scrollHeight - st.scroller.clientHeight);
+                    }
+                }
+            }
+            bar.addEventListener('touchend', end);
+            bar.addEventListener('touchcancel', end);
+        });
+    }
+    bindOverlayScrollbarTouch();
     
     // indent wrapped lines
     function indentWrappedLines(editor) {
@@ -495,11 +905,28 @@ E(document).ready(function () {
     // toggle tools
     E('.toggle-tools').on('click', function () {
         E(this).toggleClass('active');
-        if (E(this).hasClass('active')) {
-            E(this).html('tools<span class="fa-solid fa-fw fa-chevron-up"></span>');
-        } else {
-            E(this).html('tools<span class="fa-solid fa-fw fa-chevron-down"></span>');
+    });
+    
+    // toggle theme
+    function applyTheme(theme) {
+        var editors = [editorHTML, editorCSS, editorJS],
+            cmTheme = theme === 'light' ? 'default' : 'dracula',
+            icon = theme === 'light' ? 'fa-sun' : 'fa-moon',
+            i;
+        E('html').attr('data-theme', theme);
+        for (i = 0; i < editors.length; i++) {
+            editors[i].setOption('theme', cmTheme);
         }
+        localStorage.setItem('theme', theme);
+        E('.toggle-theme').html('theme<span class="fa-solid fa-fw ' + icon + '"></span>');
+        E('meta[name="theme-color"]').attr('content', theme === 'light' ? '#e8eaee' : '#282a36');
+    }
+    
+    applyTheme(localStorage.getItem('theme') === 'light' ? 'light' : 'dark');
+    
+    E('.toggle-theme').on('click', function () {
+        var current = E('html').attr('data-theme');
+        applyTheme(current === 'dark' ? 'light' : 'dark');
     });
     
     // toggle line wrapping (html)
@@ -584,8 +1011,18 @@ E(document).ready(function () {
     });
     
     // help HTML pane
+    function positionHelpPane() {
+        var editorRect = document.getElementById('editor').getBoundingClientRect(),
+            helpPane = document.querySelector('.help-pane');
+        helpPane.style.top = editorRect.top + 'px';
+        helpPane.style.left = editorRect.left + 'px';
+        helpPane.style.width = editorRect.width + 'px';
+        helpPane.style.height = editorRect.height + 'px';
+    }
+
     E('.help-html').on('click', function () {
-			console.log("Help HTML");			
+        E('.help-pane').addClass('active');
+        positionHelpPane();
 	    var codeHTML = E('.code-pane-html'),
             codeCSS = E('.code-pane-css'),
             codeJS = E('.code-pane-js'),
@@ -593,7 +1030,11 @@ E(document).ready(function () {
             wrapCSS = E('.toggle-lineWrapping.css'),
             wrapJS = E('.toggle-lineWrapping.js'),
             preview = E('.preview-pane');
-            swapOff(preview);
+            if (E(window).width() > 800) {
+                swapOff(preview);
+            } else {
+                swapOn(preview);
+            }
             swapOff(codeHTML);
             swapOff(wrapHTML);
             swapOff(codeCSS);
@@ -601,8 +1042,13 @@ E(document).ready(function () {
             swapOff(codeJS);
             swapOff(wrapJS);
             document.getElementById("codepane").style.width = "100%";       
-           
     }); 
+
+    E(window).on('resize', function () {
+        if (E('.help-pane').hasClass('active')) {
+            positionHelpPane();
+        }
+    });
        
     // reset editor
     E('.reset-editor').on('click', function () {
@@ -628,10 +1074,6 @@ E(document).ready(function () {
         loadJS();
         loadCSS();
         loadHTML();
-        
-        if (E(window).width() <= 800) {
-            E('.toggle-preview').click();
-        }
     });
     
     // save as html file
