@@ -1,5 +1,5 @@
 #preloader {
-  background-color: #1EE29A;
+  background-color: #108060;
   width: 100%;
   height: 100%;
   position: absolute;
@@ -16,8 +16,8 @@
 .flashy {
     position: absolute;
     top: 45%;
-    left: 48%;
-    margin-left: -50px;
+    left: 50%;
+    margin-left: -80px;
     margin-top: -50px;
     width: 160px;
     height: 160px;
@@ -28,6 +28,10 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    /* logo.png has transparent padding on its right side, so its visible
+       mascot art is offset ~13px left of the image center. Nudge it back so
+       the mascot lines up with the centered shadow below. */
+    transform: translateX(-5px);
 }
 
 .flashy-shadow {

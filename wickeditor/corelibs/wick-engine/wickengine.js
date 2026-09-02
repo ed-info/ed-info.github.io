@@ -1,5 +1,5 @@
 /*Wick Engine https://github.com/Wicklets/wick-engine*/
-var WICK_ENGINE_BUILD_VERSION = "2026.8.28.8.26.2";
+var WICK_ENGINE_BUILD_VERSION = "2026.9.2.16.3.51";
 /*!
  * Paper.js v0.12.4 - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
@@ -44422,6 +44422,684 @@ var potrace;
     }
     potrace.fromFunction = fromFunction;
 })(potrace || (potrace = {}));
+(function(root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    return define([], factory);
+  } else if (typeof exports === 'object' && module.exports) {
+    return module.exports = factory();
+  } else {
+    return root['Quadtree'] = factory();
+  }
+})(this, (function() {
+  var Quadtree;
+  return Quadtree = (function() {
+    var boundingBoxCollision, calculateDirection, fitting, getCenter, observe, splitTree, unobserve, validateElement;
+
+    function Quadtree(arg) {
+      var child, that;
+      this.x = arg.x, this.y = arg.y, this.width = arg.width, this.height = arg.height, this.maxElements = arg.maxElements;
+      if ((this.width == null) || (this.height == null)) {
+        throw new Error('Missing quadtree dimensions.');
+      }
+      if (this.x == null) {
+        this.x = 0;
+      }
+      if (this.y == null) {
+        this.y = 0;
+      }
+      if (this.maxElements == null) {
+        this.maxElements = 1;
+      }
+      this.contents = [];
+      this.oversized = [];
+      this.size = 0;
+      if (this.width < 1 || this.height < 1) {
+        throw new Error('Dimensions must be positive integers.');
+      }
+      if (!Number.isInteger(this.x) || !Number.isInteger(this.y)) {
+        throw new Error('Coordinates must be integers');
+      }
+      if (this.maxElements < 1) {
+        throw new Error('The maximum number of elements before a split must be a positive integer.');
+      }
+      that = this;
+      this.children = {
+        NW: {
+          create: function() {
+            return new Quadtree({
+              x: that.x,
+              y: that.y,
+              width: Math.max(Math.floor(that.width / 2), 1),
+              height: Math.max(Math.floor(that.height / 2), 1),
+              maxElements: that.maxElements
+            });
+          },
+          tree: null
+        },
+        NE: {
+          create: function() {
+            return new Quadtree({
+              x: that.x + Math.max(Math.floor(that.width / 2), 1),
+              y: that.y,
+              width: Math.ceil(that.width / 2),
+              height: Math.max(Math.floor(that.height / 2), 1),
+              maxElements: that.maxElements
+            });
+          },
+          tree: null
+        },
+        SW: {
+          create: function() {
+            return new Quadtree({
+              x: that.x,
+              y: that.y + Math.max(Math.floor(that.height / 2), 1),
+              width: Math.max(Math.floor(that.width / 2), 1),
+              height: Math.ceil(that.height / 2),
+              maxElements: that.maxElements
+            });
+          },
+          tree: null
+        },
+        SE: {
+          create: function() {
+            return new Quadtree({
+              x: that.x + Math.max(Math.floor(that.width / 2), 1),
+              y: that.y + Math.max(Math.floor(that.height / 2), 1),
+              width: Math.ceil(that.width / 2),
+              height: Math.ceil(that.height / 2),
+              maxElements: that.maxElements
+            });
+          },
+          tree: null
+        }
+      };
+      for (child in this.children) {
+        this.children[child].get = function() {
+          if (this.tree != null) {
+            return this.tree;
+          } else {
+            this.tree = this.create();
+            return this.tree;
+          }
+        };
+      }
+    }
+
+    getCenter = function(item) {
+      var ref, ref1;
+      return {
+        x: Math.floor(((ref = item.width) != null ? ref : 1) / 2) + item.x,
+        y: Math.floor(((ref1 = item.height) != null ? ref1 : 1) / 2) + item.y
+      };
+    };
+
+    boundingBoxCollision = function(elt1, elt2) {
+      var ref, ref1, ref2, ref3;
+      return !(elt1.x >= elt2.x + ((ref = elt2.width) != null ? ref : 1) || elt1.x + ((ref1 = elt1.width) != null ? ref1 : 1) <= elt2.x || elt1.y >= elt2.y + ((ref2 = elt2.height) != null ? ref2 : 1) || elt1.y + ((ref3 = elt1.height) != null ? ref3 : 1) <= elt2.y);
+    };
+
+    calculateDirection = function(element, tree) {
+      var quadCenter;
+      quadCenter = getCenter(tree);
+      if (element.x < quadCenter.x) {
+        if (element.y < quadCenter.y) {
+          return 'NW';
+        } else {
+          return 'SW';
+        }
+      } else {
+        if (element.y < quadCenter.y) {
+          return 'NE';
+        } else {
+          return 'SE';
+        }
+      }
+    };
+
+    validateElement = function(element) {
+      if (!(typeof element === 'object')) {
+        throw new Error('Element must be an Object.');
+      }
+      if ((element.x == null) || (element.y == null)) {
+        throw new Error('Coordinates properties are missing.');
+      }
+      if ((element != null ? element.width : void 0) < 0 || (element != null ? element.height : void 0) < 0) {
+        throw new Error('Width and height must be positive integers.');
+      }
+    };
+
+    splitTree = function(tree) {
+      var bottomHeight, leftWidth, rightWidth, topHeight;
+      leftWidth = Math.max(Math.floor(tree.width / 2), 1);
+      rightWidth = Math.ceil(tree.width / 2);
+      topHeight = Math.max(Math.floor(tree.height / 2), 1);
+      bottomHeight = Math.ceil(tree.height / 2);
+      return {
+        NW: {
+          x: tree.x,
+          y: tree.y,
+          width: leftWidth,
+          height: topHeight
+        },
+        NE: {
+          x: tree.x + leftWidth,
+          y: tree.y,
+          width: rightWidth,
+          height: topHeight
+        },
+        SW: {
+          x: tree.x,
+          y: tree.y + topHeight,
+          width: leftWidth,
+          height: bottomHeight
+        },
+        SE: {
+          x: tree.x + leftWidth,
+          y: tree.y + topHeight,
+          width: rightWidth,
+          height: bottomHeight
+        }
+      };
+    };
+
+    fitting = function(element, tree) {
+      var coordinates, direction, ref, where;
+      where = [];
+      ref = splitTree(tree);
+      for (direction in ref) {
+        coordinates = ref[direction];
+        if (boundingBoxCollision(element, coordinates)) {
+          where.push(direction);
+        }
+      }
+      return where;
+    };
+
+    observe = function(item, tree) {
+      var writeAccessors;
+      writeAccessors = function(propName) {
+        item["_" + propName] = item[propName];
+        return Object.defineProperty(item, propName, {
+          set: function(val) {
+            tree.remove(this, true);
+            this["_" + propName] = val;
+            return tree.push(this);
+          },
+          get: function() {
+            return this["_" + propName];
+          },
+          configurable: true
+        });
+      };
+      writeAccessors('x');
+      writeAccessors('y');
+      writeAccessors('width');
+      return writeAccessors('height');
+    };
+
+    unobserve = function(item) {
+      var unwriteAccessors;
+      unwriteAccessors = function(propName) {
+        if (item["_" + propName] == null) {
+          return;
+        }
+        delete item[propName];
+        item[propName] = item["_" + propName];
+        return delete item["_" + propName];
+      };
+      unwriteAccessors('x');
+      unwriteAccessors('y');
+      unwriteAccessors('width');
+      return unwriteAccessors('height');
+    };
+
+    Quadtree.prototype.clear = function() {
+      var child, results;
+      this.contents = [];
+      this.oversized = [];
+      this.size = 0;
+      results = [];
+      for (child in this.children) {
+        results.push(this.children[child].tree = null);
+      }
+      return results;
+    };
+
+    Quadtree.prototype.push = function(item, doObserve) {
+      return this.pushAll([item], doObserve);
+    };
+
+    Quadtree.prototype.pushAll = function(items, doObserve) {
+      var candidate, content, contentDir, direction, element, elements, fifo, fifoCandidates, fits, item, j, k, l, len, len1, len2, ref, ref1, relatedChild, tree;
+      for (j = 0, len = items.length; j < len; j++) {
+        item = items[j];
+        validateElement(item);
+        if (doObserve) {
+          observe(item, this);
+        }
+      }
+      fifo = [
+        {
+          tree: this,
+          elements: items
+        }
+      ];
+      while (fifo.length > 0) {
+        ref = fifo.shift(), tree = ref.tree, elements = ref.elements;
+        fifoCandidates = {
+          NW: null,
+          NE: null,
+          SW: null,
+          SE: null
+        };
+        for (k = 0, len1 = elements.length; k < len1; k++) {
+          element = elements[k];
+          tree.size++;
+          fits = fitting(element, tree);
+          if (fits.length !== 1 || tree.width === 1 || tree.height === 1) {
+            tree.oversized.push(element);
+          } else if ((tree.size - tree.oversized.length) <= tree.maxElements) {
+            tree.contents.push(element);
+          } else {
+            direction = fits[0];
+            relatedChild = tree.children[direction];
+            if (fifoCandidates[direction] == null) {
+              fifoCandidates[direction] = {
+                tree: relatedChild.get(),
+                elements: []
+              };
+            }
+            fifoCandidates[direction].elements.push(element);
+            ref1 = tree.contents;
+            for (l = 0, len2 = ref1.length; l < len2; l++) {
+              content = ref1[l];
+              contentDir = (fitting(content, tree))[0];
+              if (fifoCandidates[contentDir] == null) {
+                fifoCandidates[contentDir] = {
+                  tree: tree.children[contentDir].get(),
+                  elements: []
+                };
+              }
+              fifoCandidates[contentDir].elements.push(content);
+            }
+            tree.contents = [];
+          }
+        }
+        for (direction in fifoCandidates) {
+          candidate = fifoCandidates[direction];
+          if (candidate != null) {
+            fifo.push(candidate);
+          }
+        }
+      }
+      return this;
+    };
+
+    Quadtree.prototype.remove = function(item, stillObserve) {
+      var index, relatedChild;
+      validateElement(item);
+      index = this.oversized.indexOf(item);
+      if (index > -1) {
+        this.oversized.splice(index, 1);
+        this.size--;
+        if (!stillObserve) {
+          unobserve(item);
+        }
+        return true;
+      }
+      index = this.contents.indexOf(item);
+      if (index > -1) {
+        this.contents.splice(index, 1);
+        this.size--;
+        if (!stillObserve) {
+          unobserve(item);
+        }
+        return true;
+      }
+      relatedChild = this.children[calculateDirection(item, this)];
+      if ((relatedChild.tree != null) && relatedChild.tree.remove(item, stillObserve)) {
+        this.size--;
+        if (relatedChild.tree.size === 0) {
+          relatedChild.tree = null;
+        }
+        return true;
+      }
+      return false;
+    };
+
+    Quadtree.prototype.colliding = function(item, collisionFunction) {
+      var child, elt, fifo, fits, items, j, k, l, len, len1, len2, ref, ref1, top;
+      if (collisionFunction == null) {
+        collisionFunction = boundingBoxCollision;
+      }
+      validateElement(item);
+      items = [];
+      fifo = [this];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        ref = top.oversized;
+        for (j = 0, len = ref.length; j < len; j++) {
+          elt = ref[j];
+          if (elt !== item && collisionFunction(item, elt)) {
+            items.push(elt);
+          }
+        }
+        ref1 = top.contents;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          elt = ref1[k];
+          if (elt !== item && collisionFunction(item, elt)) {
+            items.push(elt);
+          }
+        }
+        fits = fitting(item, top);
+        if (fits.length === 0) {
+          fits = [];
+          if (item.x >= top.x + top.width) {
+            fits.push('NE');
+          }
+          if (item.y >= top.y + top.height) {
+            fits.push('SW');
+          }
+          if (fits.length > 0) {
+            if (fits.length === 1) {
+              fits.push('SE');
+            } else {
+              fits = ['SE'];
+            }
+          }
+        }
+        for (l = 0, len2 = fits.length; l < len2; l++) {
+          child = fits[l];
+          if (top.children[child].tree != null) {
+            fifo.push(top.children[child].tree);
+          }
+        }
+      }
+      return items;
+    };
+
+    Quadtree.prototype.onCollision = function(item, callback, collisionFunction) {
+      var child, elt, fifo, fits, j, k, l, len, len1, len2, ref, ref1, top;
+      if (collisionFunction == null) {
+        collisionFunction = boundingBoxCollision;
+      }
+      validateElement(item);
+      fifo = [this];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        ref = top.oversized;
+        for (j = 0, len = ref.length; j < len; j++) {
+          elt = ref[j];
+          if (elt !== item && collisionFunction(item, elt)) {
+            callback(elt);
+          }
+        }
+        ref1 = top.contents;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          elt = ref1[k];
+          if (elt !== item && collisionFunction(item, elt)) {
+            callback(elt);
+          }
+        }
+        fits = fitting(item, top);
+        if (fits.length === 0) {
+          fits = [];
+          if (item.x >= top.x + top.width) {
+            fits.push('NE');
+          }
+          if (item.y >= top.y + top.height) {
+            fits.push('SW');
+          }
+          if (fits.length > 0) {
+            if (fits.length === 1) {
+              fits.push('SE');
+            } else {
+              fits = ['SE'];
+            }
+          }
+        }
+        for (l = 0, len2 = fits.length; l < len2; l++) {
+          child = fits[l];
+          if (top.children[child].tree != null) {
+            fifo.push(top.children[child].tree);
+          }
+        }
+      }
+      return null;
+    };
+
+    Quadtree.prototype.get = function(query) {
+      return this.where(query);
+    };
+
+    Quadtree.prototype.where = function(query) {
+      var check, elt, fifo, items, j, k, key, len, len1, ref, ref1, relatedChild, top;
+      if (typeof query === 'object' && ((query.x == null) || (query.y == null))) {
+        return this.find(function(elt) {
+          var check, key;
+          check = true;
+          for (key in query) {
+            if (query[key] !== elt[key]) {
+              check = false;
+            }
+          }
+          return check;
+        });
+      }
+      validateElement(query);
+      items = [];
+      fifo = [this];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        ref = top.oversized;
+        for (j = 0, len = ref.length; j < len; j++) {
+          elt = ref[j];
+          check = true;
+          for (key in query) {
+            if (query[key] !== elt[key]) {
+              check = false;
+            }
+          }
+          if (check) {
+            items.push(elt);
+          }
+        }
+        ref1 = top.contents;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          elt = ref1[k];
+          check = true;
+          for (key in query) {
+            if (query[key] !== elt[key]) {
+              check = false;
+            }
+          }
+          if (check) {
+            items.push(elt);
+          }
+        }
+        relatedChild = top.children[calculateDirection(query, top)];
+        if (relatedChild.tree != null) {
+          fifo.push(relatedChild.tree);
+        }
+      }
+      return items;
+    };
+
+    Quadtree.prototype.each = function(action) {
+      var child, fifo, i, j, k, len, len1, ref, ref1, top;
+      fifo = [this];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        ref = top.oversized;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (typeof action === "function") {
+            action(i);
+          }
+        }
+        ref1 = top.contents;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          i = ref1[k];
+          if (typeof action === "function") {
+            action(i);
+          }
+        }
+        for (child in top.children) {
+          if (top.children[child].tree != null) {
+            fifo.push(top.children[child].tree);
+          }
+        }
+      }
+      return this;
+    };
+
+    Quadtree.prototype.find = function(predicate) {
+      var child, fifo, i, items, j, k, len, len1, ref, ref1, top;
+      fifo = [this];
+      items = [];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        ref = top.oversized;
+        for (j = 0, len = ref.length; j < len; j++) {
+          i = ref[j];
+          if (typeof predicate === "function" ? predicate(i) : void 0) {
+            items.push(i);
+          }
+        }
+        ref1 = top.contents;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          i = ref1[k];
+          if (typeof predicate === "function" ? predicate(i) : void 0) {
+            items.push(i);
+          }
+        }
+        for (child in top.children) {
+          if (top.children[child].tree != null) {
+            fifo.push(top.children[child].tree);
+          }
+        }
+      }
+      return items;
+    };
+
+    Quadtree.prototype.filter = function(predicate) {
+      var deepclone;
+      deepclone = function(target) {
+        var child, copycat, item, j, k, len, len1, ref, ref1, ref2, ref3;
+        copycat = new Quadtree({
+          x: target.x,
+          y: target.y,
+          width: target.width,
+          height: target.height,
+          maxElements: target.maxElements
+        });
+        copycat.size = 0;
+        for (child in target.children) {
+          if (!(target.children[child].tree != null)) {
+            continue;
+          }
+          copycat.children[child].tree = deepclone(target.children[child].tree);
+          copycat.size += (ref = (ref1 = copycat.children[child].tree) != null ? ref1.size : void 0) != null ? ref : 0;
+        }
+        ref2 = target.oversized;
+        for (j = 0, len = ref2.length; j < len; j++) {
+          item = ref2[j];
+          if ((predicate == null) || (typeof predicate === "function" ? predicate(item) : void 0)) {
+            copycat.oversized.push(item);
+          }
+        }
+        ref3 = target.contents;
+        for (k = 0, len1 = ref3.length; k < len1; k++) {
+          item = ref3[k];
+          if ((predicate == null) || (typeof predicate === "function" ? predicate(item) : void 0)) {
+            copycat.contents.push(item);
+          }
+        }
+        copycat.size += copycat.oversized.length + copycat.contents.length;
+        if (copycat.size === 0) {
+          return null;
+        } else {
+          return copycat;
+        }
+      };
+      return deepclone(this);
+    };
+
+    Quadtree.prototype.reject = function(predicate) {
+      return this.filter(function(i) {
+        return !(typeof predicate === "function" ? predicate(i) : void 0);
+      });
+    };
+
+    Quadtree.prototype.visit = function(action) {
+      var child, fifo, that;
+      fifo = [this];
+      while (fifo.length > 0) {
+        that = fifo.shift();
+        action.bind(that)();
+        for (child in that.children) {
+          if (that.children[child].tree != null) {
+            fifo.push(that.children[child].tree);
+          }
+        }
+      }
+      return this;
+    };
+
+    Quadtree.prototype.pretty = function() {
+      var child, fifo, indent, indentation, isParent, str, top;
+      str = '';
+      indent = function(level) {
+        var j, ref, res, times;
+        res = '';
+        for (times = j = ref = level; ref <= 0 ? j < 0 : j > 0; times = ref <= 0 ? ++j : --j) {
+          res += '   ';
+        }
+        return res;
+      };
+      fifo = [
+        {
+          label: 'ROOT',
+          tree: this,
+          level: 0
+        }
+      ];
+      while (fifo.length > 0) {
+        top = fifo.shift();
+        indentation = indent(top.level);
+        str += indentation + "| " + top.label + "\n" + indentation + "| ------------\n";
+        if (top.tree.oversized.length > 0) {
+          str += indentation + "| * Oversized elements *\n" + indentation + "|   " + top.tree.oversized + "\n";
+        }
+        if (top.tree.contents.length > 0) {
+          str += indentation + "| * Leaf content *\n" + indentation + "|   " + top.tree.contents + "\n";
+        }
+        isParent = false;
+        for (child in top.tree.children) {
+          if (!(top.tree.children[child].tree != null)) {
+            continue;
+          }
+          isParent = true;
+          fifo.unshift({
+            label: child,
+            tree: top.tree.children[child].tree,
+            level: top.level + 1
+          });
+        }
+        if (isParent) {
+          str += indentation + "└──┐\n";
+        }
+      }
+      return str;
+    };
+
+    return Quadtree;
+
+  })();
+}));
+
+//# sourceMappingURL=quadtree.js.map
+
 /*
 The MIT License (MIT)
 
@@ -45771,7 +46449,7 @@ Wick.Clipboard = class {
 
   static get PASTE_OFFSET() {
     // how many pixels should we shift objects over when we paste (canvas only)
-    return 20;
+    return 40;
   }
   /**
    * Create a new Clipboard object.
@@ -45879,16 +46557,7 @@ Wick.Clipboard = class {
 
     if (!project.activeFrame) {
       project.insertBlankFrame();
-    } // Always paste in-place if the original objects are no longer visible
-
-
-    var pasteInPlace = true;
-
-    this._originalObjects.forEach(origObj => {
-      if (origObj.parentFrame && origObj.parentFrame.onScreen) {
-        pasteInPlace = false;
-      }
-    }); // Use this value later to position frames on the corrent pasted layer
+    } // Use this value later to position frames on the corrent pasted layer
 
 
     var layerIndicesMoved = project.activeLayer.index - this._copyLayerIndex;
@@ -45911,9 +46580,10 @@ Wick.Clipboard = class {
       }
 
       project.addObject(object);
-      object.identifier = object._getUniqueIdentifier(object.identifier); // Add offset to Paths and Clips if pasteInPlace is NOT enabled.
+      object.identifier = object._getUniqueIdentifier(object.identifier); // Add an offset to Paths and Clips so the pasted copy never overlaps
+      // the original exactly, making it clear that the paste succeeded.
 
-      if (!pasteInPlace && (object instanceof Wick.Path || object instanceof Wick.Clip)) {
+      if (object instanceof Wick.Path || object instanceof Wick.Clip) {
         object.view.render(); //This render call updates the json, I think... so without this call the path loses its data somehow :(
 
         object.x += Wick.Clipboard.PASTE_OFFSET;
@@ -49730,6 +50400,7 @@ Wick.Layer = class extends Wick.Base {
     super(args);
     this.locked = args.locked === undefined ? false : args.locked;
     this.hidden = args.hidden === undefined ? false : args.hidden;
+    this.opacity = args.opacity === undefined ? 1.0 : args.opacity;
     this.name = args.name || null;
   }
 
@@ -49738,6 +50409,7 @@ Wick.Layer = class extends Wick.Base {
 
     data.locked = this.locked;
     data.hidden = this.hidden;
+    data.opacity = this.opacity;
     return data;
   }
 
@@ -49746,6 +50418,7 @@ Wick.Layer = class extends Wick.Base {
 
     this.locked = data.locked;
     this.hidden = data.hidden;
+    this.opacity = data.opacity || 1.0;
   }
 
   get classname() {
@@ -50035,6 +50708,59 @@ Wick.Layer = class extends Wick.Base {
   }
 
 };
+/* Quadtree wrapper */
+// this.quadtree: 
+//   - quadtree-lib data structure (https://github.com/elbywan/quadtree-lib#readme) 
+//   - elements in form {x, y, width, height, uuid, inTree}
+// this.dirty:
+//   - set of quadtree elements ({x, y, width, height, uuid, inTree})
+// this.elements:
+//   - dictionary of elements {uuid1: element1, uuid2: element2}
+//   - these are the exact objects that go into this.quadtree by reference 
+Wick.Quadtree = class {
+  constructor(width, height) {
+    this._quadtree = new Quadtree({
+      width: width,
+      height: height
+    });
+    this.dirty = new Set();
+    this.elements = {};
+  }
+
+  get quadtree() {
+    return this._quadtree;
+  }
+
+  clean() {
+    let to_remove = [];
+
+    this._quadtree.each(function (element) {
+      let clip = Wick.ObjectCache.getObjectByUUID(element.uuid);
+
+      if (!clip || !clip.onScreen) {
+        to_remove.push(element);
+        element.inTree = false;
+      }
+    });
+
+    for (let i = 0; i < to_remove.length; i++) {
+      this._quadtree.remove(to_remove[i]);
+    }
+  }
+
+  resize(width, height) {
+    this._quadtree.each(element => {
+      element.inTree = false;
+      this.dirty.add(element.uuid);
+    });
+
+    this._quadtree = new Quadtree({
+      width: width,
+      height: height
+    });
+  }
+
+};
 /*
  * Copyright 2020 WICKLETS LLC
  *
@@ -50075,6 +50801,7 @@ Wick.Project = class extends Wick.Base {
     this._framerate = args.framerate || 12;
     this._backgroundColor = args.backgroundColor || new Wick.Color('#ffffff');
     this._hitTestOptions = this.getDefaultHitTestOptions();
+    this._quadtree = new Wick.Quadtree(this._width, this._height);
     this.pan = {
       x: 0,
       y: 0
@@ -50206,7 +50933,8 @@ Wick.Project = class extends Wick.Base {
     this._hideCursor = false;
     this._muted = false;
     this._renderBlackBars = true;
-    this._hitTestOptions = this.getDefaultHitTestOptions(); // reset rotation, but not pan/zoom.
+    this._hitTestOptions = this.getDefaultHitTestOptions();
+    this._quadtree = new Wick.Quadtree(this._width, this._height); // reset rotation, but not pan/zoom.
     // not resetting pan/zoom is convenient when preview playing.
 
     this.rotation = 0;
@@ -50277,6 +51005,7 @@ Wick.Project = class extends Wick.Base {
     if (width < 1) width = 1;
     if (width > 200000) width = 200000;
     this._width = width;
+    if (this._quadtree) this._quadtree.resize(this._width, this._height);
   }
   /**
    * The height of the project.
@@ -50293,6 +51022,7 @@ Wick.Project = class extends Wick.Base {
     if (height < 1) height = 1;
     if (height > 200000) height = 200000;
     this._height = height;
+    if (this._quadtree) this._quadtree.resize(this._width, this._height);
   }
   /**
    * The preview image data URL (PNG) captured when the project was last saved.
@@ -50359,6 +51089,83 @@ Wick.Project = class extends Wick.Base {
         this._hitTestOptions.intersections = options.intersections;
       }
     }
+  }
+  /**
+   * Flags a clip as needing to be re-synced with the hit-test quadtree
+   * (call this whenever a clip's position, size, or on-screen status changes).
+   * @param {Wick.Clip} clip - the clip that needs to be refreshed in the quadtree.
+   */
+
+
+  markClipQuadtreeDirty(clip) {
+    if (!clip || !clip.uuid) return;
+
+    this._quadtree.dirty.add(clip.uuid);
+  }
+  /**
+   * Finds all clips whose bounding box overlaps the given clip's bounding box,
+   * using the quadtree for a fast broad-phase lookup. Used by Wick.Clip.hits()
+   * when checking hits against "all" clips or clips with a given tag.
+   * @param {Wick.Clip} clip - the clip to find broad-phase collision candidates for.
+   * @returns {Wick.Clip[]} clips whose bounds overlap the given clip's bounds (excluding itself).
+   */
+
+
+  quadtreeHit(clip) {
+    // update quadtree with dirty elements
+    let elements = [];
+    let q = this._quadtree;
+
+    this._quadtree.dirty.forEach(function (uuid) {
+      let clip = Wick.ObjectCache.getObjectByUUID(uuid);
+
+      if (!clip) {
+        return;
+      }
+
+      let element = q.elements[uuid];
+
+      if (element === undefined) {
+        element = {
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          uuid: uuid,
+          inTree: true
+        };
+        q.elements[uuid] = element;
+      } else if (element.inTree) {
+        q.quadtree.remove(element);
+      }
+
+      let bounds = clip.globalRectangleBound;
+      element.x = bounds.x;
+      element.y = bounds.y;
+      element.width = bounds.width;
+      element.height = bounds.height;
+      elements.push(element);
+    });
+
+    this._quadtree.quadtree.pushAll(elements);
+
+    this._quadtree.dirty.clear();
+
+    let b = clip.globalRectangleBound;
+
+    let colliding = this._quadtree.quadtree.colliding(b);
+
+    let colliding_clips = [];
+
+    for (let c = 0; c < colliding.length; c++) {
+      let clip = Wick.ObjectCache.getObjectByUUID(colliding[c].uuid);
+
+      if (clip) {
+        colliding_clips.push(clip);
+      }
+    }
+
+    return colliding_clips;
   }
   /**
    * The timeline of the active clip.
@@ -50882,11 +51689,6 @@ Wick.Project = class extends Wick.Base {
     this.selection.clear();
     var booleanOpResult = Wick.Path.booleanOp(paths, booleanOpName);
     paths.forEach(path => {
-      // Don't remove the topmost path if performing subtration
-      if (paths.indexOf(path) === paths.length - 1 && booleanOpName === 'subtract') {
-        return;
-      }
-
       path.remove();
     });
     this.activeFrame.addPath(booleanOpResult);
@@ -51676,7 +52478,12 @@ Wick.Project = class extends Wick.Base {
       x: this._mousePosition.x,
       y: this._mousePosition.y
     };
-    this._keysLastDown = [].concat(this._keysDown);
+    this._keysLastDown = [].concat(this._keysDown); // Remove clips that are no longer on screen from the hit-test quadtree.
+    // (quadtreeHit() only re-syncs dirty elements' bounds; it doesn't know
+    // when a clip has left the screen entirely, so this is done separately.)
+
+    this._quadtree.clean();
+
     this.view.render();
 
     if (this._error) {
@@ -56551,7 +57358,8 @@ Wick.Tickable = class extends Wick.Base {
         y: project.height
       };
       window.project.framerate = project.framerate;
-      window.project.backgroundColor = project.backgroundColor; //window.project.hitTestOptions = project.hitTestOptions;
+      window.project.backgroundColor = project.backgroundColor;
+      window.project.hitTestOptions = project.hitTestOptions;
     }
 
     window.root = root;
@@ -57041,6 +57849,12 @@ Wick.Frame = class extends Wick.Tickable {
 
 
   addClip(clip) {
+    if (!clip) {
+      // Defensive: _applyDrawableChanges() and scripts can try to re-add a
+      // clip whose paper group is stale. Never let remove/parent access crash.
+      return;
+    }
+
     if (clip.parent) {
       clip.remove();
     }
@@ -58043,8 +58857,10 @@ Wick.Clip = class extends Wick.Tickable {
 
 
   rectangleHits(other, options) {
-    let bounds1 = this.absoluteBounds;
-    let bounds2 = other.absoluteBounds; // TODO: write intersects so we don't rely on paper Rectangle objects
+    let r1 = this.globalRectangleBound;
+    let r2 = other.globalRectangleBound;
+    let bounds1 = new paper.Rectangle(r1.x, r1.y, r1.width, r1.height);
+    let bounds2 = new paper.Rectangle(r2.x, r2.y, r2.width, r2.height); // TODO: write intersects so we don't rely on paper Rectangle objects
 
     if (bounds1.intersects(bounds2)) {
       let result = {};
@@ -58371,15 +59187,40 @@ Wick.Clip = class extends Wick.Tickable {
     return Math.hypot(a[0] + (b[0] - a[0]) * t1 - p.x, a[1] + (b[1] - a[1]) * t1 - p.y);
   }
   /**
-   * Perform hit test with other clip.
-   * @param {Wick.Clip} other - the clip to hit test with
-   * @param {object} options - Hit test options
-   * @returns {object} Hit information
+   * Perform hit test with another clip, all clips, or clips with a given tag.
+   * Interpretations of arg1 and arg2:
+   *   (clip), (clip, options) -> hit test against a single clip
+   *   (), (options)           -> hit test against all clips
+   *   (string), (string, options) -> hit test against clips with the given tag
+   * @param {Wick.Clip|string} [arg1] - a clip to test against, a tag string, or hit options.
+   * @param {object} [arg2] - hit test options (when arg1 is a clip or tag).
+   * @returns {object|object[]} Hit information for a single clip, or an array of hit
+   * results (each with a .clip property) when testing against all clips / a tag.
    */
 
 
-  hits(other, options) {
-    // Get hit options
+  hits(arg1, arg2) {
+    let other = null;
+    let tag = null;
+    let options = null;
+    let all = false;
+
+    if (arg1 === null || arg1 === undefined) {
+      all = true;
+      options = arg2;
+    } else if (arg1 instanceof Wick.Clip) {
+      other = arg1;
+      options = arg2;
+    } else if (typeof arg1 === 'string') {
+      tag = arg1;
+      options = arg2;
+    } else {
+      // arg1 is actually the options object (hits(options) form)
+      all = true;
+      options = arg1;
+    } // Get hit options
+
+
     let finalOptions = { ...this.project.hitTestOptions
     };
 
@@ -58405,13 +59246,42 @@ Wick.Clip = class extends Wick.Tickable {
       }
     }
 
-    if (finalOptions.mode === 'CIRCLE') {
-      return this.circleHits(other, finalOptions);
-    } else if (finalOptions.mode === 'CONVEX') {
-      return this.convexHits(other, finalOptions);
-    } else {
-      return this.rectangleHits(other, finalOptions);
+    let runHitTest = target => {
+      if (finalOptions.mode === 'CIRCLE') {
+        return this.circleHits(target, finalOptions);
+      } else if (finalOptions.mode === 'CONVEX') {
+        return this.convexHits(target, finalOptions);
+      } else {
+        return this.rectangleHits(target, finalOptions);
+      }
+    }; // Single-clip form: behaves exactly like the original hits(other, options).
+
+
+    if (other) {
+      return runHitTest(other);
+    } // "All clips" / tag form: use the quadtree for a fast broad-phase lookup,
+    // then run the precise hit test against each candidate.
+
+
+    if (!this.project) return [];
+    let candidates = this.project.quadtreeHit(this);
+    let results = [];
+
+    for (let c = 0; c < candidates.length; c++) {
+      let candidate = candidates[c];
+      if (candidate === this) continue; // TODO: once a tag system exists on Wick.Clip, filter by candidate's tags here.
+      // For now, "all" and "tag" both test against every broad-phase candidate.
+
+      if (tag && candidate.identifier !== tag) continue;
+      let hit = runHitTest(candidate);
+
+      if (hit) {
+        hit.clip = candidate;
+        results.push(hit);
+      }
     }
+
+    return results;
   }
   /**
    * Returns true if this clip collides with another clip.
@@ -58438,6 +59308,51 @@ Wick.Clip = class extends Wick.Tickable {
   get absoluteBounds() {
     // TODO: Refactor so that getting bounds does not rely on the view
     return this.view.absoluteBounds;
+  } // Returns a rectangle in the coordinate space of the root clip,
+  // guaranteed to bound the object. Needed because absoluteBounds alone is only
+  // correct relative to this clip's own parent, which gives wrong results when
+  // comparing two clips nested at different depths in the timeline hierarchy.
+
+
+  get globalRectangleBound() {
+    let b = this.absoluteBounds; // The root clip has no parentClip (nothing above it in the timeline
+    // hierarchy), so there's no local-to-global matrix to apply — its own
+    // absoluteBounds already *is* the global space, so just use that directly.
+
+    if (!this.parentClip) {
+      return {
+        x: b.left,
+        y: b.top,
+        width: b.width,
+        height: b.height
+      };
+    }
+
+    let m = this.parentClip.view.group.globalMatrix; // local to global
+
+    let ps = [b.left, b.top, b.right, b.top, b.right, b.bottom, b.left, b.bottom];
+    let newps = [];
+    m.transform(ps, newps, 4);
+    let minX = newps[0],
+        maxX = newps[0],
+        minY = newps[1],
+        maxY = newps[1];
+
+    for (let i = 2; i < newps.length; i += 2) {
+      let x = newps[i];
+      let y = newps[i + 1];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
   }
 
   get points() {
@@ -58483,6 +59398,14 @@ Wick.Clip = class extends Wick.Tickable {
     }
 
     return removedDuplicates;
+  } // Called whenever a change to this clip could move or resize its bounds,
+  // so the hit-test quadtree knows to refresh this clip before its next query.
+
+
+  _onQuadtreeDirty() {
+    if (this.project) {
+      this.project.markClipQuadtreeDirty(this);
+    }
   }
   /**
    * The X position of the clip.
@@ -58496,6 +59419,8 @@ Wick.Clip = class extends Wick.Tickable {
 
   set x(x) {
     this.transformation.x = x;
+
+    this._onQuadtreeDirty();
   }
   /**
    * The Y position of the clip.
@@ -58509,6 +59434,8 @@ Wick.Clip = class extends Wick.Tickable {
 
   set y(y) {
     this.transformation.y = y;
+
+    this._onQuadtreeDirty();
   }
   /**
    * The X scale of the clip.
@@ -58524,6 +59451,8 @@ Wick.Clip = class extends Wick.Tickable {
     if (scaleX === 0) scaleX = 0.001; // Protects against NaN issues
 
     this.transformation.scaleX = scaleX;
+
+    this._onQuadtreeDirty();
   }
   /**
    * The Y scale of the clip.
@@ -58539,6 +59468,8 @@ Wick.Clip = class extends Wick.Tickable {
     if (scaleY === 0) scaleY = 0.001; // Protects against NaN issues
 
     this.transformation.scaleY = scaleY;
+
+    this._onQuadtreeDirty();
   }
   /**
    * The width of the clip.
@@ -58578,6 +59509,8 @@ Wick.Clip = class extends Wick.Tickable {
 
   set rotation(rotation) {
     this.transformation.rotation = rotation;
+
+    this._onQuadtreeDirty();
   }
   /**
    * The opacity of the clip.
@@ -58719,6 +59652,8 @@ Wick.Clip = class extends Wick.Tickable {
     super._onActivated();
 
     this._tickChildren();
+
+    this._onQuadtreeDirty();
 
     if (this.animationType === 'playOnce') {
       this.playedOnce = false;
@@ -58933,6 +59868,15 @@ Wick.Tool = class {
 
 
     this.paperTool.onMouseDown = e => {
+      // Ctrl/Cmd + click on a shape always selects it, regardless of
+      // which tool is currently active. This lets the user grab/select
+      // a shape even while a drawing tool (Rectangle, Pencil, ...) is on.
+      if (this._ctrlClickSelect(e)) {
+        this._lastMousedownTimestamp = e.timeStamp;
+        this._lastMousedownPoint = e.point;
+        return;
+      }
+
       if (this.doubleClickEnabled && this._lastMousedownTimestamp !== null && e.timeStamp - this._lastMousedownTimestamp < Wick.Tool.DOUBLE_CLICK_TIME && e.point.subtract(this._lastMousedownPoint).length < Wick.Tool.DOUBLE_CLICK_MAX_DISTANCE) {
         this.onDoubleClick(e);
       } else {
@@ -59025,6 +59969,67 @@ Wick.Tool = class {
 
 
   onDoubleClick(e) {}
+  /**
+   * Allows selecting a shape by Ctrl/Cmd + clicking it, regardless of which
+   * tool is active. Returns true if a shape was selected (and the click
+   * should not be passed on to the tool).
+   */
+
+
+  _ctrlClickSelect(e) {
+    if (!e.modifiers || !(e.modifiers.command || e.modifiers.control)) {
+      return false;
+    }
+
+    if (!this.project || !this.project.selection) {
+      return false;
+    }
+
+    var hitResult = this.paper.project.hitTest(e.point, {
+      fill: true,
+      stroke: true,
+      curves: true,
+      segments: true,
+      tolerance: 5,
+      match: result => {
+        return !result.item.data.isBorder && !result.item.data.isSelectionBoxGUI;
+      }
+    });
+
+    if (!hitResult || !hitResult.item) {
+      return false;
+    } // You can't select children of compound paths, you can only select the whole thing.
+
+
+    if (hitResult.item.parent && hitResult.item.parent.className === 'CompoundPath') {
+      hitResult.item = hitResult.item.parent;
+    } // You can't select individual children in a group, you can only select the whole thing.
+
+
+    while (hitResult.item.parent && hitResult.item.parent.parent) {
+      hitResult.item = hitResult.item.parent;
+    }
+
+    var uuid = hitResult.item.data && hitResult.item.data.wickUUID;
+
+    if (!uuid) {
+      return false;
+    }
+
+    var object = Wick.ObjectCache.getObjectByUUID(uuid);
+
+    if (!object) {
+      return false;
+    }
+
+    this.project.selection.clear();
+    this.project.selection.select(object);
+    this.fireEvent({
+      eventName: 'canvasModified',
+      actionName: 'cursorSelect'
+    });
+    return true;
+  }
   /**
    * Called when a key is pressed and this is the active tool.
    */
@@ -60638,7 +61643,19 @@ Wick.Tools.Line = class extends Wick.Tool {
 
   onMouseDrag(e) {
     this.path.remove();
-    this.endPoint = e.point;
+    this.endPoint = e.point; // Snap the line to perfectly horizontal or vertical while Shift is held
+    // down. The larger of the two delta components determines the axis.
+
+    if (e.modifiers && e.modifiers.shift) {
+      var d = this.endPoint.subtract(this.startPoint);
+
+      if (Math.abs(d.x) >= Math.abs(d.y)) {
+        this.endPoint.y = this.startPoint.y; // horizontal
+      } else {
+        this.endPoint.x = this.startPoint.x; // vertical
+      }
+    }
+
     this.path = new paper.Path.Line(this.startPoint, this.endPoint);
     this.path.strokeCap = 'round';
     this.path.strokeColor = this.getSetting('strokeColor').rgba;
@@ -64165,6 +65182,13 @@ Wick.View.Project = class extends Wick.View {
     return 1;
   }
 
+  static get CONTEXT_BG_OPACITY() {
+    // Opacity of the faded copy of the containing frame's scene that is
+    // shown behind a clip while editing its timeline, so the clip's
+    // contents can be oriented relative to the other objects on the frame.
+    return 0.35;
+  }
+
   static get ZOOM_MIN() {
     return 0.1;
   }
@@ -64517,7 +65541,18 @@ Wick.View.Project = class extends Wick.View {
       // We're inside a clip, don't render the canvas BG, instead render a crosshair at (0,0)
       var originCrosshair = this._generateSVGOriginCrosshair();
 
-      this._svgBackgroundLayer.addChild(originCrosshair);
+      this._svgBackgroundLayer.addChild(originCrosshair); // Faded context: show the containing frame's other objects behind the
+      // focused clip so its contents can be oriented relative to them. Not
+      // rendered while preview playing (the focused clip plays on its own).
+
+
+      if (!this.model.playing && !this.model.isPublished) {
+        var contextBackground = this._generateContextBackground();
+
+        if (contextBackground) {
+          this._svgBackgroundLayer.addChild(contextBackground);
+        }
+      }
     } // Generate frame layers
 
 
@@ -64575,6 +65610,52 @@ Wick.View.Project = class extends Wick.View {
     originCrosshair.position.x = 0;
     originCrosshair.position.y = 0;
     return originCrosshair;
+  }
+  /**
+   * Builds the faded "context" background shown while editing a clip's
+   * timeline: a dimmed, locked copy of the containing frame's scene aligned
+   * so the focused clip's origin sits at (0,0). This lets the user orient
+   * the clip's contents relative to the other objects on the frame.
+   * @returns {paper.Group|null} the context group, or null if there is no context to show.
+   */
+
+
+  _generateContextBackground() {
+    var focus = this.model.focus; // No context while editing the root timeline.
+
+    if (!focus || focus.isRoot || !focus.parentClip) {
+      return null;
+    } // Re-render the timeline of the clip that contains the focused clip.
+    // (render() rebuilds frameLayers from the model's active frames.)
+
+
+    focus.parentClip.timeline.view.render();
+    var group = new this.paper.Group({
+      insert: false
+    });
+    group.locked = true;
+    group.data.wickType = 'context_background';
+    group.opacity = Wick.View.Project.CONTEXT_BG_OPACITY; // Deep copies of the parent scene so the real scene is never mutated.
+    // (Clone the layers' children rather than the layers themselves to avoid
+    // nesting paper Layers inside the background group.)
+
+    focus.parentClip.timeline.view.frameLayers.forEach(layer => {
+      layer.children.slice().forEach(child => {
+        group.addChild(child.clone());
+      });
+    }); // Align the parent scene with the focused clip's local coordinate
+    // space: the focused clip's own transform maps its origin to (0,0).
+
+    if (focus.view && focus.view.group) {
+      try {
+        var inverse = focus.view.group.matrix.clone().inverted();
+        group.transform(inverse);
+      } catch (e) {// Degenerate transforms (e.g. zero scale) have no inverse;
+        // show the context untransformed instead of failing the render.
+      }
+    }
+
+    return group;
   }
   /* Renders the off-screen borders that hide content out of the project bounds. */
 
@@ -65229,7 +66310,7 @@ Wick.View.Layer = class extends Wick.View {
       frame.view.render();
       this.activeFrameLayers.push(frame.view.objectsLayer);
       frame.view.objectsLayer.locked = false;
-      frame.view.objectsLayer.opacity = 1.0;
+      frame.view.objectsLayer.opacity = this.model.opacity;
     } // Disable mouse events on layers if they are locked.
     // (However, this is ignored while the project is playing so the interact tool always works.)
     // (This is also ignored for layers which are inside clips and not the current focus.)
@@ -65377,14 +66458,30 @@ Wick.View.Frame = class extends Wick.View {
     drawables.forEach(drawable => {
       // should realkly be remove child
       this.model.removeClip(drawable);
-    });
+    }); // Rebuild the clip list from BOTH the paper view and the model:
+    //  1) Clips that are currently rendered in the paper view, in z-order.
+    //  2) Clips that are in the model but have not been rendered into the
+    //     view yet (e.g. just pasted or added). Never drop these from the
+    //     model - the view catching up is async and must not delete objects.
+    //
+    // The paper view may also contain stale groups for clips that were
+    // already removed from the model - those are skipped instead of being
+    // re-added as `undefined` (which crashed Frame.addClip).
+
+    var clipsInOrder = [];
+    var usedClipUuids = {};
     this.objectsLayer.children.filter(child => {
       return child.data.wickType !== 'gui';
     }).forEach(child => {
       if (child instanceof paper.Group || child instanceof Wick.Clip) {
-        this.model.addClip(drawables.find(g => {
+        var wickClip = drawables.find(g => {
           return g.uuid === child.data.wickUUID;
-        }));
+        });
+
+        if (wickClip && !wickClip.removed && !usedClipUuids[wickClip.uuid]) {
+          clipsInOrder.push(wickClip);
+          usedClipUuids[wickClip.uuid] = true;
+        }
       } else {
         var originalWickPath = child.data.wickUUID ? Wick.ObjectCache.getObjectByUUID(child.data.wickUUID) : null;
         var pathJSON = Wick.View.Path.exportJSON(child);
@@ -65399,20 +66496,33 @@ Wick.View.Frame = class extends Wick.View {
         child.name = wickPath.uuid;
       }
     }); // Update clip transforms
+    // Keep model clips that were never rendered in the paper view.
 
+    drawables.forEach(drawable => {
+      if (drawable instanceof Wick.Clip && !usedClipUuids[drawable.uuid]) {
+        clipsInOrder.push(drawable);
+        usedClipUuids[drawable.uuid] = true;
+      }
+    });
+    clipsInOrder.forEach(clip => {
+      this.model.addClip(clip);
+    });
     this.objectsLayer.children.filter(child => {
       return child.data.wickType !== 'gui';
     }).forEach(child => {
       if (child instanceof paper.Group || child instanceof Wick.Clip) {
         var wickClip = Wick.ObjectCache.getObjectByUUID(child.data.wickUUID);
-        wickClip.transformation = new Wick.Transformation({
-          x: child.position.x,
-          y: child.position.y,
-          scaleX: child.scaling.x,
-          scaleY: child.scaling.y,
-          rotation: child.rotation,
-          opacity: child.opacity
-        });
+
+        if (wickClip && wickClip.parent === this.model && wickClip.view.group === child) {
+          wickClip.transformation = new Wick.Transformation({
+            x: child.position.x,
+            y: child.position.y,
+            scaleX: child.scaling.x,
+            scaleY: child.scaling.y,
+            rotation: child.rotation,
+            opacity: child.opacity
+          });
+        }
       }
     });
     /*
@@ -65866,6 +66976,7 @@ Wick.GUIElement.BREADCRUMBS_BG_COLOR = '#202122';
 Wick.GUIElement.BREADCRUMBS_ACTIVE_BUTTON_FILL_COLOR = '#2A2E30';
 Wick.GUIElement.BREADCRUMBS_INACTIVE_BUTTON_FILL_COLOR = '#202122';
 Wick.GUIElement.BREADCRUMBS_HOVER_BUTTON_FILL_COLOR = '#6F6F6F';
+Wick.GUIElement.BREADCRUMBS_TEXT_COLOR = '#BBBBBB';
 Wick.GUIElement.BREADCRUMBS_SHADOW_COLOR = '#000000';
 Wick.GUIElement.BREADCRUMBS_DROP_SHADOW_DEPTH = 2;
 Wick.GUIElement.BREADCRUMBS_ACTIVE_BORDER_COLOR = '#1EE29A';
@@ -65956,6 +67067,7 @@ Wick.GUIElement.SCROLLBAR_VERTICAL_LENGTH = 50;
 Wick.GUIElement.SCROLLBAR_BACKGROUND_COLOR = '#191919';
 Wick.GUIElement.SCROLLBAR_FILL_COLOR = '#B7B7B7';
 Wick.GUIElement.SCROLLBAR_ACTIVE_FILL_COLOR = '#cccccc';
+Wick.GUIElement.BOTTOM_BAR_BG_COLOR = '#111111';
 Wick.GUIElement.SCROLLBAR_SIZE = 18;
 Wick.GUIElement.SCROLLBAR_MARGIN = 3;
 Wick.GUIElement.SCROLLBAR_BORDER_RADIUS = 6;
@@ -66453,7 +67565,7 @@ Wick.GUIElement.ActionButtonsContainer = class extends Wick.GUIElement {
     ctx.rect(0, 0, Wick.GUIElement.LAYERS_CONTAINER_WIDTH, Wick.GUIElement.NUMBER_LINE_HEIGHT);
     ctx.fill(); // Bottom background
 
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = Wick.GUIElement.BOTTOM_BAR_BG_COLOR;
     ctx.beginPath();
     ctx.rect(0, this.canvas.height - Wick.GUIElement.BREADCRUMBS_HEIGHT - Wick.GUIElement.SCROLLBAR_SIZE, Wick.GUIElement.LAYERS_CONTAINER_WIDTH, Wick.GUIElement.SCROLLBAR_SIZE);
     ctx.fill(); // Only draw action buttons on bottom if we're not on mobile.
@@ -66644,7 +67756,7 @@ Wick.GUIElement.BreadcrumbsButton = class extends Wick.GUIElement.Button {
     } // Button label text
 
 
-    ctx.fillStyle = '#BBBBBB';
+    ctx.fillStyle = Wick.GUIElement.BREADCRUMBS_TEXT_COLOR;
     ctx.fillText(textContent, textX, textY);
   }
 
@@ -68107,7 +69219,7 @@ Wick.GUIElement.PopupMenu = class extends Wick.GUIElement {
     ctx.save();
     ctx.translate(this.x, this.y - this.height); // Background
 
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = Wick.GUIElement.BOTTOM_BAR_BG_COLOR;
     ctx.beginPath();
     ctx.roundRect(0, 0, 80, 40, 3);
     ctx.fill(); // Buttons
@@ -68134,7 +69246,7 @@ Wick.GUIElement.PopupMenu = class extends Wick.GUIElement {
     ctx.save();
     ctx.translate(this.x, this.y - this.height); // Background
 
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = Wick.GUIElement.BOTTOM_BAR_BG_COLOR;
     ctx.beginPath();
     ctx.roundRect(0, 0, 120, 40, 3);
     ctx.fill(); // Buttons

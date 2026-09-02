@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+
+<svg
+   fill="#000000"
+   width="415.61298"
+   height="401.92578"
+   viewBox="0 0 12.468389 12.057773"
+   version="1.1"
+   id="svg12"
+   sodipodi:docname="paste.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs16">
+    <rect
+       x="66.527695"
+       y="483.33749"
+       width="388.07956"
+       height="113.46544"
+       id="rect407" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview14"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.02375"
+     inkscape:cx="266.66667"
+     inkscape:cy="268.13187"
+     inkscape:window-width="2560"
+     inkscape:window-height="1019"
+     inkscape:window-x="0"
+     inkscape:window-y="37"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg12" />
+  <path
+     d="M 11.22155,5.4259977 V 1.8086659 c 0,-0.6649862 -0.559207,-1.2057772 -1.246839,-1.2057772 H 8.104453 A 0.62341944,0.60288864 0 0 0 7.4810333,0 H 3.7405166 A 0.62341944,0.60288864 0 0 0 3.1170972,0.6028887 H 1.2468389 C 0.5592072,0.6028887 0,1.1436797 0,1.8086659 V 9.646218 c 0,0.664986 0.5592072,1.205777 1.2468389,1.205777 h 4.363936 c 0,0.664986 0.5592073,1.205778 1.2468389,1.205778 H 11.22155 c 0.687631,0 1.246839,-0.540792 1.246839,-1.205778 v -4.22022 c 0,-0.6649862 -0.559208,-1.2057773 -1.246839,-1.2057773 z M 5.6107749,6.631775 V 9.646218 H 1.2468389 V 1.8086659 H 3.1170972 V 3.0144432 H 8.104453 V 1.8086659 H 9.974711 V 5.4259977 H 6.8576138 c -0.6876316,0 -1.2468389,0.5407911 -1.2468389,1.2057773 z m 1.2468389,4.22022 V 6.631775 H 11.22155 l 6.23e-4,4.22022 z"
+     id="path10"
+     style="fill:#ffffff;stroke-width:0.613068" />
+  <text
+     xml:space="preserve"
+     transform="matrix(0.03,0,0,0.03,-2,-2)"
+     id="text405"
+     style="font-weight:bold;font-size:85.3333px;font-family:'PGR Muffle';-inkscape-font-specification:'PGR Muffle Bold';white-space:pre;shape-inside:url(#rect407);fill:#ffffff" />
+</svg>
