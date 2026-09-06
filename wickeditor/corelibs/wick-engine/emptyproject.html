@@ -14,7 +14,7 @@
         <!-- The Wick Engine build is injected here during the engine build step (see gulpfile.js) -->
         <script>
             /*Wick Engine https://github.com/Wicklets/wick-engine*/
-var WICK_ENGINE_BUILD_VERSION = "2026.9.2.16.3.51";
+var WICK_ENGINE_BUILD_VERSION = "2026.9.5.18.4.30";
 /*!
  * Paper.js v0.12.4 - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
@@ -9174,12 +9174,27 @@ var Path = PathItem.extend({
 			}
 		}
 
+		function checkSegmentHandlePoint(seg, handle, name) {
+			if (!options.selected || handle.isSelected()) {
+				var handleEnd = handle.add(seg._point);
+				// The handle-end dot is drawn very small
+				// (paper.settings.handleSize), so give handles a slightly
+				// larger hit radius than the anchors - with a plain shared
+				// tolerance the whisker tip was awkward to grab.
+				var handlePadding = new Size(
+						strokePadding.width + 2,
+						strokePadding.height + 2);
+				if (isCloseEnough(handleEnd, handlePadding)) {
+					return new HitResult(name, that, {
+						segment: seg,
+						point: handleEnd
+					});
+				}
+			}
+		}
+
 		function checkSegmentPoints(seg, ends) {
-			return (ends || options.segments)
-				&& checkSegmentPoint(seg, seg._point, 'segment')
-				|| (!ends && options.handles) && (
-					checkSegmentPoint(seg, seg._handleIn, 'handle-in') ||
-					checkSegmentPoint(seg, seg._handleOut, 'handle-out'));
+			return checkSegmentPoint(seg, seg._point, 'segment');
 		}
 
 		function addToArea(point) {
@@ -9216,9 +9231,45 @@ var Path = PathItem.extend({
 					|| checkSegmentPoints(segments[numSegments - 1], true))
 				return res;
 		} else if (options.segments || options.handles) {
-			for (var i = 0; i < numSegments; i++)
-				if (res = checkSegmentPoints(segments[i]))
-					return res;
+			// paper.js originally short-circuited at the first segment whose
+			// anchor was within tolerance and only checked handles after
+			// that. Since a bezier handle end can easily sit within click
+			// distance of its own or a neighboring segment's anchor, such a
+			// click resolved to the vertex instead and grabbing the whisker
+			// tip didn't always register. Pick the nearest candidate (anchor
+			// or handle end) across the whole path instead, so the closest
+			// feature always wins.
+			var bestDist = Number.MAX_VALUE, bestRes = null;
+			for (var i = 0; i < numSegments; i++) {
+				var seg = segments[i];
+				if (options.segments) {
+					res = checkSegmentPoint(seg, seg._point, 'segment');
+					if (res && point.getDistance(seg._point) < bestDist) {
+						bestDist = point.getDistance(seg._point);
+						bestRes = res;
+					}
+				}
+				if (options.handles) {
+					res = checkSegmentHandlePoint(seg, seg._handleIn, 'handle-in');
+					if (res) {
+						var dIn = point.getDistance(seg._point.add(seg._handleIn));
+						if (dIn < bestDist) {
+							bestDist = dIn;
+							bestRes = res;
+						}
+					}
+					res = checkSegmentHandlePoint(seg, seg._handleOut, 'handle-out');
+					if (res) {
+						var dOut = point.getDistance(seg._point.add(seg._handleOut));
+						if (dOut < bestDist) {
+							bestDist = dOut;
+							bestRes = res;
+						}
+					}
+				}
+			}
+			if (bestRes)
+				return bestRes;
 		}
 		if (strokeRadius !== null) {
 			loc = this.getNearestLocation(point);
@@ -46558,15 +46609,43 @@ Wick.Clipboard = class {
   /**
    * Paste the content of the clipboard into the project.
    * @param {Wick.Project} project - the project to paste objects into.
+   * @param {boolean} duplicate - if true, timing objects (frames/tweens) are
+   *   placed immediately after the objects that were copied, instead of at the
+   *   current playhead. This is used by duplicateSelection so that an in-place
+   *   duplicate is visible instead of overlapping (and being removed by) the
+   *   original.
    * @returns {boolean} True if there is something to paste in the clipboard, false if the clipboard is empty.
    */
 
 
-  pasteObjectsFromClipboard(project) {
+  pasteObjectsFromClipboard(project, duplicate) {
     if (!project || !project instanceof Wick.Project) console.error('pasteObjectsFromClipboard(): project is required');
 
     if (!this.clipboardData) {
       return false;
+    } // Where duplicated frames/tweens should start: right after the source
+    // selection's furthest-right timing object.
+
+
+    var duplicateOffsetOffset = null;
+    var duplicatePlayheadStart = null;
+
+    if (duplicate) {
+      var maxEnd = Number.MIN_SAFE_INTEGER;
+
+      this._originalObjects.forEach(object => {
+        if (object instanceof Wick.Frame && object.end > maxEnd) {
+          maxEnd = object.end;
+        }
+
+        if (object instanceof Wick.Tween && object.playheadPosition > maxEnd) {
+          maxEnd = object.playheadPosition;
+        }
+      });
+
+      if (maxEnd > Number.MIN_SAFE_INTEGER) {
+        duplicateOffsetOffset = maxEnd;
+      }
     } // Prevent crash when pasting into an empty space
 
 
@@ -46584,14 +46663,25 @@ Wick.Clipboard = class {
       // Paste frames at the position of the playhead
       if (object instanceof Wick.Frame) {
         object._originalLayerIndex += layerIndicesMoved;
-        object.start += project.focus.timeline.playheadPosition - 1;
-        object.end += project.focus.timeline.playheadPosition - 1;
+
+        if (duplicate && duplicateOffsetOffset !== null) {
+          object.start += duplicateOffsetOffset;
+          object.end += duplicateOffsetOffset;
+        } else {
+          object.start += project.focus.timeline.playheadPosition - 1;
+          object.end += project.focus.timeline.playheadPosition - 1;
+        }
       } // Paste tweens at the position of the playhead
 
 
       if (object instanceof Wick.Tween) {
         object._originalLayerIndex += layerIndicesMoved;
-        object.playheadPosition += project.focus.timeline.playheadPosition - 1;
+
+        if (duplicate && duplicateOffsetOffset !== null) {
+          object.playheadPosition += duplicateOffsetOffset;
+        } else {
+          object.playheadPosition += project.focus.timeline.playheadPosition - 1;
+        }
       }
 
       project.addObject(object);
@@ -46607,10 +46697,22 @@ Wick.Clipboard = class {
 
 
       objectsToSelect.push(object);
+
+      if (duplicate && object instanceof Wick.Frame) {
+        if (duplicatePlayheadStart === null || object.start < duplicatePlayheadStart) {
+          duplicatePlayheadStart = object.start;
+        }
+      }
     }); // Select newly added objects.
 
     if (objectsToSelect.length > 0) {
       project.selection.selectMultipleObjects(objectsToSelect);
+    } // When duplicating frames, move the timeline playhead onto the newly
+    // created frame so it is immediately visible and in focus.
+
+
+    if (duplicate && duplicatePlayheadStart !== null) {
+      project.activeTimeline.playheadPosition = duplicatePlayheadStart;
     }
 
     return true;
@@ -47418,7 +47520,12 @@ Wick.Transformation = class {
     this.rotation = args.rotation === undefined ? 0 : args.rotation;
     this.skewX = args.skewX === undefined ? 0 : args.skewX;
     this.skewY = args.skewY === undefined ? 0 : args.skewY;
-    this.opacity = args.opacity === undefined ? 1 : args.opacity;
+    this.opacity = args.opacity === undefined ? 1 : args.opacity; // Pivot point (world coordinates) around which rotation occurs.
+    // Defaults to undefined so that existing projects (without a stored
+    // pivot) keep rotating around the clip's top-left (its x/y position).
+
+    this.pivotX = args.pivotX;
+    this.pivotY = args.pivotY;
   }
   /**
    * An object containing the values of this transformation.
@@ -47434,7 +47541,9 @@ Wick.Transformation = class {
       rotation: this.rotation,
       skewX: this.skewX,
       skewY: this.skewY,
-      opacity: this.opacity
+      opacity: this.opacity,
+      pivotX: this.pivotX,
+      pivotY: this.pivotY
     };
   }
   /**
@@ -51745,8 +51854,8 @@ Wick.Project = class extends Wick.Base {
    */
 
 
-  pasteClipboardContents() {
-    return this.clipboard.pasteObjectsFromClipboard(this);
+  pasteClipboardContents(duplicate) {
+    return this.clipboard.pasteObjectsFromClipboard(this, duplicate);
   }
   /**
    * Copy and paste the current selection.
@@ -51758,7 +51867,7 @@ Wick.Project = class extends Wick.Base {
     if (!this.copySelectionToClipboard()) {
       return false;
     } else {
-      return this.pasteClipboardContents();
+      return this.pasteClipboardContents(true);
     }
   }
   /**
@@ -53441,15 +53550,18 @@ Wick.Selection = class extends Wick.Base {
     this.project.tryToAutoCreateTween();
   }
   /**
-   * The origin position the selection.
+   * The pivot (rotation origin) X position of the selection.
+   * For a single clip/button this is the independent pivot point stored on
+   * the object, which the object rotates around. For paths/multi-select it
+   * falls back to the center of the selection.
    * @type {number}
    */
 
 
   get originX() {
-    // If there's only 1 object selected, the origin is that object's position.
     if (this.getSelectedObject() && (this.selectionType === "clip" || this.selectionType === "button")) {
-      return this.getSelectedObject().transformation.x;
+      var clip = this.getSelectedObject();
+      return clip.transformation.pivotX !== undefined ? clip.transformation.pivotX : clip.transformation.x;
     } else {
       return this.x + this.width / 2;
     }
@@ -53457,7 +53569,8 @@ Wick.Selection = class extends Wick.Base {
 
   set originX(x) {
     if (this.getSelectedObject() && (this.selectionType === "clip" || this.selectionType === "button")) {
-      this.getSelectedObject().x = x;
+      // Only the pivot point changes; the object itself stays in place.
+      this.getSelectedObject().transformation.pivotX = x;
       this.pivotPoint = {
         x: x,
         y: this.pivotPoint.y
@@ -53467,15 +53580,18 @@ Wick.Selection = class extends Wick.Base {
     }
   }
   /**
-   * The origin position the selection.
+   * The pivot (rotation origin) Y position of the selection.
+   * For a single clip/button this is the independent pivot point stored on
+   * the object, which the object rotates around. For paths/multi-select it
+   * falls back to the center of the selection.
    * @type {number}
    */
 
 
   get originY() {
-    // If there's only 1 object selected, the origin is that object's position.
     if (this.getSelectedObject() && (this.selectionType === "clip" || this.selectionType === "button")) {
-      return this.getSelectedObject().y;
+      var clip = this.getSelectedObject();
+      return clip.transformation.pivotY !== undefined ? clip.transformation.pivotY : clip.transformation.y;
     } else {
       return this.y + this.height / 2;
     }
@@ -53483,7 +53599,8 @@ Wick.Selection = class extends Wick.Base {
 
   set originY(y) {
     if (this.getSelectedObject() && (this.selectionType === "clip" || this.selectionType === "button")) {
-      this.getSelectedObject().y = y;
+      // Only the pivot point changes; the object itself stays in place.
+      this.getSelectedObject().transformation.pivotY = y;
       this.pivotPoint = {
         x: this.pivotPoint.x,
         y: y
@@ -53987,8 +54104,8 @@ Wick.Selection = class extends Wick.Base {
       // Single clip selected: Use that Clip's transformation for the pivot point and rotation
       this._widgetRotation = selectedObject.transformation.rotation;
       this._pivotPoint = {
-        x: selectedObject.transformation.x,
-        y: selectedObject.transformation.y
+        x: selectedObject.transformation.pivotX !== undefined ? selectedObject.transformation.pivotX : selectedObject.transformation.x,
+        y: selectedObject.transformation.pivotY !== undefined ? selectedObject.transformation.pivotY : selectedObject.transformation.y
       };
     } else {
       // Path selected or multiple objects selected: Reset rotation and use center for pivot point
@@ -61938,14 +62055,28 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
 
     if (this.hitResult.item && this.hitResult.type === 'curve') {
       // Clicked a curve, start dragging it
-      this.draggingCurve = this.hitResult.location.curve; // Highlight both endpoints of the curve being bent.
+      this.draggingCurve = this.hitResult.location.curve; // Highlight both endpoints of the curve being bent. This is only
+      // done while detailed editing is active: marking segments as
+      // "selected" in paper.js turns on the whole path's selection
+      // overlay (_drawSelected), which paints every vertex square and
+      // the bezier whiskers - nodes/handles must stay hidden while
+      // merely bending the outline before the double-click.
 
-      this._selectSegment(this.draggingCurve.segment1);
+      if (this.detailedEditing !== null) {
+        this._selectSegment(this.draggingCurve.segment1);
 
-      this._selectSegment(this.draggingCurve.segment2);
+        this._selectSegment(this.draggingCurve.segment2);
+      }
     } else if (this.hitResult.item && this.hitResult.type === 'segment') {
-      // Highlight the node being clicked/dragged.
-      this._selectSegment(this.hitResult.segment);
+      // Highlight the node being clicked/dragged. Outside detailed
+      // editing the node's visual feedback comes from the hoverPreview
+      // circle instead: marking the segment as "selected" also flips
+      // the whole path's selection overlay on, painting every vertex
+      // square and the bezier whiskers, which must stay hidden while
+      // just dragging a single node before the double-click.
+      if (this.detailedEditing !== null) {
+        this._selectSegment(this.hitResult.segment);
+      }
 
       if (e.modifiers.alt || e.modifiers.command || e.modifiers.control || e.modifiers.option || e.modifiers.shift) {
         this.hitResult.segment.remove();
@@ -61993,9 +62124,14 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       // setFullySelected cascades down a group).
       var deepHitResult = this._updateHitResult(e, true);
 
-      this.hitResult = deepHitResult.item ? deepHitResult : this.hitResult;
-      this.detailedEditing = this.hitResult.item;
-      this.detailedEditing.setFullySelected(true);
+      this.hitResult = deepHitResult.item ? deepHitResult : this.hitResult; // Only enter detailed editing when the double-click actually
+      // landed on an editable path (double-clicking empty space does
+      // nothing rather than locking onto an undefined item).
+
+      if (this.hitResult.item) {
+        this.detailedEditing = this.hitResult.item;
+        this.detailedEditing.setFullySelected(true);
+      }
     } else if (!this.hitResult.item) {
       // If detailed editing is on for some path, but the user
       // double clicked somewhere else, turn it off.
@@ -62097,9 +62233,13 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       }
 
       handle.x += e.delta.x;
-      handle.y += e.delta.y;
+      handle.y += e.delta.y; // By default only the grabbed handle moves - the opposite handle
+      // sticking out of the same node stays put, so each tangent is
+      // resized/rotated independently. Hold Shift to instead mirror the
+      // move symmetrically on the opposite handle (keeps the two
+      // tangents of the node continuous).
 
-      if (!e.modifiers.shift) {
+      if (e.modifiers.shift) {
         otherHandle.x -= e.delta.x;
         otherHandle.y -= e.delta.y;
       } // Keep the active-handle marker glued to the handle end as it
@@ -62135,6 +62275,10 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       fill: true,
       stroke: true,
       curves: true,
+      // Segment (node) hits work in both modes: in bending mode a node
+      // is highlighted (via the hoverPreview circle) and can be dragged,
+      // but bezier handles only become hit-testable once detailed
+      // editing has been entered (double-click).
       segments: true,
       handles: this.detailedEditing !== null,
       tolerance: this.SELECTION_TOLERANCE,
@@ -63469,6 +63613,7 @@ class SelectionWidget {
   set rotation(rotation) {
     var d = rotation - this.rotation;
     this.rotateSelection(d);
+    this.boxRotation = rotation;
   }
   /**
    * Flip the selected items horizontally.
@@ -63505,7 +63650,7 @@ class SelectionWidget {
   }
 
   set currentTransformation(currentTransformation) {
-    if (['translate', 'scale', 'rotate', 'skew', 'gradient-stop', 'gradient-point', 'gradient-none'].indexOf(currentTransformation) === -1) {
+    if (['translate', 'scale', 'rotate', 'skew', 'pivot', 'gradient-stop', 'gradient-point', 'gradient-none'].indexOf(currentTransformation) === -1) {
       console.error('Paper.SelectionWidget: Invalid transformation type: ' + currentTransformation);
       currentTransformation = null;
     } else {
@@ -63574,8 +63719,19 @@ class SelectionWidget {
       this.currentTransformation = 'scale';
     } else if (item.data.handleType === 'skew') {
       this.currentTransformation = 'skew';
+    } else if (item.data.handleType === 'pivot') {
+      this.currentTransformation = 'pivot';
     } else {
       this.currentTransformation = 'translate';
+    }
+
+    if (this.currentTransformation === 'pivot') {
+      // Dragging the pivot handle doesn't need a ghost and shouldn't be
+      // clamped to a 45-degree angle.
+      this.mod = {
+        action: 'pivot'
+      };
+      return;
     }
 
     this._ghost.data.initialPosition = this._ghost.position;
@@ -63590,6 +63746,21 @@ class SelectionWidget {
   updateTransformation(item, e) {
     if (this.currentTransformation.substring(0, 8) === 'gradient') {
       return this.updateGradientTransformation(item, e);
+    }
+
+    if (this.currentTransformation === 'pivot') {
+      // Move the pivot point (rotation origin) to the cursor, and update
+      // the pivot handle so it follows the pointer. The selected objects
+      // are re-rendered so their rotation is applied around the new pivot.
+      this.pivot = e.point.clone();
+
+      if (this._pivotPointHandle) {
+        this._pivotPointHandle.position.x = e.point.x;
+        this._pivotPointHandle.position.y = e.point.y;
+      }
+
+      this.reapplyRotation();
+      return;
     }
 
     if (this.currentTransformation === 'skew') {
@@ -63805,6 +63976,15 @@ class SelectionWidget {
       return this.finishGradientTransformation();
     }
 
+    if (this.currentTransformation === 'pivot') {
+      // Commit the new pivot point to each selected clip's transformation
+      // and re-render it so future rotations use the updated origin.
+      this.commitPivotToModel();
+      this._currentTransformation = null;
+      this.mod = null;
+      return;
+    }
+
     if (this.currentTransformation === 'skew') {
       this._ghost.remove();
 
@@ -63830,6 +64010,77 @@ class SelectionWidget {
     this.mod.initiated = false;
   }
   /**
+   * Re-syncs the selected clips' stored pivot point with the widget's current
+   * pivot. Called live while the pivot (rotation origin) handle is dragged.
+   * Deliberately does NOT re-render the clips: moving the rotation origin
+   * must not move the figure itself - only the handle follows the pointer and
+   * the stored pivot is updated so future rotations use the new origin.
+   */
+
+
+  reapplyRotation() {
+    this.commitPivotToModel(false);
+  }
+  /**
+   * Writes the widget's current pivot point into the transformation of each
+   * selected clip. Paths (which have no pivot) are skipped.
+   * @param {boolean} render - only true when we explicitly want the clip to be
+   *   re-rendered around the new pivot. Kept false for pivot dragging so the
+   *   figure does not move.
+   */
+
+
+  commitPivotToModel(render) {
+    this.updateClipPivots(render);
+  }
+  /**
+   * Writes the widget's current pivot point and rotation into the
+   * transformation and Wick.Selection.pivotPoint of each selected clip.
+   * @param {boolean} render - whether to also call view.render() on each
+   *   included clip. True when committing a pivot drag (the clip must be
+   *   re-rendered around the new pivot). False when syncing the pivot after
+   *   a translate/scale/transform/rotate, where the anchor read-back happens
+   *   later and rendering from the stale transformation would undo the move.
+   * Paths (which have no pivot model) are skipped.
+   */
+
+
+  updateClipPivots(render) {
+    var wickSelection = null;
+    var rotation = this.rotation;
+
+    this._itemsInSelection.forEach(item => {
+      if (!item.data || !item.data.wickUUID) return;
+      var wickObject = Wick.ObjectCache.getObjectByUUID(item.data.wickUUID);
+
+      if (wickObject && wickObject.transformation) {
+        wickObject.transformation.pivotX = this.pivot.x;
+        wickObject.transformation.pivotY = this.pivot.y;
+        wickObject.transformation.rotation = rotation;
+
+        if (render && wickObject.view && wickObject.view.render) {
+          wickObject.view.render();
+        }
+
+        if (!wickSelection && wickObject.project && wickObject.project.selection) {
+          wickSelection = wickObject.project.selection;
+        }
+      }
+    }); // Keep Wick.Selection.pivotPoint in sync with the committed pivot so
+    // that any subsequent selection-box rebuild (widget.build uses
+    // model.pivotPoint) places the pivot handle at the new location.
+    // Without this, applyChanges could be bypassed and the handle would
+    // snap back to the previous pivot whenever the box is rebuilt.
+
+
+    if (wickSelection) {
+      wickSelection.pivotPoint = {
+        x: this.pivot.x,
+        y: this.pivot.y
+      };
+    }
+  }
+  /**
    *
    */
 
@@ -63840,6 +64091,7 @@ class SelectionWidget {
     });
 
     this.pivot = this.pivot.add(delta);
+    this.updateClipPivots(false);
   }
   /**
    *
@@ -63850,6 +64102,8 @@ class SelectionWidget {
     this._itemsInSelection.forEach(item => {
       item.rotate(angle, this.pivot);
     });
+
+    this.updateClipPivots(false);
   }
   /**
    *
@@ -63865,6 +64119,7 @@ class SelectionWidget {
 
     var newPivot = pivot.add(this.pivot.subtract(pivot).multiply(scale));
     this.pivot = newPivot.rotate(this.boxRotation, this.pivot);
+    this.updateClipPivots(false);
   }
   /**
    *
@@ -63882,6 +64137,7 @@ class SelectionWidget {
 
     var newPivot = pivot.add(this.pivot.subtract(pivot).transform(matrix));
     this.pivot = newPivot.rotate(this.boxRotation, this.pivot);
+    this.updateClipPivots(false);
   }
   /**
    * Skews (shears) the selected items, turning their bounding rectangle
@@ -63946,8 +64202,12 @@ class SelectionWidget {
     guiElements.push(this._buildSkewHandle('left'));
     guiElements.push(this._buildSkewHandle('right'));
     this.item.addChildren(guiElements);
-    this._pivotPointHandle = this._buildPivotPointHandle();
-    this.layer.addChild(this._pivotPointHandle);
+
+    if (this._includePivotHandle()) {
+      this._pivotPointHandle = this._buildPivotPointHandle();
+      this.layer.addChild(this._pivotPointHandle);
+    }
+
     this.item.rotate(this.boxRotation, this._center);
     this.item.children.forEach(child => {
       child.data.isSelectionBoxGUI = true;
@@ -64048,8 +64308,23 @@ class SelectionWidget {
       strokeColor: SelectionWidget.PIVOT_STROKE_COLOR
     });
 
-    handle.locked = true;
+    handle.locked = false;
     return handle;
+  }
+  /**
+   * Whether to draw the draggable pivot-point handle. It is only shown for a
+   * single Clip/Button selection (which stores an independent pivot). Simple
+   * paths, text, images and multi-selections rotate around their center and
+   * have no pivot of their own, so the handle is hidden for them.
+   */
+
+
+  _includePivotHandle() {
+    if (this._itemsInSelection.length !== 1) return false;
+    var item = this._itemsInSelection[0];
+    if (!item.data || !item.data.wickUUID) return false;
+    var wickObject = Wick.ObjectCache.getObjectByUUID(item.data.wickUUID);
+    return !!(wickObject && (wickObject instanceof Wick.Clip || wickObject instanceof Wick.Button));
   }
 
   _buildHandle(args) {
@@ -66163,19 +66438,41 @@ Wick.View.Clip = class extends Wick.View {
     // ПІСЛЯ того, як position/scaling/rotation вже встановлені.
     //
     // Тому: scaling -> rotation -> shear. Shear ЗАВЖДИ останній.
+    //
+    // Обертання виконується НАВКОЛО точки повороту (pivot). Для цього ми
+    // НЕ використовуємо group.rotation (він обертає навколо group.position),
+    // а застосовуємо обертання навколо довільної світової точки через
+    // group.rotate(angle, point). Оскільки pivot групи лишається (0,0),
+    // paper.js НЕ переписує _position під час цього transform, тому читання
+    // group.position назад дає стабільне значення (x, y).
 
     this.group.matrix.set(new paper.Matrix());
     this.group.position.x = this.model.transformation.x;
     this.group.position.y = this.model.transformation.y;
     this.group.scaling.x = this.model.transformation.scaleX;
-    this.group.scaling.y = this.model.transformation.scaleY;
-    this.group.rotation = this.model.transformation.rotation;
+    this.group.scaling.y = this.model.transformation.scaleY; // Rotation happens around the pivot point (pivotX/pivotY), falling back
+    // to the clip's top-left (x/y) for objects that have no explicit pivot.
+
+    if (this.model.transformation.rotation) {
+      var pivot = this._getPivotPoint();
+
+      this.group.rotate(this.model.transformation.rotation, pivot);
+    }
 
     if (this.model.transformation.skewX || this.model.transformation.skewY) {
       this.group.shear(this.model.transformation.skewX || 0, this.model.transformation.skewY || 0);
     }
 
     this.group.opacity = this.model.transformation.opacity;
+  }
+  /**
+   * The world-space point (paper.Point) around which this clip rotates.
+   * Falls back to the clip's top-left position if no explicit pivot is set.
+   */
+
+
+  _getPivotPoint() {
+    return new this.paper.Point(this.model.transformation.pivotX !== undefined ? this.model.transformation.pivotX : this.model.transformation.x, this.model.transformation.pivotY !== undefined ? this.model.transformation.pivotY : this.model.transformation.y);
   }
 
   generateBorder() {
@@ -66208,13 +66505,12 @@ Wick.View.Clip = class extends Wick.View {
     group.position.y = this.model.transformation.y;
     group.scaling.x = this.model.transformation.scaleX;
     group.scaling.y = this.model.transformation.scaleY; // Той самий порядок, що й у render(): scaling -> rotation -> shear,
-    // shear ЗАВЖДИ останній. group.rotation = X декомпозує поточну
-    // матрицю, щоб порахувати дельту обертання, а paper.js сам визначає
-    // цю декомпозицію ненадійною/неможливою, якщо в матриці вже є shear
-    // - тому rotation обов'язково має застосовуватись ДО shear, інакше
-    // рамка виділення виходить спотвореною так само, як і сам об'єкт.
+    // shear ЗАВЖДИ останній. Обертання - навколо точки повороту, як і в
+    // render(), щоб рамка виділення повторювала повернутий об'єкт.
 
-    group.rotation = this.model.transformation.rotation;
+    if (this.model.transformation.rotation) {
+      group.rotate(this.model.transformation.rotation, this._getPivotPoint());
+    }
 
     if (this.model.transformation.skewX || this.model.transformation.skewY) {
       group.shear(this.model.transformation.skewX || 0, this.model.transformation.skewY || 0);
@@ -66529,14 +66825,48 @@ Wick.View.Frame = class extends Wick.View {
         var wickClip = Wick.ObjectCache.getObjectByUUID(child.data.wickUUID);
 
         if (wickClip && wickClip.parent === this.model && wickClip.view.group === child) {
-          wickClip.transformation = new Wick.Transformation({
-            x: child.position.x,
-            y: child.position.y,
-            scaleX: child.scaling.x,
-            scaleY: child.scaling.y,
-            rotation: child.rotation,
-            opacity: child.opacity
-          });
+          if (wickClip instanceof Wick.Clip) {
+            // A clip is rendered (View.Clip.render) by placing its
+            // content at (x,y) and then rotating it about an external
+            // pivot point. After such a rotation, paper.js reads
+            // child.position as the (rotated) matrix translation, NOT
+            // the clip anchor (x,y), and child.rotation is unreliable.
+            // So we recover the anchor by rotating the position back
+            // about the pivot by the committed rotation, then dividing
+            // out the scale. This reproduces the exact same visual,
+            // which is what prevents the clip from jumping on release
+            // and keeps the pivot anchored as the object is moved.
+            var op = wickClip.transformation;
+            var pivotX = op.pivotX !== undefined ? op.pivotX : op.x;
+            var pivotY = op.pivotY !== undefined ? op.pivotY : op.y;
+            var rotation = op.rotation || 0;
+            var scaleX = child.scaling.x || 1;
+            var scaleY = child.scaling.y || 1;
+            var unrot = new paper.Point(child.position.x, child.position.y).rotate(-rotation, new paper.Point(pivotX, pivotY)); // Guard against zero/near-zero scale so we never emit
+            // Infinity/NaN for the anchor position of a flattened clip.
+
+            var x = Math.abs(scaleX) > 0.0001 ? unrot.x / scaleX : op.x;
+            var y = Math.abs(scaleY) > 0.0001 ? unrot.y / scaleY : op.y;
+            wickClip.transformation = new Wick.Transformation({
+              x: x,
+              y: y,
+              scaleX: child.scaling.x,
+              scaleY: child.scaling.y,
+              rotation: rotation,
+              opacity: child.opacity,
+              pivotX: op.pivotX,
+              pivotY: op.pivotY
+            });
+          } else {
+            wickClip.transformation = new Wick.Transformation({
+              x: child.position.x,
+              y: child.position.y,
+              scaleX: child.scaling.x,
+              scaleY: child.scaling.y,
+              rotation: child.rotation,
+              opacity: child.opacity
+            });
+          }
         }
       }
     });
