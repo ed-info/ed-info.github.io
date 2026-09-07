@@ -14,7 +14,7 @@
         <!-- The Wick Engine build is injected here during the engine build step (see gulpfile.js) -->
         <script>
             /*Wick Engine https://github.com/Wicklets/wick-engine*/
-var WICK_ENGINE_BUILD_VERSION = "2026.9.5.18.4.30";
+var WICK_ENGINE_BUILD_VERSION = "2026.9.6.20.43.34";
 /*!
  * Paper.js v0.12.4 - The Swiss Army Knife of Vector Graphics Scripting.
  * http://paperjs.org/
@@ -60842,7 +60842,23 @@ Wick.Tools.Cursor = class extends Wick.Tool {
     if (!e.modifiers) e.modifiers = {};
     this.hitResult = this._updateHitResult(e);
 
-    if (this.hitResult.item && this.hitResult.item.data.isSelectionBoxGUI) {// Clicked the selection box GUI, do nothing
+    if (this.hitResult.item && this.hitResult.item.data.isSelectionBoxGUI) {
+      // Clicked the selection box GUI, do nothing
+      // If this is a gradient stop handle, select it so the gradient
+      // slider in the color picker reflects the clicked stop.
+      let guiStop = this.hitResult.item;
+
+      if (guiStop.data.parentItem && guiStop.data.parentItem.data.handleType === 'gradient-stop') {
+        let stopIndex = this._widget.selectGradientStop(guiStop.data.parentItem);
+
+        if (stopIndex !== -1) {
+          this._selection.selectedStopIndex = stopIndex;
+          this.fireEvent({
+            eventName: 'canvasModified',
+            actionName: 'cursorSelectGradientStop'
+          });
+        }
+      }
     } else if (this.hitResult.item && this._isItemSelected(this.hitResult.item)) {
       // We clicked something that was already selected.
       // Shift click: Deselect that item
@@ -61954,7 +61970,17 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
     this.HOVER_PREVIEW_SEGMENT_FILL_COLOR = '#ffffff';
     this.HOVER_PREVIEW_SEGMENT_RADIUS = 5;
     this.HOVER_PREVIEW_CURVE_STROKE_WIDTH = 2;
-    this.HOVER_PREVIEW_CURVE_STROKE_COLOR = this.HOVER_PREVIEW_SEGMENT_STROKE_COLOR;
+    this.HOVER_PREVIEW_CURVE_STROKE_COLOR = this.HOVER_PREVIEW_SEGMENT_STROKE_COLOR; // Control point at the end of a tangent (handle). While hovering it in
+    // detailed editing it turns purple and grows; once clicked it turns
+    // red (together with its tangent line) to show it is the active handle.
+
+    this.HANDLE_HOVER_FILL_COLOR = '#aa55ff';
+    this.HANDLE_HOVER_STROKE_COLOR = '#aa55ff';
+    this.HANDLE_HOVER_RADIUS = 6.5;
+    this.HANDLE_ACTIVE_FILL_COLOR = '#ff3355';
+    this.HANDLE_ACTIVE_STROKE_COLOR = '#ff3355';
+    this.HANDLE_ACTIVE_RADIUS = 6.5;
+    this.HANDLE_TANGENT_STROKE_WIDTH = 2;
     this.hitResult = new this.paper.HitResult();
     this.draggingCurve = new this.paper.Curve();
     this.draggingSegment = new this.paper.Segment();
@@ -61966,11 +61992,15 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
     // (filled anchor point instead of hollow). Tracked so we can clear
     // the flag off old segments when the interaction moves to a new one.
 
-    this.selectedSegments = []; // Self-drawn indicator (a small filled circle) marking the active
-    // handle end being dragged. Not a native paper.js selection flag -
-    // see _showActiveHandleIndicator for why.
+    this.selectedSegments = []; // Self-drawn indicators for tangent handle end feedback in detailed
+    // editing: a purple dot on hover (drawn as this.hoverPreview) and a
+    // red dot + red tangent line for the handle that is currently
+    // pressed/dragged.
 
-    this.activeHandleIndicator = new this.paper.Item({
+    this.handleActiveIndicator = new this.paper.Item({
+      insert: false
+    });
+    this.handleActiveTangent = new this.paper.Item({
       insert: false
     });
     this.currentCursorIcon = '';
@@ -62032,6 +62062,19 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       this.hoverPreview.add(globalPoint2);
       this.hoverPreview.segments[0].handleOut = globalHandle1;
       this.hoverPreview.segments[1].handleIn = globalHandle2;
+    } else if (this.hitResult.type && this.hitResult.type.startsWith('handle') && !this.hitResult.item.data.isSelectionBoxGUI) {
+      // Hovering over a tangent's control point (handle end). Draw a
+      // purple, enlarged dot there to give visual feedback. Handles are
+      // only reported by _updateHitResult while detailed editing is on.
+      var handleItem = this.hitResult.item;
+      var isHandleIn = this.hitResult.type === 'handle-in';
+      var handleVector = isHandleIn ? this.hitResult.segment.handleIn : this.hitResult.segment.handleOut;
+      var localHandleEnd = this.hitResult.segment.point.add(handleVector);
+      var globalHandleEnd = handleItem.localToGlobal(localHandleEnd);
+      this.hoverPreview = new this.paper.Path.Circle(globalHandleEnd, this.HANDLE_HOVER_RADIUS / this.paper.view.zoom);
+      this.hoverPreview.strokeColor = this.HANDLE_HOVER_STROKE_COLOR;
+      this.hoverPreview.strokeWidth = this.HOVER_PREVIEW_SEGMENT_STROKE_WIDTH;
+      this.hoverPreview.fillColor = this.HANDLE_HOVER_FILL_COLOR;
     }
 
     this.hoverPreview.data.wickType = 'gui';
@@ -62051,7 +62094,9 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
 
     this._clearSegmentSelection();
 
-    this._hideActiveHandleIndicator();
+    this._hideHandleActive();
+
+    this.hoverPreview.remove();
 
     if (this.hitResult.item && this.hitResult.type === 'curve') {
       // Clicked a curve, start dragging it
@@ -62083,11 +62128,12 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       }
     } else if (this.hitResult.type && this.hitResult.type.startsWith('handle')) {
       // Highlight the segment that owns the handle being dragged, and
-      // draw a small marker at the handle end itself so it shows as
-      // active (handle selection isn't tracked via _selectSegment -
-      // see _showActiveHandleIndicator).
+      // draw a red marker + red tangent at the handle end itself so it
+      // shows as active (handle selection isn't tracked via
+      // _selectSegment - see _showHandleActive).
       this._selectSegment(this.hitResult.segment);
 
+      this.hoverPreview.remove();
       var isHandleIn = this.hitResult.type === 'handle-in';
       var activeHandle = isHandleIn ? this.hitResult.segment.handleIn : this.hitResult.segment.handleOut; // segment.point/handleIn/handleOut are in the item's LOCAL
       // coordinate space, not the canvas's global space - convert
@@ -62096,8 +62142,9 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
 
       var localHandleEnd = this.hitResult.segment.point.add(activeHandle);
       var globalHandleEnd = this.hitResult.item.localToGlobal(localHandleEnd);
+      var globalSegmentPoint = this.hitResult.item.localToGlobal(this.hitResult.segment.point);
 
-      this._showActiveHandleIndicator(globalHandleEnd);
+      this._showHandleActive(globalSegmentPoint, globalHandleEnd);
     }
   }
 
@@ -62248,7 +62295,10 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
 
 
       var localPoint = this.hitResult.segment.point.add(handle);
-      this.activeHandleIndicator.position = this.hitResult.item.localToGlobal(localPoint);
+      var globalHandleEnd = this.hitResult.item.localToGlobal(localPoint);
+      var globalSegmentPoint = this.hitResult.item.localToGlobal(this.hitResult.segment.point);
+
+      this._updateHandleActive(globalSegmentPoint, globalHandleEnd);
     }
   }
 
@@ -62283,7 +62333,7 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
       handles: this.detailedEditing !== null,
       tolerance: this.SELECTION_TOLERANCE,
       match: result => {
-        return result.item !== this.hoverPreview && !result.item.data.isBorder;
+        return result.item !== this.hoverPreview && result.item !== this.handleActiveIndicator && result.item !== this.handleActiveTangent && !result.item.data.isBorder;
       }
     });
     if (!newHitResult) newHitResult = new this.paper.HitResult();
@@ -62298,7 +62348,7 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
     }
 
     if (this.detailedEditing !== null) {
-      if (this._getWickUUID(newHitResult.item) !== this._getWickUUID(this.detailedEditing)) {
+      if (this._getWickUUID(this._getWickRootItem(newHitResult.item)) !== this._getWickUUID(this._getWickRootItem(this.detailedEditing))) {
         // Hits an item, but not the one currently in detail edit - handle as a click with no hit.
         return new this.paper.HitResult();
       } // We're already in detailed editing for this exact item (UUID
@@ -62378,8 +62428,9 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
 
       this._clearSegmentSelection();
 
-      this._hideActiveHandleIndicator();
+      this._hideHandleActive();
 
+      this.hoverPreview.remove();
       this.detailedEditing = null;
       this.fireEvent('canvasModified');
     }
@@ -62391,6 +62442,28 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
     } else {
       return undefined;
     }
+  }
+  /**
+   * Resolves an item to the "Wick path root" used for detailed-editing
+   * identity. A shape added from the Shapes menu is a paper CompoundPath
+   * whose subpaths (children) are leaf Paths - the wickUUID lives on the
+   * outer CompoundPath, while hit-testing over a node/handle returns the
+   * child Path. Comparing those two items by UUID directly therefore fails
+   * (one has the UUID, the other doesn't), silently killing node/handle
+   * selection when detailed editing was entered by double-clicking the
+   * shape's fill instead of a specific node. Lifting a child back up to
+   * its CompoundPath parent gives a stable identity for this comparison.
+   * @param {paper.Item} item
+   * @returns {paper.Item} the item, or its CompoundPath ancestor.
+   */
+
+
+  _getWickRootItem(item) {
+    while (item && item.parent && item.parent.className === 'CompoundPath') {
+      item = item.parent;
+    }
+
+    return item;
   }
   /**
    * Converts a handle/direction VECTOR (a relative offset, like
@@ -62448,31 +62521,62 @@ Wick.Tools.PathCursor = class extends Wick.Tool {
     this.selectedSegments = [];
   }
   /**
-   * Draws a small filled circle at the given point to mark the handle end
-   * currently being dragged as "active". This is a self-drawn GUI item
-   * (like hoverPreview) rather than a native paper.js selection flag,
-   * since toggling segment.handleIn/handleOut.selected turned out to
-   * corrupt this fork's internal path selection state.
-   * @param {paper.Point} point - absolute position of the handle end.
+   * Draws the active handle feedback when a tangent's control point is
+   * pressed/dragged: the handle end turns into a filled red dot and a red
+   * tangent line connects it to its anchor segment. This is self-drawn GUI
+   * (like hoverPreview) rather than a native paper.js selection flag.
+   * @param {paper.Point} globalSegmentPoint - anchor segment point in global canvas space.
+   * @param {paper.Point} globalHandleEnd - handle end point in global canvas space.
    */
 
 
-  _showActiveHandleIndicator(point) {
-    this._hideActiveHandleIndicator();
+  _showHandleActive(globalSegmentPoint, globalHandleEnd) {
+    this._hideHandleActive();
 
-    this.activeHandleIndicator = new this.paper.Path.Circle(point, this.HOVER_PREVIEW_SEGMENT_RADIUS / this.paper.view.zoom);
-    this.activeHandleIndicator.strokeColor = this.HOVER_PREVIEW_SEGMENT_STROKE_COLOR;
-    this.activeHandleIndicator.strokeWidth = this.HOVER_PREVIEW_SEGMENT_STROKE_WIDTH;
-    this.activeHandleIndicator.fillColor = this.HOVER_PREVIEW_SEGMENT_STROKE_COLOR;
-    this.activeHandleIndicator.data.wickType = 'gui';
+    var zoom = this.paper.view.zoom;
+    this.handleActiveTangent = new this.paper.Path.Line(globalSegmentPoint, globalHandleEnd);
+    this.handleActiveTangent.strokeColor = this.HANDLE_ACTIVE_STROKE_COLOR;
+    this.handleActiveTangent.strokeWidth = this.HANDLE_TANGENT_STROKE_WIDTH;
+    this.handleActiveTangent.data.wickType = 'gui';
+    this.handleActiveIndicator = new this.paper.Path.Circle(globalHandleEnd, this.HANDLE_ACTIVE_RADIUS / zoom);
+    this.handleActiveIndicator.strokeColor = this.HANDLE_ACTIVE_STROKE_COLOR;
+    this.handleActiveIndicator.strokeWidth = this.HOVER_PREVIEW_SEGMENT_STROKE_WIDTH;
+    this.handleActiveIndicator.fillColor = this.HANDLE_ACTIVE_FILL_COLOR;
+    this.handleActiveIndicator.data.wickType = 'gui';
   }
   /**
-   * Removes the active-handle indicator drawn by _showActiveHandleIndicator.
+   * Re-positions the active handle feedback while its control point is being
+   * dragged, keeping the red dot and red tangent glued to the handle end.
+   * @param {paper.Point} globalSegmentPoint - anchor segment point in global canvas space.
+   * @param {paper.Point} globalHandleEnd - handle end point in global canvas space.
    */
 
 
-  _hideActiveHandleIndicator() {
-    this.activeHandleIndicator.remove();
+  _updateHandleActive(globalSegmentPoint, globalHandleEnd) {
+    // The tangent is a Path.Line built from two points, so its endpoints
+    // are ordinary mutable segment points - just nudge them as the handle
+    // moves. If the line doesn't exist yet (drag reaching here without a
+    // prior handle mousedown), fall back to a full (re)draw.
+    if (this.handleActiveTangent && this.handleActiveTangent.segments) {
+      var segs = this.handleActiveTangent.segments;
+      segs[0].point = globalSegmentPoint;
+      segs[1].point = globalHandleEnd;
+    } else {
+      this._showHandleActive(globalSegmentPoint, globalHandleEnd);
+
+      return;
+    }
+
+    this.handleActiveIndicator.position = globalHandleEnd;
+  }
+  /**
+   * Removes the active handle feedback (red dot + red tangent).
+   */
+
+
+  _hideHandleActive() {
+    this.handleActiveIndicator.remove();
+    this.handleActiveTangent.remove();
   }
 
 };
@@ -64815,6 +64919,25 @@ class SelectionWidget {
 
     this._gradientGUI.selectedStop = stopObj;
     stopObj.data.setSelected(true);
+  }
+  /**
+   * Select a gradient stop handle in the GUI. Returns the index of the
+   * stop in the gradient's stops list, or -1 if it isn't a valid stop.
+   * @param {paper.Item} stopObj - the gradient stop Group to select
+   * @returns {number} the index of the selected stop, or -1
+   */
+
+
+  selectGradientStop(stopObj) {
+    if (!this._gradientGUI) return -1;
+
+    let index = this._gradientGUI.stops.indexOf(stopObj);
+
+    if (index === -1) return -1;
+
+    this._selectStop(stopObj);
+
+    return index;
   }
 
   _createStopFromPoint(point) {
