@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordPad</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #d4d0c8;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      padding: 0px;
+      height: 100%;
+    }
+
+    .editor {
+      max-width: 900px;
+      height: 100%;
+      margin: 0 auto;
+      background: #ece9d8;
+      border: 2px solid #005499;
+      border-radius: 4px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Рядок меню */
+    .menu-bar {
+      background: #ece9d8;
+      border-bottom: 1px solid #aca899;
+      display: flex;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .menu-bar > .menu-item {
+      position: relative;
+      padding: 6px 12px;
+      cursor: pointer;
+      color: #1e1e1e;
+    }
+
+    .menu-bar > .menu-item:hover {
+      background: #005499;
+      color: #fff;
+    }
+
+    .menu-item .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #aca899;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+      min-width: 160px;
+      z-index: 10;
+    }
+
+    .menu-item.open .dropdown { display: block; }
+
+    .dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 14px;
+      background: transparent;
+      border: none;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      color: #1e1e1e;
+    }
+
+    .dropdown button:hover {
+      background: #005499;
+      color: #fff;
+    }
+
+    /* Панель інструментів */
+    .toolbar {
+      background: #ece9d8;
+      padding: 6px 10px;
+      border-bottom: 1px solid #aca899;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      padding-right: 8px;
+      border-right: 1px solid #aca899;
+    }
+
+    .toolbar-group:last-child { border-right: none; padding-right: 0; }
+
+    .toolbar button {
+      background: #e1e1e1;
+      border: 1px solid #adadad;
+      padding: 4px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: default;
+      border-radius: 0;
+      box-shadow: none;
+      color: #1e1e1e;
+      min-width: 34px;
+    }
+
+    .toolbar button:hover {
+      background: #e5f1fb;
+      border-color: #0078d7;
+    }
+
+    .toolbar button:active,
+    .toolbar button.active {
+      background: #cce4f7;
+      border-color: #0078d7;
+    }
+
+    .toolbar select {
+      padding: 4px 6px;
+      font-size: 13px;
+      border: 1px solid #aca899;
+      background: #fff;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* Область редагування */
+    .editor-area { padding: 10px; background: #ece9d8; flex: 1; min-height: 0; display: flex; }
+
+    #editor {
+      width: 100%;
+      min-height: 280px;
+      padding: 10px 14px;
+      font-size: 16px;
+      line-height: 1.5;
+      font-family: Consolas, 'Courier New', monospace;
+      background: #fff;
+      border: 1px solid #7f9db9;
+      outline: none;
+      color: #000;
+      overflow-y: auto;
+    }
+
+    #editor:focus { border-color: #005499; }
+
+    /* Статус-бар */
+    .status-bar {
+      background: #ece9d8;
+      border-top: 1px solid #aca899;
+      padding: 4px 14px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      color: #1e1e1e;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor">
+
+    <!-- Рядок меню -->
+    <div class="menu-bar">
+      <div class="menu-item" data-menu>
+        Файл
+        <div class="dropdown">
+          <button id="newBtn">Новий</button>
+          <button id="openBtn">Відкрити…</button>
+          <button id="saveBtn">Зберегти</button>
+          <button id="saveAsBtn">Зберегти як…</button>
+        </div>
+      </div>
+      <div class="menu-item" data-menu>
+        Правка
+        <div class="dropdown">
+          <button id="undoBtn">Скасувати</button>
+          <button id="redoBtn">Повторити</button>
+          <button id="clearBtn">Очистити все</button>
+        </div>
+      </div>
+      <div class="menu-item" data-menu>
+        Довідка
+        <div class="dropdown">
+          <button id="aboutBtn">Про WordPad</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Панель інструментів -->
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button id="boldBtn" title="Жирний (Ctrl+B)"><b>Ж</b></button>
+        <button id="italicBtn" title="Курсив (Ctrl+I)"><i>К</i></button>
+        <button id="underlineBtn" title="Підкреслений (Ctrl+U)"><u>П</u></button>
+      </div>
+
+      <div class="toolbar-group">
+        <select id="fontSize" title="Розмір шрифту">
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16" selected>16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+          <option value="28">28</option>
+        </select>
+        <select id="fontFamily" title="Шрифт">
+          <option value="Consolas, 'Courier New', monospace">Consolas</option>
+          <option value="'Segoe UI', Tahoma, sans-serif">Segoe UI</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="Arial, sans-serif">Arial</option>
+        </select>
+      </div>
+
+      <div class="toolbar-group">
+        <button id="alignLeft" title="Вирівняти ліворуч">⬅</button>
+        <button id="alignCenter" title="По центру">↔</button>
+        <button id="alignRight" title="Вирівняти праворуч">➡</button>
+      </div>
+    </div>
+
+    <!-- Область редагування -->
+    <div class="editor-area">
+      <div id="editor" contenteditable="true" spellcheck="false"></div>
+    </div>
+
+    <!-- Статус-бар -->
+    <div class="status-bar">
+      <span id="fileName">document.doc</span>
+      <span>Символів: <span id="charCount">0</span> · Слів: <span id="wordCount">0</span></span>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const editor = document.getElementById('editor');
+      const charCount = document.getElementById('charCount');
+      const wordCount = document.getElementById('wordCount');
+      const fileNameEl = document.getElementById('fileName');
+      const boldBtn = document.getElementById('boldBtn');
+      const italicBtn = document.getElementById('italicBtn');
+      const underlineBtn = document.getElementById('underlineBtn');
+      const fontSize = document.getElementById('fontSize');
+      const fontFamily = document.getElementById('fontFamily');
+      const alignLeft = document.getElementById('alignLeft');
+      const alignCenter = document.getElementById('alignCenter');
+      const alignRight = document.getElementById('alignRight');
+
+      // WordPad зберігає ФОРМАТОВАНИЙ текст у власному форматі .doc
+      // (насправді це HTML; не сумісний з MS Word).
+      const DOC_TYPES = [{ description: 'Форматований текст WordPad', accept: { 'application/msword': ['.doc'] } }];
+      const TXT_TYPES = [{ description: 'Текстові файли', accept: { 'text/plain': ['.txt'] } }];
+      const PICK_TYPES = DOC_TYPES.concat(TXT_TYPES);
+
+      let fileHandle = null;
+      let savedRange = null;
+
+      const isDoc = name => /\.doc$/i.test(name || '');
+
+      function saveSelection() {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+        }
+      }
+
+      function restoreSelection() {
+        if (savedRange) {
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(savedRange);
+        }
+      }
+
+      function updateStats() {
+        const text = editor.innerText || '';
+        charCount.textContent = text.length;
+        wordCount.textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+      }
+
+      function updateButtonStates() {
+        boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+        italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+        underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+      }
+
+      function exec(command, value = null) {
+        editor.focus();
+        restoreSelection();
+        document.execCommand(command, false, value);
+        saveSelection();
+        updateStats();
+        updateButtonStates();
+      }
+
+      async function loadHandle(handle) {
+        const file = await handle.getFile();
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let text;
+        try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+        catch (_) { text = new TextDecoder('utf-8').decode(bytes); }
+        if (isDoc(file.name)) editor.innerHTML = text;   // відновлюємо форматування
+        else editor.innerText = text;                    // .txt — без форматування
+        fileHandle = handle;
+        fileNameEl.textContent = file.name;
+        updateStats();
+        editor.focus();
+      }
+
+      async function writeTo(handle) {
+        const writable = await handle.createWritable();
+        await writable.write(editor.innerHTML);          // зберігаємо форматований HTML
+        await writable.close();                          // дані потрапляють у ВФС тут
+      }
+
+      // --- Рядок меню ---
+      document.querySelectorAll('[data-menu]').forEach(item => {
+        item.addEventListener('click', e => {
+          e.stopPropagation();
+          const isOpen = item.classList.contains('open');
+          document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+          if (!isOpen) item.classList.add('open');
+        });
+      });
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+      });
+
+      // --- Пункти меню ---
+      document.getElementById('newBtn').onclick = () => {
+        editor.innerHTML = '';
+        fileHandle = null;
+        fileNameEl.textContent = 'document.doc';
+        updateStats();
+        editor.focus();
+      };
+
+      document.getElementById('openBtn').onclick = async () => {
+        try {
+          const [handle] = await showOpenFilePicker({ types: PICK_TYPES, multiple: false });
+          await loadHandle(handle);
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+        }
+      };
+
+      document.getElementById('saveBtn').onclick = async () => {
+        try {
+          if (!fileHandle) {
+            fileHandle = await showSaveFilePicker({
+              suggestedName: 'document.doc',
+              types: DOC_TYPES
+            });
+          }
+          await writeTo(fileHandle);
+          fileNameEl.textContent = fileHandle.name;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+        }
+      };
+
+      document.getElementById('saveAsBtn').onclick = async () => {
+        try {
+          const handle = await showSaveFilePicker({
+            suggestedName: (fileHandle && fileHandle.name) || 'document.doc',
+            types: DOC_TYPES
+          });
+          await writeTo(handle);
+          fileHandle = handle;
+          fileNameEl.textContent = handle.name;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+        }
+      };
+
+      document.getElementById('undoBtn').onclick = () => exec('undo');
+      document.getElementById('redoBtn').onclick = () => exec('redo');
+      document.getElementById('clearBtn').onclick = () => {
+        if (confirm('Очистити весь текст?')) {
+          editor.innerHTML = '';
+          updateStats();
+        }
+      };
+      document.getElementById('aboutBtn').onclick = () => {
+        alert('WordPad — редактор форматованого тексту.\nФайли зберігаються з розширенням .doc (власний формат, не сумісний з MS Word).');
+      };
+
+      // --- Форматування ---
+      boldBtn.onclick = () => exec('bold');
+      italicBtn.onclick = () => exec('italic');
+      underlineBtn.onclick = () => exec('underline');
+
+      alignLeft.onclick = () => exec('justifyLeft');
+      alignCenter.onclick = () => exec('justifyCenter');
+      alignRight.onclick = () => exec('justifyRight');
+
+      fontSize.onchange = e => {
+        const size = e.target.value;
+        editor.focus();
+        restoreSelection();
+        document.execCommand('fontSize', false, '7');
+        editor.querySelectorAll('font[size="7"]').forEach(font => {
+          const span = document.createElement('span');
+          span.style.fontSize = size + 'px';
+          span.innerHTML = font.innerHTML;
+          font.replaceWith(span);
+        });
+        saveSelection();
+      };
+
+      fontFamily.onchange = e => exec('fontName', e.target.value);
+
+      // --- Події ---
+      editor.addEventListener('input', () => { updateStats(); saveSelection(); });
+      editor.addEventListener('mouseup', () => { saveSelection(); updateButtonStates(); });
+      editor.addEventListener('keyup', () => { saveSelection(); updateButtonStates(); updateStats(); });
+      document.addEventListener('selectionchange', saveSelection);
+
+      editor.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key.toLowerCase() === 'b') { e.preventDefault(); exec('bold'); }
+        if (e.ctrlKey && e.key.toLowerCase() === 'i') { e.preventDefault(); exec('italic'); }
+        if (e.ctrlKey && e.key.toLowerCase() === 'u') { e.preventDefault(); exec('underline'); }
+        if (e.ctrlKey && e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          if (e.shiftKey) document.getElementById('saveAsBtn').click();
+          else document.getElementById('saveBtn').click();
+        }
+      });
+
+      // Викликається робочим столом/провідником для відкриття файлу (за id або шляхом)
+      window.vfsOpenFile = async function (path, id) {
+        if (!window.VFS || !window.VFS.__loaded) return;
+        try {
+          let handle = null;
+          if (path) handle = await VFS.getFileHandle(path);
+          else if (id != null) handle = await VFS.getFileHandle(await VFS.pathOf(id));
+          if (handle) await loadHandle(handle);
+        } catch (err) {
+          console.error('WordPad: не вдалося відкрити файл:', err);
+        }
+      };
+
+      updateStats();
+      editor.focus();
+    })();
+  </script>
+</body>
+</html>

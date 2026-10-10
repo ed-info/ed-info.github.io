@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Командний рядок — VFS</title>
+<style>
+  :root{
+    --bg:#0c0c0c; --fg:#cccccc; --dim:#7a7a7a; --accent:#16c60c; --err:#ff5555;
+    --prompt:#f9f1a5; --sel:#264f78;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);color:var(--fg);
+    font:14px/1.35 "Consolas","Lucida Console","Courier New",monospace;
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+
+  /* -------- Рядок меню -------- */
+  .menu-bar{
+    flex:none;display:flex;background:#ece9d8;border-bottom:1px solid #aca899;
+    font-family:"Segoe UI",Tahoma,sans-serif;font-size:13px;color:#1e1e1e;user-select:none
+  }
+  .menu-bar > .menu-item{position:relative;padding:5px 12px;cursor:default}
+  .menu-bar > .menu-item:hover{background:#005499;color:#fff}
+  .menu-bar .dropdown{
+    display:none;position:absolute;top:100%;left:0;background:#fff;color:#1e1e1e;
+    border:1px solid #aca899;box-shadow:2px 2px 6px rgba(0,0,0,.2);min-width:190px;z-index:20
+  }
+  .menu-bar .menu-item.open .dropdown{display:block}
+  .menu-bar .dropdown button{
+    display:block;width:100%;text-align:left;padding:6px 14px;background:transparent;
+    border:none;font:inherit;font-size:13px;cursor:default;color:#1e1e1e;border-radius:0
+  }
+  .menu-bar .dropdown button:hover{background:#005499;color:#fff}
+
+  /* -------- Основна область -------- */
+  .screen{
+    flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+    padding:10px 14px;white-space:pre-wrap;word-break:break-word;
+    caret-color:transparent;
+  }
+  .screen::-webkit-scrollbar{width:12px}
+  .screen::-webkit-scrollbar-track{background:#0c0c0c}
+  .screen::-webkit-scrollbar-thumb{background:#333;border:2px solid #0c0c0c;border-radius:6px}
+
+  .line{min-height:1.35em}
+  .line.in{color:#e8e8e8}
+  .line.err{color:var(--err)}
+  .line.ok{color:var(--accent)}
+  .line.dim{color:var(--dim)}
+  .line.dir-hd{color:#f9f1a5}
+  .line.dir-name{color:#5fd7ff}
+  .line.dir-dir{color:#87ff87}
+
+  /* -------- Рядок вводу -------- */
+  .inputline{
+    flex:none;display:flex;align-items:flex-start;gap:0;padding:6px 14px 12px;
+    background:var(--bg);border-top:1px solid #1f1f1f;
+  }
+  .prompt{
+    flex:none;white-space:pre;color:var(--prompt);user-select:none;
+    max-width:60%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .inputwrap{flex:1;min-width:0;position:relative}
+  #cmdInput{
+    width:100%;background:transparent;border:none;outline:none;color:#fff;
+    font:inherit;padding:0;margin:0;caret-color:#fff;
+  }
+  /* Прихований «дзеркальний» елемент, щоб переносити довгі команди */
+  #cmdInput::selection{background:var(--sel)}
+
+  /* -------- Випадаюче доповнення -------- */
+  .complete{
+    position:absolute;left:0;bottom:100%;max-height:220px;overflow:auto;
+    background:#1e1e1e;border:1px solid #3a3a3a;border-radius:3px;min-width:280px;
+    box-shadow:0 -6px 20px rgba(0,0,0,.6);z-index:20
+  }
+  .complete:empty{display:none}
+  .complete .it{padding:3px 8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .complete .it.sel{background:var(--sel);color:#fff}
+  .complete .it .k{color:var(--dim);float:right;font-size:12px;margin-left:12px}
+
+  /* -------- Статус-бар -------- */
+  .statusbar{
+    flex:none;height:22px;display:flex;align-items:center;gap:14px;padding:0 14px;
+    background:#1a1a1a;border-top:1px solid #2a2a2a;color:var(--dim);
+    font-family:"Segoe UI",Tahoma,sans-serif;font-size:11.5px
+  }
+  .statusbar .grow{flex:1}
+  .statusbar .busy{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="menu-bar">
+  <div class="menu-item" data-menu>
+    Файл
+    <div class="dropdown">
+      <button id="miClear">Очистити екран</button>
+      <button id="miExit">Вихід</button>
+    </div>
+  </div>
+  <div class="menu-item" data-menu>
+    Правка
+    <div class="dropdown">
+      <button id="miCopy">Копіювати</button>
+      <button id="miPaste">Вставити</button>
+    </div>
+  </div>
+  <div class="menu-item" data-menu>
+    Довідка
+    <div class="dropdown">
+      <button id="miHelp">Довідка</button>
+      <button id="miAbout">Про командний рядок</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen" tabindex="0"></div>
+
+<div class="inputline">
+  <span class="prompt" id="prompt">C:\&gt;&nbsp;</span>
+  <div class="inputwrap">
+    <input id="cmdInput" autocomplete="off" spellcheck="false" autocapitalize="off" autofocus>
+    <div class="complete" id="complete"></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="stStatus">Готово</span>
+  <span class="grow"></span>
+  <span id="stCwd">C:\</span>
+</div>
+
+<script src="/vfs.js"></script>
+<script>
+/* =====================================================================
+   Термінал (cmd-подібний) для віртуальної файлової системи VFS
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const screen = $('screen');
+  const input = $('cmdInput');
+  const promptEl = $('prompt');
+  const completeBox = $('complete');
+  const stStatus = $('stStatus');
+  const stCwd = $('stCwd');
+
+  /* ---------- Стан ---------- */
+  const state = {
+    cwd: 'C:\\',                 // Поточний каталог у вигляді "C:\..." (або "C:")
+    history: [],                 // Історія команд
+    histIdx: -1,
+    histDraft: '',
+    busy: false,
+    apps: []                     // Встановлені програми (folders/apps/apps.json)
+  };
+
+  /* ---------- Зовнішні програми (.exe) ---------- */
+  async function loadAppsList() {
+    const urls = [
+      new URL('../folders/apps/apps.json', location.href).href,
+      new URL('/folders/apps/apps.json', location.href).href
+    ];
+    for (const u of urls) {
+      try {
+        const r = await fetch(u);
+        if (!r.ok) continue;
+        const list = await r.json();
+        if (Array.isArray(list) && list.length) return list;
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  // Пошук програми за .exe-іменем, id або шляхом
+  function findApp(query) {
+    let q = String(query == null ? '' : query).trim().replace(/["']/g, '');
+    q = q.replace(/^.*[\\\/]/, '').replace(/\.exe$/i, '').toLowerCase();
+    if (!q) return null;
+    return state.apps.find(a => String(a.id).toLowerCase() === q)
+        || state.apps.find(a => String(a.name).toLowerCase().replace(/\.exe$/i, '') === q)
+        || null;
+  }
+
+  // Запуск програми: у вікні робочого столу, або в новій вкладці (автономно)
+  function launchExternal(query) {
+    const app = findApp(query);
+    if (!app) return false;
+    try {
+      if (window.parent && window.parent !== window && typeof window.parent.launchApp === 'function') {
+        if (window.parent.launchApp(query)) return true;
+      }
+    } catch (_) {}
+    if (app.url) {
+      try { window.open(new URL('../' + app.url, location.href).href, '_blank'); return true; }
+      catch (_) {}
+    }
+    return false;
+  }
+
+  /* ---------- Вивід ---------- */
+  function out(text, cls) {
+    const line = document.createElement('div');
+    line.className = 'line' + (cls ? ' ' + cls : '');
+    line.textContent = text == null ? '' : String(text);
+    screen.appendChild(line);
+    screen.scrollTop = screen.scrollHeight;
+    return line;
+  }
+  function outHTML(html, cls) {
+    const line = document.createElement('div');
+    line.className = 'line' + (cls ? ' ' + cls : '');
+    line.innerHTML = html;
+    screen.appendChild(line);
+    screen.scrollTop = screen.scrollHeight;
+    return line;
+  }
+  function outRaw(container) {
+    screen.appendChild(container);
+    screen.scrollTop = screen.scrollHeight;
+  }
+  function blank() { out(''); }
+  function setStatus(t, busy) {
+    stStatus.textContent = t || 'Готово';
+    stStatus.className = busy ? 'busy' : '';
+  }
+
+  /* ---------- Шляхи ---------- */
+  // Нормалізація: усе до верхнього регістру для диска, зберігаємо регістр імен
+  function isAbsolute(p) { return /^[a-zA-Z]:[\\\/]/.test(p) || /^[\\\/]/.test(p); }
+
+  function normalize(p) {
+    if (p == null) return state.cwd;
+    p = String(p).trim();
+    if (!p) return state.cwd;
+    // прибираємо лапки навколо
+    if ((p[0] === '"' && p[p.length - 1] === '"') || (p[0] === "'" && p[p.length - 1] === "'")) {
+      p = p.slice(1, -1);
+    }
+    p = p.replace(/\//g, '\\');
+    let drive, rest;
+    if (/^[a-zA-Z]:/.test(p)) {
+      drive = p.slice(0, 2).toUpperCase();
+      rest = p.slice(2);
+      if (rest && rest[0] !== '\\') rest = '\\' + rest;
+    } else if (p[0] === '\\') {
+      drive = state.cwd.slice(0, 2);
+      rest = p;
+    } else {
+      drive = state.cwd.slice(0, 2);
+      rest = state.cwd.slice(2).replace(/\\+$/, '') + '\\' + p;
+    }
+    const segs = [];
+    for (const s of rest.split('\\')) {
+      if (!s || s === '.') continue;
+      if (s === '..') { segs.pop(); continue; }
+      segs.push(s);
+    }
+    let res = drive + '\\' + segs.join('\\');
+    // корінь диска — "C:" без слеша; каталоги — "C:\..."
+    if (segs.length === 0) res = drive;
+    return res;
+  }
+
+  // Внутрішній шлях VFS: "C:\Користувачі\..." або "C:" для кореня
+  function toVfsPath(p) {
+    const n = normalize(p);
+    // VFS очікує "C:\..." або "C:"; шлях "C:\" для кореня нормалізуємо до "C:\"
+    if (/^[a-zA-Z]:$/.test(n)) return n.slice(0, 2).toUpperCase() + '\\';
+    return n;
+  }
+
+  function cwdLeaf() {
+    const n = state.cwd;
+    if (/^[a-zA-Z]:$/.test(n)) return n.toUpperCase() + '\\';
+    return n;
+  }
+
+  function updatePrompt() {
+    const leaf = cwdLeaf();
+    promptEl.textContent = leaf + '>';
+    stCwd.textContent = leaf;
+    // авто-скрол промпта, якщо надто довгий
+    input.focus();
+  }
+
+  /* ---------- Імена з лапками ---------- */
+  // Розбір рядка на аргументи: лапки, пробіли
+  function parseArgs(str) {
+    const args = [];
+    let cur = '', q = null;
+    for (let i = 0; i < str.length; i++) {
+      const c = str[i];
+      if (q) {
+        if (c === q) { q = null; }
+        else cur += c;
+      } else if (c === '"' || c === "'") {
+        q = c;
+      } else if (/\s/.test(c)) {
+        if (cur) { args.push(cur); cur = ''; }
+      } else {
+        cur += c;
+      }
+    }
+    if (cur) args.push(cur);
+    return args;
+  }
+
+  /* ---------- Обробка помилок VFS ---------- */
+  function vfsErrText(e) {
+    const name = (e && e.name) || '';
+    switch (name) {
+      case 'NotFoundError': return 'Не вдалося знайти вказаний шлях.';
+      case 'TypeMismatchError': return 'Шлях не відповідає очікуваному типу.';
+      case 'InvalidModificationError': return 'Операцію неможливо виконати.';
+      case 'NoModificationAllowedError': return 'Системні елементи змінювати заборонено.';
+      default: return (e && e.message) || String(e);
+    }
+  }
+
+  /* ---------- Читання довгого імені (8.3-подібно) ---------- */
+  function shortName(name) {
+    const dot = name.lastIndexOf('.');
+    const base = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot + 1) : '';
+    const up = s => s.toUpperCase().replace(/\s+/g, '');
+    let b = up(base);
+    let e = up(ext);
+    if (b.length > 8) b = b.slice(0, 6) + '~1';
+    if (e.length > 3) e = e.slice(0, 3);
+    return e ? b + '.' + e : b;
+  }
+
+  /* =====================================================================
+     КОМАНДИ
+     ===================================================================== */
+
+  /* ---------------- DIR ---------------- */
+  async function cmdDir(args) {
+    let target = state.cwd;
+    let showAll = false, bare = false;
+    const positional = [];
+    for (const a of args) {
+      const u = a.toUpperCase();
+      if (u === '/A' || u === '/A:H' || u === '/A:-D') { showAll = true; continue; }
+      if (u === '/B') { bare = true; continue; }
+      if (u === '/W' || u === '/P' || u === '/S' || u === '/O') { continue; }
+      if (u.startsWith('/')) continue;
+      positional.push(a);
+    }
+    if (positional.length) target = normalize(positional.join(' '));
+
+    let entries;
+    try {
+      if (await VFS.exists(target)) {
+        const st = await VFS.stat(target);
+        if (st.kind === 'file') {
+          // DIR по файлу — показати лише цей файл
+          entries = [st];
+          return printDirHeader(target, entries, bare);
+        }
+        entries = await VFS.readdir(target);
+      } else {
+        // Можливо, це маска з * та ?
+        const parent = target.replace(/\\[^\\]*$/, '') || 'C:\\';
+        const mask = target.slice(parent.length + (target === parent ? 0 : 1));
+        const all = await VFS.readdir(parent);
+        const re = new RegExp('^' + mask.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i');
+        entries = all.filter(e => re.test(e.name));
+        return printDirHeader(parent, entries, bare);
+      }
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+      return;
+    }
+    return printDirHeader(target, entries, bare);
+  }
+
+  async function printDirHeader(dir, entries, bare) {
+    if (bare) {
+      for (const e of entries) out(e.name);
+      return;
+    }
+    const vol = dir.slice(0, 2).toUpperCase();
+    out(' Том у пристрої ' + vol + ' має мітку VFS');
+    out(' Серійний номер тому: ' + hashSerial(vol));
+    blank();
+    out(' Вміст папки ' + dir);
+    blank();
+
+    if (!entries.length) {
+      out(' Файлів не знайдено.');
+      return;
+    }
+
+    const dirs = entries.filter(e => e.kind === 'directory');
+    const files = entries.filter(e => e.kind === 'file');
+
+    // Заголовок стовпців
+    const hdr = await padRow('Дата змінення', 'Час', '<DIR>' + ' '.repeat(9), 'Ім\'я');
+    out(hdr, 'dir-hd');
+
+    let totalFiles = 0, totalBytes = 0, totalDirs = 0;
+
+    const sorted = [...dirs, ...files];
+    for (const e of sorted) {
+      const d = new Date(e.modified || 0);
+      const date = pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear();
+      const time = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+      const size = e.kind === 'directory' ? '<DIR>' + ' '.repeat(9) : String(e.size).padStart(13);
+      const name = e.name + (e.kind === 'directory' ? '' : '');
+      const line = `${date}  ${time}    ${size} ${name}`;
+      out(line, e.kind === 'directory' ? 'dir-dir' : 'dir-name');
+      if (e.kind === 'file') { totalFiles++; totalBytes += e.size; } else totalDirs++;
+    }
+    blank();
+    out(`               ${totalFiles} файлів  ${String(totalBytes).padStart(15)} байт`);
+    out(`               ${totalDirs} папок   ${String('').padStart(15)}`);
+    const free = 1024 * 1024 * 1024 - totalBytes; // віртуальний «вільний простір»
+    blank();
+    out(`               ${String(free).padStart(15)} байт вільно`);
+  }
+  const pad2 = n => String(n).padStart(2, '0');
+  function padRow(a, b, c, d) { return `${a}  ${b}  ${c} ${d}`; }
+  function hashSerial(vol) {
+    let h = 0;
+    for (const ch of vol) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const hex = h.toString(16).toUpperCase().padStart(8, '0');
+    return hex.slice(0, 4) + '-' + hex.slice(4);
+  }
+
+  /* ---------------- CD / CHDIR ---------------- */
+  async function cmdCd(args) {
+    let target;
+    if (!args.length) {
+      out(cwdLeaf());
+      return;
+    }
+    let joined = args.join(' ');
+    if (joined === '..') {
+      const cur = normalize(state.cwd);
+      if (/^[a-zA-Z]:$/.test(cur)) return; // вже в корені
+      const parent = cur.replace(/\\[^\\]*$/, '');
+      target = /^[a-zA-Z]:$/.test(parent) ? parent : (parent || cur.slice(0, 2));
+      target = parent || cur.slice(0, 2);
+    } else if (joined === '\\' || joined === '/') {
+      target = state.cwd.slice(0, 2) + '\\';
+    } else if (/^[a-zA-Z]:$/.test(joined)) {
+      target = joined.toUpperCase() + '\\';
+    } else {
+      target = normalize(joined);
+    }
+
+    try {
+      const st = await VFS.stat(toVfsPath(target));
+      if (st.kind !== 'directory') {
+        out('Не вдалося знайти вказаний шлях.', 'err');
+        return;
+      }
+      state.cwd = /^[a-zA-Z]:$/.test(target) ? target.toUpperCase() : target;
+      updatePrompt();
+    } catch (e) {
+      out('Не вдалося знайти вказаний шлях.', 'err');
+    }
+  }
+
+  /* ---------------- MD / MKDIR ---------------- */
+  async function cmdMd(args) {
+    if (!args.length) { out('Синтаксис: MD <шлях>', 'err'); return; }
+    let path = args.join(' ');
+    try {
+      await VFS.mkdir(toVfsPath(path), { recursive: true });
+      // без виводу — як cmd.exe
+    } catch (e) {
+      if (e && e.name === 'InvalidModificationError') out('Підкаталог або файл ' + path + ' уже існує.', 'err');
+      else out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- RD / RMDIR ---------------- */
+  async function cmdRd(args) {
+    let recursive = false;
+    const positional = [];
+    for (const a of args) {
+      const u = a.toUpperCase();
+      if (u === '/S') { recursive = true; continue; }
+      if (u === '/Q') continue;
+      if (a.startsWith('/')) continue;
+      positional.push(a);
+    }
+    if (!positional.length) { out('Синтаксис: RD [/S] <шлях>', 'err'); return; }
+    const path = positional.join(' ');
+    const vfs = toVfsPath(path);
+    try {
+      const st = await VFS.stat(vfs);
+      if (st.kind !== 'directory') { out('Це не папка.', 'err'); return; }
+      const kids = await VFS.readdir(vfs);
+      if (kids.length && !recursive) {
+        out('Папка не порожня.', 'err');
+        return;
+      }
+      if (recursive && kids.length) {
+        const ok = await confirmInline('Видалити папку "' + path + '" разом з усім вмістом? [Y/N] ');
+        if (!ok) return;
+      }
+      await VFS.remove(vfs, { recursive: true });
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- COPY ---------------- */
+  async function cmdCopy(args) {
+    let overwrite = false;
+    const positional = [];
+    for (const a of args) {
+      const u = a.toUpperCase();
+      if (u === '/Y') { overwrite = true; continue; }
+      if (u === '/-Y') { overwrite = false; continue; }
+      if (a.startsWith('/')) continue;
+      positional.push(a);
+    }
+    if (positional.length < 1) { out('Синтаксис: COPY <джерело> [призначення]', 'err'); return; }
+    if (positional.length === 1) {
+      // COPY <файл>  -> копія у поточному каталозі з іменем "Копія <файл>"
+      const src = normalize(positional[0]);
+      try {
+        const st = await VFS.stat(src);
+        if (st.kind === 'file') {
+          const dstDir = state.cwd;
+          await VFS.copy(src, toVfsPath(dstDir));
+          out('        1 файлів скопійовано.');
+          return;
+        }
+      } catch (e) { out(vfsErrText(e), 'err'); return; }
+      return;
+    }
+    let src = positional[0], dst = positional[1];
+    try {
+      const stSrc = await VFS.stat(normalize(src));
+      if (stSrc.kind === 'directory') {
+        out('Для копіювання папок використовуйте XCOPY.', 'err');
+        return;
+      }
+      let dstVfs;
+      const dstNorm = normalize(dst);
+      // Якщо призначення — наявна папка, копіюємо туди
+      let dstIsDir = false;
+      try {
+        const stDst = await VFS.stat(dstNorm);
+        dstIsDir = stDst.kind === 'directory';
+      } catch (_) {}
+      if (dstIsDir) {
+        dstVfs = dstNorm;
+      } else {
+        // призначення — шлях до файлу (може бути новий)
+        const parent = dstNorm.replace(/\\[^\\]*$/, '');
+        const name = dstNorm.slice(parent.length + 1);
+        // створити файл з потрібним ім'ям
+        const bytes = await VFS.readBytes(normalize(src));
+        const newPath = (parent || state.cwd.slice(0, 2) + '\\') + '\\' + name;
+        if (!overwrite && await VFS.exists(newPath)) {
+          const ok = await confirmInline('Перезаписати ' + name + '? [Y/N] ');
+          if (!ok) { out('        0 файлів скопійовано.'); return; }
+        }
+        await VFS.writeFile(newPath, bytes, { parents: false });
+        out('        1 файлів скопійовано.');
+        return;
+      }
+      // Копіювання у наявну папку
+      const bytes = await VFS.readBytes(normalize(src));
+      const srcName = normalize(src).replace(/^.*\\/, '');
+      const newPath = dstVfs.replace(/\\+$/, '') + '\\' + srcName;
+      if (!overwrite && await VFS.exists(newPath)) {
+        const ok = await confirmInline('Перезаписати ' + srcName + '? [Y/N] ');
+        if (!ok) { out('        0 файлів скопійовано.'); return; }
+      }
+      await VFS.writeFile(newPath, bytes);
+      out('        1 файлів скопійовано.');
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- XCOPY ---------------- */
+  async function cmdXcopy(args) {
+    let recursive = false, overwrite = false, quiet = false;
+    const positional = [];
+    for (const a of args) {
+      const u = a.toUpperCase();
+      if (u === '/E' || u === '/S') { recursive = true; continue; }
+      if (u === '/Y') { overwrite = true; continue; }
+      if (u === '/-Y') { overwrite = false; continue; }
+      if (u === '/Q') { quiet = true; continue; }
+      if (u === '/I') continue;
+      if (a.startsWith('/')) continue;
+      positional.push(a);
+    }
+    if (positional.length < 2) { out('Синтаксис: XCOPY <джерело> <призначення> [/E] [/Y]', 'err'); return; }
+    const src = normalize(positional[0]);
+    let dst = normalize(positional[1]);
+
+    try {
+      const st = await VFS.stat(src);
+
+      // Якщо джерело — файл, поводимось як COPY
+      if (st.kind === 'file') {
+        const bytes = await VFS.readBytes(src);
+        let dstPath = dst;
+        try { if ((await VFS.stat(dst)).kind === 'directory') dstPath = dst.replace(/\\+$/, '') + '\\' + src.replace(/^.*\\/, ''); }
+        catch (_) {}
+        await VFS.writeFile(dstPath, bytes, { parents: true });
+        if (!quiet) out('Скопійовано 1 файл.');
+        return;
+      }
+
+      if (!recursive) {
+        // XCOPY без /E копіює лише файли верхнього рівня
+      }
+
+      // Перевіримо, чи призначення існує та є папкою
+      let dstRoot = dst;
+      try {
+        const stDst = await VFS.stat(dst);
+        if (stDst.kind === 'file') { out('Призначенням має бути папка.', 'err'); return; }
+      } catch (_) {
+        // Створимо призначення
+        await VFS.mkdir(dst, { recursive: true });
+      }
+      dstRoot = dst.replace(/\\+$/, '');
+
+      let files = 0, dirs = 0;
+      const confirmed = { all: overwrite, skip: false };
+
+      async function walk(srcDir, rel) {
+        const entries = await VFS.readdir(srcDir);
+        // Спочатку папки
+        for (const e of entries) {
+          if (e.kind !== 'directory') continue;
+          const childRel = rel ? rel + '\\' + e.name : e.name;
+          const dstDir = dstRoot + '\\' + childRel;
+          if (!await VFS.exists(dstDir)) { await VFS.mkdir(dstDir, { recursive: true }); dirs++; }
+          if (recursive) await walk(e.path, childRel);
+        }
+        // Потім файли
+        for (const e of entries) {
+          if (e.kind !== 'file') continue;
+          const childRel = rel ? rel + '\\' + e.name : e.name;
+          const dstFile = dstRoot + '\\' + childRel;
+          if (await VFS.exists(dstFile) && !confirmed.all) {
+            if (confirmed.skip) continue;
+            const ans = await confirmInline('Перезаписати ' + dstFile + '? [Y/N/A] ');
+            if (ans === 'A') { confirmed.all = true; }
+            else if (ans !== 'Y') { confirmed.skip = true; continue; }
+          }
+          const bytes = await VFS.readBytes(e.path);
+          await VFS.writeFile(dstFile, bytes, { parents: true });
+          files++;
+        }
+      }
+      await walk(src, '');
+      if (!quiet) {
+        out('Скопійовано файлів: ' + files);
+        if (dirs) out('Створено папок:   ' + dirs);
+      }
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- DEL ---------------- */
+  async function cmdDel(args) {
+    let force = false, prompt = true;
+    const positional = [];
+    for (const a of args) {
+      const u = a.toUpperCase();
+      if (u === '/F') { force = true; continue; }
+      if (u === '/Q') { prompt = false; continue; }
+      if (u === '/P') { prompt = true; continue; }
+      if (a.startsWith('/')) continue;
+      positional.push(a);
+    }
+    if (!positional.length) { out('Синтаксис: DEL <файл> [...]', 'err'); return; }
+    let deleted = 0;
+    for (const raw of positional) {
+      const p = normalize(raw);
+      // Підтримка масок
+      if (/[*?]/.test(p)) {
+        const parent = p.replace(/\\[^\\]*$/, '');
+        const mask = p.slice(parent.length + (p === parent ? 0 : 1));
+        const re = new RegExp('^' + mask.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i');
+        let all;
+        try { all = await VFS.readdir(parent || 'C:\\'); }
+        catch (e) { out(vfsErrText(e), 'err'); continue; }
+        for (const e of all) {
+          if (e.kind !== 'file' || !re.test(e.name)) continue;
+          try { await VFS.remove(e.path); deleted++; }
+          catch (err) { out('Не вдалося видалити ' + e.path + ': ' + vfsErrText(err), 'err'); }
+        }
+        continue;
+      }
+      // Конкретний шлях
+      try {
+        const st = await VFS.stat(p);
+        if (st.kind === 'directory') {
+          out(p + ' — це папка. Використайте RD.', 'err');
+          continue;
+        }
+        if (prompt && !force) {
+          const ok = await confirmInline('Видалити ' + p + '? [Y/N] ');
+          if (!ok) continue;
+        }
+        await VFS.remove(p);
+        deleted++;
+      } catch (e) {
+        out('Не вдалося знайти ' + p, 'err');
+      }
+    }
+    // cmd.exe мовчить при успіху
+  }
+
+  /* ---------------- REN / RENAME ---------------- */
+  async function cmdRen(args) {
+    if (args.length < 2) { out('Синтаксис: REN <старе_ім\'я> <нове_ім\'я>', 'err'); return; }
+    // Дозволяємо обидва варіанти: REN a.txt b.txt  або  REN a.txt "шлях\b.txt"
+    const oldPath = normalize(args[0]);
+    let newName = args[1];
+    // Якщо в новому імені є шлях — забороняємо (як у cmd.exe), лишаємо тільки базове ім'я
+    if (/[\\\/]/.test(newName)) {
+      newName = newName.replace(/^.*[\\\/]/, '');
+    }
+    try {
+      if (!await VFS.exists(oldPath)) { out('Не вдалося знайти ' + oldPath, 'err'); return; }
+      await VFS.rename(oldPath, newName);
+    } catch (e) {
+      if (e && e.name === 'InvalidModificationError') out('Файл з таким ім\'ям уже існує.', 'err');
+      else out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- TYPE ---------------- */
+  async function cmdType(args) {
+    if (!args.length) { out('Синтаксис: TYPE <файл>', 'err'); return; }
+    const p = normalize(args.join(' '));
+    try {
+      const st = await VFS.stat(p);
+      if (st.kind !== 'file') { out('Це не файл.', 'err'); return; }
+      const text = await VFS.readText(p);
+      // Друкуємо з підсвіткою нічого — просто текст; табуляції зберігаємо
+      for (const line of text.split(/\r?\n/)) out(line);
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+    }
+  }
+
+  /* ---------------- Додаткові ---------------- */
+  function cmdCls() { screen.replaceChildren(); }
+
+  function cmdVer() {
+    out('');
+    out('Віртуальна файлова система VFS [Версія 1.0]');
+    out('');
+  }
+
+  function cmdEcho(args) {
+    out(args.join(' '));
+  }
+
+  async function cmdTree(args) {
+    const p = normalize(args[0] || state.cwd);
+    try {
+      const st = await VFS.stat(p);
+      if (st.kind !== 'directory') { out('Це не папка.', 'err'); return; }
+      out('Структура папок');
+      out('Серійний номер тому: ' + hashSerial(p.slice(0, 2)));
+      out(p);
+      let dirs = 0, files = 0;
+      async function walk(dir, prefix) {
+        const kids = (await VFS.readdir(dir)).sort((a, b) =>
+          a.kind !== b.kind ? (a.kind === 'directory' ? -1 : 1) : a.name.localeCompare(b.name, 'uk'));
+        for (let i = 0; i < kids.length; i++) {
+          const k = kids[i];
+          const last = i === kids.length - 1;
+          out(prefix + (last ? '└───' : '├───') + k.name);
+          if (k.kind === 'directory') {
+            dirs++;
+            await walk(k.path, prefix + (last ? '    ' : '│   '));
+          } else files++;
+        }
+      }
+      await walk(p, '');
+      blank();
+      out('Папок: ' + dirs);
+      out('Файлів: ' + files);
+    } catch (e) {
+      out(vfsErrText(e), 'err');
+    }
+  }
+
+  function cmdHelp() {
+    const cmds = [
+      ['DIR', 'Вивести список файлів і папок у поточному каталозі.'],
+      ['CD, CHDIR', 'Змінити поточний каталог.'],
+      ['MD, MKDIR', 'Створити нову папку.'],
+      ['RD, RMDIR', 'Видалити папку.'],
+      ['COPY', 'Скопіювати один або кілька файлів.'],
+      ['XCOPY', 'Скопіювати файли й цілі дерева папок.'],
+      ['DEL', 'Видалити один чи кілька файлів.'],
+      ['REN, RENAME', 'Перейменувати файл або папку.'],
+      ['TYPE', 'Показати вміст текстового файлу.'],
+      ['TREE', 'Показати структуру папок.'],
+      ['CLS', 'Очистити екран.'],
+      ['ECHO', 'Вивести текст на екран.'],
+      ['VER', 'Показати версію.'],
+      ['HELP', 'Показати цей список.'],
+      ['EXIT', 'Завершити роботу терміналу.']
+    ];
+    blank();
+    out('Доступні команди:');
+    blank();
+    const w = Math.max(...cmds.map(c => c[0].length));
+    for (const [c, d] of cmds) out('  ' + c.padEnd(w + 2) + d);
+    blank();
+    out('Підказки:');
+    out('  ↑ / ↓ — історія команд');
+    out('  Tab   — автодоповнення шляхів, команд і програм');
+    out('  Ctrl+L — очистити екран');
+    blank();
+    if (state.apps.length) {
+      out('Встановлені програми (.exe) — запуск за назвою або id:');
+      for (const a of state.apps) out('  ' + (a.name || a.id));
+    }
+    blank();
+  }
+
+  /* ---------------- Confirm у потоці терміналу ---------------- */
+  // Показує запит, читає відповідь із того ж рядка вводу
+  function confirmInline(question) {
+    return new Promise(resolve => {
+      const prevPrompt = promptEl.textContent;
+      promptEl.textContent = question;
+      input.value = '';
+      input.dataset.mode = 'confirm';
+      // Обробка у keydown — Enter читає значення
+      input.dataset.confirmResolve = '__'; // маркер
+      const handler = e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const v = input.value.trim().toUpperCase();
+          input.value = '';
+          promptEl.textContent = prevPrompt;
+          delete input.dataset.mode;
+          input.removeEventListener('keydown', handler, true);
+          resolve(v[0] === 'Y' || v[0] === 'A' ? v[0] : false);
+        }
+      };
+      input.addEventListener('keydown', handler, true);
+      input.focus();
+    });
+  }
+
+  /* =====================================================================
+     ДИСПЕТЧЕР
+     ===================================================================== */
+  const COMMANDS = {
+    dir: cmdDir,
+    cd: cmdCd, chdir: cmdCd,
+    md: cmdMd, mkdir: cmdMd,
+    rd: cmdRd, rmdir: cmdRd,
+    copy: cmdCopy,
+    xcopy: cmdXcopy,
+    del: cmdDel, erase: cmdDel,
+    ren: cmdRen, rename: cmdRen,
+    type: cmdType,
+    cls: cmdCls,
+    ver: cmdVer,
+    echo: cmdEcho,
+    tree: cmdTree,
+    help: async () => cmdHelp(),
+    '?': async () => cmdHelp(),
+    exit: async () => { out('Завершення роботи…'); setTimeout(() => { try { window.close(); } catch (_) {} }, 200); }
+  };
+
+  const COMMAND_NAMES = Object.keys(COMMANDS);
+
+  async function runCommand(line) {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    // Розбиваємо "ім'я аргументи"
+    const m = trimmed.match(/^(\S+)\s*([\s\S]*)$/);
+    const name = m[1].toLowerCase();
+    const rest = m[2] || '';
+    const args = parseArgs(rest);
+
+    const fn = COMMANDS[name];
+    if (!fn) {
+      // Спробувати запустити як зовнішню програму (.exe)
+      const prog = parseArgs(trimmed)[0];
+      if (prog && launchExternal(prog)) {
+        setStatus('Запуск: ' + prog, false);
+        return;
+      }
+      out(`"${m[1]}" не є внутрішньою або зовнішньою командою,`, 'err');
+      out('виконуваною програмою або командним файлом.', 'err');
+      return;
+    }
+    setStatus('Виконується: ' + name, true);
+    try {
+      await fn(args);
+    } catch (e) {
+      out('Помилка: ' + vfsErrText(e), 'err');
+    } finally {
+      setStatus('Готово', false);
+      updatePrompt();
+    }
+  }
+
+  /* =====================================================================
+     ВВІД / ІСТОРІЯ / ДОПОВНЕННЯ
+     ===================================================================== */
+
+  // Друкує введений рядок у «скрін» (як у справжньому cmd — команда лишається)
+  function echoInputLine(promptText, value) {
+    const line = document.createElement('div');
+    line.className = 'line in';
+    const p = document.createElement('span');
+    p.style.color = 'var(--prompt)';
+    p.textContent = promptText;
+    line.appendChild(p);
+    line.appendChild(document.createTextNode(value));
+    screen.appendChild(line);
+    screen.scrollTop = screen.scrollHeight;
+  }
+
+  async function submit() {
+    if (state.busy) return;
+    const value = input.value;
+    input.value = '';
+    echoInputLine(promptEl.textContent, value);
+    // У режимі confirm — рядок обробляється іншим обробником; тут не заважаємо
+    if (input.dataset.mode === 'confirm') return;
+    if (!value.trim()) { updatePrompt(); return; }
+
+    // Історія
+    if (!state.history.length || state.history[state.history.length - 1] !== value) {
+      state.history.push(value);
+      if (state.history.length > 200) state.history.shift();
+    }
+    state.histIdx = state.history.length;
+
+    state.busy = true;
+    try { await runCommand(value); }
+    finally { state.busy = false; }
+  }
+
+  input.addEventListener('keydown', async e => {
+    // Режим confirm обробляється окремим слухачем (capture)
+    if (input.dataset.mode === 'confirm') return;
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await submit();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!state.history.length) return;
+      if (state.histIdx === state.history.length) state.histDraft = input.value;
+      state.histIdx = Math.max(0, state.histIdx - 1);
+      input.value = state.history[state.histIdx];
+      caretEnd(input);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (state.histIdx >= state.history.length) return;
+      state.histIdx = Math.min(state.history.length, state.histIdx + 1);
+      input.value = state.histIdx === state.history.length ? state.histDraft : state.history[state.histIdx];
+      caretEnd(input);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      await autocomplete();
+    } else if (e.key === 'Escape') {
+      hideComplete();
+      input.value = '';
+    } else if (e.key === 'l' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      cmdCls();
+    }
+  });
+
+  function caretEnd(el) {
+    requestAnimationFrame(() => {
+      const n = el.value.length;
+      try { el.setSelectionRange(n, n); } catch (_) {}
+    });
+  }
+
+  /* ---------------- Автодоповнення ---------------- */
+  let completeItems = [], completeIdx = 0, completePrefix = '';
+
+  function hideComplete() {
+    completeBox.replaceChildren();
+    completeBox.style.display = 'none';
+    completeItems = [];
+  }
+  function showComplete(items) {
+    completeBox.replaceChildren();
+    completeItems = items;
+    completeIdx = 0;
+    if (!items.length) return hideComplete();
+    items.forEach((it, i) => {
+      const d = document.createElement('div');
+      d.className = 'it' + (i === 0 ? ' sel' : '');
+      d.textContent = it.value;
+      if (it.kind) {
+        const k = document.createElement('span');
+        k.className = 'k';
+        k.textContent = it.kind;
+        d.appendChild(k);
+      }
+      d.onmousedown = ev => { ev.preventDefault(); applyComplete(it); };
+      completeBox.appendChild(d);
+    });
+    completeBox.style.display = '';
+  }
+  function applyComplete(it) {
+    input.value = it.value + (it.isDir ? '\\' : '');
+    caretEnd(input);
+    hideComplete();
+  }
+
+  async function autocomplete() {
+    const value = input.value;
+    const parts = value.split(/\s+/);
+    const first = (parts[0] || '').toLowerCase();
+
+    // Якщо це перше слово — доповнюємо команду або програму
+    if (parts.length <= 1 && !/\s$/.test(value)) {
+      const cmdCands = COMMAND_NAMES.filter(c => c.startsWith(first) && c !== first);
+      const appCands = state.apps
+        .map(a => String(a.name || a.id))
+        .filter(n => n.toLowerCase().startsWith(first) && n.toLowerCase() !== first);
+      const cands = [...new Set([...cmdCands, ...appCands])];
+      if (cands.length === 1) {
+        input.value = cands[0] + ' ';
+        caretEnd(input);
+        return;
+      }
+      if (cands.length > 1) {
+        showComplete(cands.map(c => ({ value: c, kind: COMMAND_NAMES.includes(c) ? 'команда' : 'програма' })));
+        return;
+      }
+      // Якщо перше слово — не команда, спробуємо як шлях
+    }
+
+    // Доповнення шляху: беремо останній токен
+    const isFirstToken = parts.length === 1;
+    const token = (isFirstToken ? parts[0] : parts[parts.length - 1]) || '';
+    const { dirPart, namePart } = splitToken(token);
+    const dirPath = dirPart ? normalize(dirPart) : normalize(state.cwd);
+    let entries;
+    try { entries = await VFS.readdir(toVfsPath(dirPath)); }
+    catch (_) { hideComplete(); return; }
+
+    const re = new RegExp('^' + namePart.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '', 'i');
+    const matches = entries.filter(e => re.test(e.name))
+      .sort((a, b) => a.kind !== b.kind ? (a.kind === 'directory' ? -1 : 1) : a.name.localeCompare(b.name, 'uk'));
+
+    if (!matches.length) return hideComplete();
+    if (matches.length === 1) {
+      const e = matches[0];
+      const prefix = isFirstToken ? '' : parts.slice(0, -1).join(' ') + ' ';
+      const base = dirPart ? dirPart + '\\' : '';
+      input.value = prefix + base + e.name + (e.kind === 'directory' ? '\\' : '');
+      caretEnd(input);
+      return hideComplete();
+    }
+    // Кілька матчів — показати список
+    const prefix = isFirstToken ? '' : parts.slice(0, -1).join(' ') + ' ';
+    const base = dirPart ? dirPart + '\\' : '';
+    showComplete(matches.map(e => ({
+      value: prefix + base + e.name,
+      kind: e.kind === 'directory' ? 'папка' : 'файл',
+      isDir: e.kind === 'directory'
+    })));
+  }
+
+  function splitToken(token) {
+    if (!token) return { dirPart: '', namePart: '' };
+    const i = Math.max(token.lastIndexOf('\\'), token.lastIndexOf('/'));
+    if (i < 0) return { dirPart: '', namePart: token };
+    return { dirPart: token.slice(0, i) || token.slice(0, 1), namePart: token.slice(i + 1) };
+  }
+
+  // Навігація у списку доповнення
+  input.addEventListener('keydown', e => {
+    if (!completeItems.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      completeIdx = (completeIdx + 1) % completeItems.length;
+      [...completeBox.children].forEach((el, i) => el.classList.toggle('sel', i === completeIdx));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      completeIdx = (completeIdx - 1 + completeItems.length) % completeItems.length;
+      [...completeBox.children].forEach((el, i) => el.classList.toggle('sel', i === completeIdx));
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      applyComplete(completeItems[completeIdx]);
+    }
+  });
+
+  document.addEventListener('mousedown', e => {
+    if (!completeBox.contains(e.target) && e.target !== input) hideComplete();
+  });
+
+  // Клік по «скріну» повертає фокус у ввід
+  screen.addEventListener('mousedown', e => {
+    if (window.getSelection().toString()) return;
+    setTimeout(() => input.focus(), 0);
+  });
+
+  /* =====================================================================
+     СТАРТ
+     ===================================================================== */
+  /* -------- Рядок меню -------- */
+  document.querySelectorAll('[data-menu]').forEach(item => {
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+  });
+
+  function insertAtCaret(text) {
+    const s = input.selectionStart, e = input.selectionEnd;
+    input.setRangeText(text, s, e, 'end');
+    caretEnd(input);
+  }
+  function screenText() {
+    return [...screen.querySelectorAll('.line')].map(l => l.textContent).join('\r\n');
+  }
+
+  $('miClear').onclick = () => { cmdCls(); input.focus(); };
+  $('miExit').onclick = () => { out('Завершення роботи…'); setTimeout(() => { try { window.close(); } catch (_) {} }, 200); };
+  $('miHelp').onclick = () => { cmdHelp(); input.focus(); };
+  $('miAbout').onclick = () => {
+    blank();
+    out('Командний рядок — термінал для віртуальної файлової системи VFS.');
+    out('Підтримує команди роботи з файлами та запуск програм.');
+    blank();
+    input.focus();
+  };
+  $('miCopy').onclick = async () => {
+    const sel = window.getSelection().toString();
+    try { await navigator.clipboard.writeText(sel || screenText()); setStatus('Скопійовано', false); }
+    catch (_) { setStatus('Не вдалося скопіювати', false); }
+    input.focus();
+  };
+  $('miPaste').onclick = async () => {
+    try { insertAtCaret(await navigator.clipboard.readText()); }
+    catch (_) {}
+    input.focus();
+  };
+
+  (async function boot() {
+    if (!window.VFS || !window.VFS.__loaded) {
+      out('Помилка: vfs.js не завантажено (перевірте /vfs.js).', 'err');
+      input.disabled = true;
+      return;
+    }
+    await VFS.ready();
+    state.cwd = 'C:\\';
+    state.apps = await loadAppsList();
+    updatePrompt();
+    out('Віртуальна файлова система VFS [Версія 1.0]');
+    blank();
+    out('Введіть HELP для переліку команд.');
+    blank();
+  })();
+})();
+</script>
+</body>
+</html>

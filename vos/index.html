@@ -1,0 +1,3713 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>ВіртуОС</title>
+<script>
+  // Якщо користувач не увійшов — показуємо вікно запуску (екран входу)
+  try { if (sessionStorage.getItem('virtuos_user') !== 'User') location.replace('boot.html'); } catch (_) {}
+</script>
+<script src="../vfs.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: "Segoe UI", Tahoma, sans-serif; }
+
+  :root { --icon-w: 80px; --icon-glyph: 38px; --icon-font: 12px; }
+
+  #desktop {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1e5799 0%, #207cca 50%, #2989d8 100%);
+    height: calc(100% - 40px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Іконки */
+  .icon {
+    position: absolute;
+    width: var(--icon-w, 80px);
+    padding: 6px 4px;
+    text-align: center;
+    color: #fff;
+    font-size: var(--icon-font, 12px);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    border-radius: 3px;
+    cursor: default;
+    word-break: break-word;
+  }
+  .icon .glyph {
+    display: inline-block;
+    font-size: var(--icon-glyph, 38px);
+    line-height: 1;
+    margin-bottom: 4px;
+    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+  }
+  .glyph { position: relative; }
+  .sc-arrow {
+    position: absolute;
+    right: -0.14em;
+    bottom: -0.1em;
+    font-size: 0.42em;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 2px #000, 1px 1px 1px rgba(0,0,0,0.9);
+    pointer-events: none;
+  }
+  .icon .label {
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+  .icon.selected { background: rgba(0,120,215,0.5); outline: 1px dotted rgba(255,255,255,0.7); }
+  .icon.selected .label { background: #0078d7; }
+
+  /* Контекстне меню */
+  .ctx-menu {
+    position: fixed;
+    background: #f0f0f0;
+    border: 1px solid #a0a0a0;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.35);
+    padding: 3px 0;
+    min-width: 200px;
+    z-index: 10000;
+    font-size: 13px;
+    color: #000;
+    display: none;
+  }
+  .ctx-menu.show { display: block; }
+  .ctx-menu .item {
+    padding: 5px 28px 5px 28px;
+    cursor: default;
+    position: relative;
+    white-space: nowrap;
+  }
+  .ctx-menu .item:hover { background: #3399ff; color: #fff; }
+  .ctx-menu .item.disabled { color: #999; pointer-events: none; }
+  .ctx-menu .sep { height: 1px; background: #d0d0d0; margin: 3px 4px; }
+  .ctx-menu .item .ico { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+
+  /* Вікно (модалка) */
+  .win-modal {
+    position: fixed; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.25);
+    z-index: 20000;
+  }
+  .win-modal.show { display: flex; }
+  .win {
+    background: #f0f0f0;
+    border: 1px solid #0078d7;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    min-width: 420px;
+    max-width: 90vw;
+    font-size: 13px;
+  }
+  .win .title-bar {
+    background: linear-gradient(180deg,#f0f0f0,#e0e0e0);
+    height: 30px;
+    display: flex; align-items: center;
+    padding: 0 6px;
+    border-bottom: 1px solid #d0d0d0;
+  }
+  .win .title-bar .title { flex: 1; font-weight: 600; padding-left: 6px; }
+  .win .title-bar .close {
+    width: 26px; height: 22px; border: 1px solid transparent; background: transparent;
+    font-size: 14px; cursor: default;
+  }
+  .win .title-bar .close:hover { background: #e81123; color: #fff; }
+  .win .body { padding: 14px; }
+  .win .body label { display: block; margin-bottom: 6px; }
+  .win .body input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #a0a0a0;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+  }
+  .win .body input[type="text"]:focus { border-color: #0078d7; }
+  .win .footer {
+    padding: 10px 14px;
+    background: #f0f0f0;
+    border-top: 1px solid #e0e0e0;
+    text-align: right;
+  }
+  .win .footer button {
+    padding: 5px 18px;
+    margin-left: 6px;
+    font-size: 13px;
+    border: 1px solid #adadad;
+    background: #e1e1e1;
+    cursor: default;
+    font-family: inherit;
+  }
+  .win .footer button:hover { background: #e5f1fb; border-color: #0078d7; }
+  .win .footer button.primary { border-color: #0078d7; background: #0078d7; color: #fff; }
+  .win .footer button.primary:hover { background: #106ebe; }
+
+  /* ===== Перетягування значків ===== */
+  .icon { touch-action: none; }
+  .icon.dragging { opacity: 0.35; }
+  .icon.drop-target { background: rgba(255,255,255,0.3); outline: 1px solid rgba(255,255,255,0.85); }
+  .icon.drag-ghost {
+    position: fixed !important;
+    pointer-events: none;
+    z-index: 30000;
+    opacity: 0.85;
+    margin: 0;
+  }
+
+  /* ===== Вікно папки ===== */
+  .fwin {
+    position: fixed;
+    width: 480px; height: 340px;
+    min-width: 260px; min-height: 180px;
+    max-width: 95vw; max-height: 90vh;
+    background: #fff;
+    border: 1px solid #0078d7;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    resize: both;
+    font-size: 13px;
+    color: #000;
+  }
+  .fwin-title {
+    flex: none;
+    height: 30px;
+    display: flex; align-items: center;
+    padding: 0 6px;
+    background: linear-gradient(180deg,#f0f0f0,#e0e0e0);
+    border-bottom: 1px solid #d0d0d0;
+    cursor: default;
+    touch-action: none;
+  }
+  .fwin-title-text {
+    flex: 1;
+    padding-left: 6px;
+    font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fwin-title .close {
+    width: 26px; height: 22px;
+    border: 1px solid transparent; background: transparent;
+    font-size: 14px; cursor: default;
+  }
+  .fwin-title .close:hover { background: #e81123; color: #fff; }
+  .fwin-path {
+    flex: none;
+    padding: 4px 10px;
+    background: #f7f7f7;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 12px; color: #555;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fwin-body {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+    display: flex; flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 4px;
+  }
+  .fwin.drop-target .fwin-body { box-shadow: inset 0 0 0 3px #0078d7; }
+  .fwin-empty { width: 100%; padding: 16px; text-align: center; color: #888; }
+
+  .fwin .icon { position: relative; flex: none; color: #000; text-shadow: none; }
+  .fwin .icon .glyph { filter: none; }
+  .fwin .icon.selected { background: rgba(0,120,215,0.2); outline: 1px dotted #0078d7; }
+  .fwin .icon.selected .label { background: #0078d7; color: #fff; }
+  .fwin .icon.drop-target { background: rgba(0,120,215,0.25); outline: 1px solid #0078d7; }
+
+  /* ===== Нижня панель (таскбар) ===== */
+  #taskbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: 40px;
+    display: flex; align-items: stretch;
+    background: linear-gradient(180deg,#2d2d2d,#1a1a1a);
+    border-top: 1px solid #484848;
+    color: #fff; font-size: 13px;
+    z-index: 15000;
+  }
+  #startBtn {
+    flex: none; display: flex; align-items: center; gap: 6px;
+    padding: 0 16px; border: none; background: transparent; color: #fff;
+    font: inherit; font-weight: 600; cursor: default;
+  }
+  #startBtn:hover, #startBtn.open { background: #0078d7; }
+  #tasks {
+    flex: 1; min-width: 0;
+    display: flex; align-items: stretch; gap: 2px;
+    padding: 3px 4px; overflow: hidden;
+    border-left: 1px solid #484848;
+  }
+  .task-btn {
+    flex: 0 1 180px; min-width: 40px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 8px; overflow: hidden;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid transparent; border-bottom: 2px solid #777;
+    color: #fff; font: inherit; cursor: default;
+  }
+  .task-btn .t-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .task-btn:hover { background: rgba(255,255,255,0.18); }
+  .task-btn.active { background: rgba(255,255,255,0.25); border-bottom-color: #3aa0ff; }
+  .task-btn.minimized { opacity: 0.65; }
+  #tray {
+    flex: none; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 14px; text-align: right; line-height: 1.2; font-size: 12px;
+    border-left: 1px solid #484848;
+  }
+  #tray:hover { background: rgba(255,255,255,0.1); }
+
+  /* ===== Меню «Пуск» у стилі Windows 7 ===== */
+  #startMenu {
+    position: fixed; left: 0; bottom: 40px;
+    display: none; z-index: 15001;
+    font-size: 13px; color: #1e1e1e;
+  }
+  #startMenu.show { display: block; }
+
+  .sm7 {
+    position: relative;
+    display: flex;
+    border: 1px solid #6d6d6d;
+    border-radius: 6px 6px 0 0;
+    box-shadow: 3px -3px 14px rgba(0,0,0,0.6);
+  }
+
+  /* Квадрат користувача — на межі правої частини */
+  .sm7-user {
+    position: absolute;
+    top: 8px; right: 10px;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; line-height: 1;
+    background: linear-gradient(135deg, #7db3e0, #3f7bb5);
+    border: 2px solid #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.55);
+    z-index: 1;
+  }
+
+  /* Ліва частина — швидкий запуск + встановлені програми */
+  .sm7-left {
+    width: 250px;
+    padding: 6px;
+    background: #f0f0f0;
+    display: flex; flex-direction: column;
+    gap: 1px;
+  }
+
+  /* Права частина */
+  .sm7-right {
+    width: 200px;
+    padding: 6px;
+    padding-top: 62px;             /* місце під квадрат користувача */
+    background: #1f1f1f;
+    color: #eaeaea;
+    display: flex; flex-direction: column;
+    gap: 1px;
+  }
+
+  #startMenu .sm-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; cursor: default;
+    border: 1px solid transparent;
+    border-radius: 3px;
+  }
+  #startMenu .sm-item .ico { font-size: 18px; width: 22px; text-align: center; flex: 0 0 auto; }
+  #startMenu .sm-item .lbl { min-width: 0; line-height: 1.25; overflow-wrap: break-word; }
+
+  .sm7-left .sm-item { color: #1e1e1e; }
+  .sm7-left .sm-item:hover { background: #cde3f7; border-color: #7eb4ea; }
+
+  .sm7-right .sm-item { color: #eaeaea; }
+  .sm7-right .sm-item:hover { background: #2f6db0; border-color: #3f8fd6; }
+
+  .sm7-sep { height: 1px; margin: 6px 8px; background: #cfcfcf; }
+  .sm7-right .sm7-sep { background: #3a3a3a; }
+
+  /* ===== Вікна застосунків ===== */
+  .awin {
+    position: fixed;
+    display: flex; flex-direction: column;
+    min-width: 220px; min-height: 140px;
+    background: #fff;
+    border: 1px solid #8a8a8a;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    color: #000; font-size: 13px;
+  }
+  .awin.active { border-color: #0078d7; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  .awin.minimized { display: none; }
+  .awin.maximized {
+    left: 0 !important; top: 0 !important;
+    width: 100% !important; height: calc(100% - 40px) !important;
+    border-width: 0;
+  }
+  .awin-title {
+    flex: none; height: 30px;
+    display: flex; align-items: center; padding-left: 8px;
+    background: #e6e6e6; color: #555;
+    border-bottom: 1px solid #d0d0d0;
+    touch-action: none; cursor: default;
+  }
+  .awin.active .awin-title { background: #0078d7; color: #fff; border-bottom-color: #0078d7; }
+  .awin-title .ico { margin-right: 6px; }
+  .awin-title-text { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .awin-btns { display: flex; height: 100%; }
+  .awin-btns button {
+    width: 44px; height: 100%; border: none; background: transparent;
+    color: inherit; font-size: 13px; cursor: default;
+  }
+  .awin-btns button:hover { background: rgba(0,0,0,0.12); }
+  .awin.active .awin-btns button:hover { background: rgba(255,255,255,0.22); }
+  .awin-btns button.close:hover { background: #e81123; color: #fff; }
+  .awin-body { flex: 1; min-height: 0; position: relative; background: #fff; }
+  .awin-body iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+  /* Щит над iframe неактивного вікна: перший клік лише активує вікно */
+  .awin-shield { position: absolute; inset: 0; z-index: 2; }
+  .awin.active .awin-shield { display: none; }
+
+  .awin-rs { position: absolute; z-index: 5; touch-action: none; }
+  .awin.maximized .awin-rs { display: none; }
+  .rs-n  { top: -3px;    left: 10px; right: 10px; height: 6px; cursor: n-resize; }
+  .rs-s  { bottom: -3px; left: 10px; right: 10px; height: 6px; cursor: s-resize; }
+  .rs-w  { left: -3px;   top: 10px; bottom: 10px; width: 6px; cursor: w-resize; }
+  .rs-e  { right: -3px;  top: 10px; bottom: 10px; width: 6px; cursor: e-resize; }
+  .rs-nw { top: -3px;    left: -3px;  width: 12px; height: 12px; cursor: nw-resize; }
+  .rs-ne { top: -3px;    right: -3px; width: 12px; height: 12px; cursor: ne-resize; }
+  .rs-sw { bottom: -3px; left: -3px;  width: 12px; height: 12px; cursor: sw-resize; }
+  .rs-se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: se-resize; }
+
+  /* ===== Налаштування тла ===== */
+  .bg-tabs { display: flex; gap: 2px; margin-bottom: 12px; border-bottom: 1px solid #c8c8c8; }
+  .bg-tab {
+    padding: 6px 16px; border: 1px solid transparent; border-bottom: none;
+    background: transparent; font: inherit; cursor: default;
+  }
+  .bg-tab.active { background: #fff; border-color: #c8c8c8; margin-bottom: -1px; padding-bottom: 7px; }
+  .bg-pane { display: none; }
+  .bg-pane.show { display: block; }
+  .bg-color-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .bg-color-row input[type="color"] { width: 56px; height: 34px; padding: 0; border: 1px solid #a0a0a0; background: #fff; }
+  .bg-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bg-swatch { width: 32px; height: 32px; border: 2px solid #fff; outline: 1px solid #a0a0a0; cursor: default; padding: 0; }
+  .bg-swatch.selected { outline: 2px solid #0078d7; }
+  .bg-thumbs {
+    display: grid; grid-template-columns: repeat(auto-fill, 120px); gap: 10px;
+    max-height: 260px; overflow: auto; padding: 4px; background: #fff; border: 1px solid #c8c8c8;
+    min-height: 60px;
+  }
+  .bg-thumb { width: 120px; height: 76px; border: 2px solid transparent; cursor: default; background: #ddd; overflow: hidden; }
+  .bg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .bg-thumb:hover { border-color: #99c9ef; }
+  .bg-thumb.selected { border-color: #0078d7; }
+  .bg-note { padding: 12px; color: #777; grid-column: 1 / -1; }
+  .bg-mode-row { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .bg-mode-row select { padding: 4px 6px; font: inherit; }
+
+  /* ===== Панель керування (Налаштування) ===== */
+  .cp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cp-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px; background: #fff; border: 1px solid #d0d0d0; cursor: default;
+  }
+  .cp-item:hover { background: #eaf3fc; border-color: #0078d7; }
+  .cp-item .ico { font-size: 28px; line-height: 1; }
+  .cp-item .txt { display: flex; flex-direction: column; gap: 2px; }
+  .cp-item .t { font-weight: 600; }
+  .cp-item .d { color: #666; font-size: 11.5px; }
+  .cp-view { display: none; }
+  .cp-view.show { display: block; }
+  .cp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .cp-back {
+    padding: 4px 12px; border: 1px solid #adadad; background: #e1e1e1;
+    cursor: default; font: inherit; border-radius: 0;
+  }
+  .cp-back:hover { background: #e5f1fb; border-color: #0078d7; }
+  .cp-field { margin-bottom: 16px; }
+  .cp-sub { font-weight: 600; margin-bottom: 6px; }
+  .win .body label.cp-check { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .cp-row { display: flex; align-items: center; gap: 10px; }
+  .cp-row input[type="range"] { flex: 1; }
+  .cp-val { width: 60px; text-align: right; color: #555; font-variant-numeric: tabular-nums; }
+  .cp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cp-actions button {
+    padding: 5px 14px; border: 1px solid #adadad; background: #e1e1e1;
+    cursor: default; font: inherit; border-radius: 0;
+  }
+  .cp-actions button:hover { background: #e5f1fb; border-color: #0078d7; }
+  .cp-actions button.p { background: #0078d7; border-color: #0078d7; color: #fff; }
+  .cp-actions button.p:hover { background: #006cc1; border-color: #006cc1; }
+  .cp-about dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; }
+  .cp-about dt { color: #555; }
+  .cp-about dd { margin: 0; }
+
+  /* ===== Провідник ===== */
+  .ex { position: absolute; inset: 0; display: flex; flex-direction: column; background: #fff; color: #000; font-size: 12px; outline: none; }
+  .ex button, .ex input { font: inherit; }
+  .ex-navbar { flex: none; display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-bottom: 1px solid #e5e5e5; }
+  .ex-nbtn { width: 28px; height: 26px; border: 1px solid transparent; background: transparent; font-size: 15px; cursor: default; color: #333; }
+  .ex-nbtn:hover { background: #e5f3ff; border-color: #cce8ff; }
+  .ex .disabled { opacity: 0.35; pointer-events: none; }
+  .ex-addr { flex: 1; min-width: 0; position: relative; display: flex; align-items: center; height: 26px; border: 1px solid #d9d9d9; background: #fff; }
+  .ex-addr:hover { border-color: #0078d7; }
+  .ex-addr-ico { padding: 0 6px; flex: none; }
+  .ex-crumbs { flex: 1; min-width: 0; display: flex; align-items: center; overflow: hidden; white-space: nowrap; height: 100%; cursor: text; }
+  .ex-crumb { padding: 2px 5px; cursor: default; }
+  .ex-crumb:hover { background: #e5f3ff; }
+  .ex-crumb.nolink:hover { background: transparent; }
+  .ex-csep { color: #777; font-size: 11px; }
+  .ex-addr-in { display: none; position: absolute; left: 28px; right: 26px; top: 0; bottom: 0; border: none; outline: none; padding: 0 6px; background: #fff; }
+  .ex-addr.editing .ex-addr-in { display: block; }
+  .ex-refresh { flex: none; width: 26px; height: 100%; border: none; background: transparent; cursor: default; z-index: 1; }
+  .ex-refresh:hover { background: #e5f3ff; }
+  .ex-search { width: 190px; height: 26px; border: 1px solid #d9d9d9; padding: 0 8px; outline: none; }
+  .ex-search:focus { border-color: #0078d7; }
+  .ex-cmd { flex: none; display: flex; align-items: center; flex-wrap: wrap; padding: 3px 6px; background: #f5f6f7; border-bottom: 1px solid #e5e5e5; }
+  .ex-cbtn { padding: 4px 9px; border: 1px solid transparent; background: transparent; cursor: default; white-space: nowrap; }
+  .ex-cbtn:hover { background: #e5f3ff; border-color: #cce8ff; }
+  .ex-csep2 { width: 1px; height: 20px; background: #d5d5d5; margin: 0 5px; }
+  .ex-main { flex: 1; min-height: 0; display: flex; }
+  .ex-nav { flex: none; width: 200px; overflow: auto; padding: 4px 0; border-right: 1px solid #e5e5e5; }
+  .ex-split { flex: none; width: 5px; margin: 0 -2px; cursor: col-resize; z-index: 3; touch-action: none; }
+  .ex-nh { padding: 8px 10px 2px; color: #6d6d6d; font-size: 11px; }
+  .ex-tn { display: flex; align-items: center; height: 22px; white-space: nowrap; padding-right: 6px; cursor: default; }
+  .ex-tn:hover { background: #e5f3ff; }
+  .ex-tn.selected { background: #cce8ff; }
+  .ex-tn.drop-target { background: #99d1ff; outline: 1px solid #0078d7; }
+  .ex-tn .arr { width: 16px; flex: none; text-align: center; font-size: 9px; color: #777; }
+  .ex-tn .arr:hover { color: #000; }
+  .ex-tn .glyph { margin: 0 5px 0 2px; flex: none; }
+  .ex-tn .label { overflow: hidden; text-overflow: ellipsis; }
+  .ex-content { flex: 1; min-width: 0; position: relative; overflow: auto; background: #fff; }
+  .ex-content.drop-target { box-shadow: inset 0 0 0 2px #0078d7; }
+  .ex-hrow { display: grid; grid-template-columns: var(--cols); position: sticky; top: 0; z-index: 2; min-width: 560px; background: #fff; border-bottom: 1px solid #e5e5e5; }
+  .ex-hcell { padding: 4px 8px; border-right: 1px solid #e5e5e5; color: #4c607a; white-space: nowrap; cursor: default; }
+  .ex-hcell:hover { background: #d9ebf9; }
+  .ex-hcell.right { text-align: right; }
+  .ex-item { border: 1px solid transparent; cursor: default; touch-action: none; }
+  .ex-item:hover { background: #e5f3ff; }
+  .ex-item.selected { background: #cce8ff; border-color: #99d1ff; }
+  .ex-item.cut { opacity: 0.5; }
+  .ex-item.drop-target { background: #99d1ff; outline: 1px solid #0078d7; }
+  .ex-row { display: grid; grid-template-columns: var(--cols); align-items: center; height: 22px; min-width: 560px; }
+  .ex-row > div { padding: 0 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .ex-row .c-name { display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+  .ex-row .c-name .label { overflow: hidden; text-overflow: ellipsis; }
+  .ex-row .c-size { text-align: right; }
+  .ex-content.m-large, .ex-grp { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px; padding: 6px; }
+  .ex-big { width: 92px; padding: 6px 3px; text-align: center; }
+  .ex-big .glyph { display: inline-block; font-size: 42px; line-height: 1.15; }
+  .ex-big .label { display: block; word-break: break-word; max-height: 3.4em; overflow: hidden; }
+  .ex-content.m-list { display: flex; flex-flow: column wrap; align-content: flex-start; overflow-y: hidden; padding: 4px; }
+  .ex-sm { display: flex; align-items: center; gap: 6px; width: 210px; height: 22px; padding: 0 6px; white-space: nowrap; overflow: hidden; }
+  .ex-sm .label { overflow: hidden; text-overflow: ellipsis; }
+  .ex-gh { margin: 8px 8px 2px; padding-bottom: 3px; color: #1e3287; font-size: 13px; border-bottom: 1px solid #e5e5e5; }
+  .ex-grp { padding: 4px 6px; }
+  .ex-drive { display: flex; gap: 10px; width: 270px; padding: 8px; }
+  .ex-drive .glyph { font-size: 44px; line-height: 1.1; }
+  .ex-drive .info { flex: 1; min-width: 0; }
+  .ex-drive .bar { height: 12px; margin: 4px 0; background: #e6e6e6; border: 1px solid #bcbcbc; }
+  .ex-drive .bar i { display: block; height: 100%; background: #26a0da; }
+  .ex-drive .cap { color: #6d6d6d; font-size: 11px; }
+  .ex-empty { width: 100%; padding: 30px; text-align: center; color: #777; }
+  .ex-rename { min-width: 80px; width: 100%; padding: 0 2px; border: 1px solid #0078d7; outline: none; user-select: text; }
+  .ex-rename.bad { border-color: #e81123; background: #fff0f0; }
+  .ex-big .ex-rename { text-align: center; }
+  .ex-tip { position: fixed; z-index: 14500; padding: 4px 8px; background: #fffbe6; border: 1px solid #c8b45a; font-size: 12px; max-width: 320px; color: #000; }
+  .ex-band { position: fixed; z-index: 14500; pointer-events: none; border: 1px solid #0078d7; background: rgba(0,120,215,0.2); }
+  .ex-status { flex: none; display: flex; align-items: center; gap: 18px; height: 24px; padding: 0 8px; border-top: 1px solid #e5e5e5; color: #333; }
+  .ex-views { margin-left: auto; display: flex; gap: 2px; }
+  .ex-vbtn { width: 24px; height: 20px; border: 1px solid transparent; background: transparent; cursor: default; }
+  .ex-vbtn:hover { background: #e5f3ff; }
+  .ex-vbtn.active { background: #cce8ff; border-color: #99d1ff; }
+  .ex-item.drag-ghost { position: fixed !important; }
+
+  /* Властивості */
+  .props-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 15px; }
+  .props-head .g { font-size: 32px; }
+  .props-row { display: flex; gap: 8px; padding: 4px 0; border-top: 1px solid #e0e0e0; }
+  .props-row span:first-child { width: 110px; flex: none; color: #555; }
+  .props-row span:last-child { word-break: break-word; }
+</style>
+</head>
+<body>
+
+<div id="desktop"></div>
+
+<!-- Контекстне меню -->
+<div id="ctxMenu" class="ctx-menu"></div>
+
+<!-- Модальне вікно вводу імені -->
+<div id="inputModal" class="win-modal">
+  <div class="win" style="width:420px">
+    <div class="title-bar">
+      <div class="title" id="inputTitle">Створити</div>
+      <button class="close" onclick="closeInput()">✕</button>
+    </div>
+    <div class="body">
+      <label id="inputLabel">Ім'я:</label>
+      <input type="text" id="inputField" autocomplete="off">
+    </div>
+    <div class="footer">
+      <button onclick="closeInput()">Скасувати</button>
+      <button class="primary" onclick="submitInput()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно підтвердження -->
+<div id="confirmModal" class="win-modal">
+  <div class="win" style="width:420px">
+    <div class="title-bar">
+      <div class="title">Підтвердження</div>
+      <button class="close" onclick="closeConfirm(false)">✕</button>
+    </div>
+    <div class="body">
+      <div id="confirmText">Ви впевнені?</div>
+    </div>
+    <div class="footer">
+      <button onclick="closeConfirm(false)">Ні</button>
+      <button class="primary" onclick="closeConfirm(true)">Так</button>
+    </div>
+  </div>
+</div>
+
+<!-- Властивості -->
+<div id="propsModal" class="win-modal">
+  <div class="win" style="width:400px">
+    <div class="title-bar">
+      <div class="title">Властивості</div>
+      <button class="close" onclick="closeProps()">✕</button>
+    </div>
+    <div class="body" id="propsBody"></div>
+    <div class="footer">
+      <button class="primary" onclick="closeProps()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Налаштування тла робочого столу -->
+<div id="bgModal" class="win-modal">
+  <div class="win" style="width:560px">
+    <div class="title-bar">
+      <div class="title">Тло робочого столу</div>
+      <button class="close" onclick="closeBgDialog(false)">✕</button>
+    </div>
+    <div class="body">
+      <div class="bg-tabs">
+        <button class="bg-tab" data-pane="color">Суцільний колір</button>
+        <button class="bg-tab" data-pane="image">Зображення</button>
+      </div>
+      <div class="bg-pane" id="bgPaneColor">
+        <div class="bg-color-row">
+          <input type="color" id="bgColorInput" value="#1e5799">
+          <span>Оберіть колір або готовий варіант:</span>
+        </div>
+        <div class="bg-swatches" id="bgSwatches"></div>
+      </div>
+      <div class="bg-pane" id="bgPaneImage">
+        <div class="bg-thumbs" id="bgThumbs"></div>
+        <div class="bg-mode-row">
+          <label style="margin:0" for="bgMode">Розташування:</label>
+          <select id="bgMode">
+            <option value="cover">Заповнити</option>
+            <option value="contain">Вмістити</option>
+            <option value="stretch">Розтягнути</option>
+            <option value="tile">Мозаїка</option>
+            <option value="center">По центру</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <button onclick="resetBg()" style="float:left">За замовчуванням</button>
+      <button onclick="closeBgDialog(false)">Скасувати</button>
+      <button class="primary" onclick="closeBgDialog(true)">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Налаштування (Панель керування) -->
+<div id="cpModal" class="win-modal">
+  <div class="win" style="width:620px;max-width:92vw">
+    <div class="title-bar">
+      <div class="title" id="cpTitle">Налаштування</div>
+      <button class="close" onclick="closeControlPanel()">✕</button>
+    </div>
+    <div class="body">
+      <div class="cp-view" id="cpHome">
+        <div class="cp-list">
+          <div class="cp-item" data-cp="apps">
+            <span class="ico">⚙️</span>
+            <span class="txt"><span class="t">Встановити та видалити програми</span>
+              <span class="d">Керування встановленими програмами</span></span>
+          </div>
+          <div class="cp-item" data-cp="bg">
+            <span class="ico">🖼️</span>
+            <span class="txt"><span class="t">Налаштувати тло</span>
+              <span class="d">Колір або зображення робочого столу</span></span>
+          </div>
+          <div class="cp-item" data-cp="desktop">
+            <span class="ico">🖥️</span>
+            <span class="txt"><span class="t">Налаштувати Робочий стіл</span>
+              <span class="d">Значки, їх розмір, шрифт і вигляд</span></span>
+          </div>
+          <div class="cp-item" data-cp="about">
+            <span class="ico">ℹ️</span>
+            <span class="txt"><span class="t">Про систему</span>
+              <span class="d">Відомості про систему та середовище</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cp-view" id="cpDesktop">
+        <div class="cp-head">
+          <button class="cp-back" id="cpBack">← Назад</button>
+          <strong>Налаштування Робочого столу</strong>
+        </div>
+        <div class="cp-field">
+          <div class="cp-sub">Значки на Робочому столі</div>
+          <label class="cp-check"><input type="checkbox" id="cpShowComputer"> Показувати «Цей комп'ютер»</label>
+          <label class="cp-check"><input type="checkbox" id="cpShowDocs"> Показувати «Документи»</label>
+          <label class="cp-check"><input type="checkbox" id="cpShowRecycle"> Показувати «Смітник»</label>
+        </div>
+        <div class="cp-field">
+          <div class="cp-sub">Розмір значків</div>
+          <div class="cp-row">
+            <input type="range" id="cpIconSize" min="48" max="128" step="4">
+            <span class="cp-val" id="cpIconSizeVal"></span>
+          </div>
+        </div>
+        <div class="cp-field">
+          <div class="cp-sub">Розмір шрифту</div>
+          <div class="cp-row">
+            <input type="range" id="cpFontSize" min="9" max="18" step="1">
+            <span class="cp-val" id="cpFontSizeVal"></span>
+          </div>
+        </div>
+        <div class="cp-field">
+          <div class="cp-sub">Впорядкування значків</div>
+          <div class="cp-actions">
+            <button class="p" id="cpArrangeV">Впорядкувати по вертикалі</button>
+            <button id="cpArrangeH">Впорядкувати по горизонталі</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cp-view" id="cpAbout">
+        <div class="cp-head">
+          <button class="cp-back" id="cpBack2">← Назад</button>
+          <strong>Про систему</strong>
+        </div>
+        <div class="cp-about" id="cpAboutBody"></div>
+      </div>
+    </div>
+    <div class="footer">
+      <button class="primary" onclick="closeControlPanel()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Меню «Пуск» (стиль Windows 7) -->
+<div id="startMenu"></div>
+
+<!-- Нижня панель -->
+<div id="taskbar">
+  <button id="startBtn"><span>✨</span><span>Пуск</span></button>
+  <div id="tasks"></div>
+  <div id="tray" title="">
+    <div id="clockTime"></div>
+    <div id="clockDate"></div>
+  </div>
+</div>
+
+<script src="vfs.js"></script>
+<script src="zipper/jszip.min.js"></script>
+<script>
+/* ============================================================
+   IndexedDB - файлова система
+   ============================================================ */
+const DB_NAME = 'DesktopFS';
+const DB_VERSION = 1;
+const STORE = 'nodes';
+let db;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)) {
+        const store = d.createObjectStore(STORE, { keyPath: 'id' });
+        store.createIndex('parent', 'parent', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+function tx(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, mode);
+    const store = t.objectStore(STORE);
+    const result = fn(store);
+    t.oncomplete = () => resolve(result && result.__value !== undefined ? result.__value : result);
+    t.onerror = () => reject(t.error);
+  });
+}
+
+function idbGet(id) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readonly');
+    const req = t.objectStore(STORE).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbPut(node) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readwrite');
+    t.objectStore(STORE).put(node);
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+  });
+}
+
+function idbDelete(id) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readwrite');
+    t.objectStore(STORE).delete(id);
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+  });
+}
+
+function idbChildren(parentId) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readonly');
+    const idx = t.objectStore(STORE).index('parent');
+    const req = idx.getAll(parentId);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function genId() {
+  return 'n_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+/* ============================================================
+   Модель
+   ============================================================ */
+const ROOT = 'root';
+const RECYCLE = 'recycle';
+
+// Системна ієрархія: Цей комп'ютер › C: › Користувачі › Користувач › (Робочий стіл, Документи, ...)
+async function ensureRoot() {
+  const defs = [
+    { id: 'pc', parent: null, name: "Цей комп'ютер", kind: 'computer' },
+    { id: 'c', parent: 'pc', name: 'Локальний диск (C:)', kind: 'drive' },
+    { id: 'users', parent: 'c', name: 'Користувачі' },
+    { id: 'user', parent: 'users', name: 'Користувач' },
+    { id: 'docs', parent: 'user', name: 'Документи' },
+    { id: 'downloads', parent: 'user', name: 'Завантаження' },
+    { id: 'pictures', parent: 'user', name: 'Зображення' },
+    { id: 'apps', parent: 'user', name: 'Програми' },
+    { id: RECYCLE, parent: ROOT, name: 'Смітник', kind: 'recycle' }
+  ];
+  for (const d of defs) {
+    if (!(await idbGet(d.id))) {
+      await idbPut({ ...d, type: 'folder', content: '', created: Date.now(), sys: true });
+    }
+  }
+  // Робочий стіл — звичайна папка в ієрархії (колишній кореневий вузол переноситься в Користувач)
+  const r = (await idbGet(ROOT)) || { id: ROOT, name: 'Робочий стіл', type: 'folder', content: '', created: Date.now() };
+  r.parent = 'user';
+  r.sys = true;
+  await idbPut(r);
+  // Смітник закріплено у правому нижньому куті робочого столу
+  const rec = await idbGet(RECYCLE);
+  if (rec && (typeof rec.x !== 'number' || typeof rec.y !== 'number')) {
+    rec.x = Math.max(START_X, window.innerWidth - ICON_W - START_X);
+    rec.y = Math.max(START_Y, window.innerHeight - TASKBAR_H - ICON_H - START_Y);
+    await idbPut(rec);
+  }
+}
+
+/* ============================================================
+   Заготовки файлів із теки folders/ (це звичайна тека на сервері,
+   а не частина віртуальної файлової системи).
+   folders/images -> Зображення, folders/docs -> Документи,
+   вміст folders/misc -> Користувач.
+   ============================================================ */
+const SEED_MAP = [
+  { dir: 'images', target: 'pictures' },
+  { dir: 'docs',   target: 'docs' },
+  { dir: 'misc',   target: 'user' }
+];
+
+async function seedFromFolders() {
+  for (const { dir, target } of SEED_MAP) {
+    const parent = await idbGet(target);
+    if (!parent || parent.type !== 'folder') continue;
+
+    // list.json визначає перелік файлів; якщо теки/файлу немає — пропускаємо
+    let names;
+    try {
+      const r = await fetch('folders/' + dir + '/list.json', { cache: 'no-cache' });
+      if (!r.ok) continue;
+      names = await r.json();
+    } catch (_) { continue; }
+    if (!Array.isArray(names)) continue;
+
+    const existing = new Set((await idbChildren(target)).map(k => k.name.toLowerCase()));
+    for (const raw of names) {
+      const name = String(raw).split(/[\\\/]/).pop().trim();
+      // якщо такий файл уже є у ВФС — копіювання не потрібне
+      if (!name || name === '.' || name === '..' || existing.has(name.toLowerCase())) continue;
+
+      let bytes;
+      try {
+        const fr = await fetch('folders/' + dir + '/' + encodeURIComponent(name), { cache: 'no-cache' });
+        if (!fr.ok) continue;
+        bytes = new Uint8Array(await fr.arrayBuffer());
+      } catch (_) { continue; }
+
+      const node = { id: genId(), parent: target, name, type: 'file', created: Date.now(), modified: Date.now() };
+      let text = null;
+      try {
+        text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+        if (text.includes('\u0000')) text = null;   // бінарний вміст
+      } catch (_) { text = null; }
+      if (text !== null) node.content = text;
+      else { node.blob = new Blob([bytes]); node.content = ''; }
+
+      await idbPut(node);
+      existing.add(name.toLowerCase());
+    }
+  }
+}
+
+async function createNode(parent, name, type, content = '') {
+  const node = {
+    id: genId(),
+    parent,
+    name,
+    type, // 'file' | 'folder'
+    content,
+    created: Date.now()
+  };
+  await idbPut(node);
+  return node;
+}
+
+async function deleteNodeRecursive(id) {
+  const kids = await idbChildren(id);
+  for (const k of kids) await deleteNodeRecursive(k.id);
+  await idbDelete(id);
+}
+
+/* ============================================================
+   Смітник
+   ============================================================ */
+// Перемістити до Смітника (із запам'ятовуванням початкового розташування)
+async function moveToRecycle(id) {
+  return moveToFolder(id, RECYCLE);
+}
+
+// Видалити: об'єкти зі Смітника — назавжди, решта — до Смітника
+async function trashOrDelete(id) {
+  const n = await idbGet(id);
+  if (!n) return;
+  if (n.parent === RECYCLE) await deleteNodeRecursive(id);
+  else await moveToRecycle(id);
+}
+
+// Відновити об'єкт зі Смітника у початкове розташування
+async function restoreFromRecycle(id) {
+  const n = await idbGet(id);
+  if (!n || n.parent !== RECYCLE) return false;
+  const info = n.trash || {};
+  let dest = (info.parent != null) ? info.parent : ROOT;
+  const dp = await idbGet(dest);
+  if (!dp || dp.type !== 'folder' || dest === RECYCLE || (await collectIds(id)).has(dest)) dest = ROOT;
+  n.name = await uniqueName(dest, info.name || n.name);
+  n.parent = dest;
+  delete n.trash;
+  delete n.x; delete n.y;
+  await idbPut(n);
+  if (dest === ROOT) {
+    await placeOnDesktop(id,
+      typeof info.x === 'number' ? info.x : START_X,
+      typeof info.y === 'number' ? info.y : START_Y);
+  }
+  return true;
+}
+
+// Очистити Смітник — видалити все назавжди
+async function emptyRecycle() {
+  for (const k of await idbChildren(RECYCLE)) await deleteNodeRecursive(k.id);
+}
+
+// Ярлик — окремий файл на Робочому столі, що вказує на оригінал через target
+async function createShortcutNode(node) {
+  const name = await uniqueName(ROOT, node.name + ' - Ярлик');
+  const sc = {
+    id: genId(), parent: ROOT, name, type: 'file', content: '',
+    shortcut: true, target: node.id,
+    created: Date.now(), modified: Date.now()
+  };
+  await idbPut(sc);
+  await placeOnDesktop(sc.id, START_X, START_Y);
+  return sc;
+}
+
+async function createShortcuts(nodes) {
+  for (const n of nodes) {
+    if (!n || n.sys) continue;
+    await createShortcutNode(n);
+  }
+  await refreshAll();
+}
+
+async function renameNode(id, newName) {
+  const n = await idbGet(id);
+  if (n) { n.name = newName; await idbPut(n); }
+}
+
+async function getChildren(parent) {
+  const kids = await idbChildren(parent);
+  kids.sort((a,b) => {
+    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+    return a.name.localeCompare(b.name, 'uk');
+  });
+  return kids;
+}
+
+/* ============================================================
+   UI - Робочий стіл: сітка та позиції значків
+   ============================================================ */
+const desktop = document.getElementById('desktop');
+
+const TASKBAR_H = 40; // висота нижньої панелі
+let ICON_W = 84;     // ширина клітинки сітки
+let ICON_H = 96;     // висота клітинки сітки
+const START_X = 10;
+const START_Y = 10;
+
+let selectedId = null;
+const wins = new Map();   // id папки -> об'єкт вікна
+let zTop = 100;
+
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function gridDims() {
+  return {
+    cols: Math.max(1, Math.floor((window.innerWidth - START_X) / ICON_W)),
+    rows: Math.max(1, Math.floor((window.innerHeight - TASKBAR_H - START_Y) / ICON_H))
+  };
+}
+const cellKey = (c, r) => c + ',' + r;
+function cellOf(x, y) {
+  return { c: Math.round((x - START_X) / ICON_W), r: Math.round((y - START_Y) / ICON_H) };
+}
+function cellPos(c, r) {
+  return { x: START_X + c * ICON_W, y: START_Y + r * ICON_H };
+}
+
+/* ============================================================
+   Налаштування вигляду Робочого столу
+   ============================================================ */
+const DESKTOP_CFG_KEY = 'de_desktop_cfg';
+const DESKTOP_CFG_DEFAULT = {
+  showComputer: true, showDocs: true, showRecycle: true,
+  iconSize: 80, fontSize: 12
+};
+let desktopCfg = { ...DESKTOP_CFG_DEFAULT };
+let currentArrange = 'vertical';
+
+// Системні значки, які можна показувати/ховати
+const DESKTOP_SPECIALS = [
+  { id: 'pc',    name: "Цей комп'ютер", flag: 'showComputer' },
+  { id: 'docs',  name: 'Документи',     flag: 'showDocs' },
+  { id: RECYCLE, name: 'Смітник',       flag: 'showRecycle' }
+];
+
+function loadDesktopCfg() {
+  let v = null;
+  try { v = JSON.parse(localStorage.getItem(DESKTOP_CFG_KEY)); } catch (_) {}
+  desktopCfg = Object.assign({}, DESKTOP_CFG_DEFAULT, (v && typeof v === 'object') ? v : {});
+}
+
+function saveDesktopCfg() {
+  try { localStorage.setItem(DESKTOP_CFG_KEY, JSON.stringify(desktopCfg)); } catch (_) {}
+}
+
+// Застосувати розміри значків/шрифту (CSS-змінні + розміри сітки)
+function applyDesktopCfg() {
+  const size = clamp(parseInt(desktopCfg.iconSize, 10) || 80, 32, 160);
+  const font = clamp(parseInt(desktopCfg.fontSize, 10) || 12, 8, 24);
+  const glyph = Math.max(20, Math.round(size * 0.48));
+  desktopCfg.iconSize = size;
+  desktopCfg.fontSize = font;
+  ICON_W = size + 4;
+  ICON_H = glyph + font * 3 + 16;
+  const st = document.documentElement.style;
+  st.setProperty('--icon-w', size + 'px');
+  st.setProperty('--icon-glyph', glyph + 'px');
+  st.setProperty('--icon-font', font + 'px');
+}
+
+// Усі вузли, що відображаються на Робочому столі: увімкнені системні + вміст теки
+async function desktopNodes() {
+  const specialIds = new Set(DESKTOP_SPECIALS.map(s => s.id));
+  const out = [];
+  for (const s of DESKTOP_SPECIALS) {
+    if (!desktopCfg[s.flag]) continue;
+    const n = await idbGet(s.id);
+    if (n) out.push(n);
+  }
+  const kids = (await getChildren(ROOT)).filter(k => !specialIds.has(k.id));
+  return out.concat(kids);
+}
+
+// Зайняті клітинки (крім вузла exceptId)
+function occupiedCells(nodes, exceptId) {
+  const s = new Set();
+  for (const n of nodes) {
+    if (n.id === exceptId || typeof n.x !== 'number') continue;
+    const { c, r } = cellOf(n.x, n.y);
+    s.add(cellKey(c, r));
+  }
+  return s;
+}
+
+// Найближча до (c0, r0) вільна клітинка
+function freeCellNear(c0, r0, occ) {
+  const { cols, rows } = gridDims();
+  c0 = clamp(c0, 0, cols - 1);
+  r0 = clamp(r0, 0, rows - 1);
+  let best = null, bestD = Infinity;
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      if (occ.has(cellKey(c, r))) continue;
+      const d = (c - c0) * (c - c0) + (r - r0) * (r - r0);
+      if (d < bestD) { bestD = d; best = { c, r }; }
+    }
+  }
+  return best || { c: c0, r: r0 };
+}
+
+// Значки без збереженої позиції (старі або щойно створені) — у перші вільні клітинки, стовпцями
+async function ensurePositions(children) {
+  const { rows } = gridDims();
+  const occ = new Set();
+  // Спершу зберігаємо наявні позиції, якщо клітинка вільна
+  for (const n of children) {
+    if (typeof n.x !== 'number') continue;
+    const { c, r } = cellOf(n.x, n.y);
+    if (occ.has(cellKey(c, r))) continue;   // колізію розв'яжемо нижче
+    occ.add(cellKey(c, r));
+  }
+  // Решту (без позиції або з колізією) ставимо у перші вільні клітинки, стовпцями
+  let idx = 0;
+  for (const n of children) {
+    if (typeof n.x === 'number') {
+      const cell = cellOf(n.x, n.y);
+      if (occ.has(cellKey(cell.c, cell.r))) continue;   // позицію вже закріплено
+    }
+    let c, r;
+    do { c = Math.floor(idx / rows); r = idx % rows; idx++; } while (occ.has(cellKey(c, r)));
+    occ.add(cellKey(c, r));
+    const p = cellPos(c, r);
+    n.x = p.x; n.y = p.y;
+    await idbPut(n);
+  }
+}
+
+// Поставити вузол на робочий стіл (x, y — лівий верхній кут значка), з прив'язкою до сітки
+async function placeOnDesktop(id, x, y) {
+  const n = await idbGet(id);
+  if (!n) return;
+  const others = await desktopNodes();
+  const occ = occupiedCells(others, id);
+  const { c, r } = cellOf(x, y);
+  const free = freeCellNear(c, r, occ);
+  const p = cellPos(free.c, free.r);
+  if (n.parent !== ROOT) {
+    n.name = await uniqueName(ROOT, n.name);
+    n.parent = ROOT;
+  }
+  n.x = p.x; n.y = p.y;
+  await idbPut(n);
+}
+
+// Перемістити вузол у папку
+async function moveToFolder(id, parentId) {
+  const n = await idbGet(id);
+  const p = await idbGet(parentId);
+  if (!n || !p || p.type !== 'folder' || p.kind === 'computer' || n.sys) return false;
+  if (n.parent === parentId) return false;
+  const banned = await collectIds(id);          // сам вузол і всі його нащадки
+  if (banned.has(parentId)) return false;       // не можна в себе чи у власну підпапку
+  // Смітник: запам'ятовуємо початкове розташування для відновлення
+  if (parentId === RECYCLE && n.parent !== RECYCLE) {
+    n.trash = {
+      parent: n.parent, name: n.name,
+      x: (typeof n.x === 'number' ? n.x : undefined),
+      y: (typeof n.y === 'number' ? n.y : undefined)
+    };
+  } else if (parentId !== RECYCLE && n.trash) {
+    delete n.trash;
+  }
+  n.name = await uniqueName(parentId, n.name);
+  n.parent = parentId;
+  delete n.x; delete n.y;
+  await idbPut(n);
+  return true;
+}
+
+async function collectIds(id) {
+  const out = new Set([id]);
+  const stack = [id];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const k of await idbChildren(cur)) {
+      if (out.has(k.id)) continue;
+      out.add(k.id);
+      if (k.type === 'folder') stack.push(k.id);
+    }
+  }
+  return out;
+}
+
+// Впорядкувати значки робочого столу: 'vertical' — стовпцями зверху вниз, 'horizontal' — рядками зліва направо
+async function arrangeIcons(mode) {
+  const kids = await desktopNodes();
+  currentArrange = mode === 'horizontal' ? 'horizontal' : 'vertical';
+  const { cols, rows } = gridDims();
+  for (let i = 0; i < kids.length; i++) {
+    const horizontal = mode === 'horizontal';
+    const c = horizontal ? i % cols : Math.floor(i / rows);
+    const r = horizontal ? Math.floor(i / cols) : i % rows;
+    const p = cellPos(c, r);
+    kids[i].x = p.x; kids[i].y = p.y;
+    await idbPut(kids[i]);
+  }
+  await renderDesktop();
+}
+
+/* ============================================================
+   Відмалювання
+   ============================================================ */
+function makeIcon(node, inWin, byId) {
+  const el = document.createElement('div');
+  el.className = 'icon' + (inWin ? ' in-win' : '');
+  el.dataset.id = node.id;
+  el.dataset.type = node.type;
+  el.title = node.name;
+
+  const glyph = document.createElement('div');
+  glyph.className = 'glyph';
+  fillGlyph(glyph, node, byId);
+  el.appendChild(glyph);
+
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = node.name;
+  el.appendChild(label);
+
+  if (node.id === selectedId) el.classList.add('selected');
+
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    hideMenu();
+    selectIcon(el);
+    if (!node.sys) startPress(e, el, node);
+  });
+  el.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    openFile(node.id);
+  });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectIcon(el);
+    showFileContextMenu(e.clientX, e.clientY, node);
+  });
+  return el;
+}
+
+async function renderDesktop() {
+  const children = await desktopNodes();
+  await ensurePositions(children);
+  const byId = (await fsSnapshot()).byId;
+
+  const icons = children.map(node => {
+    const el = makeIcon(node, false, byId);
+    // Якщо вікно стало меншим — значок лишається видимим (позиція в базі не змінюється)
+    el.style.left = clamp(node.x, 0, Math.max(0, window.innerWidth - ICON_W)) + 'px';
+    el.style.top = clamp(node.y, 0, Math.max(0, window.innerHeight - TASKBAR_H - ICON_H)) + 'px';
+    return el;
+  });
+
+  // Заміна в один синхронний крок — щоб паралельні відмалювання не дублювали значки
+  [...desktop.querySelectorAll('.icon')].forEach(el => el.remove());
+  icons.forEach(el => desktop.appendChild(el));
+}
+
+async function refreshAll() {
+  await renderDesktop();
+  for (const x of [...explorers]) await x.render();
+}
+
+function selectIcon(el) {
+  document.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
+  selectedId = el ? el.dataset.id : null;
+  if (el) el.classList.add('selected');
+}
+
+// Клік по порожньому місцю — зняти виділення
+desktop.addEventListener('mousedown', e => {
+  if (e.target === desktop) {
+    selectIcon(null);
+    setActiveApp(null);
+  }
+});
+
+// Контекстне меню робочого столу
+desktop.addEventListener('contextmenu', e => {
+  if (e.target !== desktop) return;
+  e.preventDefault();
+  selectIcon(null);
+  showDesktopContextMenu(e.clientX, e.clientY);
+});
+
+/* ============================================================
+   Перетягування значків
+   ============================================================ */
+const DRAG_THRESHOLD = 5;
+let activeDrag = null;
+let lastDragAt = 0;   // час останнього справжнього перетягування (щоб проігнорувати click після нього)
+
+// opts.ids — усі вузли, що перетягуються; opts.makeGhost — створює "привид" під курсором
+function startPress(e, el, node, opts = {}) {
+  if (activeDrag) return;
+  const rect = el.getBoundingClientRect();
+  const ids = opts.ids && opts.ids.length ? opts.ids : [node.id];
+  const d = {
+    node, el, ids, makeGhost: opts.makeGhost || null, pid: e.pointerId,
+    sx: e.clientX, sy: e.clientY,
+    offX: opts.makeGhost ? 40 : e.clientX - rect.left,
+    offY: opts.makeGhost ? 20 : e.clientY - rect.top,
+    active: false, ghost: null, hover: null,
+    forbidden: new Set(ids)
+  };
+  activeDrag = d;
+  Promise.all(ids.map(i => collectIds(i))).then(sets => {
+    const u = new Set();
+    sets.forEach(s => s.forEach(x => u.add(x)));
+    d.forbidden = u;
+  });
+  try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragUp);
+  window.addEventListener('pointercancel', endDrag);
+  window.addEventListener('keydown', onDragKey);
+}
+
+function onDragMove(e) {
+  const d = activeDrag;
+  if (!d || e.pointerId !== d.pid) return;
+  if (!d.active) {
+    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < DRAG_THRESHOLD) return;
+    d.active = true;
+    d.ghost = d.makeGhost ? d.makeGhost() : d.el.cloneNode(true);
+    d.ghost.classList.add('drag-ghost');
+    document.body.appendChild(d.ghost);
+    d.el.classList.add('dragging');
+    hideMenu();
+  }
+  d.ghost.style.left = (e.clientX - d.offX) + 'px';
+  d.ghost.style.top = (e.clientY - d.offY) + 'px';
+  updateHover(dropTargetAt(e.clientX, e.clientY, d), d);
+}
+
+async function onDragUp(e) {
+  const d = activeDrag;
+  if (!d || e.pointerId !== d.pid) return;
+  const target = d.active ? dropTargetAt(e.clientX, e.clientY, d) : null;
+  const dropX = e.clientX - d.offX, dropY = e.clientY - d.offY;
+  endDrag();
+  if (!target) return;   // звичайний клік, скасування або відпущено поза робочим столом
+
+  if (target.kind === 'folder') {
+    let moved = false;
+    for (const id of d.ids) if (await moveToFolder(id, target.id)) moved = true;
+    if (!moved) return;                                  // уже лежить у цій папці або переміщення заборонене
+  } else {
+    for (const id of d.ids) await placeOnDesktop(id, dropX, dropY);
+  }
+  await refreshAll();
+}
+
+function onDragKey(e) {
+  if (e.key === 'Escape') endDrag();
+}
+
+function endDrag() {
+  const d = activeDrag;
+  if (!d) return;
+  activeDrag = null;
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragUp);
+  window.removeEventListener('pointercancel', endDrag);
+  window.removeEventListener('keydown', onDragKey);
+  if (d.active) lastDragAt = performance.now();
+  if (d.ghost) d.ghost.remove();
+  if (d.hover) d.hover.classList.remove('drop-target');
+  d.el.classList.remove('dragging');
+  try { d.el.releasePointerCapture(d.pid); } catch (_) {}
+}
+
+// Що під курсором: папка (значок або вікно), робочий стіл чи нічого
+function dropTargetAt(x, y, d) {
+  const elem = document.elementFromPoint(x, y);
+  if (!elem) return null;
+  if (elem.closest('.ctx-menu, .win-modal')) return null;
+  const ic = elem.closest('.icon');
+  if (ic && ic.dataset.type === 'folder' && ic.dataset.id !== d.node.id) {
+    return { kind: 'folder', id: ic.dataset.id, el: ic };
+  }
+  const dz = elem.closest('[data-drop]');   // вузол дерева, папка чи область вмісту Провідника
+  if (dz) return { kind: 'folder', id: dz.dataset.drop, el: dz };
+  if (desktop.contains(elem)) return { kind: 'desktop' };
+  return null;
+}
+
+function updateHover(t, d) {
+  const el = (t && t.kind === 'folder' && !d.forbidden.has(t.id)) ? t.el : null;
+  if (d.hover === el) return;
+  if (d.hover) d.hover.classList.remove('drop-target');
+  d.hover = el;
+  if (el) el.classList.add('drop-target');
+}
+
+/* ============================================================
+   Віртуальна файлова система та Провідник
+   ============================================================ */
+const explorers = new Set();
+let fsClip = null;                       // { mode: 'copy' | 'cut', ids: [] }
+const FS_BAD = /[\\\/:*?"<>|]/;
+const utf8 = new TextEncoder();
+const SPECIAL_GLYPH = { pc: '💻', c: '💽', root: '🖥️', docs: '📑', downloads: '📥', pictures: '🖼️', apps: '🧩', users: '👥', user: '👤', recycle: '🗑️' };
+
+const byteLen = n => n.type === 'file' ? (n.blob ? n.blob.size : utf8.encode(n.content || '').length) : 0;
+
+// Іконки файлів за типом вмісту
+const IMG_GLYPH_RE = /\.(png|jpe?g|gif|webp|bmp|ico|avif|svg)$/i;
+const ZIP_GLYPH_RE = /\.(zip|rar|7z|tar|gz|tgz|bz2|xz)$/i;
+const DOC_GLYPH_RE = /\.(txt|md|markdown|rtf|doc|docx|odt|pdf|csv|json|xml|html?|css|js|log|ini|ya?ml)$/i;
+
+function glyphOf(n, byId, seen) {
+  // Ярлик показує іконку об'єкта, на який вказує
+  if (n.shortcut && n.target) {
+    if (!seen) seen = new Set();
+    if (seen.has(n.id)) return '🔗';        // захист від циклічних ярликів
+    seen.add(n.id);
+    const t = byId && byId.get ? byId.get(n.target) : null;
+    return t ? glyphOf(t, byId, seen) : '🔗';
+  }
+  if (n.icon) return n.icon;                 // ярлики програм мають власну іконку
+  if (SPECIAL_GLYPH[n.id]) return SPECIAL_GLYPH[n.id];
+  if (n.type === 'folder') return '📁';
+  if (IMG_GLYPH_RE.test(n.name)) return '🖼️';
+  if (ZIP_GLYPH_RE.test(n.name)) return '🗜️';
+  if (DOC_GLYPH_RE.test(n.name)) return '📄';
+  return '📎';
+}
+
+// Наповнити елемент іконки: символ + "шеврон"-стрілка для ярликів
+function fillGlyph(g, n, byId) {
+  g.textContent = glyphOf(n, byId);
+  if (n && n.shortcut) {
+    const a = document.createElement('span');
+    a.className = 'sc-arrow';
+    a.textContent = '↗️';
+    g.appendChild(a);
+  }
+  return g;
+}
+const extOf = name => { const i = name.lastIndexOf('.'); return i > 0 ? name.slice(i + 1) : ''; };
+
+function fmtDate(ts) {
+  return ts ? new Date(ts).toLocaleString('uk', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+}
+function fmtSize(b) {
+  if (b < 1024) return b + ' байт';
+  const units = ['КБ', 'МБ', 'ГБ'];
+  let v = b / 1024, i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return v.toLocaleString('uk', { maximumFractionDigits: 1 }) + ' ' + units[i];
+}
+const fmtSizeKB = b => b === 0 ? '0 КБ' : Math.ceil(b / 1024).toLocaleString('uk') + ' КБ';
+function typeName(n) {
+  if (n.shortcut) return 'Ярлик';
+  if (n.kind === 'computer') return 'Системна папка';
+  if (n.kind === 'drive') return 'Локальний диск';
+  if (n.type === 'folder') return 'Папка з файлами';
+  const e = extOf(n.name).toLowerCase();
+  if (e === 'txt') return 'Текстовий документ';
+  return e ? 'Файл «' + e.toUpperCase() + '»' : 'Файл';
+}
+function plural(n) {
+  const m = n % 10, h = n % 100;
+  if (m === 1 && h !== 11) return n + ' елемент';
+  if (m >= 2 && m <= 4 && !(h >= 12 && h <= 14)) return n + ' елементи';
+  return n + ' елементів';
+}
+
+/* ----- Доступ до сховища ----- */
+function idbAll() {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function fsSnapshot() {
+  const all = await idbAll();
+  const byId = new Map(), kids = new Map();
+  for (const n of all) byId.set(n.id, n);
+  for (const n of all) {
+    if (n.parent == null) continue;
+    if (!kids.has(n.parent)) kids.set(n.parent, []);
+    kids.get(n.parent).push(n);
+  }
+  return { byId, kids };
+}
+function chainOf(snap, id) {
+  const out = [];
+  let cur = snap.byId.get(id), g = 0;
+  while (cur && g++ < 64) {
+    out.unshift(cur);
+    cur = cur.parent != null ? snap.byId.get(cur.parent) : null;
+  }
+  return out;
+}
+function pathTextOf(snap, id) {
+  const ch = chainOf(snap, id);
+  if (!ch.length) return '';
+  if (ch.length === 1) return ch[0].name;
+  const parts = ch.slice(1).map(n => n.name);
+  parts[0] = 'C:';
+  return parts.join('\\') + (parts.length === 1 ? '\\' : '');
+}
+
+/* ----- Копіювання / вставка ----- */
+function copyName(name, taken) {
+  if (!taken.has(name.toLowerCase())) return name;
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  let cand = `${stem} - копія${ext}`;
+  for (let i = 2; taken.has(cand.toLowerCase()); i++) cand = `${stem} - копія (${i})${ext}`;
+  return cand;
+}
+async function copyNode(id, parentId) {
+  const n = await idbGet(id);
+  if (!n) return null;
+  const taken = new Set((await getChildren(parentId)).map(c => c.name.toLowerCase()));
+  const c = {
+    id: genId(), parent: parentId, name: copyName(n.name, taken), type: n.type,
+    content: n.content || '', created: Date.now(), modified: Date.now()
+  };
+  if (n.blob) c.blob = n.blob;
+  if (n.mime) c.mime = n.mime;
+  if (n.icon) c.icon = n.icon;
+  if (n.appId) c.appId = n.appId;
+  if (n.pkgId) c.pkgId = n.pkgId;
+  if (n.shortcut) { c.shortcut = true; c.target = n.target; }
+  await idbPut(c);
+  if (n.type === 'folder') for (const k of await idbChildren(id)) await copyNode(k.id, c.id);
+  return c;
+}
+async function pasteInto(parentId) {
+  if (!fsClip) return;
+  const p = await idbGet(parentId);
+  if (!p || p.type !== 'folder' || p.kind === 'computer') return;
+  const clip = fsClip;
+  for (const id of clip.ids) {
+    const n = await idbGet(id);
+    if (!n) continue;
+    if ((await collectIds(id)).has(parentId)) {
+      alert('Не можна копіювати або переміщувати папку саму в себе чи у власну підпапку.');
+      continue;
+    }
+    if (clip.mode === 'cut') await moveToFolder(id, parentId);
+    else await copyNode(id, parentId);
+  }
+  if (clip.mode === 'cut') fsClip = null;
+  await refreshAll();
+}
+
+/* ----- Властивості ----- */
+function closeProps() { document.getElementById('propsModal').classList.remove('show'); }
+
+async function showProps(ids) {
+  const snap = await fsSnapshot();
+  const nodes = ids.map(i => snap.byId.get(i)).filter(Boolean);
+  if (!nodes.length) return;
+  const box = document.getElementById('propsBody');
+  box.replaceChildren();
+  const sum = id => {
+    let files = 0, folders = 0, bytes = 0;
+    const st = [id];
+    while (st.length) {
+      for (const k of snap.kids.get(st.pop()) || []) {
+        if (k.type === 'folder') { folders++; st.push(k.id); } else { files++; bytes += byteLen(k); }
+      }
+    }
+    return { files, folders, bytes };
+  };
+  const add = (k, v) => {
+    const r = document.createElement('div');
+    r.className = 'props-row';
+    const a = document.createElement('span'); a.textContent = k;
+    const b = document.createElement('span'); b.textContent = v;
+    r.append(a, b);
+    box.appendChild(r);
+  };
+  const head = document.createElement('div');
+  head.className = 'props-head';
+  const g = document.createElement('span'); g.className = 'g glyph';
+  const t = document.createElement('span');
+  head.append(g, t);
+  box.appendChild(head);
+
+  if (nodes.length === 1) {
+    const n = nodes[0];
+    fillGlyph(g, n, snap.byId);
+    t.textContent = n.name;
+    add('Тип:', typeName(n));
+    if (n.shortcut && n.target) {
+      const tgt = snap.byId.get(n.target);
+      add('Об\'єкт:', tgt ? tgt.name : '(не знайдено)');
+    }
+    if (n.parent != null) add('Розташування:', pathTextOf(snap, n.parent));
+    if (n.type === 'file') {
+      const b = byteLen(n);
+      add('Розмір:', fmtSize(b) + ' (' + b.toLocaleString('uk') + ' байт)');
+    } else {
+      const s = sum(n.id);
+      add('Розмір:', fmtSize(s.bytes));
+      add('Вміст:', `Файлів: ${s.files}; папок: ${s.folders}`);
+    }
+    add('Створено:', fmtDate(n.created));
+    if (n.modified) add('Змінено:', fmtDate(n.modified));
+  } else {
+    g.textContent = '🗂️';
+    t.textContent = plural(nodes.length);
+    let files = 0, folders = 0, bytes = 0;
+    for (const n of nodes) {
+      if (n.type === 'file') { files++; bytes += byteLen(n); }
+      else { folders++; const s = sum(n.id); files += s.files; folders += s.folders; bytes += s.bytes; }
+    }
+    add('Розмір:', fmtSize(bytes));
+    add('Вміст:', `Файлів: ${files}; папок: ${folders}`);
+  }
+  document.getElementById('propsModal').classList.add('show');
+}
+
+/* ----- Відкриття вікна Провідника ----- */
+function openExplorer(id) {
+  const target = id || 'pc';
+  for (const x of explorers) {
+    if (x.cwd === target && !x.search) { activateApp(x.w); return; }
+  }
+  openApp(APPS.find(a => a.id === 'explorer'), { cwd: target });
+}
+function openFolder(id) { openExplorer(id); }
+
+/* ----- Вікно Провідника ----- */
+function mountExplorer(w, body, opts) {
+  const ex = {
+    w, cwd: opts.cwd || 'pc', hist: [], hi: -1,
+    view: 'details', sortKey: 'name', sortDir: 1,
+    sel: new Set(), anchor: null, order: [],
+    expanded: new Set(['pc', 'c', 'users', 'user']),
+    search: '', resetScroll: true,
+    snap: { byId: new Map(), kids: new Map() }
+  };
+  const CMDS = [
+    ['new', '➕', 'Створити ▾'], ['|'],
+    ['cut', '✂️', 'Вирізати'], ['copy', '📋', 'Копіювати'], ['paste', '📥', 'Вставити'], ['|'],
+    ['rename', '✏️', 'Перейменувати'], ['delete', '🗑️', 'Видалити'], ['|'],
+    ['view', '👁️', 'Вигляд ▾'], ['props', 'ℹ️', 'Властивості']
+  ];
+  const root = document.createElement('div');
+  root.className = 'ex';
+  root.tabIndex = -1;
+  root.innerHTML =
+    '<div class="ex-navbar">' +
+      '<button class="ex-nbtn" data-act="back" title="Назад (Alt+←)">←</button>' +
+      '<button class="ex-nbtn" data-act="forward" title="Уперед (Alt+→)">→</button>' +
+      '<button class="ex-nbtn" data-act="up" title="Вгору (Alt+↑)">↑</button>' +
+      '<div class="ex-addr"><span class="ex-addr-ico"></span><div class="ex-crumbs"></div>' +
+        '<input class="ex-addr-in" spellcheck="false"><button class="ex-refresh" data-act="refresh" title="Оновити (F5)">⟳</button></div>' +
+      '<input class="ex-search" type="text" spellcheck="false">' +
+    '</div>' +
+    '<div class="ex-cmd">' +
+      CMDS.map(c => c[0] === '|' ? '<div class="ex-csep2"></div>'
+        : '<button class="ex-cbtn" data-act="' + c[0] + '"><span>' + c[1] + '</span> ' + c[2] + '</button>').join('') +
+    '</div>' +
+    '<div class="ex-main">' +
+      '<div class="ex-nav"></div><div class="ex-split"></div><div class="ex-content"></div>' +
+    '</div>' +
+    '<div class="ex-status"><span class="ex-st-a"></span><span class="ex-st-b"></span>' +
+      '<div class="ex-views">' +
+        '<button class="ex-vbtn" data-view="details" title="Відображати подробиці">☰</button>' +
+        '<button class="ex-vbtn" data-view="large" title="Великі значки">▦</button>' +
+        '<button class="ex-vbtn" data-view="list" title="Список">≣</button>' +
+      '</div></div>';
+  body.appendChild(root);
+
+  const q = s => root.querySelector(s);
+  const addr = q('.ex-addr'), addrIco = q('.ex-addr-ico'), crumbs = q('.ex-crumbs'), addrIn = q('.ex-addr-in');
+  const searchIn = q('.ex-search'), nav = q('.ex-nav'), split = q('.ex-split'), content = q('.ex-content');
+  const stA = q('.ex-st-a'), stB = q('.ex-st-b');
+
+  const byId = id => ex.snap.byId.get(id);
+  const selNodes = () => [...ex.sel].map(byId).filter(Boolean);
+  const curNode = () => byId(ex.cwd);
+  const canCreate = n => !!n && n.kind !== 'computer' && n.id !== RECYCLE;
+  const inRecycle = () => ex.cwd === RECYCLE;
+  const nameTaken = (parent, name, exceptId) =>
+    (ex.snap.kids.get(parent) || []).some(k => k.id !== exceptId && k.name.toLowerCase() === name.toLowerCase());
+
+  /* ---------- Навігація ---------- */
+  function go(id, push = true) {
+    const n = byId(id);
+    if (!n || n.type !== 'folder') return;
+    if (push) {
+      ex.hist = ex.hist.slice(0, ex.hi + 1);
+      if (ex.hist[ex.hist.length - 1] !== id) ex.hist.push(id);
+      ex.hi = ex.hist.length - 1;
+    }
+    ex.cwd = id; ex.sel.clear(); ex.anchor = null;
+    ex.search = ''; searchIn.value = '';
+    ex.resetScroll = true;
+    for (const a of chainOf(ex.snap, id)) if (a.id !== id) ex.expanded.add(a.id);
+    render();
+  }
+  function step(d) {
+    let i = ex.hi + d;
+    while (i >= 0 && i < ex.hist.length && !byId(ex.hist[i])) i += d;
+    if (i < 0 || i >= ex.hist.length) return;
+    ex.hi = i;
+    go(ex.hist[i], false);
+  }
+  function goUp() {
+    const n = curNode();
+    if (n && n.parent != null && byId(n.parent)) go(n.parent);
+  }
+  function openNode(id) {
+    const n = byId(id);
+    if (!n) return;
+    if (n.type === 'folder') go(id); else openFile(id);
+  }
+  function clearSearch() {
+    ex.search = ''; searchIn.value = '';
+    render();
+  }
+
+  /* ---------- Адресний рядок ---------- */
+  function renderAddress(cur) {
+    addrIco.textContent = glyphOf(cur);
+    crumbs.replaceChildren();
+    if (ex.search) {
+      const s = document.createElement('span');
+      s.className = 'ex-crumb nolink';
+      s.textContent = 'Результати пошуку в «' + cur.name + '»: «' + ex.search + '»';
+      crumbs.appendChild(s);
+      return;
+    }
+    chainOf(ex.snap, cur.id).forEach((n, i) => {
+      if (i) {
+        const sp = document.createElement('span');
+        sp.className = 'ex-csep';
+        sp.textContent = '›';
+        crumbs.appendChild(sp);
+      }
+      const c = document.createElement('span');
+      c.className = 'ex-crumb';
+      c.dataset.id = n.id;
+      c.textContent = n.name;
+      crumbs.appendChild(c);
+    });
+    crumbs.scrollLeft = crumbs.scrollWidth;
+  }
+  function resolvePath(text) {
+    const { byId: ids, kids } = ex.snap;
+    const t = text.trim().replace(/\//g, '\\');
+    if (!t || t.toLowerCase() === "цей комп'ютер") return 'pc';
+    const parts = t.split('\\').filter(Boolean);
+    const first = parts.shift();
+    let cur;
+    if (/^[cс]:$/i.test(first)) cur = ids.get('c');
+    else cur = (kids.get('pc') || []).find(k => k.name.toLowerCase() === first.toLowerCase());
+    for (const p of parts) {
+      if (!cur) break;
+      cur = (kids.get(cur.id) || []).find(k => k.type === 'folder' && k.name.toLowerCase() === p.toLowerCase());
+    }
+    return cur ? cur.id : null;
+  }
+  function stopAddrEdit() { addr.classList.remove('editing'); }
+  addr.addEventListener('click', e => {
+    const c = e.target.closest('.ex-crumb');
+    if (c && c.dataset.id) { go(c.dataset.id); return; }
+    if (e.target.closest('.ex-refresh') || addr.classList.contains('editing')) return;
+    addr.classList.add('editing');
+    addrIn.value = ex.search ? '' : pathTextOf(ex.snap, ex.cwd);
+    addrIn.focus(); addrIn.select();
+  });
+  addrIn.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      const text = addrIn.value;
+      const id = resolvePath(text);
+      stopAddrEdit();
+      if (id) go(id);
+      else alert('Не вдається знайти "' + text + '". Перевірте правильність написання та повторіть спробу.');
+    } else if (e.key === 'Escape') {
+      stopAddrEdit();
+    }
+  });
+  addrIn.addEventListener('blur', stopAddrEdit);
+
+  /* ---------- Область навігації ---------- */
+  function renderNav(cur) {
+    const { byId: ids, kids } = ex.snap;
+    const out = [];
+    const head = t => { const d = document.createElement('div'); d.className = 'ex-nh'; d.textContent = t; return d; };
+    const row = (n, depth, tree, hasKids, open) => {
+      const el = document.createElement('div');
+      el.className = 'ex-tn' + (n.id === cur.id ? ' selected' : '');
+      el.dataset.id = n.id;
+      if (n.kind !== 'computer') el.dataset.drop = n.id;
+      el.style.paddingLeft = (4 + depth * 14) + 'px';
+      const arr = document.createElement('span');
+      arr.className = 'arr';
+      if (tree && hasKids) { arr.textContent = open ? '▾' : '▸'; arr.dataset.arr = n.id; }
+      const g = document.createElement('span'); g.className = 'glyph'; fillGlyph(g, n, ids);
+      const l = document.createElement('span'); l.className = 'label'; l.textContent = n.name;
+      el.append(arr, g, l);
+      return el;
+    };
+    out.push(head('Швидкий доступ'));
+    for (const id of [ROOT, 'downloads', 'docs', 'pictures']) {
+      const n = ids.get(id);
+      if (n) out.push(row(n, 0, false));
+    }
+    out.push(head('Цей комп\'ютер'));
+    const visit = (id, depth) => {
+      const n = ids.get(id);
+      if (!n) return;
+      const sub = (kids.get(id) || []).filter(k => k.type === 'folder')
+        .sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+      const open = ex.expanded.has(id);
+      out.push(row(n, depth, true, sub.length > 0, open));
+      if (open) sub.forEach(k => visit(k.id, depth + 1));
+    };
+    visit('pc', 0);
+    nav.replaceChildren(...out);
+  }
+  nav.addEventListener('click', e => {
+    const a = e.target.closest('.arr');
+    if (a && a.dataset.arr) {
+      const id = a.dataset.arr;
+      if (ex.expanded.has(id)) ex.expanded.delete(id); else ex.expanded.add(id);
+      render();
+      return;
+    }
+    const r = e.target.closest('.ex-tn');
+    if (r) go(r.dataset.id);
+  });
+  split.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const pid = e.pointerId, left = root.getBoundingClientRect().left;
+    try { split.setPointerCapture(pid); } catch (_) {}
+    const move = ev => { if (ev.pointerId === pid) nav.style.width = clamp(ev.clientX - left, 120, 420) + 'px'; };
+    const up = ev => {
+      if (ev.pointerId !== pid) return;
+      split.removeEventListener('pointermove', move);
+      split.removeEventListener('pointerup', up);
+      split.removeEventListener('pointercancel', up);
+    };
+    split.addEventListener('pointermove', move);
+    split.addEventListener('pointerup', up);
+    split.addEventListener('pointercancel', up);
+  });
+
+  /* ---------- Вміст ---------- */
+  function searchIn_(cur) {
+    const { kids } = ex.snap;
+    const needle = ex.search.toLowerCase();
+    const out = [], st = [cur.id];
+    while (st.length) {
+      for (const k of kids.get(st.pop()) || []) {
+        if (k.name.toLowerCase().includes(needle)) { k._loc = pathTextOf(ex.snap, k.parent); out.push(k); }
+        if (k.type === 'folder') st.push(k.id);
+      }
+    }
+    return out;
+  }
+  function sortList(list) {
+    const dir = ex.sortDir, key = ex.sortKey;
+    const cmpName = (a, b) => a.name.localeCompare(b.name, 'uk', { numeric: true, sensitivity: 'base' });
+    list.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      if (key === 'name') return cmpName(a, b) * dir;
+      let r = 0;
+      if (key === 'date') r = (a.modified || a.created || 0) - (b.modified || b.created || 0);
+      else if (key === 'type') r = typeName(a).localeCompare(typeName(b), 'uk');
+      else if (key === 'size') r = byteLen(a) - byteLen(b);
+      else if (key === 'loc') r = (a._loc || '').localeCompare(b._loc || '', 'uk');
+      return r ? r * dir : cmpName(a, b);
+    });
+  }
+  function cell(cls, text) {
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = text;
+    return d;
+  }
+  function itemEl(n, mode) {
+    const el = document.createElement('div');
+    el.className = 'ex-item' + (ex.sel.has(n.id) ? ' selected' : '') +
+      (fsClip && fsClip.mode === 'cut' && fsClip.ids.includes(n.id) ? ' cut' : '');
+    el.dataset.id = n.id;
+    el.dataset.type = n.type;
+    el.title = n.name;
+    if (n.type === 'folder' && n.kind !== 'computer') el.dataset.drop = n.id;
+    const g = document.createElement('span'); g.className = 'glyph'; fillGlyph(g, n, ex.snap.byId);
+    const l = document.createElement('span'); l.className = 'label'; l.textContent = n.name;
+    if (mode === 'details') {
+      el.classList.add('ex-row');
+      const nm = document.createElement('div');
+      nm.className = 'c-name';
+      nm.append(g, l);
+      el.appendChild(nm);
+      if (ex.search) el.appendChild(cell('c-loc', n._loc || ''));
+      el.appendChild(cell('c-date', fmtDate(n.modified || n.created)));
+      el.appendChild(cell('c-type', typeName(n)));
+      el.appendChild(cell('c-size', n.type === 'file' ? fmtSizeKB(byteLen(n)) : ''));
+    } else if (mode === 'drive') {
+      el.classList.add('ex-drive');
+      const info = document.createElement('div');
+      info.className = 'info';
+      let bytes = 0;
+      for (const x of ex.snap.byId.values()) bytes += byteLen(x);
+      const GB = 1024 * 1024 * 1024, total = 100 * GB, used = 38 * GB + bytes;
+      const bar = document.createElement('div'); bar.className = 'bar';
+      const fill = document.createElement('i'); fill.style.width = (used / total * 100).toFixed(1) + '%';
+      bar.appendChild(fill);
+      info.append(l, bar, cell('cap', fmtSize(total - used) + ' вільно з 100 ГБ'));
+      el.append(g, info);
+    } else {
+      el.classList.add(mode === 'large' ? 'ex-big' : 'ex-sm');
+      el.append(g, l);
+    }
+    return el;
+  }
+  function headerRow() {
+    const row = document.createElement('div');
+    row.className = 'ex-hrow';
+    const defs = [['name', 'Ім\'я']];
+    if (ex.search) defs.push(['loc', 'Розташування']);
+    defs.push(['date', 'Дата змінення'], ['type', 'Тип'], ['size', 'Розмір']);
+    for (const [k, t] of defs) {
+      const c = document.createElement('div');
+      c.className = 'ex-hcell' + (k === 'size' ? ' right' : '');
+      c.dataset.key = k;
+      c.textContent = t + (ex.sortKey === k ? (ex.sortDir > 0 ? '  ▲' : '  ▼') : '');
+      row.appendChild(c);
+    }
+    return row;
+  }
+  function renderContent(cur) {
+    const { byId: ids, kids } = ex.snap;
+    content.className = 'ex-content';
+    content.replaceChildren();
+    if (canCreate(cur)) content.dataset.drop = cur.id; else delete content.dataset.drop;
+    if (ex.resetScroll) { content.scrollTop = 0; content.scrollLeft = 0; ex.resetScroll = false; }
+
+    if (cur.kind === 'computer' && !ex.search) {
+      content.classList.add('m-pc');
+      const folders = [ROOT, 'downloads', 'docs', 'pictures'].map(i => ids.get(i)).filter(Boolean);
+      const drives = (kids.get('pc') || []).filter(k => k.kind === 'drive');
+      ex.order = [...folders, ...drives].map(n => n.id);
+      const group = (title, nodes, mode) => {
+        const h = document.createElement('div'); h.className = 'ex-gh'; h.textContent = title;
+        const g = document.createElement('div'); g.className = 'ex-grp';
+        nodes.forEach(n => g.appendChild(itemEl(n, mode)));
+        content.append(h, g);
+      };
+      group('Папки (' + folders.length + ')', folders, 'large');
+      group('Пристрої та диски (' + drives.length + ')', drives, 'drive');
+      return;
+    }
+
+    const list = ex.search ? searchIn_(cur) : (kids.get(cur.id) || []).slice();
+    sortList(list);
+    ex.order = list.map(n => n.id);
+    content.classList.add('m-' + ex.view);
+    if (ex.view === 'details') {
+      content.style.setProperty('--cols', ex.search
+        ? 'minmax(160px,1fr) 190px 130px 130px 80px' : 'minmax(160px,1fr) 140px 150px 80px');
+      content.appendChild(headerRow());
+    }
+    if (!list.length) {
+      const em = document.createElement('div');
+      em.className = 'ex-empty';
+      em.textContent = ex.search ? 'Нічого не знайдено.' : 'Ця папка порожня.';
+      content.appendChild(em);
+    } else {
+      for (const n of list) content.appendChild(itemEl(n, ex.view));
+    }
+  }
+
+  /* ---------- Рядок стану, кнопки ---------- */
+  function updateStatus() {
+    stA.textContent = plural(ex.order.length);
+    const nodes = selNodes();
+    if (nodes.length) {
+      const bytes = nodes.reduce((s, n) => s + byteLen(n), 0);
+      const files = nodes.some(n => n.type === 'file');
+      stB.textContent = 'Вибрано: ' + plural(nodes.length) + (files ? '   ' + fmtSize(bytes) : '');
+    } else stB.textContent = '';
+    root.querySelectorAll('.ex-vbtn').forEach(b => b.classList.toggle('active', b.dataset.view === ex.view));
+  }
+  function updateButtons() {
+    const cur = curNode();
+    const nodes = selNodes();
+    const free = nodes.length > 0 && nodes.every(n => !n.sys);
+    const set = (a, on) => root.querySelectorAll('[data-act="' + a + '"]').forEach(b => b.classList.toggle('disabled', !on));
+    set('back', ex.hi > 0);
+    set('forward', ex.hi < ex.hist.length - 1);
+    set('up', !!cur && cur.parent != null);
+    const inRec = !!cur && cur.id === RECYCLE;
+    set('new', canCreate(cur));
+    set('cut', free && !inRec); set('copy', free && !inRec); set('delete', free);
+    set('paste', !!fsClip && canCreate(cur));
+    set('rename', nodes.length === 1 && !nodes[0].sys && !inRec);
+  }
+  function syncSel() {
+    content.querySelectorAll('.ex-item').forEach(el => el.classList.toggle('selected', ex.sel.has(el.dataset.id)));
+    updateStatus();
+    updateButtons();
+  }
+
+  async function render() {
+    ex.snap = await fsSnapshot();
+    if (!byId(ex.cwd)) { ex.cwd = 'pc'; ex.search = ''; searchIn.value = ''; }
+    const cur = curNode();
+    for (const id of [...ex.sel]) if (!byId(id)) ex.sel.delete(id);
+    w.setTitle(cur.name, glyphOf(cur));
+    searchIn.placeholder = 'Пошук: ' + cur.name;
+    renderAddress(cur);
+    renderNav(cur);
+    renderContent(cur);
+    updateStatus();
+    updateButtons();
+  }
+  ex.render = render;
+
+  /* ---------- Дії ---------- */
+  function setView(v) { ex.view = v; render(); }
+  function setSort(k) {
+    if (ex.sortKey === k) ex.sortDir = -ex.sortDir; else { ex.sortKey = k; ex.sortDir = 1; }
+    render();
+  }
+  function setClip(mode) {
+    const ids = selNodes().filter(n => !n.sys).map(n => n.id);
+    if (!ids.length) return;
+    fsClip = { mode, ids };
+    refreshAll();
+  }
+  async function createHere(type) {
+    const cur = curNode();
+    if (!canCreate(cur)) return;
+    if (ex.search) { ex.search = ''; searchIn.value = ''; }
+    const name = await uniqueName(cur.id, type === 'folder' ? 'Нова папка' : 'Новий текстовий документ.txt');
+    const node = await createNode(cur.id, name, type);
+    ex.sel = new Set([node.id]); ex.anchor = node.id;
+    await refreshAll();
+    startRename(node.id);
+  }
+  function deleteSelected() {
+    const nodes = selNodes().filter(n => !n.sys);
+    if (!nodes.length) return;
+    const inRecycle = nodes.every(n => n.parent === RECYCLE);
+    const label = inRecycle ? 'назавжди?' : 'до Смітника?';
+    const text = nodes.length === 1
+      ? 'Перемістити "' + nodes[0].name + '" ' + label
+      : 'Перемістити вибрані елементи (' + nodes.length + ') ' + label;
+    showConfirm(text, async ok => {
+      if (!ok) return;
+      for (const n of nodes) await trashOrDelete(n.id);
+      if (fsClip) { fsClip.ids = fsClip.ids.filter(i => !nodes.some(n => n.id === i)); if (!fsClip.ids.length) fsClip = null; }
+      ex.sel.clear();
+      await refreshAll();
+    });
+  }
+
+  function restoreSelected() {
+    const nodes = selNodes().filter(n => !n.sys);
+    if (!nodes.length) return;
+    (async () => {
+      for (const n of nodes) await restoreFromRecycle(n.id);
+      ex.sel.clear();
+      await refreshAll();
+    })();
+  }
+
+  function deleteForeverSelected() {
+    const nodes = selNodes().filter(n => !n.sys);
+    if (!nodes.length) return;
+    const text = nodes.length === 1
+      ? 'Видалити "' + nodes[0].name + '" назавжди?'
+      : 'Видалити вибрані елементи (' + nodes.length + ') назавжди?';
+    showConfirm(text, async ok => {
+      if (!ok) return;
+      for (const n of nodes) await deleteNodeRecursive(n.id);
+      if (fsClip) { fsClip.ids = fsClip.ids.filter(i => !nodes.some(n => n.id === i)); if (!fsClip.ids.length) fsClip = null; }
+      ex.sel.clear();
+      await refreshAll();
+    });
+  }
+
+  function emptyRecycleBin() {
+    showConfirm('Очистити Смітник? Усі об\'єкти буде видалено назавжди.', async ok => {
+      if (!ok) return;
+      await emptyRecycle();
+      ex.sel.clear();
+      await refreshAll();
+    });
+  }
+
+  function startRename(id) {
+    const el = content.querySelector('.ex-item[data-id="' + id + '"]');
+    const n = byId(id);
+    if (!el || !n || n.sys) return;
+    const lab = el.querySelector('.label');
+    el.scrollIntoView({ block: 'nearest' });
+    const input = document.createElement('input');
+    input.className = 'ex-rename';
+    input.value = n.name;
+    input.spellcheck = false;
+    lab.style.display = 'none';
+    lab.after(input);
+    let done = false, tip = null;
+    const hideTip = () => { if (tip) { tip.remove(); tip = null; } };
+    const finish = () => { done = true; hideTip(); input.remove(); lab.style.display = ''; };
+    const validate = v => !v ? 'Ім\'я не може бути порожнім.'
+      : FS_BAD.test(v) ? 'Ім\'я не може містити жодного з таких символів:  \\ / : * ? " < > |'
+      : nameTaken(n.parent, v, id) ? 'Елемент із таким іменем уже існує.' : '';
+    const showTip = msg => {
+      hideTip();
+      tip = document.createElement('div');
+      tip.className = 'ex-tip';
+      tip.textContent = msg;
+      const r = input.getBoundingClientRect();
+      tip.style.left = r.left + 'px';
+      tip.style.top = (r.bottom + 2) + 'px';
+      document.body.appendChild(tip);
+      input.classList.add('bad');
+    };
+    const commit = async () => {
+      const v = input.value.trim();
+      if (v === n.name) { finish(); return; }
+      const err = validate(v);
+      if (err) { showTip(err); return; }
+      finish();
+      await renameNode(id, v);
+      await refreshAll();
+    };
+    input.addEventListener('keydown', async e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); await commit(); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(); }
+      else { hideTip(); input.classList.remove('bad'); }
+    });
+    input.addEventListener('blur', async () => {
+      if (done) return;
+      const v = input.value.trim();
+      if (v === n.name || validate(v)) finish(); else await commit();
+    });
+    input.focus();
+    const dot = n.type === 'file' ? n.name.lastIndexOf('.') : -1;
+    input.setSelectionRange(0, dot > 0 ? dot : n.name.length);
+  }
+
+  /* ---------- Меню ---------- */
+  const viewItems = () => [
+    { label: 'Таблиця', icon: ex.view === 'details' ? '✔' : '', action: () => setView('details') },
+    { label: 'Великі значки', icon: ex.view === 'large' ? '✔' : '', action: () => setView('large') },
+    { label: 'Список', icon: ex.view === 'list' ? '✔' : '', action: () => setView('list') },
+    { sep: true },
+    ...[['name', 'Сортувати: за ім\'ям'], ['date', 'Сортувати: за датою змінення'],
+        ['type', 'Сортувати: за типом'], ['size', 'Сортувати: за розміром']]
+      .map(([k, l]) => ({ label: l, icon: ex.sortKey === k ? (ex.sortDir > 0 ? '▲' : '▼') : '', action: () => setSort(k) }))
+  ];
+  const newItems = () => [
+    { label: 'Папку', icon: '📁', action: () => createHere('folder') },
+    { label: 'Текстовий документ', icon: '📄', action: () => createHere('file') }
+  ];
+  function showItemMenu(x, y) {
+    const nodes = selNodes();
+    const one = nodes.length === 1 ? nodes[0] : null;
+    const prot = nodes.some(n => n.sys);
+
+    // Об'єкти, що лежать у Смітнику
+    if (nodes.length && nodes.every(n => n.parent === RECYCLE)) {
+      buildMenu([
+        ...(one && one.type === 'folder' ? [{ label: 'Відкрити', icon: '📂', action: () => openNode(one.id) }, { sep: true }] : []),
+        { label: 'Відновити', icon: '↩️', action: restoreSelected },
+        { label: 'Видалити назавжди', icon: '🗑️', action: deleteForeverSelected },
+        { sep: true },
+        { label: 'Очистити Смітник', icon: '🧹', action: emptyRecycleBin },
+        { sep: true },
+        { label: 'Властивості', icon: 'ℹ️', action: () => showProps([...ex.sel]) }
+      ], x, y);
+      return;
+    }
+    // Сам Смітник
+    if (one && one.id === RECYCLE) {
+      buildMenu([
+        { label: 'Відкрити', icon: '📂', action: () => openNode(one.id) },
+        { sep: true },
+        { label: 'Очистити Смітник', icon: '🧹', action: emptyRecycleBin },
+        { sep: true },
+        { label: 'Властивості', icon: 'ℹ️', action: () => showProps([one.id]) }
+      ], x, y);
+      return;
+    }
+
+    buildMenu([
+      ...(one ? [{ label: 'Відкрити', icon: '📂', action: () => openNode(one.id) }, { sep: true }] : []),
+      ...(one && one.pkgId ? [{ label: 'Встановити', icon: '📦', action: () => installPackage(one.pkgId) }, { sep: true }] : []),
+      { label: 'Вирізати', icon: '✂️', disabled: prot, action: () => setClip('cut') },
+      { label: 'Копіювати', icon: '📋', disabled: prot, action: () => setClip('copy') },
+      { label: 'Створити ярлик', icon: '🔗', disabled: prot || !nodes.length, action: () => createShortcuts(nodes) },
+      { sep: true },
+      { label: 'Видалити', icon: '🗑️', disabled: prot, action: deleteSelected },
+      { label: 'Перейменувати', icon: '✏️', disabled: !one || prot, action: () => startRename(one.id) },
+      { sep: true },
+      { label: 'Властивості', icon: 'ℹ️', action: () => showProps([...ex.sel]) }
+    ], x, y);
+  }
+  function showBgMenu(x, y) {
+    const cur = curNode();
+    const can = canCreate(cur);
+    const inRec = cur && cur.id === RECYCLE;
+    buildMenu([
+      ...viewItems(),
+      { sep: true },
+      { label: 'Оновити', icon: '🔄', action: () => render() },
+      { sep: true },
+      ...(inRec ? [{ label: 'Очистити Смітник', icon: '🧹', action: emptyRecycleBin }, { sep: true }] : []),
+      { label: 'Вставити', icon: '📥', disabled: !fsClip || !can, action: () => pasteInto(ex.cwd) },
+      { sep: true },
+      { label: 'Створити папку', icon: '📁', disabled: !can, action: () => createHere('folder') },
+      { label: 'Створити текстовий документ', icon: '📄', disabled: !can, action: () => createHere('file') },
+      { sep: true },
+      { label: 'Властивості', icon: 'ℹ️', action: () => showProps([ex.cwd]) }
+    ], x, y);
+  }
+  const menuAt = (btn, items) => { const r = btn.getBoundingClientRect(); buildMenu(items, r.left, r.bottom); };
+
+  root.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b && !b.classList.contains('disabled')) {
+      switch (b.dataset.act) {
+        case 'back': step(-1); break;
+        case 'forward': step(1); break;
+        case 'up': goUp(); break;
+        case 'refresh': render(); break;
+        case 'new': menuAt(b, newItems()); break;
+        case 'cut': setClip('cut'); break;
+        case 'copy': setClip('copy'); break;
+        case 'paste': pasteInto(ex.cwd); break;
+        case 'rename': { const n = selNodes()[0]; if (n) startRename(n.id); break; }
+        case 'delete': deleteSelected(); break;
+        case 'view': menuAt(b, viewItems()); break;
+        case 'props': showProps(ex.sel.size ? [...ex.sel] : [ex.cwd]); break;
+      }
+      return;
+    }
+    const v = e.target.closest('.ex-vbtn');
+    if (v) setView(v.dataset.view);
+  });
+
+  /* ---------- Пошук ---------- */
+  let searchTimer;
+  searchIn.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      ex.search = searchIn.value.trim();
+      ex.sel.clear();
+      ex.resetScroll = true;
+      render();
+    }, 250);
+  });
+  searchIn.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { searchIn.value = ''; clearTimeout(searchTimer); if (ex.search) clearSearch(); }
+  });
+
+  /* ---------- Взаємодія з вмістом ---------- */
+  function makeGhost(n, count) {
+    const g = document.createElement('div');
+    g.className = 'icon';
+    g.style.background = 'rgba(30,30,30,0.6)';
+    const gl = document.createElement('div'); gl.className = 'glyph'; fillGlyph(gl, n, ex.snap.byId);
+    const lb = document.createElement('div'); lb.className = 'label';
+    lb.textContent = count > 1 ? count + ' елем.' : n.name;
+    g.append(gl, lb);
+    return g;
+  }
+
+  function startBand(e) {
+    const keep = (e.ctrlKey || e.metaKey) ? new Set(ex.sel) : new Set();
+    if (!keep.size && ex.sel.size) { ex.sel.clear(); syncSel(); }
+    const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
+    const rects = [...content.querySelectorAll('.ex-item')].map(el => ({ id: el.dataset.id, r: el.getBoundingClientRect() }));
+    let band = null;
+    try { content.setPointerCapture(pid); } catch (_) {}
+    const move = ev => {
+      if (ev.pointerId !== pid) return;
+      if (!band) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+        band = document.createElement('div');
+        band.className = 'ex-band';
+        document.body.appendChild(band);
+      }
+      const x1 = Math.min(sx, ev.clientX), y1 = Math.min(sy, ev.clientY);
+      const x2 = Math.max(sx, ev.clientX), y2 = Math.max(sy, ev.clientY);
+      band.style.left = x1 + 'px'; band.style.top = y1 + 'px';
+      band.style.width = (x2 - x1) + 'px'; band.style.height = (y2 - y1) + 'px';
+      const s = new Set(keep);
+      for (const it of rects) {
+        if (it.r.left < x2 && it.r.right > x1 && it.r.top < y2 && it.r.bottom > y1) s.add(it.id);
+      }
+      ex.sel = s;
+      syncSel();
+    };
+    const up = ev => {
+      if (ev.pointerId !== pid) return;
+      if (band) band.remove();
+      content.removeEventListener('pointermove', move);
+      content.removeEventListener('pointerup', up);
+      content.removeEventListener('pointercancel', up);
+    };
+    content.addEventListener('pointermove', move);
+    content.addEventListener('pointerup', up);
+    content.addEventListener('pointercancel', up);
+  }
+
+  content.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.target.closest('.ex-rename') || e.target.closest('.ex-hcell')) return;
+    const itemEl = e.target.closest('.ex-item');
+    if (!itemEl) { startBand(e); return; }
+    const id = itemEl.dataset.id;
+    const multi = e.ctrlKey || e.metaKey;
+    if (multi) {
+      if (ex.sel.has(id)) ex.sel.delete(id); else ex.sel.add(id);
+      ex.anchor = id;
+    } else if (e.shiftKey && ex.anchor) {
+      const a = ex.order.indexOf(ex.anchor), b = ex.order.indexOf(id);
+      if (a >= 0 && b >= 0) ex.sel = new Set(ex.order.slice(Math.min(a, b), Math.max(a, b) + 1));
+    } else {
+      if (!ex.sel.has(id)) ex.sel = new Set([id]);
+      ex.anchor = id;
+    }
+    syncSel();
+    const n = byId(id);
+    if (!n || n.sys || multi || e.shiftKey) return;
+    const ids = [...ex.sel].filter(i => { const x = byId(i); return x && !x.sys; });
+    startPress(e, itemEl, n, { ids, makeGhost: () => makeGhost(n, ids.length) });
+  });
+  content.addEventListener('click', e => {
+    const h = e.target.closest('.ex-hcell');
+    if (h) { setSort(h.dataset.key); return; }
+    if (performance.now() - lastDragAt < 150) return;
+    const itemEl = e.target.closest('.ex-item');
+    if (!itemEl || e.ctrlKey || e.metaKey || e.shiftKey || e.target.closest('.ex-rename')) return;
+    if (ex.sel.size > 1) { ex.sel = new Set([itemEl.dataset.id]); syncSel(); }
+  });
+  content.addEventListener('dblclick', e => {
+    if (e.target.closest('.ex-rename')) return;
+    const itemEl = e.target.closest('.ex-item');
+    if (itemEl) openNode(itemEl.dataset.id);
+  });
+  content.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target.closest('.ex-hcell')) return;
+    const itemEl = e.target.closest('.ex-item');
+    if (itemEl) {
+      if (!ex.sel.has(itemEl.dataset.id)) { ex.sel = new Set([itemEl.dataset.id]); ex.anchor = itemEl.dataset.id; syncSel(); }
+      showItemMenu(e.clientX, e.clientY);
+    } else {
+      if (ex.sel.size) { ex.sel.clear(); syncSel(); }
+      showBgMenu(e.clientX, e.clientY);
+    }
+  });
+  nav.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
+  root.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ---------- Клавіатура ---------- */
+  function moveSel(d) {
+    if (!ex.order.length) return;
+    let i = ex.anchor ? ex.order.indexOf(ex.anchor) : -1;
+    i = clamp(i + d, 0, ex.order.length - 1);
+    const id = ex.order[i];
+    ex.sel = new Set([id]); ex.anchor = id;
+    syncSel();
+    const el = content.querySelector('.ex-item[data-id="' + id + '"]');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }
+  root.addEventListener('keydown', e => {
+    if (e.target.closest('input, textarea')) return;
+    const ctrl = e.ctrlKey || e.metaKey, k = e.key, lk = k.toLowerCase();
+    const nodes = selNodes();
+    let handled = true;
+    if (e.altKey && k === 'ArrowLeft') step(-1);
+    else if (e.altKey && k === 'ArrowRight') step(1);
+    else if (e.altKey && k === 'ArrowUp') goUp();
+    else if (ctrl && e.shiftKey && lk === 'n') createHere('folder');
+    else if (ctrl && lk === 'a') { ex.sel = new Set(ex.order); syncSel(); }
+    else if (ctrl && lk === 'c') setClip('copy');
+    else if (ctrl && lk === 'x') setClip('cut');
+    else if (ctrl && lk === 'v') pasteInto(ex.cwd);
+    else if (k === 'Backspace') step(-1);
+    else if (k === 'Enter') { if (nodes.length) openNode(nodes[0].id); }
+    else if (k === 'F2') { if (nodes.length === 1) startRename(nodes[0].id); }
+    else if (k === 'Delete') deleteSelected();
+    else if (k === 'F5') render();
+    else if (k === 'Escape') { if (ex.search) clearSearch(); else { ex.sel.clear(); syncSel(); } }
+    else if (k === 'ArrowDown' || k === 'ArrowRight') moveSel(1);
+    else if (k === 'ArrowUp' || k === 'ArrowLeft') moveSel(-1);
+    else handled = false;
+    if (handled) e.preventDefault();
+  });
+
+  /* ---------- Старт ---------- */
+  explorers.add(ex);
+  w.onClose = () => explorers.delete(ex);
+  (async () => {
+    ex.snap = await fsSnapshot();
+    if (!byId(ex.cwd)) ex.cwd = 'pc';
+    go(ex.cwd);
+    root.focus({ preventScroll: true });
+  })();
+}
+
+/* ============================================================
+   Контекстні меню
+   ============================================================ */
+const ctxMenu = document.getElementById('ctxMenu');
+
+function buildMenu(items, x, y) {
+  ctxMenu.innerHTML = '';
+  for (const it of items) {
+    if (it.sep) {
+      const s = document.createElement('div');
+      s.className = 'sep';
+      ctxMenu.appendChild(s);
+      continue;
+    }
+    const d = document.createElement('div');
+    d.className = 'item' + (it.disabled ? ' disabled' : '');
+    if (it.icon) {
+      const i = document.createElement('span');
+      i.className = 'ico';
+      i.textContent = it.icon;
+      d.appendChild(i);
+    }
+    d.appendChild(document.createTextNode(it.label));
+    d.addEventListener('click', () => {
+      hideMenu();
+      if (it.action) it.action();
+    });
+    ctxMenu.appendChild(d);
+  }
+  ctxMenu.style.left = x + 'px';
+  ctxMenu.style.top = y + 'px';
+  ctxMenu.classList.add('show');
+
+  // Корекція позиції, щоб не вилазило за екран
+  const rect = ctxMenu.getBoundingClientRect();
+  if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - 4) + 'px';
+  if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - 4) + 'px';
+}
+
+function hideMenu() {
+  ctxMenu.classList.remove('show');
+}
+
+document.addEventListener('mousedown', e => {
+  if (!ctxMenu.contains(e.target)) hideMenu();
+});
+document.addEventListener('scroll', hideMenu, true);
+window.addEventListener('blur', hideMenu);
+
+function showDesktopContextMenu(x, y) {
+  buildMenu([
+    { label: 'Створити папку', icon: '📁', action: () => promptCreate('folder', ROOT, { x, y }) },
+    { label: 'Створити текстовий документ', icon: '📄', action: () => promptCreate('file', ROOT, { x, y }) },
+    { sep: true },
+    { label: 'Впорядкувати по вертикалі', icon: '↕️', action: () => arrangeIcons('vertical') },
+    { label: 'Впорядкувати по горизонталі', icon: '↔️', action: () => arrangeIcons('horizontal') },
+    { sep: true },
+    { label: 'Налаштувати тло…', icon: '🖼️', action: () => openBgDialog() },
+    { sep: true },
+    { label: 'Оновити', icon: '🔄', action: () => refreshAll() },
+    { label: 'Вставити', icon: '📥', disabled: !fsClip, action: () => pasteInto(ROOT) },
+    { sep: true },
+    { label: 'Очистити Смітник', icon: '🧹', action: () => promptEmptyRecycle() },
+    { label: 'Властивості', icon: 'ℹ️', action: () => showProps([ROOT]) }
+  ], x, y);
+}
+
+function showFolderContextMenu(x, y, parentId) {
+  buildMenu([
+    { label: 'Створити папку', icon: '📁', action: () => promptCreate('folder', parentId) },
+    { label: 'Створити текстовий документ', icon: '📄', action: () => promptCreate('file', parentId) },
+    { sep: true },
+    { label: 'Оновити', icon: '🔄', action: () => refreshAll() }
+  ], x, y);
+}
+
+function showFileContextMenu(x, y, node) {
+  if (node.id === RECYCLE) {
+    buildMenu([
+      { label: 'Відкрити', icon: '📂', action: () => openFolder(node.id) },
+      { sep: true },
+      { label: 'Очистити Смітник', icon: '🧹', action: () => promptEmptyRecycle() },
+      { sep: true },
+      { label: 'Властивості', icon: 'ℹ️', action: () => showProps([node.id]) }
+    ], x, y);
+    return;
+  }
+  const isZip = /\.zip$/i.test(node.name);
+  buildMenu([
+    ...(node.pkgId ? [{ label: 'Встановити', icon: '📦', action: () => installPackage(node.pkgId) }] : []),
+    { label: 'Відкрити', icon: '📂', action: () => openFile(node.id) },
+    ...(isZip ? [{ label: 'Розпакувати', icon: '📤', action: () => extractZip(node) }] : []),
+    { label: 'Створити ярлик', icon: '🔗', disabled: !!node.shortcut, action: () => createShortcuts([node]) },
+    { sep: true },
+    { label: 'Вирізати', icon: '✂️', action: () => { fsClip = { mode: 'cut', ids: [node.id] }; refreshAll(); } },
+    { label: 'Копіювати', icon: '📋', action: () => { fsClip = { mode: 'copy', ids: [node.id] }; refreshAll(); } },
+    { sep: true },
+    { label: 'Перейменувати', icon: '✏️', action: () => promptRename(node) },
+    { label: 'Видалити', icon: '🗑️', action: () => promptDelete(node) },
+    { sep: true },
+    { label: 'Властивості', icon: 'ℹ️', action: () => showProps([node.id]) }
+  ], x, y);
+}
+
+/* ============================================================
+   Модалка вводу імені
+   ============================================================ */
+const inputModal = document.getElementById('inputModal');
+const inputField = document.getElementById('inputField');
+const inputTitle = document.getElementById('inputTitle');
+const inputLabel = document.getElementById('inputLabel');
+let inputCallback = null;
+
+function showInput(title, label, defaultValue, callback) {
+  inputTitle.textContent = title;
+  inputLabel.textContent = label;
+  inputField.value = defaultValue || '';
+  inputModal.classList.add('show');
+  inputCallback = callback;
+  setTimeout(() => { inputField.focus(); inputField.select(); }, 50);
+}
+
+function closeInput() {
+  inputModal.classList.remove('show');
+  inputCallback = null;
+}
+
+function submitInput() {
+  const val = inputField.value.trim();
+  if (!val) return;
+  const cb = inputCallback;
+  closeInput();
+  if (cb) cb(val);
+}
+
+inputField.addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitInput();
+  if (e.key === 'Escape') closeInput();
+});
+
+/* ============================================================
+   Модалка підтвердження
+   ============================================================ */
+const confirmModal = document.getElementById('confirmModal');
+const confirmText = document.getElementById('confirmText');
+let confirmCallback = null;
+
+function showConfirm(text, cb) {
+  confirmText.textContent = text;
+  confirmModal.classList.add('show');
+  confirmCallback = cb;
+}
+
+function closeConfirm(result) {
+  confirmModal.classList.remove('show');
+  const cb = confirmCallback;
+  confirmCallback = null;
+  if (cb) cb(result);
+}
+
+/* ============================================================
+   Створення / перейменування / видалення
+   ============================================================ */
+async function uniqueName(parent, baseName) {
+  const children = await getChildren(parent);
+  const names = new Set(children.map(c => c.name));
+  if (!names.has(baseName)) return baseName;
+  const dot = baseName.lastIndexOf('.');
+  const stem = dot > 0 ? baseName.slice(0, dot) : baseName;
+  const ext = dot > 0 ? baseName.slice(dot) : '';
+  let i = 2;
+  while (names.has(`${stem} (${i})${ext}`)) i++;
+  return `${stem} (${i})${ext}`;
+}
+
+function promptCreate(type, parent = ROOT, pos = null) {
+  const isFolder = type === 'folder';
+  const defaultName = isFolder ? 'Нова папка' : 'Новий текстовий документ.txt';
+  showInput(
+    isFolder ? 'Створити папку' : 'Створити файл',
+    'Введіть ім\'я:',
+    defaultName,
+    async (name) => {
+      const finalName = await uniqueName(parent, name);
+      const node = await createNode(parent, finalName, isFolder ? 'folder' : 'file');
+      // На робочому столі новий значок з'являється там, де клікнули правою кнопкою
+      if (parent === ROOT && pos) await placeOnDesktop(node.id, pos.x - ICON_W / 2, pos.y - 20);
+      await refreshAll();
+    }
+  );
+}
+
+function promptRename(node) {
+  showInput('Перейменувати', 'Нове ім\'я:', node.name, async (name) => {
+    await renameNode(node.id, name);
+    await refreshAll();
+  });
+}
+
+function promptDelete(node) {
+  const inRecycle = node.parent === RECYCLE;
+  const text = inRecycle
+    ? `Видалити "${node.name}" назавжди?`
+    : `Перемістити "${node.name}" до Смітника?`;
+  showConfirm(text, async (ok) => {
+    if (!ok) return;
+    if (inRecycle) await deleteNodeRecursive(node.id);
+    else await moveToRecycle(node.id);
+    await refreshAll();
+  });
+}
+
+function promptEmptyRecycle() {
+  showConfirm('Очистити Смітник? Усі об\'єкти буде видалено назавжди.', async (ok) => {
+    if (!ok) return;
+    await emptyRecycle();
+    await refreshAll();
+  });
+}
+
+/* ============================================================
+   Асоціації файлів: текст, зображення, архіви, документи
+   ============================================================ */
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|ico|avif|svg)$/i;
+const ARCHIVE_EXT_RE = /\.(zip)$/i;
+const DOC_EXT_RE = /\.doc$/i;
+
+async function openFile(id) {
+  const node = await idbGet(id);
+  if (!node) return;
+  if (node.type === 'folder') return openFolder(id);
+  if (node.shortcut && node.target) {         // ярлик — відкриваємо об'єкт за посиланням
+    const target = await idbGet(node.target);
+    if (!target) { alert('Ярлик вказує на об\'єкт, якого більше не існує.'); return; }
+    return openFile(node.target);
+  }
+  if (node.appId) {                          // ярлик програми з теки «Програми»
+    const app = APPS.find(a => a.id === node.appId);
+    if (app) return openApp(app);
+  }
+  if (node.pkgId) return installPackage(node.pkgId);   // інсталяційний пакунок
+  if (IMAGE_EXT_RE.test(node.name)) return openFileInApp('viewer', node);
+  if (ARCHIVE_EXT_RE.test(node.name)) return openFileInApp('zipper', node);
+  if (DOC_EXT_RE.test(node.name)) return openFileInApp('wordpad', node);
+  return openFileInApp('edit', node);
+}
+
+function callAppOpen(fr, nodeId) {
+  let tries = 0;
+  const tick = () => {
+    let fw = null;
+    try { fw = fr.contentWindow; } catch (_) {}
+    if (fw && fw.VFS && fw.VFS.__loaded && typeof fw.vfsOpenFile === 'function') {
+      try { fw.vfsOpenFile(null, nodeId); } catch (_) {}
+      return;
+    }
+    if (++tries < 200) setTimeout(tick, 50);
+  };
+  tick();
+}
+
+function openFileInApp(appId, node) {
+  const app = APPS.find(a => a.id === appId);
+  if (!app) return;
+  for (const x of appWins.values()) {
+    if (x.app.id === appId) {
+      activateApp(x);
+      callAppOpen(x.el.querySelector('iframe'), node.id);
+      return;
+    }
+  }
+  openApp(app, { openId: node.id });
+}
+
+/* Розпакувати ZIP-архів у нову теку поруч із ним (у ВФС) */
+async function extractZip(node) {
+  if (!window.JSZip) { alert('Модуль JSZip не завантажено.'); return; }
+  let bytes;
+  try {
+    bytes = node.blob ? new Uint8Array(await node.blob.arrayBuffer())
+                      : new TextEncoder().encode(node.content || '');
+  } catch (_) { alert('Не вдалося прочитати архів.'); return; }
+
+  let zip;
+  try { zip = await JSZip.loadAsync(bytes); }
+  catch (e) { alert('Не вдалося відкрити архів: ' + (e && e.message || e)); return; }
+
+  const parentPath = await VFS.pathOf(node.parent);
+  const base = node.name.replace(/\.zip$/i, '').trim() || 'Архів';
+  let target = parentPath + '\\' + base, n = 2;
+  while (await VFS.exists(target)) target = parentPath + '\\' + base + ' (' + (n++) + ')';
+
+  try {
+    await VFS.getDirectoryHandle(target, { create: true });
+    const entries = [];
+    zip.forEach((path, entry) => { if (!entry.dir) entries.push([path, entry]); });
+    for (const [p, f] of entries) {
+      const rel = p.split('/').filter(s => s && s !== '.' && s !== '..').join('\\');
+      if (!rel) continue;
+      await VFS.writeFile(target + '\\' + rel, await f.async('uint8array'));
+    }
+  } catch (e) {
+    alert('Помилка розпакування: ' + (e && e.message || e));
+  }
+  await refreshAll();
+}
+
+/* ============================================================
+   Ініціалізація
+   ============================================================ */
+/* ============================================================
+   Нижня панель, меню програм, вікна застосунків (iframe)
+   ============================================================ */
+// Встановлені програми описані у folders/apps/apps.json (звідти формується меню «Пуск»).
+// Значення нижче — резервний перелік, якщо файл недоступний.
+const DEFAULT_APPS = [
+  { id: 'explorer', name: 'Провідник', icon: '📁', w: 900, h: 580, mount: mountExplorer },
+  { id: 'appwiz', name: 'Встановлення та видалення програм', icon: '⚙️', url: 'appwiz/index.html', w: 640, h: 460 },
+  { id: 'calc',  name: 'Calc.exe',  icon: '🧮', url: 'calc/index.html',  w: 360, h: 480 },
+  { id: 'edit',  name: 'Блокнот',  icon: '📝', url: 'edit/index.html',  w: 640, h: 440 },
+  { id: 'wordpad', name: 'WordPad', icon: '📄', url: 'wordpad/index.html', w: 760, h: 520 },
+  { id: 'paint', name: 'Paint.exe', icon: '🎨', url: 'paint/index.html', w: 760, h: 520 },
+  { id: 'zipper', name: 'Zipper.exe', icon: '🗄', url: 'zipper/index.html', w: 760, h: 520 },
+  { id: 'cmd', name: 'Cmd.exe', icon: '🖥', url: 'cmd/index.html', w: 760, h: 520 },
+  { id: 'viewer', name: 'Переглядач зображень', icon: '🖼️', url: 'viewer/index.html', w: 900, h: 600 },
+  { id: 'secureguard', name: 'SecureGuard', icon: '🛡️', url: 'secureguard/index.html', w: 820, h: 560 }
+];
+let APPS = DEFAULT_APPS;
+let BASE_APPS = DEFAULT_APPS;     // програми з apps.json
+let INSTALLED_APPS = [];          // програми, встановлені з package-файлів (зберігаються у localStorage)
+let PACKAGES = [];                // доступні пакунки з folders/downloads/packages.json
+
+// Майстер встановлення/видалення — не потрапляє у меню «Пуск», відкривається лише програмно
+const INSTALLER_APP = { id: 'installshield', name: 'Майстер встановлення', icon: '📦', url: 'installshield/index.html', w: 720, h: 480 };
+
+// Нормалізація опису програми до спільного вигляду
+function normalizeApp(a) {
+  return {
+    id: String(a.id),
+    name: String(a.name),
+    icon: a.icon || '📦',
+    w: Number(a.w) || 720,
+    h: Number(a.h) || 480,
+    url: a.url,
+    mount: (a.mount === 'explorer' || a.id === 'explorer') ? mountExplorer : undefined
+  };
+}
+
+// Перерахувати APPS = базові (apps.json) + встановлені програми
+function composeApps() {
+  const ids = new Set(BASE_APPS.map(a => a.id));
+  APPS = BASE_APPS.concat(INSTALLED_APPS.filter(a => !ids.has(a.id)));
+}
+
+async function loadApps() {
+  let list = null;
+  try {
+    const r = await fetch('folders/apps/apps.json', { cache: 'no-cache' });
+    if (r.ok) list = await r.json();
+  } catch (_) {}
+  if (!Array.isArray(list) || !list.length) list = DEFAULT_APPS;
+  BASE_APPS = list.filter(a => a && a.id && a.name).map(normalizeApp);
+  loadInstalledApps();
+  composeApps();
+}
+
+// Доступні до встановлення пакунки
+async function loadPackages() {
+  let list = null;
+  try {
+    const r = await fetch('folders/downloads/packages.json', { cache: 'no-cache' });
+    if (r.ok) list = await r.json();
+  } catch (_) {}
+  PACKAGES = Array.isArray(list)
+    ? list.filter(p => p && p.id && p.name).map(p => ({
+        id: String(p.id), name: String(p.name), icon: p.icon || '📦',
+        w: Number(p.w) || 720, h: Number(p.h) || 480, url: p.url
+      }))
+    : [];
+}
+
+// Ім'я інсталяційного файла пакета: "<Назва>-install.exe"
+function pkgFileName(p) {
+  const base = String(p.name).replace(/\.exe$/i, '').trim() || p.id;
+  return base + '-install.exe';
+}
+
+// Відтворити пакунки у теці «Завантаження» (ідемпотентно)
+async function seedPackages() {
+  const parent = await idbGet('downloads');
+  if (!parent || parent.type !== 'folder') return;
+  const existing = await idbChildren('downloads');
+  const byPkg = new Map(existing.filter(n => n.pkgId).map(n => [n.pkgId, n]));
+  const wanted = new Set(PACKAGES.map(p => p.id));
+  for (const n of existing) {
+    if (n.pkgId && !wanted.has(n.pkgId)) await idbDelete(n.id);
+  }
+  for (const p of PACKAGES) {
+    const fileName = pkgFileName(p);
+    const cur = byPkg.get(p.id);
+    if (!cur) {
+      await idbPut({
+        id: genId(), parent: 'downloads', name: fileName, type: 'file',
+        content: '', pkgId: p.id, icon: p.icon,
+        created: Date.now(), modified: Date.now()
+      });
+    } else if (cur.name !== fileName || cur.icon !== p.icon) {
+      cur.name = fileName; cur.icon = p.icon; cur.modified = Date.now();
+      await idbPut(cur);
+    }
+  }
+}
+
+/* ---------- Встановлені програми (persist у localStorage) ---------- */
+const INSTALLED_KEY = 'de_installed_apps';
+
+function loadInstalledApps() {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(INSTALLED_KEY)) || []; } catch (_) {}
+  INSTALLED_APPS = Array.isArray(list) ? list.filter(a => a && a.id && a.name).map(normalizeApp) : [];
+}
+
+function saveInstalledApps() {
+  try {
+    localStorage.setItem(INSTALLED_KEY, JSON.stringify(INSTALLED_APPS.map(a => ({
+      id: a.id, name: a.name, icon: a.icon, w: a.w, h: a.h, url: a.url
+    }))));
+  } catch (_) {}
+}
+
+function isInstalledApp(id) {
+  return APPS.some(a => a.id === id);
+}
+
+// Встановити програму: додати до меню «Пуск» і теки «Програми»
+async function installApp(pkg) {
+  if (!pkg || !pkg.id || !pkg.name) return;
+  const app = normalizeApp(pkg);
+  delete app.mount;
+  const i = INSTALLED_APPS.findIndex(a => a.id === app.id);
+  if (i >= 0) INSTALLED_APPS[i] = app; else INSTALLED_APPS.push(app);
+  saveInstalledApps();
+  composeApps();
+  buildStartMenu();
+  await syncAppsFolder();
+  await refreshAll();
+  broadcastAppwiz();
+}
+
+// Запустити інсталяційний пакет через InstallShield
+function installPackage(pkgId) {
+  const pkg = PACKAGES.find(p => p.id === pkgId) || INSTALLED_APPS.find(p => p.id === pkgId);
+  if (!pkg) { alert('Пакунок не знайдено.'); return; }
+  openApp(normalizeApp(INSTALLER_APP), { package: pkg });
+}
+
+// Список програм для вікна «Встановлення та видалення програм»
+// Показуємо всі зареєстровані програми; видаляти можна лише встановлені з пакетів.
+function appwizPrograms() {
+  const installedIds = new Set(INSTALLED_APPS.map(a => a.id));
+  return APPS
+    .filter(a => a.id !== 'appwiz')
+    .map(a => ({ id: a.id, name: a.name, icon: a.icon || '📦', removable: installedIds.has(a.id) }));
+}
+
+// Надіслати актуальний список програм усім відкритим вікнам appwiz
+function broadcastAppwiz() {
+  const programs = appwizPrograms();
+  for (const w of appWins.values()) {
+    if (!w.app || w.app.id !== 'appwiz') continue;
+    const fr = w.el.querySelector('iframe');
+    if (fr && fr.contentWindow) {
+      try { fr.contentWindow.postMessage({ type: 'de-appwiz-programs', programs }, '*'); } catch (_) {}
+    }
+  }
+}
+
+// Видалити встановлену програму (через майстер видалення)
+function uninstallApp(appId) {
+  const app = INSTALLED_APPS.find(a => a.id === appId);
+  if (!app) { broadcastAppwiz(); return; }
+  openApp(normalizeApp(INSTALLER_APP), { uninstall: app });
+}
+
+// Прибрати програму зі списку встановлених після підтвердження майстром
+async function removeApp(appId) {
+  const i = INSTALLED_APPS.findIndex(a => a.id === appId);
+  if (i < 0) return;
+  INSTALLED_APPS.splice(i, 1);
+  saveInstalledApps();
+  composeApps();
+  buildStartMenu();
+  await syncAppsFolder();
+  await refreshAll();
+  broadcastAppwiz();
+}
+
+// Встановити програму з package-файла, вибраного у вікні appwiz
+async function installFromNode(nodeId, name) {
+  let node = null;
+  if (nodeId != null) {
+    try { node = await idbGet(nodeId); } catch (_) {}
+  }
+  let pkg = node && node.pkgId ? (PACKAGES.find(p => p.id === node.pkgId) || null) : null;
+  if (!pkg && name) pkg = PACKAGES.find(p => pkgFileName(p) === name) || null;   // пошук за іменем файла
+  if (!pkg) {
+    alert('Файл «' + ((node && node.name) || name || 'файл') + '» не є інсталяційним пакетом.');
+    return;
+  }
+  openApp(normalizeApp(INSTALLER_APP), { package: pkg });
+}
+
+// Наповнити системну теку «Програми» ярликами встановлених програм (ідемпотентно)
+async function syncAppsFolder() {
+  const parent = await idbGet('apps');
+  if (!parent) return;
+  const existing = await idbChildren('apps');
+  const byApp = new Map(existing.filter(n => n.appId).map(n => [n.appId, n]));
+  const wanted = new Set(APPS.map(a => a.id));
+  for (const n of existing) {
+    if (n.appId && !wanted.has(n.appId)) await idbDelete(n.id);
+  }
+  for (const app of APPS) {
+    const cur = byApp.get(app.id);
+    if (!cur) {
+      await idbPut({
+        id: 'app_' + app.id, parent: 'apps', name: app.name, type: 'file',
+        appId: app.id, icon: app.icon, content: '', created: Date.now(), modified: Date.now()
+      });
+    } else if (cur.name !== app.name || cur.icon !== app.icon) {
+      cur.name = app.name; cur.icon = app.icon; cur.modified = Date.now();
+      await idbPut(cur);
+    }
+  }
+}
+
+const appWins = new Map();   // id вікна -> об'єкт вікна
+let appSeq = 0;
+let activeApp = null;
+
+const startBtn = document.getElementById('startBtn');
+const startMenu = document.getElementById('startMenu');
+const tasksEl = document.getElementById('tasks');
+
+function toggleStart(force) {
+  const show = force === undefined ? !startMenu.classList.contains('show') : force;
+  startMenu.classList.toggle('show', show);
+  startBtn.classList.toggle('open', show);
+}
+
+// Швидкий запуск у лівій частині (як у Windows 7)
+const START_QUICK = [
+  ['explorer', '📁', 'Провідник'],
+  ['edit',     '📝', 'Блокнот'],
+  ['calc',     '🧮', 'Калькулятор'],
+  ['cmd',      '🖥', 'Термінал CMD']
+];
+
+// Права частина меню
+const START_RIGHT = [
+  { icon: '🖥️', label: "Цей комп'ютер", run: () => openExplorer('pc') },
+  { icon: '📄', label: 'Документи',      run: () => openExplorer('docs') },
+  { icon: '🖼️', label: 'Зображення',     run: () => openExplorer('pictures') },
+  { sep: true },
+  { icon: '📁', label: 'Програми',        run: () => openExplorer('apps') },
+  { icon: '🛠️', label: 'Налаштування',    run: () => openControlPanel() },
+  { icon: '⚙️', label: 'Встановлення та видалення програм', appId: 'appwiz' },
+  { icon: '🛡️', label: 'Антивірус',       appId: 'secureguard' },
+  { icon: '🗄', label: 'Архіватор',       appId: 'zipper' }
+];
+
+function smItem(icon, label, onClick) {
+  const it = document.createElement('div');
+  it.className = 'sm-item';
+  const ico = document.createElement('span');
+  ico.className = 'ico';
+  ico.textContent = icon;
+  const nm = document.createElement('span');
+  nm.className = 'lbl';
+  nm.textContent = label;
+  it.append(ico, nm);
+  it.addEventListener('click', () => { toggleStart(false); onClick(); });
+  return it;
+}
+
+function buildStartMenu() {
+  const old = startMenu.querySelector('.sm7');
+  if (old) old.remove();
+
+  const root = document.createElement('div');
+  root.className = 'sm7';
+
+  const left = document.createElement('div');
+  left.className = 'sm7-left';
+  const right = document.createElement('div');
+  right.className = 'sm7-right';
+
+  // Ліва частина: швидкий запуск
+  const quickIds = new Set(START_QUICK.map(q => q[0]));
+  for (const [id, icon, label] of START_QUICK) {
+    const app = APPS.find(a => a.id === id);
+    left.appendChild(smItem(app ? app.icon : icon, label, () => { if (app) openApp(app); else openExplorer('apps'); }));
+  }
+
+  // Ліва частина: решта встановлених програм (крім тих, що вже у правій частині)
+  const rightAppIds = new Set(START_RIGHT.filter(i => i.appId).map(i => i.appId));
+  const rest = APPS.filter(a => !quickIds.has(a.id) && !rightAppIds.has(a.id));
+  if (rest.length) {
+    const s = document.createElement('div');
+    s.className = 'sm7-sep';
+    left.appendChild(s);
+  }
+  for (const app of rest) {
+    left.appendChild(smItem(app.icon, app.name, () => openApp(app)));
+  }
+
+  // Права частина: пункти
+  for (const item of START_RIGHT) {
+    if (item.sep) {
+      const s = document.createElement('div');
+      s.className = 'sm7-sep';
+      right.appendChild(s);
+      continue;
+    }
+    let run = item.run;
+    if (!run && item.appId) {
+      run = () => { const a = APPS.find(x => x.id === item.appId); if (a) openApp(a); };
+    }
+    right.appendChild(smItem(item.icon, item.label, run || (() => {})));
+  }
+
+  // Квадрат користувача — на межі правої частини
+  const user = document.createElement('div');
+  user.className = 'sm7-user';
+  user.title = 'Користувач';
+  user.textContent = '🌼';
+
+  root.append(user, left, right);
+  startMenu.appendChild(root);
+}
+
+function setActiveApp(w) {
+  activeApp = w || null;
+  for (const x of appWins.values()) {
+    const on = x === activeApp;
+    x.el.classList.toggle('active', on);
+    x.btn.classList.toggle('active', on);
+  }
+  if (activeApp) activeApp.el.style.zIndex = ++zTop;
+}
+
+function focusAppContent(w) {
+  const fr = w.el.querySelector('iframe');
+  if (!fr) return;
+  let win = null;
+  try { win = fr.contentWindow; } catch (_) { return; }
+  if (!win) return;
+  try {
+    fr.focus();
+    win.focus();
+    const d = win.document;
+    const ae = d.activeElement;
+    // Якщо фокус «злетів» на body — повертаємо його на останній/перший придатний елемент
+    if (!ae || ae === d.body || ae === d.documentElement) {
+      let target = w._lastFocus;
+      if (!target || !target.isConnected) {
+        target = d.querySelector('input:not([type="hidden"]), textarea, select, [contenteditable="true"]')
+              || d.querySelector('button, a[href]');
+      }
+      if (target && typeof target.focus === 'function') target.focus();
+    }
+  } catch (_) {}
+}
+
+function activateApp(w) {
+  if (w.el.classList.contains('minimized')) {
+    w.el.classList.remove('minimized');
+    w.btn.classList.remove('minimized');
+  }
+  setActiveApp(w);
+  focusAppContent(w);
+}
+
+function minimizeApp(w) {
+  w.el.classList.add('minimized');
+  w.btn.classList.add('minimized');
+  if (activeApp === w) setActiveApp(null);
+}
+
+function toggleMaximize(w) {
+  const on = w.el.classList.toggle('maximized');
+  w.maxBtn.textContent = on ? '❐' : '☐';
+  w.maxBtn.title = on ? 'Відновити' : 'Розгорнути';
+}
+
+function closeApp(w) {
+  if (w.onClose) w.onClose();
+  w.el.remove();
+  w.btn.remove();
+  appWins.delete(w.id);
+  if (activeApp === w) activeApp = null;
+}
+
+function openApp(app, opts) {
+  const id = 'a' + (++appSeq);
+  const el = document.createElement('div');
+  el.className = 'awin';
+  el.innerHTML =
+    '<div class="awin-title">' +
+      '<span class="ico"></span><span class="awin-title-text"></span>' +
+      '<div class="awin-btns">' +
+        '<button class="min" title="Згорнути">—</button>' +
+        '<button class="max" title="Розгорнути">☐</button>' +
+        '<button class="close" title="Закрити">✕</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="awin-body"><iframe></iframe><div class="awin-shield"></div></div>';
+  el.querySelector('.ico').textContent = app.icon;
+  el.querySelector('.awin-title-text').textContent = app.name;
+  if (app.url) {
+    const fr = el.querySelector('iframe');
+    VFS.attachFrame(fr, new URL('vfs.js', location.href).href);
+    fr.src = app.url;
+    if (opts && opts.openId != null) fr.addEventListener('load', () => callAppOpen(fr, opts.openId));
+  }
+  else { el.querySelector('iframe').remove(); el.querySelector('.awin-shield').remove(); }
+
+  const off = (appWins.size % 8) * 28;
+  const width = Math.min(app.w, window.innerWidth - 20);
+  const height = Math.min(app.h, window.innerHeight - TASKBAR_H - 20);
+  el.style.width = width + 'px';
+  el.style.height = height + 'px';
+  el.style.left = clamp(100 + off, 0, Math.max(0, window.innerWidth - width)) + 'px';
+  el.style.top = clamp(40 + off, 0, Math.max(0, window.innerHeight - TASKBAR_H - height)) + 'px';
+
+  for (const dir of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
+    const h = document.createElement('div');
+    h.className = 'awin-rs rs-' + dir;
+    h.addEventListener('pointerdown', e => startResize(e, w, dir));
+    el.appendChild(h);
+  }
+
+  // Кнопка на таскбарі
+  const btn = document.createElement('button');
+  btn.className = 'task-btn';
+  const bi = document.createElement('span');
+  bi.textContent = app.icon;
+  const bl = document.createElement('span');
+  bl.className = 't-label';
+  bl.textContent = app.name;
+  btn.append(bi, bl);
+  btn.title = app.name;
+  tasksEl.appendChild(btn);
+
+  const w = { id, app, el, btn, maxBtn: el.querySelector('.max') };
+  if (opts && opts.package) w.pendingPkg = opts.package;
+  if (opts && opts.uninstall) w.pendingUninstall = opts.uninstall;
+  appWins.set(id, w);
+
+  // Оновлення заголовка вікна та кнопки на таскбарі
+  w.setTitle = (text, ic) => {
+    el.querySelector('.awin-title-text').textContent = text;
+    bl.textContent = text;
+    btn.title = text;
+    if (ic) { el.querySelector('.awin-title .ico').textContent = ic; bi.textContent = ic; }
+  };
+  if (app.mount) app.mount(w, el.querySelector('.awin-body'), opts || {});
+
+  btn.addEventListener('click', () => {
+    if (el.classList.contains('minimized')) activateApp(w);
+    else if (activeApp === w) minimizeApp(w);
+    else activateApp(w);
+  });
+
+  el.querySelector('.min').addEventListener('click', () => minimizeApp(w));
+  w.maxBtn.addEventListener('click', () => toggleMaximize(w));
+  el.querySelector('.close').addEventListener('click', () => closeApp(w));
+
+  // Активація вікна будь-яким натисканням (у т.ч. по щиту над iframe)
+  el.addEventListener('pointerdown', () => { if (activeApp !== w) activateApp(w); }, true);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Перетягування за заголовок
+  const title = el.querySelector('.awin-title');
+  title.addEventListener('dblclick', e => {
+    if (!e.target.closest('.awin-btns')) toggleMaximize(w);
+  });
+  title.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.target.closest('.awin-btns')) return;
+    if (el.classList.contains('maximized')) return;
+    const r = el.getBoundingClientRect();
+    const dx = e.clientX - r.left, dy = e.clientY - r.top;
+    const pid = e.pointerId;
+    try { title.setPointerCapture(pid); } catch (_) {}
+    const move = ev => {
+      if (ev.pointerId !== pid) return;
+      el.style.left = clamp(ev.clientX - dx, 100 - el.offsetWidth, window.innerWidth - 100) + 'px';
+      el.style.top = clamp(ev.clientY - dy, 0, window.innerHeight - TASKBAR_H - 30) + 'px';
+    };
+    const up = ev => {
+      if (ev.pointerId !== pid) return;
+      title.removeEventListener('pointermove', move);
+      title.removeEventListener('pointerup', up);
+      title.removeEventListener('pointercancel', up);
+    };
+    title.addEventListener('pointermove', move);
+    title.addEventListener('pointerup', up);
+    title.addEventListener('pointercancel', up);
+  });
+
+  document.body.appendChild(el);
+  setActiveApp(w);
+  // Після завантаження вмісту — автоматично передаємо фокус у iframe
+  if (app.url) {
+    const fr = el.querySelector('iframe');
+    if (fr) fr.addEventListener('load', () => {
+      try { fr.contentWindow.document.addEventListener('focusin', e => { w._lastFocus = e.target; }); } catch (_) {}
+      if (activeApp === w) focusAppContent(w);
+    });
+  }
+  return w;
+}
+
+// Запуск програми за іменем, id або шляхом (використовується терміналом тощо)
+function launchApp(query) {
+  if (query == null) return false;
+  let q = String(query).trim().replace(/["']/g, '');
+  q = q.replace(/^.*[\\\/]/, '');                 // беремо лише ім'я файлу
+  q = q.replace(/\.exe$/i, '').toLowerCase();
+  if (!q) return false;
+  const app = APPS.find(a => a.id.toLowerCase() === q)
+           || APPS.find(a => String(a.name).toLowerCase().replace(/\.exe$/i, '') === q);
+  if (!app) return false;
+  openApp(app);
+  return true;
+}
+window.launchApp = launchApp;
+
+// Зміна розміру розтягуванням за краї та кути
+function startResize(e, w, dir) {
+  if (e.button !== 0 || w.el.classList.contains('maximized')) return;
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const r = w.el.getBoundingClientRect();
+  const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
+  const MIN_W = 220, MIN_H = 140;
+  try { handle.setPointerCapture(pid); } catch (_) {}
+
+  const move = ev => {
+    if (ev.pointerId !== pid) return;
+    const dx = ev.clientX - sx, dy = ev.clientY - sy;
+    let left = r.left, top = r.top, wd = r.width, ht = r.height;
+    if (dir.includes('e')) wd = Math.max(MIN_W, r.width + dx);
+    if (dir.includes('s')) ht = Math.max(MIN_H, r.height + dy);
+    if (dir.includes('w')) { wd = Math.max(MIN_W, r.width - dx); left = r.right - wd; }
+    if (dir.includes('n')) {
+      ht = Math.max(MIN_H, r.height - dy);
+      top = r.bottom - ht;
+      if (top < 0) { top = 0; ht = r.bottom; }
+    }
+    w.el.style.left = left + 'px';
+    w.el.style.top = top + 'px';
+    w.el.style.width = wd + 'px';
+    w.el.style.height = ht + 'px';
+  };
+  const up = ev => {
+    if (ev.pointerId !== pid) return;
+    handle.removeEventListener('pointermove', move);
+    handle.removeEventListener('pointerup', up);
+    handle.removeEventListener('pointercancel', up);
+  };
+  handle.addEventListener('pointermove', move);
+  handle.addEventListener('pointerup', up);
+  handle.addEventListener('pointercancel', up);
+}
+
+function updateClock() {
+  const d = new Date();
+  document.getElementById('clockTime').textContent =
+    d.toLocaleTimeString('uk', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('clockDate').textContent = d.toLocaleDateString('uk');
+  document.getElementById('tray').title =
+    d.toLocaleDateString('uk', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/* ============================================================
+   Тло робочого столу
+   ============================================================ */
+const BG_KEY = 'desktopBg';
+const WALL_DIR = 'wallpapers/';
+const IMG_RE = /\.(png|jpe?g|gif|webp|bmp|avif|svg)$/i;
+const BG_COLORS = ['#1e5799', '#0078d7', '#008080', '#2e7d32', '#6a1b9a', '#c62828', '#ef6c00', '#455a64', '#202020', '#f0f0f0'];
+const bgModal = document.getElementById('bgModal');
+const bgColorInput = document.getElementById('bgColorInput');
+const bgSwatches = document.getElementById('bgSwatches');
+const bgThumbs = document.getElementById('bgThumbs');
+const bgMode = document.getElementById('bgMode');
+let bgSaved = { type: 'default' };
+let bgDraft = null;
+
+function loadBg() {
+  try { return JSON.parse(localStorage.getItem(BG_KEY)) || { type: 'default' }; }
+  catch (_) { return { type: 'default' }; }
+}
+function saveBg(bg) {
+  try {
+    if (bg.type === 'default') localStorage.removeItem(BG_KEY);
+    else localStorage.setItem(BG_KEY, JSON.stringify(bg));
+  } catch (_) {}
+}
+
+function applyBg(bg) {
+  const s = desktop.style;
+  s.background = '';                    // повертає стандартний градієнт із CSS
+  s.height = '';
+  if (bg.type === 'color') {
+    s.backgroundImage = 'none';   // інакше градієнт із CSS перекриває колір
+    s.backgroundColor = bg.value;
+  } else if (bg.type === 'image') {
+    s.backgroundColor = '#000';
+    s.backgroundImage = 'url("' + String(bg.value).replace(/"/g, '%22') + '")';
+    const m = bg.mode || 'cover';
+    s.backgroundRepeat = m === 'tile' ? 'repeat' : 'no-repeat';
+    s.backgroundPosition = 'center';
+    s.backgroundSize = { cover: 'cover', contain: 'contain', stretch: '100% 100%', tile: 'auto', center: 'auto' }[m] || 'cover';
+  }
+}
+
+// Перелік зображень: спершу wallpapers/list.json, потім розбір лістингу теки
+async function listWallpapers() {
+  let names = [];
+  try {
+    const r = await fetch(WALL_DIR + 'list.json', { cache: 'no-cache' });
+    if (r.ok) { const j = await r.json(); if (Array.isArray(j)) names = j.map(String); }
+  } catch (_) {}
+  if (!names.length) {
+    try {
+      const r = await fetch(WALL_DIR, { cache: 'no-cache' });
+      if (r.ok) {
+        const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+        names = [...doc.querySelectorAll('a[href]')].map(a => {
+          const h = (a.getAttribute('href') || '').split('?')[0].split('#')[0];
+          try { return decodeURIComponent(h.split('/').pop()); } catch (_) { return ''; }
+        });
+      }
+    } catch (_) {}
+  }
+  return [...new Set(names.filter(n => IMG_RE.test(n)))];
+}
+
+function setBgTab(name) {
+  document.querySelectorAll('.bg-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === name));
+  document.getElementById('bgPaneColor').classList.toggle('show', name === 'color');
+  document.getElementById('bgPaneImage').classList.toggle('show', name === 'image');
+}
+
+function markBgSelection() {
+  bgSwatches.querySelectorAll('.bg-swatch').forEach(b =>
+    b.classList.toggle('selected', bgDraft.type === 'color' && b.dataset.color === bgDraft.value));
+  bgThumbs.querySelectorAll('.bg-thumb').forEach(t =>
+    t.classList.toggle('selected', bgDraft.type === 'image' && t.dataset.path === bgDraft.value));
+}
+
+function pickColor(c) {
+  bgDraft = { type: 'color', value: c };
+  bgColorInput.value = c;
+  applyBg(bgDraft);
+  markBgSelection();
+}
+
+async function openBgDialog() {
+  bgDraft = JSON.parse(JSON.stringify(bgSaved));
+  bgMode.value = bgDraft.mode || 'cover';
+  if (bgDraft.type === 'color') bgColorInput.value = bgDraft.value;
+  bgModal.classList.add('show');
+  setBgTab(bgDraft.type === 'image' ? 'image' : 'color');
+
+  bgSwatches.innerHTML = '';
+  for (const c of BG_COLORS) {
+    const b = document.createElement('button');
+    b.className = 'bg-swatch';
+    b.dataset.color = c;
+    b.style.background = c;
+    b.title = c;
+    b.addEventListener('click', () => pickColor(c));
+    bgSwatches.appendChild(b);
+  }
+
+  bgThumbs.innerHTML = '<div class="bg-note">Завантаження…</div>';
+  markBgSelection();
+  const names = await listWallpapers();
+  if (!bgModal.classList.contains('show')) return;
+  bgThumbs.innerHTML = '';
+  if (!names.length) {
+    bgThumbs.innerHTML = '<div class="bg-note">У теці wallpapers/ не знайдено зображень. ' +
+      'Якщо сервер не показує вміст теки, додайте wallpapers/list.json з масивом імен файлів.</div>';
+    return;
+  }
+  for (const name of names) {
+    const path = WALL_DIR + encodeURIComponent(name);
+    const t = document.createElement('div');
+    t.className = 'bg-thumb';
+    t.dataset.path = path;
+    t.title = name;
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.alt = name;
+    img.src = path;
+    img.addEventListener('error', () => t.remove());
+    t.appendChild(img);
+    t.addEventListener('click', () => {
+      bgDraft = { type: 'image', value: path, mode: bgMode.value };
+      applyBg(bgDraft);
+      markBgSelection();
+    });
+    bgThumbs.appendChild(t);
+  }
+  markBgSelection();
+}
+
+function closeBgDialog(save) {
+  bgModal.classList.remove('show');
+  if (save && bgDraft) { bgSaved = bgDraft; saveBg(bgSaved); }
+  applyBg(bgSaved);   // без збереження — повертаємо попереднє тло
+  bgDraft = null;
+}
+
+function resetBg() {
+  bgDraft = { type: 'default' };
+  applyBg(bgDraft);
+  markBgSelection();
+}
+
+function initBackground() {
+  bgSaved = loadBg();
+  applyBg(bgSaved);
+  document.querySelectorAll('.bg-tab').forEach(t => t.addEventListener('click', () => setBgTab(t.dataset.pane)));
+  bgColorInput.addEventListener('input', () => pickColor(bgColorInput.value));
+  bgMode.addEventListener('change', () => {
+    if (bgDraft && bgDraft.type === 'image') { bgDraft.mode = bgMode.value; applyBg(bgDraft); }
+  });
+  bgModal.addEventListener('mousedown', e => { if (e.target === bgModal) closeBgDialog(false); });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && bgModal.classList.contains('show')) closeBgDialog(false);
+  });
+}
+
+/* ============================================================
+   Панель керування («Налаштування»)
+   ============================================================ */
+let cpEls = null;
+
+function showCpView(name) {
+  if (!cpEls) return;
+  const views = { home: cpEls.home, desktop: cpEls.desktop, about: cpEls.about };
+  for (const [k, el] of Object.entries(views)) el.classList.toggle('show', k === name);
+  cpEls.title.textContent =
+    name === 'desktop' ? 'Налаштування Робочого столу' :
+    name === 'about'   ? 'Про систему' : 'Налаштування';
+  if (name === 'desktop') syncDesktopPane();
+  if (name === 'about') renderAbout();
+}
+
+function openControlPanel() {
+  if (!cpEls) return;
+  cpEls.modal.classList.add('show');
+  showCpView('home');
+}
+
+function closeControlPanel() {
+  if (!cpEls) return;
+  cpEls.modal.classList.remove('show');
+}
+
+function syncDesktopPane() {
+  if (!cpEls) return;
+  cpEls.showComputer.checked = !!desktopCfg.showComputer;
+  cpEls.showDocs.checked = !!desktopCfg.showDocs;
+  cpEls.showRecycle.checked = !!desktopCfg.showRecycle;
+  cpEls.iconSize.value = desktopCfg.iconSize;
+  cpEls.fontSize.value = desktopCfg.fontSize;
+  cpEls.iconSizeVal.textContent = desktopCfg.iconSize + ' px';
+  cpEls.fontSizeVal.textContent = desktopCfg.fontSize + ' px';
+}
+
+let reflowTimer;
+function reflowDesktop() {
+  clearTimeout(reflowTimer);
+  reflowTimer = setTimeout(() => arrangeIcons(currentArrange).catch(() => {}), 90);
+}
+
+async function toggleDesktopSpecial(flag, on) {
+  desktopCfg[flag] = !!on;
+  saveDesktopCfg();
+  await renderDesktop();
+}
+
+function renderAbout() {
+  if (!cpEls) return;
+  const ua = navigator.userAgent;
+  let browser = 'Невідомий';
+  if (/Edg\//.test(ua)) browser = 'Microsoft Edge';
+  else if (/OPR\//.test(ua)) browser = 'Opera';
+  else if (/Chrome\//.test(ua)) browser = 'Google Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Mozilla Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  let os = navigator.platform || '—';
+  if (/Linux/.test(ua)) os = 'Linux';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Mac/.test(ua)) os = 'macOS';
+  const items = desktop.querySelectorAll('.icon').length;
+  const rows = [
+    ['Система', 'Операційна система VirtuOS (емулятор)'],
+    ['Версія', '1.0'],
+    ['Платформа', os],
+    ['Браузер', browser],
+    ['Роздільна здатність', window.innerWidth + ' × ' + window.innerHeight],
+    ['Значків на Робочому столі', items]
+  ];
+  cpEls.aboutBody.innerHTML = '<dl>' +
+    rows.map(([k, v]) => '<dt>' + k + '</dt><dd></dd>').join('') + '</dl>';
+  const dds = cpEls.aboutBody.querySelectorAll('dd');
+  rows.forEach(([, v], i) => { dds[i].textContent = String(v); });
+}
+
+function initControlPanel() {
+  const modal = document.getElementById('cpModal');
+  if (!modal) return;
+  cpEls = {
+    modal,
+    title: document.getElementById('cpTitle'),
+    home: document.getElementById('cpHome'),
+    desktop: document.getElementById('cpDesktop'),
+    about: document.getElementById('cpAbout'),
+    aboutBody: document.getElementById('cpAboutBody'),
+    showComputer: document.getElementById('cpShowComputer'),
+    showDocs: document.getElementById('cpShowDocs'),
+    showRecycle: document.getElementById('cpShowRecycle'),
+    iconSize: document.getElementById('cpIconSize'),
+    iconSizeVal: document.getElementById('cpIconSizeVal'),
+    fontSize: document.getElementById('cpFontSize'),
+    fontSizeVal: document.getElementById('cpFontSizeVal')
+  };
+
+  modal.querySelectorAll('.cp-item').forEach(it => {
+    it.addEventListener('click', () => {
+      const which = it.dataset.cp;
+      if (which === 'apps') {
+        closeControlPanel();
+        const app = APPS.find(a => a.id === 'appwiz');
+        if (app) openApp(app);
+      } else if (which === 'bg') {
+        closeControlPanel();
+        openBgDialog();
+      } else if (which === 'desktop') {
+        showCpView('desktop');
+      } else if (which === 'about') {
+        showCpView('about');
+      }
+    });
+  });
+
+  document.getElementById('cpBack').addEventListener('click', () => showCpView('home'));
+  document.getElementById('cpBack2').addEventListener('click', () => showCpView('home'));
+
+  cpEls.showComputer.addEventListener('change', () => toggleDesktopSpecial('showComputer', cpEls.showComputer.checked));
+  cpEls.showDocs.addEventListener('change', () => toggleDesktopSpecial('showDocs', cpEls.showDocs.checked));
+  cpEls.showRecycle.addEventListener('change', () => toggleDesktopSpecial('showRecycle', cpEls.showRecycle.checked));
+
+  cpEls.iconSize.addEventListener('input', () => {
+    desktopCfg.iconSize = parseInt(cpEls.iconSize.value, 10);
+    cpEls.iconSizeVal.textContent = desktopCfg.iconSize + ' px';
+    applyDesktopCfg();
+    saveDesktopCfg();
+    reflowDesktop();
+  });
+  cpEls.fontSize.addEventListener('input', () => {
+    desktopCfg.fontSize = parseInt(cpEls.fontSize.value, 10);
+    cpEls.fontSizeVal.textContent = desktopCfg.fontSize + ' px';
+    applyDesktopCfg();
+    saveDesktopCfg();
+    reflowDesktop();
+  });
+
+  document.getElementById('cpArrangeV').addEventListener('click', () => arrangeIcons('vertical').catch(() => {}));
+  document.getElementById('cpArrangeH').addEventListener('click', () => arrangeIcons('horizontal').catch(() => {}));
+
+  modal.addEventListener('mousedown', e => { if (e.target === modal) closeControlPanel(); });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) closeControlPanel();
+  });
+}
+
+function initTaskbar() {
+  buildStartMenu();
+  startBtn.addEventListener('click', () => toggleStart());
+  document.addEventListener('mousedown', e => {
+    if (!startMenu.contains(e.target) && !startBtn.contains(e.target)) toggleStart(false);
+  });
+  window.addEventListener('blur', () => toggleStart(false));   // клік у iframe
+  document.getElementById('taskbar').addEventListener('contextmenu', e => e.preventDefault());
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
+/* ============================================================
+   Запуск
+   ============================================================ */
+(async function init() {
+  await openDB();
+  loadDesktopCfg();
+  applyDesktopCfg();
+  await ensureRoot();
+  await VFS.ready();
+  await loadApps();
+  await syncAppsFolder();
+  await seedFromFolders();
+  await loadPackages();
+  await seedPackages();
+
+  // Пошук вікна за iframe-джерелом повідомлення
+  function winBySource(src) {
+    for (const w of appWins.values()) {
+      const fr = w.el.querySelector('iframe');
+      if (fr && fr.contentWindow === src) return w;
+    }
+    return null;
+  }
+
+  // Обмін із майстром встановлення (installshield) та вікном «Встановлення та видалення програм»
+  window.addEventListener('message', e => {
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'de-installer-ready') {
+      const w = winBySource(e.source);
+      if (!w) return;
+      if (w.pendingUninstall) {
+        try { e.source.postMessage({ type: 'de-installer-uninstall', app: w.pendingUninstall }, '*'); } catch (_) {}
+      } else if (w.pendingPkg) {
+        try { e.source.postMessage({ type: 'de-installer-package', pkg: w.pendingPkg }, '*'); } catch (_) {}
+      }
+    } else if (d.type === 'de-installer-done' && d.pkg) {
+      installApp(d.pkg).catch(() => {});
+    } else if (d.type === 'de-installer-uninstalled' && d.app) {
+      removeApp(d.app.id).catch(() => {});
+    } else if (d.type === 'de-installer-close') {
+      const w = winBySource(e.source);
+      if (w) closeApp(w);
+    } else if (d.type === 'de-appwiz-ready') {
+      try { e.source.postMessage({ type: 'de-appwiz-programs', programs: appwizPrograms() }, '*'); } catch (_) {}
+    } else if (d.type === 'de-appwiz-install') {
+      installFromNode(d.nodeId, d.name).catch(() => {});
+    } else if (d.type === 'de-appwiz-confirm') {
+      const src = e.source;
+      showConfirm(d.message || 'Продовжити?', ok => {
+        try { src.postMessage({ type: 'de-appwiz-confirm-result', ok: !!ok }, '*'); } catch (_) {}
+      });
+    } else if (d.type === 'de-appwiz-uninstall' && d.appId) {
+      uninstallApp(d.appId);
+    }
+  });
+  let vfsTimer;
+  VFS.onChange(d => {            // зміни, зроблені застосунками в iframe
+    if (d && d.local) return;
+    clearTimeout(vfsTimer);
+    vfsTimer = setTimeout(() => refreshAll().catch(() => {}), 120);
+  });
+  initBackground();
+  initControlPanel();
+  initTaskbar();
+  await renderDesktop();
+
+  // Перемалювання при зміні розміру (позиції значків зберігаються)
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderDesktop, 150);
+  });
+
+  // Закриття модалок кліком по фону
+  inputModal.addEventListener('mousedown', e => {
+    if (e.target === inputModal) closeInput();
+  });
+  confirmModal.addEventListener('mousedown', e => {
+    if (e.target === confirmModal) closeConfirm(false);
+  });
+})();
+</script>
+</body>
+</html>

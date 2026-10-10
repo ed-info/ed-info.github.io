@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Встановлення та видалення програм</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background: #f0f0f0; color: #1e1e1e;
+         font: 12px/1.4 Tahoma, "Segoe UI", sans-serif; overflow: hidden; }
+  .head { display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+          border-bottom: 1px solid #d4d0c8; background: linear-gradient(#fdfdfd, #eaeae4); }
+  .head .ico { font-size: 20px; }
+  .hint { padding: 10px 14px 6px; color: #333; }
+  .listwrap { flex: 1 1 auto; min-height: 0; padding: 0 14px; }
+  .list { height: 100%; overflow: auto; background: #fff; border: 1px solid #7f9db9; border-radius: 0; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; cursor: default; user-select: none; }
+  .row:not(:last-child) { border-bottom: 1px solid #eef1f5; }
+  .row:hover { background: #f2f7fd; }
+  .row.sel { background: #316ac5; color: #fff; }
+  .row.sel .tag { color: #dbe6f7; }
+  .row .ico { width: 22px; text-align: center; font-size: 16px; flex: 0 0 auto; }
+  .row .nm { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .tag { font-size: 11px; color: #666; flex: 0 0 auto; }
+  .empty { padding: 22px 14px; color: #555; line-height: 1.5; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #d4d0c8; }
+  .status { flex: 1 1 auto; font-size: 11px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status.err { color: #a80000; }
+  .btn { min-width: 100px; padding: 5px 18px; font: inherit; color: #1e1e1e; background: #e1e1e1;
+         border: 1px solid #adadad; border-radius: 0; box-shadow: none; cursor: default; }
+  .btn:hover:not(:disabled) { background: #e5f1fb; border-color: #0078d7; }
+  .btn:active:not(:disabled) { background: #cce4f7; border-color: #0078d7; }
+  .btn:disabled { color: #9a9a9a; cursor: default; }
+  .btn.p { background: #0078d7; border-color: #0078d7; color: #fff; }
+  .btn.p:hover:not(:disabled) { background: #006cc1; border-color: #006cc1; }
+</style>
+</head>
+<body>
+  <div class="head"><span class="ico">&#9881;&#65039;</span><strong>Встановлення та видалення програм</strong></div>
+  <div class="hint">Програми, встановлені з інсталяційних пакетів. Виберіть програму та натисніть «Видалити», або натисніть «Встановити», щоб додати нову.</div>
+  <div class="listwrap"><div class="list" id="list"></div></div>
+  <div class="bar">
+    <div class="status" id="status"></div>
+    <button class="btn p" id="installBtn">Встановити…</button>
+    <button class="btn" id="removeBtn" disabled>Видалити</button>
+  </div>
+
+<script>
+(function () {
+  const listEl = document.getElementById('list');
+  const statusEl = document.getElementById('status');
+  const installBtn = document.getElementById('installBtn');
+  const removeBtn = document.getElementById('removeBtn');
+
+  let programs = [];
+  let selected = null;
+  let pendingUninstallId = null;
+
+  function post(msg) {
+    try { window.parent.postMessage(msg, '*'); } catch (_) {}
+  }
+
+  function setStatus(msg, isErr) {
+    statusEl.textContent = msg || '';
+    statusEl.classList.toggle('err', !!isErr);
+  }
+
+  function render() {
+    listEl.textContent = '';
+    if (!programs.length) {
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'Немає встановлених програм. Скористайтеся кнопкою «Встановити», щоб вибрати інсталяційний пакет.';
+      listEl.appendChild(e);
+      updateButtons();
+      return;
+    }
+    for (const p of programs) {
+      const row = document.createElement('div');
+      row.className = 'row' + (selected === p.id ? ' sel' : '');
+      row.dataset.id = p.id;
+
+      const ico = document.createElement('span');
+      ico.className = 'ico';
+      ico.textContent = p.icon || '📦';
+
+      const nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = p.name;
+
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = p.removable === false ? 'системна' : 'встановлено';
+
+      row.append(ico, nm, tag);
+      row.addEventListener('click', () => select(p.id));
+      row.addEventListener('dblclick', () => select(p.id));
+      listEl.appendChild(row);
+    }
+    updateButtons();
+  }
+
+  function select(id) {
+    selected = id;
+    for (const row of listEl.querySelectorAll('.row')) {
+      row.classList.toggle('sel', row.dataset.id === id);
+    }
+    updateButtons();
+  }
+
+  function updateButtons() {
+    const p = programs.find(x => x.id === selected);
+    removeBtn.disabled = !(p && p.removable !== false);
+  }
+
+  async function doInstall() {
+    if (typeof showOpenFilePicker !== 'function') {
+      setStatus('Вибір файлів недоступний.', true);
+      return;
+    }
+    let handles;
+    try {
+      handles = await showOpenFilePicker({
+        multiple: false,
+        types: [{ description: 'Інсталяційні пакети', accept: { 'application/octet-stream': ['.exe'] } }]
+      });
+    } catch (err) {
+      if (!err || err.name !== 'AbortError') setStatus('Не вдалося вибрати файл.', true);
+      return;
+    }
+    const h = handles && handles[0];
+    if (!h) return;
+    const nodeId = (h.id != null) ? h.id : h._id;
+    setStatus('Підготовка до встановлення «' + h.name + '»…');
+    post({ type: 'de-appwiz-install', nodeId, name: h.name });
+  }
+
+  function doUninstall() {
+    const p = programs.find(x => x.id === selected);
+    if (!p) return;
+    pendingUninstallId = p.id;
+    setStatus('Очікування підтвердження…');
+    post({ type: 'de-appwiz-confirm', message: 'Видалити програму «' + p.name + '»?' });
+  }
+
+  installBtn.addEventListener('click', doInstall);
+  removeBtn.addEventListener('click', doUninstall);
+
+  window.addEventListener('message', e => {
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'de-appwiz-programs') {
+      programs = Array.isArray(d.programs) ? d.programs : [];
+      if (selected && !programs.some(p => p.id === selected)) selected = null;
+      pendingUninstallId = null;
+      setStatus('');
+      render();
+    } else if (d.type === 'de-appwiz-confirm-result') {
+      const id = pendingUninstallId;
+      pendingUninstallId = null;
+      if (d.ok && id) {
+        const p = programs.find(x => x.id === id);
+        setStatus('Запуск майстра видалення «' + (p ? p.name : id) + '»…');
+        post({ type: 'de-appwiz-uninstall', appId: id });
+      } else {
+        setStatus('');
+      }
+    } else if (d.type === 'de-appwiz-error') {
+      setStatus(d.message || 'Помилка.', true);
+    } else if (d.type === 'de-appwiz-info') {
+      setStatus(d.message || '');
+    }
+  });
+
+  render();
+  post({ type: 'de-appwiz-ready' });
+})();
+</script>
+</body>
+</html>

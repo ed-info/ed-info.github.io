@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureGuard — Антивірус</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #ece9d8;
+      color: #1e1e1e;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .app { display: flex; flex-direction: column; height: 100%; }
+
+    /* ---------- Шапка ---------- */
+    .sg-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #2b579a, #1b3a6b);
+      color: #fff;
+      border-bottom: 1px solid #0e2145;
+      flex: 0 0 auto;
+    }
+
+    .sg-logo {
+      font-size: 30px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+    }
+
+    .sg-title h1 { font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+    .sg-title span { font-size: 11px; opacity: .8; }
+
+    .sg-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .sg-status .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #57d964;
+      box-shadow: 0 0 6px #57d964;
+    }
+
+    .sg-status.off .dot { background: #ff5e5e; box-shadow: 0 0 6px #ff5e5e; }
+    .sg-status.scanning .dot { background: #ffcc33; box-shadow: 0 0 6px #ffcc33; animation: pulse .8s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+    /* ---------- Основна зона ---------- */
+    .sg-main { flex: 1 1 auto; min-height: 0; display: flex; }
+
+    .sg-side {
+      flex: 0 0 190px;
+      background: #d4d0c8;
+      border-right: 1px solid #aca899;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sg-btn {
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      color: #1e1e1e;
+      background: #e1e1e1;
+      border: 1px solid #adadad;
+      border-radius: 0;
+      cursor: default;
+    }
+
+    .sg-btn:hover:not(:disabled) { background: #e5f1fb; border-color: #0078d7; }
+    .sg-btn:active:not(:disabled) { background: #cce4f7; }
+    .sg-btn:disabled { color: #9a9a9a; }
+    .sg-btn.primary { background: #0078d7; border-color: #005a9e; color: #fff; }
+    .sg-btn.primary:hover:not(:disabled) { background: #1a86dd; border-color: #005a9e; }
+    .sg-btn.primary:disabled { background: #9ac2e6; border-color: #7fb0dd; color: #eef6ff; }
+
+    .sg-switch {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 8px;
+      background: #e6e3da;
+      border: 1px solid #b8b4a8;
+    }
+    .sg-switch input { width: 15px; height: 15px; }
+
+    .sg-panel {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f5f4ef;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    /* Прогрес */
+    .sg-progress { flex: 0 0 auto; }
+
+    .sg-bar {
+      height: 16px;
+      background: #fff;
+      border: 1px solid #7f9db9;
+      overflow: hidden;
+    }
+    .sg-bar-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(180deg, #6fd06f, #2f9e2f);
+      transition: width .12s linear;
+    }
+    .sg-bar-fill.bad { background: linear-gradient(180deg, #ff8a8a, #d33); }
+    .sg-scanline {
+      font-size: 12px;
+      color: #444;
+      margin-top: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Підсумок */
+    .sg-summary { display: flex; gap: 8px; flex: 0 0 auto; }
+    .sg-summary .box {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #d0ccbf;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+    }
+    .sg-summary .box b { font-size: 18px; }
+    .sg-summary .box span { font-size: 11px; color: #666; }
+    .sg-summary .box.threats b { color: #c62828; }
+    .sg-summary .box.safe b { color: #2e7d32; }
+
+    /* Результати */
+    .sg-results {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #d0ccbf;
+    }
+    .sg-results-head {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e4e1d8;
+      border-bottom: 1px solid #d0ccbf;
+    }
+    .sg-list { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+    .sg-empty {
+      padding: 24px 12px;
+      text-align: center;
+      color: #4b7a4b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .sg-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 12px;
+    }
+    .sg-row .sev {
+      flex: 0 0 auto;
+      width: 66px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+      padding: 3px 0;
+      border-radius: 3px;
+    }
+    .sev.high { background: #c62828; }
+    .sev.medium { background: #ef6c00; }
+    .sev.low { background: #8d8d8d; }
+
+    .sg-row .info { flex: 1 1 auto; min-width: 0; }
+    .sg-row .info .nm { font-weight: 600; }
+    .sg-row .info .pt {
+      color: #777; font-size: 11px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sg-row .sig { color: #c62828; font-size: 11px; }
+
+    .sg-row .acts { flex: 0 0 auto; display: flex; gap: 6px; }
+    .sg-row .acts button {
+      padding: 4px 10px; font: inherit; font-size: 11px; cursor: default;
+      border: 1px solid #adadad; background: #e1e1e1; border-radius: 0;
+    }
+    .sg-row .acts button:hover { background: #e5f1fb; border-color: #0078d7; }
+    .sg-row .acts button.danger:hover { background: #fde7e7; border-color: #d33; color: #b71c1c; }
+
+    /* ---------- Футер ---------- */
+    .sg-foot {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: #333;
+      background: #ece9d8;
+      border-top: 1px solid #aca899;
+    }
+
+    /* ---------- Модальне вікно ---------- */
+    .sg-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .sg-modal[hidden] { display: none; }
+
+    .sg-modal-win {
+      width: 440px;
+      max-width: 92vw;
+      max-height: 82vh;
+      background: #ece9d8;
+      border: 1px solid #0f2145;
+      box-shadow: 0 12px 34px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sg-modal-title {
+      display: flex;
+      align-items: center;
+      padding: 7px 6px 7px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(180deg, #2b579a, #1b3a6b);
+      user-select: none;
+    }
+    .sg-modal-x {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      padding: 3px 8px;
+      cursor: default;
+    }
+    .sg-modal-x:hover { background: #c62828; }
+
+    .sg-modal-body {
+      padding: 12px;
+      overflow: auto;
+      background: #fff;
+      min-height: 60px;
+    }
+
+    .sg-modal-foot {
+      padding: 8px 10px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #ece9d8;
+      border-top: 1px solid #aca899;
+    }
+    .sg-modal-foot button {
+      padding: 5px 16px;
+      font: inherit;
+      font-size: 12px;
+      cursor: default;
+      border: 1px solid #adadad;
+      background: #e1e1e1;
+      border-radius: 0;
+    }
+    .sg-modal-foot button:hover { background: #e5f1fb; border-color: #0078d7; }
+    .sg-modal-foot button.primary { background: #0078d7; border-color: #005a9e; color: #fff; }
+    .sg-modal-foot button.primary:hover { background: #1a86dd; }
+
+    .sg-modal-empty { padding: 16px; text-align: center; color: #555; font-size: 13px; }
+
+    .sg-qlist { display: flex; flex-direction: column; }
+    .sg-qrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 4px;
+      border-bottom: 1px solid #eee;
+      font-size: 12px;
+    }
+    .sg-qrow:last-child { border-bottom: none; }
+    .sg-qrow .qn {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sg-qrow .qs { color: #888; font-size: 11px; }
+    .sg-qrow button {
+      padding: 3px 10px;
+      font: inherit;
+      font-size: 11px;
+      cursor: default;
+      border: 1px solid #adadad;
+      background: #e1e1e1;
+      border-radius: 0;
+    }
+    .sg-qrow button:hover { background: #e5f1fb; border-color: #0078d7; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="sg-header">
+      <div class="sg-logo">🛡️</div>
+      <div class="sg-title">
+        <h1>SecureGuard</h1>
+        <span>Антивірус та захист у реальному часі</span>
+      </div>
+      <div class="sg-status" id="sgStatus">
+        <span class="dot"></span><span id="sgStatusText">Захищено</span>
+      </div>
+    </header>
+
+    <div class="sg-main">
+      <aside class="sg-side">
+        <button class="sg-btn primary" id="btnFullScan">▶ Сканувати ПК</button>
+        <button class="sg-btn" id="btnQuickScan">⚡ Швидка перевірка</button>
+        <button class="sg-btn" id="btnUpdate">⟳ Оновити бази</button>
+        <button class="sg-btn" id="btnQuarantine">🗄 Карантин</button>
+        <label class="sg-switch" title="Захист у реальному часі">
+          <input type="checkbox" id="rtp" checked>
+          <span>Захист у реальному часі</span>
+        </label>
+      </aside>
+
+      <section class="sg-panel">
+        <div class="sg-progress">
+          <div class="sg-bar"><div class="sg-bar-fill" id="scanBar"></div></div>
+          <div class="sg-scanline" id="scanLine">Готово до сканування</div>
+        </div>
+
+        <div class="sg-summary">
+          <div class="box safe"><b id="sumScanned">0</b><span>перевірено об'єктів</span></div>
+          <div class="box threats"><b id="sumThreats">0</b><span>загроз виявлено</span></div>
+          <div class="box"><b id="sumTime">—</b><span>тривалість</span></div>
+        </div>
+
+        <div class="sg-results">
+          <div class="sg-results-head">Загрози та підозрілі об'єкти</div>
+          <div class="sg-list" id="sgList">
+            <div class="sg-empty" id="sgEmpty">
+              Загроз не виявлено. Ваш пристрій у безпеці ✅<br>
+              <span style="color:#888">Порада: створіть файл із назвою <b>virus.txt</b> або
+              вставте тестовий рядок <b>EICAR</b>, щоб перевірити роботу захисту.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="sg-foot">
+      <span id="defInfo">Бази вірусів: —</span>
+      <span id="footStatus">Готово</span>
+    </footer>
+  </div>
+
+  <!-- Модальне вікно (карантин тощо) -->
+  <div class="sg-modal" id="sgModal" hidden>
+    <div class="sg-modal-win" role="dialog" aria-modal="true">
+      <div class="sg-modal-title">
+        <span id="sgModalTitle">Карантин</span>
+        <button class="sg-modal-x" id="sgModalX" title="Закрити">✕</button>
+      </div>
+      <div class="sg-modal-body" id="sgModalBody"></div>
+      <div class="sg-modal-foot" id="sgModalFoot"></div>
+    </div>
+  </div>
+
+  <script src="../vfs.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const $ = id => document.getElementById(id);
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+      /* ---------- База сигнатур (демонстраційна) ---------- */
+      const SIGNATURES = [
+        { id: 'EICAR-Test-File',          sev: 'high',   test: (n, c) => !!c && c.includes('EICAR-STANDARD-ANTIVIRUS-TEST-FILE') },
+        { id: 'Win32.Malware.Generic',    sev: 'high',   test: n => /(^|[^a-z])(virus|malware|trojan|worm|backdoor|ransomware)([^a-z]|$)/i.test(n) },
+        { id: 'Worm.AutoRun',             sev: 'high',   test: n => /autorun\.inf$/i.test(n) },
+        { id: 'Trojan.Spy',               sev: 'high',   test: n => /(spy|stealer|keylog|sniff)/i.test(n) },
+        { id: 'HackTool.Keygen',          sev: 'medium', test: n => /(keygen|crack|patch|hack|patcher)/i.test(n) },
+        { id: 'Script.Malicious',         sev: 'medium', test: (n, c) => /\.(vbs|jse?|wsf|hta|bat|cmd|ps1|scr)$/i.test(n) &&
+                                                                    /(eval\(|wscript|shell\.|powershell|createobject|activexobject)/i.test(c || '') },
+        { id: 'Riskware.Adware',          sev: 'low',    test: n => /(adware|toolbar|popup|adserv)/i.test(n) }
+      ];
+
+      const RISKY_EXT = /\.(exe|dll|com|scr|bat|cmd|vbs|vbe|jse?|wsf|hta|ps1|msi|reg|inf)$/i;
+
+      /* ---------- Шаблони «інфікованих» файлів (для живої демонстрації) ---------- */
+      const EICAR = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+      const SPAWN = [
+        { name: 'system_virus.dat',     body: 'неможливо видалити: підозрілий вміст' },
+        { name: 'eicar_test.txt',       body: EICAR },
+        { name: 'trojan_downloader.exe', body: 'MZ\u0090\u0000\u0003 ... trojan payload' },
+        { name: 'autorun.inf',          body: '[autorun]\nopen=start.exe\n' },
+        { name: 'crack_keygen.exe',     body: 'keygen generator for demonstration' },
+        { name: 'keylogger.dll',        body: 'hidden keylogger module' },
+        { name: 'worm_copy.bat',        body: '@echo off\r\ncopy %0 C:\\\r\n' },
+        { name: 'ransomware_demo.exe',  body: 'your files are encrypted (demo)' },
+        { name: 'backdoor_shell.exe',   body: 'reverse shell demo payload' },
+        { name: 'adware_installer.exe', body: 'adware bundle installer' },
+        { name: 'free_toolbar.exe',     body: 'browser toolbar adware' },
+        { name: 'spy_sniffer.exe',      body: 'network sniffer / spyware demo' },
+        { name: 'macro_update.vbs',     body: 'CreateObject("WScript.Shell").Run "calc.exe"\r\n' }
+      ];
+
+      function isSpawnName(name) {
+        const l = String(name).toLowerCase();
+        return SPAWN.some(s => s.name.toLowerCase() === l);
+      }
+
+      /* Випадково «підкидає» інфіковані файли у ВФС (щоб сканування щось знаходило) */
+      async function spawnViruses(quick) {
+        if (!window.VFS || !window.VFS.__loaded) return 0;
+        const all = await VFS.dump();
+        // уже є необроблені згенеровані віруси — нові не створюємо
+        for (const n of all) {
+          if (n.type !== 'file' || n.appId || n.pkgId || !isSpawnName(n.name)) continue;
+          let p = '';
+          try { p = await VFS.pathOf(n.id); } catch (_) {}
+          if (!/карантин/i.test(p)) return 0;
+        }
+        let count = Math.random() < 0.2 ? 0 : 1 + Math.floor(Math.random() * 3);
+        if (quick) count = Math.min(count, 2);
+        if (count <= 0) return 0;
+
+        let folders = all.filter(n => n.type === 'folder' && !n.kind && !/карантин/i.test(n.name));
+        const preferred = folders.filter(f => /документ|завантаження|робочий стіл|desktop|documents|downloads/i.test(f.name));
+        if (preferred.length) folders = preferred;
+        if (!folders.length) return 0;
+
+        let made = 0;
+        for (let i = 0; i < count; i++) {
+          const dir = folders[Math.floor(Math.random() * folders.length)];
+          const dirPath = await VFS.pathOf(dir.id);
+          const tpl = SPAWN[Math.floor(Math.random() * SPAWN.length)];
+          const path = dirPath + '\\' + tpl.name;
+          try {
+            if (await VFS.exists(path)) continue;
+            await VFS.writeFile(path, tpl.body);
+            made++;
+          } catch (_) {}
+        }
+        return made;
+      }
+
+      /* ---------- Стан ---------- */
+      let scanning = false;
+      let threats = [];            // { id, path, name, sig, sev }
+      let defVersion = '';
+      let defBuild = 0;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem('sg_defs') || 'null');
+        if (saved && saved.version) { defVersion = saved.version; defBuild = saved.build || 0; }
+      } catch (_) {}
+
+      /* ---------- Допоміжні ---------- */
+      function pathIn(path, folder) {
+        return new RegExp('\\\\' + folder + '(\\\\|$)', 'i').test(path) || new RegExp('^' + folder + '(\\\\|$)', 'i').test(path);
+      }
+
+      function nodeText(node) {
+        return typeof node.content === 'string' ? node.content : '';
+      }
+
+      async function collectFiles(quick) {
+        const all = await VFS.dump();
+        let files = all.filter(n => n.type === 'file' && !n.appId && !n.pkgId && !n.sys);
+        // не скануємо саму теку карантину
+        const paths = new Map();
+        const out = [];
+        for (const f of files) {
+          let p = '';
+          try { p = await VFS.pathOf(f.id); } catch (_) {}
+          paths.set(f.id, p);
+          if (/карантин/i.test(p)) continue;
+          if (quick) {
+            const risky = RISKY_EXT.test(f.name) || /завантаження|downloads|робочий стіл|desktop/i.test(p);
+            if (!risky) continue;
+          }
+          out.push({ node: f, path: p });
+        }
+        return out;
+      }
+
+      /* ---------- UI під час сканування ---------- */
+      function setStatus(kind, text) {
+        const s = $('sgStatus');
+        s.classList.remove('off', 'scanning');
+        if (kind) s.classList.add(kind);
+        $('sgStatusText').textContent = text;
+      }
+
+      function setProgress(pct, bad) {
+        const b = $('scanBar');
+        b.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        b.classList.toggle('bad', !!bad);
+      }
+
+      function setBusy(on) {
+        scanning = on;
+        $('btnFullScan').disabled = on;
+        $('btnQuickScan').disabled = on;
+        $('btnUpdate').disabled = on;
+      }
+
+      /* ---------- Сканування ---------- */
+      async function runScan(quick) {
+        if (scanning) return;
+        if (!window.VFS || !window.VFS.__loaded) { setScanline('Файлову систему не завантажено.'); return; }
+
+        setBusy(true);
+        setStatus('scanning', 'Сканування…');
+        setProgress(0, false);
+        threats = [];
+        renderResults();
+        $('sumThreats').textContent = '0';
+
+        setScanline('Пошук нових загроз…');
+        try { await spawnViruses(quick); } catch (_) {}
+
+        let list;
+        try { list = await collectFiles(quick); }
+        catch (e) { setBusy(false); setStatus(null, 'Захищено'); setScanline('Помилка доступу до ФС: ' + e.message); return; }
+
+        const t0 = performance.now();
+        const stepDelay = list.length > 150 ? 2 : (list.length > 40 ? 6 : 14);
+
+        for (let i = 0; i < list.length; i++) {
+          const { node, path } = list[i];
+          $('scanLine').textContent = 'Перевірка: ' + path;
+          await sleep(stepDelay);
+
+          const text = nodeText(node);
+          for (const sig of SIGNATURES) {
+            let hit = false;
+            try { hit = sig.test(node.name, text); } catch (_) {}
+            if (hit) { threats.push({ id: node.id, path, name: node.name, sig: sig.id, sev: sig.sev }); break; }
+          }
+          setProgress(((i + 1) / Math.max(1, list.length)) * 100, threats.length > 0);
+          $('sumScanned').textContent = String(i + 1);
+        }
+
+        const secs = ((performance.now() - t0) / 1000).toFixed(1);
+        $('sumTime').textContent = secs + ' с';
+        $('sumThreats').textContent = String(threats.length);
+
+        renderResults();
+
+        if (threats.length) {
+          setStatus('off', 'Загрози: ' + threats.length);
+          $('scanLine').textContent = 'Завершено. Виявлено загроз: ' + threats.length;
+          $('footStatus').textContent = 'Рекомендовано помістити об\'єкти в карантин';
+        } else {
+          setStatus(null, 'Захищено');
+          $('scanLine').textContent = 'Сканування завершено. Загроз не виявлено.';
+          $('footStatus').textContent = 'Перевірено: ' + list.length + ' об\'єктів';
+        }
+        setBusy(false);
+        if (!$('rtp').checked) setStatus('off', 'Захист вимкнено');
+      }
+
+      function setScanline(t) { $('scanLine').textContent = t; }
+
+      /* ---------- Рендер результатів ---------- */
+      function renderResults() {
+        const listEl = $('sgList');
+        listEl.replaceChildren();
+        if (!threats.length) {
+          const empty = document.createElement('div');
+          empty.className = 'sg-empty';
+          empty.innerHTML = 'Загроз не виявлено. Ваш пристрій у безпеці ✅';
+          listEl.appendChild(empty);
+          return;
+        }
+        for (const t of threats) {
+          const row = document.createElement('div');
+          row.className = 'sg-row';
+
+          const sev = document.createElement('span');
+          sev.className = 'sev ' + t.sev;
+          sev.textContent = t.sev === 'high' ? 'висока' : (t.sev === 'medium' ? 'середня' : 'низька');
+
+          const info = document.createElement('div');
+          info.className = 'info';
+          const nm = document.createElement('div');
+          nm.className = 'nm';
+          nm.textContent = t.name;
+          const sig = document.createElement('div');
+          sig.className = 'sig';
+          sig.textContent = t.sig;
+          const pt = document.createElement('div');
+          pt.className = 'pt';
+          pt.textContent = t.path;
+          info.append(nm, sig, pt);
+
+          const acts = document.createElement('div');
+          acts.className = 'acts';
+          const bq = document.createElement('button');
+          bq.textContent = 'Карантин';
+          bq.onclick = () => quarantineThreat(t);
+          const bd = document.createElement('button');
+          bd.className = 'danger';
+          bd.textContent = 'Видалити';
+          bd.onclick = () => deleteThreat(t);
+          acts.append(bq, bd);
+
+          row.append(sev, info, acts);
+          listEl.appendChild(row);
+        }
+      }
+
+      /* ---------- Модальне вікно ---------- */
+      function openModal(title, body, actions) {
+        $('sgModalTitle').textContent = title;
+        const b = $('sgModalBody');
+        b.replaceChildren();
+        if (body instanceof Node) b.appendChild(body);
+        else if (body != null) b.textContent = String(body);
+        const foot = $('sgModalFoot');
+        foot.replaceChildren();
+        const acts = (actions && actions.length) ? actions : [{ label: 'OK', primary: true }];
+        for (const a of acts) {
+          const btn = document.createElement('button');
+          btn.textContent = a.label;
+          if (a.primary) btn.classList.add('primary');
+          btn.onclick = () => { if (a.onClick) a.onClick(); if (!a.keep) closeModal(); };
+          foot.appendChild(btn);
+        }
+        $('sgModal').hidden = false;
+      }
+
+      function closeModal() { $('sgModal').hidden = true; }
+
+      function modalConfirm(title, text, onYes) {
+        openModal(title, text, [
+          { label: 'Так', primary: true, onClick: onYes },
+          { label: 'Ні' }
+        ]);
+      }
+
+      $('sgModalX').onclick = closeModal;
+      $('sgModal').addEventListener('mousedown', e => { if (e.target === $('sgModal')) closeModal(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sgModal').hidden) closeModal(); });
+
+      /* ---------- Дії над загрозами ---------- */
+      async function quarantineThreat(t) {
+        try {
+          const dir = 'C:\\Карантин';
+          try { await VFS.mkdir(dir, { recursive: true }); } catch (_) {}
+          await VFS.move(t.path, dir);
+          removeThreat(t, 'Об\'єкт поміщено в карантин: ' + t.name);
+        } catch (e) {
+          openModal('Помилка', 'Не вдалося помістити в карантин: ' + (e && e.message || e));
+        }
+      }
+
+      function deleteThreat(t) {
+        modalConfirm('Видалення', 'Назавжди видалити «' + t.name + '»?', async () => {
+          try { await VFS.remove(t.path); removeThreat(t, 'Об\'єкт видалено: ' + t.name); }
+          catch (e) { openModal('Помилка', 'Не вдалося видалити: ' + (e && e.message || e)); }
+        });
+      }
+
+      function removeThreat(t, msg) {
+        threats = threats.filter(x => x.path !== t.path);
+        $('sumThreats').textContent = String(threats.length);
+        $('footStatus').textContent = msg;
+        if (!threats.length) setStatus(null, 'Захищено');
+        renderResults();
+      }
+
+      async function showQuarantine() {
+        const dir = 'C:\\Карантин';
+        let items = [];
+        try { items = await VFS.readdir(dir); } catch (_) {}
+
+        const wrap = document.createElement('div');
+        if (!items.length) {
+          wrap.className = 'sg-modal-empty';
+          wrap.textContent = 'Карантин порожній.';
+          openModal('Карантин', wrap, [{ label: 'OK', primary: true }]);
+          return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'sg-qlist';
+        for (const it of items) {
+          const row = document.createElement('div');
+          row.className = 'sg-qrow';
+
+          const nm = document.createElement('div');
+          nm.className = 'qn';
+          nm.textContent = '🦠 ' + it.name;
+
+          const qs = document.createElement('div');
+          qs.className = 'qs';
+          qs.textContent = it.kind === 'file' ? (it.size || 0) + ' Б' : 'тека';
+
+          const rb = document.createElement('button');
+          rb.textContent = 'Відновити';
+          rb.onclick = async () => {
+            try { await VFS.move(dir + '\\' + it.name, 'C:\\'); } catch (_) {}
+            closeModal();
+            showQuarantine();
+          };
+
+          row.append(nm, qs, rb);
+          list.appendChild(row);
+        }
+
+        openModal('Карантин (' + items.length + ')', list, [
+          { label: 'Очистити карантин', keep: true, onClick: () => clearQuarantine(dir, items) },
+          { label: 'Закрити', primary: true }
+        ]);
+      }
+
+      async function clearQuarantine(dir, items) {
+        for (const it of items) {
+          try { await VFS.remove(dir + '\\' + it.name, { recursive: true }); } catch (_) {}
+        }
+        $('footStatus').textContent = 'Карантин очищено';
+        closeModal();
+        showQuarantine();
+      }
+
+      /* ---------- Оновлення баз ---------- */
+      async function updateDefs() {
+        if (scanning) return;
+        setBusy(true);
+        setStatus('scanning', 'Оновлення баз…');
+        setProgress(0, false);
+        for (let i = 0; i <= 100; i += 4) {
+          setProgress(i, false);
+          setScanline('Завантаження сигнатур… ' + i + '%');
+          await sleep(35);
+        }
+        defBuild++;
+        const d = new Date();
+        defVersion = 'v' + d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' +
+                     String(d.getDate()).padStart(2, '0') + '.' + defBuild;
+        try { localStorage.setItem('sg_defs', JSON.stringify({ version: defVersion, build: defBuild })); } catch (_) {}
+        renderDefInfo();
+        setScanline('Бази оновлено: ' + defVersion);
+        $('footStatus').textContent = 'Сигнатури оновлено';
+        setBusy(false);
+        setStatus($('rtp').checked ? null : 'off', $('rtp').checked ? 'Захищено' : 'Захист вимкнено');
+        setProgress(0, false);
+      }
+
+      function renderDefInfo() {
+        $('defInfo').textContent = 'Бази вірусів: ' + (defVersion || 'невідомо') +
+          ' · сигнатур: ' + SIGNATURES.length;
+      }
+
+      /* ---------- Події ---------- */
+      $('btnFullScan').onclick = () => runScan(false);
+      $('btnQuickScan').onclick = () => runScan(true);
+      $('btnUpdate').onclick = updateDefs;
+      $('btnQuarantine').onclick = showQuarantine;
+      $('rtp').onchange = e => {
+        if (scanning) return;
+        if (e.target.checked) setStatus(null, 'Захищено');
+        else setStatus('off', 'Захист вимкнено');
+      };
+
+      /* ---------- Виклик з робочого столу: сканувати конкретний файл ---------- */
+      window.vfsOpenFile = async function (path, id) {
+        if (!window.VFS || !window.VFS.__loaded) return;
+        try {
+          let p = path;
+          if (!p && id != null) p = await VFS.pathOf(id);
+          if (!p) return;
+          const node = await (async () => {
+            const h = await VFS.getFileHandle(p);
+            const f = await h.getFile();
+            return { name: f.name, content: await f.text() };
+          })();
+          threats = [];
+          for (const sig of SIGNATURES) {
+            let hit = false;
+            try { hit = sig.test(node.name, node.content); } catch (_) {}
+            if (hit) { threats.push({ id: null, path: p, name: node.name, sig: sig.id, sev: sig.sev }); break; }
+          }
+          $('sumScanned').textContent = '1';
+          $('sumThreats').textContent = String(threats.length);
+          $('sumTime').textContent = '—';
+          setProgress(100, threats.length > 0);
+          setScanline('Перевірено файл: ' + p);
+          if (threats.length) setStatus('off', 'Загрози: ' + threats.length);
+          renderResults();
+        } catch (e) {
+          console.error('SecureGuard: не вдалося перевірити файл:', e);
+        }
+      };
+
+      /* ---------- Старт ---------- */
+      renderDefInfo();
+      setScanline('Готово до сканування');
+      setStatus(null, 'Захищено');
+    })();
+  </script>
+</body>
+</html>

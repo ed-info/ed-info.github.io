@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інсталятор · InstallShield емуляція</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            overflow: hidden;
+        }
+
+        /* Головне вікно інсталятора — заповнює вікно емулятора */
+        .installer-window {
+            width: 100%;
+            height: 100%;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Основна зона з картинкою та текстом */
+        .main-panel {
+            display: flex;
+            padding: 24px 22px 16px 22px;
+            gap: 22px;
+            background: #f0f0f0;
+            flex-wrap: wrap;
+            flex: 1 1 auto;
+        }
+
+        /* Ліва панель – іконка/банер */
+        .graphic-area {
+            flex: 0 0 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .install-icon {
+            width: 100px;
+            height: 100px;
+            background: #ffffff;
+            border: 1px solid #c8c8c8;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 
+                        inset 0 1px 0 #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 52px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            color: #1e3a5f;
+            transition: all 0.3s ease;
+        }
+
+        .brand-text {
+            font-size: 10px;
+            color: #606060;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            background: #e8e8e8;
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: 1px solid #d8d8d8;
+            width: fit-content;
+            text-transform: uppercase;
+        }
+
+        /* Права панель – текст */
+        .text-area {
+            flex: 1;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .welcome-heading {
+            font-size: 21px;
+            font-weight: 600;
+            color: #2a3a4a;
+            margin-bottom: 14px;
+            letter-spacing: -0.3px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #404040;
+            line-height: 1.55;
+            margin-bottom: 16px;
+            background: #ffffff;
+            padding: 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .details-box {
+            font-size: 12px;
+            color: #505050;
+            background: #ffffff;
+            padding: 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .details-box p {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .details-box i {
+            font-style: normal;
+            font-weight: bold;
+            color: #3a6ea5;
+            width: 18px;
+            text-align: center;
+        }
+
+        .details-box .path {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #f0f4f8;
+            padding: 1px 6px;
+            border-radius: 3px;
+            color: #2a3a4a;
+            font-size: 11px;
+        }
+
+        /* Прогрес-бар та статус */
+        .progress-section {
+            padding: 12px 22px 16px 22px;
+            background: #f0f0f0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #505050;
+            margin-bottom: 8px;
+        }
+
+        .progress-percent {
+            font-size: 13px;
+            font-weight: 700;
+            color: #3a6ea5;
+            min-width: 42px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-bar-bg {
+            height: 22px;
+            background: #ffffff;
+            border: 1px solid #d8d8d8;
+            border-radius: 11px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4a90d9, #6aa8e8, #7eb8f0);
+            border-radius: 9px;
+            transition: width 0.25s ease;
+            box-shadow: 0 1px 2px rgba(74, 144, 217, 0.4);
+        }
+
+        /* Кнопки — у стилі інших застосунків емулятора (XP, без заокруглень) */
+        .button-bar {
+            padding: 12px 22px 14px 22px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn {
+            min-width: 92px;
+            padding: 5px 18px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #e1e1e1;
+            border: 1px solid #adadad;
+            box-shadow: none;
+            color: #1e1e1e;
+            cursor: default;
+            letter-spacing: 0;
+            border-radius: 0;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #e5f1fb;
+            border-color: #0078d7;
+        }
+
+        .btn:active:not(:disabled) {
+            background: #cce4f7;
+            border-color: #0078d7;
+        }
+
+        .btn:disabled {
+            color: #9a9a9a;
+            cursor: default;
+        }
+
+        .btn-primary {
+            background: #0078d7;
+            border-color: #0078d7;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #006cc1;
+            border-color: #006cc1;
+        }
+
+        /* Стан завершення */
+        .complete-message {
+            display: none;
+            background: #eaf7ea;
+            border-left: 4px solid #4caf50;
+            padding: 10px 16px;
+            margin: 0 22px 12px 22px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #2e6b30;
+            border-radius: 4px;
+        }
+
+        /* Адаптивність */
+        @media (max-width: 550px) {
+            .main-panel {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .graphic-area {
+                flex: auto;
+                width: 100%;
+            }
+
+            .install-icon {
+                width: 76px;
+                height: 76px;
+                font-size: 38px;
+            }
+
+            .btn {
+                min-width: 80px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="installer-window">
+        <!-- Основна частина: картинка + текст -->
+        <div class="main-panel">
+            <div class="graphic-area">
+                <div class="install-icon" id="installIcon">📦</div>
+                <div class="brand-text">InstallShield</div>
+            </div>
+            <div class="text-area">
+                <div class="welcome-heading" id="welcomeHeading">Ласкаво просимо!</div>
+                <div class="description" id="descriptionText">
+                    Майстер встановлення підготує програму <strong>SuperApp 2025</strong> до роботи на вашому комп’ютері. 
+                    Будь ласка, зачекайте.
+                </div>
+                <div class="details-box" id="detailsBox">
+                    <p><i>📁</i> Папка призначення: <span class="path">C:\Користувачі\Користувач\Програми</span></p>
+                    <p><i>💾</i> Потрібно місця: 48.2 МБ</p>
+                    <p><i>🔧</i> Компоненти: Основні файли, Документація</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Прогрес-бар -->
+        <div class="progress-section">
+            <div class="progress-label">
+                <span id="statusText">Очікування...</span>
+                <span class="progress-percent" id="percentText">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Повідомлення про завершення -->
+        <div class="complete-message" id="completeMessage">
+            ✅ Встановлення завершено! Програма готова до використання.
+        </div>
+
+        <!-- Кнопки керування -->
+        <div class="button-bar">
+            <button class="btn" id="cancelBtn" title="Скасувати встановлення">Скасувати</button>
+            <button class="btn btn-primary" id="installBtn" title="Почати встановлення">Встановити</button>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            // Елементи DOM
+            const installBtn = document.getElementById('installBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const progressFill = document.getElementById('progressFill');
+            const percentText = document.getElementById('percentText');
+            const statusText = document.getElementById('statusText');
+            const completeMessage = document.getElementById('completeMessage');
+            const welcomeHeading = document.getElementById('welcomeHeading');
+            const descriptionText = document.getElementById('descriptionText');
+            const installIcon = document.getElementById('installIcon');
+
+            // Змінні стану
+            let progress = 0;
+            let intervalId = null;
+            let isInstalling = false;
+            let isCompleted = false;
+            let isCancelled = false;
+            let mode = 'install';     // 'install' | 'uninstall'
+            let target = null;        // пакунок (встановлення) або програма (видалення)
+
+            // Початкові тексти
+            const DEFAULT_PROGRAM = 'SuperApp 2025';
+            const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const programName = () => (target && target.name)
+                ? String(target.name).replace(/\.exe$/i, '') : DEFAULT_PROGRAM;
+            const ORIGINAL_HEADING = 'Ласкаво просимо!';
+            const ORIGINAL_STATUS = 'Очікування...';
+            const ORIGINAL_ICON = '📦';
+
+            const initialHeading = () => mode === 'uninstall' ? 'Видалення програми' : ORIGINAL_HEADING;
+            const initialDescription = () => mode === 'uninstall'
+                ? 'Майстер видалить програму <strong>' + escapeHtml(programName()) +
+                  '</strong> з вашого комп’ютера. Будь ласка, зачекайте.'
+                : 'Майстер встановлення підготує програму <strong>' + escapeHtml(programName()) +
+                  '</strong> до роботи на вашому комп’ютері. Будь ласка, зачекайте.';
+
+
+            // Обмін із батьківським вікном робочого столу
+            function post(msg) { try { window.parent.postMessage(msg, '*'); } catch (_) {} }
+
+            // Допоміжні функції
+            function setProgress(value) {
+                progress = Math.min(100, Math.max(0, value));
+                progressFill.style.width = progress + '%';
+                percentText.textContent = progress + '%';
+            }
+
+            // Скидання до початкового стану
+            function resetToInitial() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+                isInstalling = false;
+                isCompleted = false;
+                isCancelled = false;
+
+                setProgress(0);
+                statusText.textContent = ORIGINAL_STATUS;
+                welcomeHeading.textContent = initialHeading();
+                descriptionText.innerHTML = initialDescription();
+                installIcon.textContent = (target && target.icon) || ORIGINAL_ICON;
+                completeMessage.style.display = 'none';
+
+                installBtn.style.display = mode === 'uninstall' ? 'none' : '';
+                installBtn.disabled = false;
+                installBtn.textContent = 'Встановити';
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = 'Скасувати';
+            }
+
+            // Набір статусів для поточного режиму
+            function statusStages() {
+                if (mode === 'uninstall') {
+                    return [
+                        { limit: 12, status: 'Підготовка до видалення...', heading: 'Підготовка', desc: 'Аналіз встановлених компонентів.' },
+                        { limit: 30, status: 'Пошук файлів програми...', heading: 'Пошук файлів', desc: 'Пошук файлів програми та ярликів.' },
+                        { limit: 52, status: 'Видалення файлів...', heading: 'Видалення файлів', desc: 'Видалення файлів програми.' },
+                        { limit: 72, status: 'Видалення ярликів...', heading: 'Видалення ярликів', desc: 'Видалення ярликів з меню «Пуск» та робочого столу.' },
+                        { limit: 88, status: 'Очищення реєстру...', heading: 'Очищення реєстру', desc: 'Видалення записів із системного реєстру.' },
+                        { limit: 101, status: 'Завершення видалення...', heading: 'Майже готово', desc: 'Завершення видалення програми.' }
+                    ];
+                }
+                return [
+                    { limit: 12, status: 'Підготовка до встановлення...', heading: 'Підготовка...', desc: 'Аналіз системи та перевірка компонентів.' },
+                    { limit: 28, status: 'Копіювання файлів...', heading: 'Копіювання файлів', desc: 'Основні файли програми копіюються до папки призначення.' },
+                    { limit: 45, status: 'Розпакування ресурсів...', heading: 'Розпакування', desc: 'Розпакування бібліотек та ресурсів.' },
+                    { limit: 62, status: 'Створення ярликів...', heading: 'Створення ярликів', desc: 'Створення ярликів у меню «Пуск» та на робочому столі.' },
+                    { limit: 78, status: 'Реєстрація компонентів...', heading: 'Реєстрація', desc: 'Реєстрація DLL та налаштування системи.' },
+                    { limit: 92, status: 'Налаштування...', heading: 'Налаштування', desc: 'Завершення налаштувань та оптимізація.' },
+                    { limit: 101, status: 'Завершення встановлення...', heading: 'Майже готово', desc: 'Фінальні кроки встановлення.' }
+                ];
+            }
+
+            // Оновлення статусу під час інсталяції/видалення
+            function updateStatusByProgress(prog) {
+                const stages = statusStages();
+                const stage = stages.find(s => prog < s.limit) || stages[stages.length - 1];
+                statusText.textContent = stage.status;
+                welcomeHeading.textContent = stage.heading;
+                descriptionText.innerHTML = stage.desc;
+            }
+
+            // Завершення операції
+            function finishInstallation() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+                isInstalling = false;
+                isCompleted = true;
+
+                setProgress(100);
+                welcomeHeading.textContent = 'Готово!';
+                if (mode === 'uninstall') {
+                    statusText.textContent = 'Видалення завершено!';
+                    descriptionText.innerHTML = 'Програму <strong>' + escapeHtml(programName()) + '</strong> успішно видалено з комп’ютера.';
+                    installIcon.textContent = '🗑️';
+                    completeMessage.textContent = 'Програму «' + programName() + '» успішно видалено.';
+                } else {
+                    statusText.textContent = 'Встановлення завершено!';
+                    descriptionText.innerHTML = 'Програму <strong>' + escapeHtml(programName()) + '</strong> успішно встановлено.';
+                    installIcon.textContent = '✅';
+                    completeMessage.textContent = 'Програму «' + programName() + '» успішно встановлено.';
+                }
+                completeMessage.style.display = 'block';
+
+                installBtn.disabled = true;
+                installBtn.textContent = mode === 'uninstall' ? 'Видалено' : 'Встановлено';
+                cancelBtn.textContent = 'Закрити';
+                cancelBtn.disabled = false;
+
+                if (!target) return;
+                if (mode === 'uninstall') post({ type: 'de-installer-uninstalled', app: target });
+                else post({ type: 'de-installer-done', pkg: target });
+            }
+
+            // Анімація прогресу
+            function startInstallation() {
+                if (isInstalling || isCompleted) return;
+
+                if (isCancelled) {
+                    resetToInitial();
+                }
+
+                isInstalling = true;
+                isCancelled = false;
+                installBtn.disabled = true;
+                installBtn.textContent = mode === 'uninstall' ? 'Видалення...' : 'Встановлення...';
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = 'Скасувати';
+                completeMessage.style.display = 'none';
+
+                setProgress(0);
+                updateStatusByProgress(0);
+
+                intervalId = setInterval(() => {
+                    if (isCancelled) {
+                        if (intervalId) {
+                            clearInterval(intervalId);
+                            intervalId = null;
+                        }
+                        return;
+                    }
+
+                    const step = Math.floor(Math.random() * 4) + 2;
+                    let newProgress = progress + step;
+
+                    if (newProgress > 98) {
+                        newProgress = Math.min(100, newProgress + 1);
+                    }
+
+                    if (newProgress >= 100) {
+                        setProgress(100);
+                        updateStatusByProgress(100);
+                        finishInstallation();
+                        return;
+                    }
+
+                    setProgress(newProgress);
+                    updateStatusByProgress(newProgress);
+                }, 180);
+            }
+
+            // Скасування операції / закриття вікна
+            function cancelInstallation() {
+                if (isCompleted) {
+                    // Кнопка «Закрити» — закрити вікно інсталятора
+                    if (window.parent && window.parent !== window) post({ type: 'de-installer-close' });
+                    else { try { window.close(); } catch (_) {} }
+                    return;
+                }
+
+                if (isInstalling) {
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                        intervalId = null;
+                    }
+                    isInstalling = false;
+                    isCancelled = true;
+                    isCompleted = false;
+
+                    statusText.textContent = 'Скасовано';
+                    welcomeHeading.textContent = 'Скасовано';
+                    descriptionText.innerHTML = mode === 'uninstall'
+                        ? 'Видалення програми було перервано.'
+                        : 'Процес встановлення було перервано.';
+                    installIcon.textContent = '❌';
+                    completeMessage.style.display = 'none';
+
+                    installBtn.disabled = false;
+                    installBtn.textContent = mode === 'uninstall' ? 'Видалити' : 'Спробувати знову';
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = 'Скасувати';
+                    return;
+                }
+
+                if (!isInstalling && !isCompleted) {
+                    resetToInitial();
+                }
+            }
+
+            // Застосувати отриманий пакунок (встановлення почнеться після натиску «Встановити»)
+            function applyPackage(pkg) {
+                mode = 'install';
+                target = (pkg && pkg.id && pkg.name) ? pkg : null;
+                resetToInitial();
+            }
+
+            // Застосувати програму для видалення (процес запускається автоматично)
+            function applyUninstall(app) {
+                mode = 'uninstall';
+                target = (app && app.id && app.name) ? app : null;
+                resetToInitial();
+                if (target) setTimeout(startInstallation, 300);
+            }
+
+            // Слухачі подій
+            installBtn.addEventListener('click', startInstallation);
+            cancelBtn.addEventListener('click', cancelInstallation);
+
+            window.addEventListener('message', e => {
+                const d = e.data;
+                if (!d || typeof d !== 'object') return;
+                if (d.type === 'de-installer-package') applyPackage(d.pkg);
+                else if (d.type === 'de-installer-uninstall') applyUninstall(d.app);
+            });
+
+            // Ініціалізація
+            resetToInitial();
+            post({ type: 'de-installer-ready' });
+        })();
+    </script>
+</body>
+</html>

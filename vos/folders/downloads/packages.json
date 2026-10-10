@@ -1,0 +1,6 @@
+[
+  { "id": "sokoban", "name": "Sokoban.exe", "icon": "🎮", "url": "sokoban/index.html", "w": 480, "h": 580 },
+  { "id": "tetris", "name": "Tetris.exe", "icon": "🎮", "url": "tetris/index.html", "w": 320, "h": 640 },
+  { "id": "snake", "name": "Snake.exe", "icon": "🎮", "url": "snake/index.html", "w": 420, "h": 440 },
+  { "id": "breakout", "name": "Breakout.exe", "icon": "🎮", "url": "breakout/index.html", "w": 420, "h": 520 }
+]

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ВіртуОС</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif;
+        }
+
+        /* основна сцена — на весь екран, без рамок */
+        .os-scene {
+            width: 100vw;
+            height: 100vh;
+            background: #0b0b0b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ----- ЕКРАН ЗАВАНТАЖЕННЯ ----- */
+        .boot-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            gap: 24px;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .boot-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            position: absolute;
+        }
+
+        /* Логотип: одне вікно 🪟 з пінгвіном 🐧 по центру */
+        .logo-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.18));
+        }
+
+        .window-bg {
+            font-size: 8rem;
+            line-height: 1;
+        }
+
+        .penguin-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3.6rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 6px #00000099);
+            animation: gentleBob 3s infinite ease-in-out;
+        }
+
+        @keyframes gentleBob {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50%      { transform: translate(-50%, -53%) scale(1.03); }
+        }
+
+        /* спіннер */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            border-top: 5px solid #ffffffcc;
+            border-right: 5px solid #ffffff99;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 15px #ffffff22;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* повідомлення про завантаження */
+        .boot-message {
+            color: #e0e0e0;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            font-weight: 400;
+            text-shadow: 0 2px 5px black;
+            background: rgba(20, 20, 20, 0.7);
+            padding: 8px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #ffffff1a;
+            min-height: 3.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ----- ЕКРАН ВХОДУ з темно-синім градієнтом ----- */
+        .login-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            gap: 18px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            color: white;
+            background: radial-gradient(circle at 50% 30%, #1e3a8a 0%, #0f1e4a 45%, #060c20 100%);
+            padding: 24px;
+        }
+
+        .login-screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* аватар — квітка у квадраті */
+        .avatar-square {
+            width: 110px;
+            height: 110px;
+            background: linear-gradient(145deg, #2a3f7c, #16234a);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 0 2px #4a6cb0 inset;
+            border: 2px solid #ffffff25;
+        }
+
+        .avatar-square span {
+            filter: drop-shadow(0 4px 6px black);
+        }
+
+        .username {
+            font-size: 2rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-shadow: 0 3px 8px black;
+            margin-top: -6px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 4px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffffff15;
+        }
+
+        .password-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin-top: 8px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .password-input-wrapper {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            background: #0d1830;
+            border-radius: 40px;
+            padding: 4px 6px 4px 20px;
+            border: 1px solid #2a4172;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6), 0 0 0 1px #00000066 inset;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        .password-input-wrapper:focus-within {
+            border-color: #6a8cff;
+            box-shadow: 0 0 0 2px #3b5bdb66, 0 8px 18px black;
+        }
+
+        .password-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            font-size: 1.1rem;
+            padding: 12px 6px 12px 0;
+            letter-spacing: 1px;
+        }
+
+        .password-input-wrapper input::placeholder {
+            color: #8a9cc2;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .login-button {
+            background: #2d6cdf;
+            border: none;
+            color: white;
+            padding: 12px 40px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 8px 20px #0b2a6e;
+            border: 1px solid #ffffff30;
+            width: 100%;
+        }
+
+        .login-button:hover {
+            background: #3c7cf0;
+            box-shadow: 0 10px 24px #0f2f7a;
+        }
+
+        .login-button:active {
+            transform: scale(0.97);
+            background: #1f5bcc;
+        }
+
+        .error-message {
+            color: #ff9e9e;
+            font-size: 0.95rem;
+            height: 1.4rem;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px black;
+            margin-top: -6px;
+        }
+
+        /* адаптація */
+        @media (max-width: 500px) {
+            .window-bg { font-size: 6rem; }
+            .penguin-overlay { font-size: 2.7rem; }
+            .boot-message { font-size: 1rem; padding: 6px 16px; }
+            .avatar-square { width: 90px; height: 90px; font-size: 3.5rem; }
+            .username { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="os-scene" id="osScene">
+        <!-- ЕКРАН ЗАВАНТАЖЕННЯ -->
+        <div class="boot-screen" id="bootScreen">
+            <div class="logo-wrapper">
+                <div class="window-bg">🪟</div>
+                <div class="penguin-overlay">🐧</div>
+            </div>
+
+            <div class="spinner"></div>
+
+            <div class="boot-message" id="bootMessage">Завантаження системи...</div>
+        </div>
+
+        <!-- ЕКРАН ВХОДУ (ЛОГІН) -->
+        <div class="login-screen" id="loginScreen">
+            <div class="avatar-square">
+                <span>🌼</span>
+            </div>
+            <div class="username">User</div>
+
+            <div class="password-area">
+                <div class="password-input-wrapper">
+                    <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="off" aria-label="Пароль">
+                </div>
+                <button class="login-button" id="loginButton">Увійти</button>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const bootScreen = document.getElementById('bootScreen');
+            const loginScreen = document.getElementById('loginScreen');
+            const bootMessage = document.getElementById('bootMessage');
+            const passwordInput = document.getElementById('passwordInput');
+            const loginButton = document.getElementById('loginButton');
+            const errorMessage = document.getElementById('errorMessage');
+
+            let loginActivated = false;
+
+            // Швидші етапи завантаження (~2.5 секунды всього)
+            const bootSteps = [
+                { text: 'Ініціалізація ядра...', delay: 0 },
+                { text: 'Завантаження драйверів...', delay: 450 },
+                { text: 'Перевірка файлової системи...', delay: 900 },
+                { text: 'Запуск служб...', delay: 1350 },
+                { text: 'Підготовка робочого столу...', delay: 1750 },
+                { text: 'Майже готово...', delay: 2100 }
+            ];
+
+            const TOTAL_BOOT_TIME = 2500;
+
+            function startBootSequence() {
+                bootScreen.classList.remove('hidden');
+                loginScreen.classList.remove('active');
+                loginActivated = false;
+                errorMessage.textContent = '';
+                passwordInput.value = '';
+                passwordInput.disabled = false;
+                loginButton.disabled = false;
+                loginButton.textContent = 'Увійти';
+                loginButton.style.background = '#2d6cdf';
+                bootMessage.textContent = 'Завантаження системи...';
+
+                const avatarSpan = document.querySelector('.avatar-square span');
+                if (avatarSpan) avatarSpan.textContent = '🌼';
+
+                bootSteps.forEach((step) => {
+                    setTimeout(() => {
+                        if (!loginActivated) bootMessage.textContent = step.text;
+                    }, step.delay);
+                });
+
+                setTimeout(() => {
+                    if (loginActivated) return;
+                    bootScreen.classList.add('hidden');
+                    loginScreen.classList.add('active');
+                    loginActivated = true;
+                    passwordInput.focus();
+                }, TOTAL_BOOT_TIME);
+            }
+
+            function handleLogin() {
+                const enteredPassword = passwordInput.value.trim();
+                const correctPassword = 'user';
+
+                if (enteredPassword === correctPassword) {
+                    errorMessage.textContent = '';
+                    loginButton.textContent = 'Вітаємо!';
+                    loginButton.style.background = '#2e7d32';
+                    loginButton.disabled = true;
+                    passwordInput.disabled = true;
+
+                    const avatarSpan = document.querySelector('.avatar-square span');
+                    if (avatarSpan) avatarSpan.textContent = '🌸';
+
+                    errorMessage.textContent = 'Вхід виконано успішно!';
+                    errorMessage.style.color = '#a5d6a5';
+
+                    // Позначаємо сеанс як авторизований і запускаємо Робочий стіл
+                    try { sessionStorage.setItem('virtuos_user', 'User'); } catch (_) {}
+                    setTimeout(() => { window.location.href = 'index.html'; }, 900);
+                } else {
+                    errorMessage.textContent = 'Невірний пароль. Спробуйте ще раз.';
+                    errorMessage.style.color = '#ff9e9e';
+                    passwordInput.value = '';
+                    passwordInput.focus();
+
+                    passwordInput.parentElement.style.borderColor = '#ff5e5e';
+                    setTimeout(() => {
+                        passwordInput.parentElement.style.borderColor = '#2a4172';
+                    }, 400);
+                }
+            }
+
+            loginButton.addEventListener('click', handleLogin);
+
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLogin();
+                }
+            });
+
+            passwordInput.addEventListener('input', () => {
+                if (loginButton.disabled && loginButton.textContent === 'Вітаємо!') {
+                    loginButton.disabled = false;
+                    loginButton.textContent = 'Увійти';
+                    loginButton.style.background = '#2d6cdf';
+                    passwordInput.disabled = false;
+
+                    const avatarSpan = document.querySelector('.avatar-square span');
+                    if (avatarSpan) avatarSpan.textContent = '🌼';
+
+                    errorMessage.textContent = '';
+                    errorMessage.style.color = '#ff9e9e';
+                }
+            });
+
+            startBootSequence();
+        })();
+    </script>
+</body>
+</html>

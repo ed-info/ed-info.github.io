@@ -1,0 +1,13 @@
+{
+  "theme": "classic",
+  "language": "uk",
+  "wallpaper": {
+    "type": "color",
+    "value": "#3a6ea5",
+    "mode": "cover"
+  },
+  "desktop": {
+    "iconSize": 84,
+    "grid": true
+  }
+}

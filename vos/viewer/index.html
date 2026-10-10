@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Переглядач зображень</title>
+<style>
+  :root{
+    --bg:#d4d0c8; --panel:#ece9d8; --panel2:#ffffff; --line:#aca899;
+    --txt:#1e1e1e; --dim:#555555; --accent:#0078d7;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font:13px/1.35 "Segoe UI",Tahoma,sans-serif;color:var(--txt);background:var(--bg);
+    display:flex;flex-direction:column;overflow:hidden;user-select:none;
+  }
+
+  /* ---------- Рядок меню ---------- */
+  .menu-bar{
+    flex:none;background:#ece9d8;border-bottom:1px solid #aca899;
+    display:flex;font-size:14px;user-select:none;
+  }
+  .menu-bar > .menu-item{position:relative;padding:6px 12px;cursor:default;color:#1e1e1e}
+  .menu-bar > .menu-item:hover{background:#005499;color:#fff}
+  .menu-bar .dropdown{
+    display:none;position:absolute;top:100%;left:0;background:#fff;color:#1e1e1e;
+    border:1px solid #aca899;box-shadow:2px 2px 6px rgba(0,0,0,.2);min-width:190px;z-index:30
+  }
+  .menu-bar .menu-item.open .dropdown{display:block}
+  .menu-bar .dropdown button{
+    display:block;width:100%;height:auto;text-align:left;padding:6px 14px;background:transparent;
+    border:none;border-radius:0;font:inherit;font-size:13px;cursor:default;color:#1e1e1e;white-space:nowrap
+  }
+  .menu-bar .dropdown button:hover:not(:disabled){background:#005499;color:#fff;border:none}
+  .menu-bar .dropdown .sep{height:1px;background:#d5d2c8;margin:4px 6px}
+
+  /* ---------- Панель інструментів ---------- */
+  .toolbar{
+    flex:none;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .toolbar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+  .toolbar .grow{flex:1}
+  select{
+    height:26px;border:1px solid var(--line);background:#fff;color:var(--txt);
+    border-radius:0;padding:0 8px;font:inherit;cursor:default;white-space:nowrap;
+  }
+  select:hover{background:#f2f8fd;border-color:#0078d7}
+  button{
+    height:26px;border:1px solid #adadad;background:#e1e1e1;color:#1e1e1e;
+    border-radius:0;padding:0 12px;font:inherit;cursor:default;white-space:nowrap;box-shadow:none;
+  }
+  button:hover:not(:disabled){background:#e5f1fb;border-color:#0078d7}
+  button:active:not(:disabled){background:#cce4f7;border-color:#0078d7}
+  button:disabled{opacity:.55;color:#8a8a8a;cursor:default}
+  button.icon{min-width:30px;padding:0 8px;font-size:15px}
+  button.primary{background:#0078d7;border-color:#005a9e;color:#fff}
+  button.primary:hover{background:#1a86dd;border-color:#005a9e}
+  label.chk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--dim)}
+  .zoomval{min-width:52px;text-align:center;color:#333;font-variant-numeric:tabular-nums}
+
+  /* ---------- Основна область ---------- */
+  .stage{flex:1;min-height:0;display:flex}
+  .viewer{
+    flex:1;min-width:0;position:relative;overflow:hidden;background:
+      repeating-conic-gradient(#fbfbfb 0% 25%, #e9e9e9 0% 50%) 50%/24px 24px;
+    display:flex;align-items:center;justify-content:center;cursor:grab;
+  }
+  .viewer.drag{cursor:grabbing}
+  .viewer img{
+    position:absolute;transform-origin:center center;will-change:transform,filter;
+    image-rendering:auto;max-width:none;max-height:none;pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.35);
+  }
+  .empty{
+    position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;
+    align-items:center;justify-content:center;color:var(--dim);text-align:center;padding:20px
+  }
+  .empty .big{font-size:52px;opacity:.5}
+
+  /* ---------- Бічна панель ---------- */
+  .side{
+    flex:none;width:264px;background:var(--panel);border-left:1px solid var(--line);
+    overflow:auto;padding:10px
+  }
+  .side h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#444;font-weight:600}
+  .side .sec{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d3cfc0}
+  .side .sec:last-child{border-bottom:none;margin-bottom:0}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .row label{flex:none;width:88px;color:#333}
+  .row input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+  .row .val{flex:none;width:42px;text-align:right;font-variant-numeric:tabular-nums;color:#333}
+  .meta{font-size:12px;color:#333;line-height:1.7}
+  .meta b{color:#000;font-weight:600}
+  .meta .ell{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:236px}
+
+  /* ---------- Смуга ескізів ---------- */
+  .thumbs{
+    flex:none;height:92px;display:flex;gap:6px;padding:8px;overflow-x:auto;overflow-y:hidden;
+    background:var(--panel);border-top:1px solid var(--line);
+  }
+  .thumbs:empty{display:none}
+  .thumb{
+    flex:none;width:76px;height:76px;border:2px solid transparent;border-radius:3px;
+    background:#fff;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center
+  }
+  .thumb img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
+  .thumb:hover{border-color:#7f9db9}
+  .thumb.cur{border-color:var(--accent)}
+  .thumb span{font-size:10px;color:#333;padding:4px;text-align:center;word-break:break-all}
+
+  /* ---------- Статус ---------- */
+  .status{
+    flex:none;height:24px;display:flex;align-items:center;gap:12px;padding:0 10px;
+    background:var(--panel);border-top:1px solid var(--line);color:#333;font-size:12px
+  }
+  .status .msg.err{color:#c00000}
+  .status .msg.ok{color:#107c10}
+  .status .grow{flex:1}
+</style>
+</head>
+<body>
+
+<!-- Рядок меню -->
+<div class="menu-bar">
+  <div class="menu-item" data-menu>
+    Файл
+    <div class="dropdown">
+      <button id="menuOpen">Відкрити…</button>
+      <button id="menuSave">Зберегти</button>
+      <button id="menuSaveAs">Зберегти як…</button>
+      <div class="sep"></div>
+      <button id="menuExit">Вихід</button>
+    </div>
+  </div>
+  <div class="menu-item" data-menu>
+    Правка
+    <div class="dropdown">
+      <button id="menuResetView">Скинути зміни</button>
+      <button id="menuResetFilters">Скинути фільтри</button>
+    </div>
+  </div>
+  <div class="menu-item" data-menu>
+    Вигляд
+    <div class="dropdown">
+      <button id="menuZoomIn">Збільшити</button>
+      <button id="menuZoomOut">Зменшити</button>
+      <button id="menuFit">Вписати у вікно</button>
+      <button id="menuOne">1:1</button>
+      <div class="sep"></div>
+      <button id="menuRotL">Повернути ліворуч</button>
+      <button id="menuRotR">Повернути праворуч</button>
+      <button id="menuFlipH">Віддзеркалити по горизонталі</button>
+      <button id="menuFlipV">Віддзеркалити по вертикалі</button>
+    </div>
+  </div>
+  <div class="menu-item" data-menu>
+    Довідка
+    <div class="dropdown">
+      <button id="menuAbout">Про переглядач</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Панель інструментів ================= -->
+<div class="toolbar">
+  <button id="btnOpen" class="primary icon" title="Відкрити (Ctrl+O)">📂</button>
+  <button id="btnSaveAs" class="icon" title="Зберегти як…" disabled>💾</button>
+  <div class="sep"></div>
+  <button id="btnPrev" class="icon" title="Попереднє (←)">◀</button>
+  <button id="btnNext" class="icon" title="Наступне (→)">▶</button>
+  <div class="sep"></div>
+  <button id="btnRotL" class="icon" title="Повернути ліворуч (Q)" disabled>⟲</button>
+  <button id="btnRotR" class="icon" title="Повернути праворуч (E)" disabled>⟳</button>
+  <button id="btnFlipH" class="icon" title="Віддзеркалити по горизонталі (H)" disabled>⇋</button>
+  <button id="btnFlipV" class="icon" title="Віддзеркалити по вертикалі (V)" disabled>⇅</button>
+  <div class="sep"></div>
+  <button id="btnZoomOut" class="icon" title="Зменшити (−)" disabled>−</button>
+  <span id="zoomVal" class="zoomval">100%</span>
+  <button id="btnZoomIn" class="icon" title="Збільшити (+)" disabled>+</button>
+  <button id="btnFit" title="Вписати (0)" disabled>Вписати</button>
+  <button id="btnOne" title="1:1 (1)" disabled>1:1</button>
+  <button id="btnReset" title="Скинути все (R)" disabled>Скинути</button>
+</div>
+
+<!-- ================= Основна область ================= -->
+<div class="stage">
+  <div class="viewer" id="viewer">
+    <img id="img" alt="" style="display:none">
+    <div class="empty" id="empty">
+      <div class="big">🖼️</div>
+      <div>Натисніть <b>«Відкрити…»</b>, щоб обрати зображення<br>у віртуальній файловій системі.</div>
+      <div style="font-size:12px">Перетягуйте мишею для панорамування, колесо — масштаб.</div>
+    </div>
+  </div>
+
+  <!-- ================= Бічна панель ================= -->
+  <div class="side">
+    <div class="sec">
+      <h3>Фільтри</h3>
+      <div class="row"><label>Яскравість</label><input type="range" id="fBright" min="0" max="200" value="100"><span class="val" id="vBright">100</span></div>
+      <div class="row"><label>Контраст</label><input type="range" id="fContrast" min="0" max="200" value="100"><span class="val" id="vContrast">100</span></div>
+      <div class="row"><label>Насиченість</label><input type="range" id="fSat" min="0" max="200" value="100"><span class="val" id="vSat">100</span></div>
+      <div class="row"><label>Відтінок</label><input type="range" id="fHue" min="-180" max="180" value="0"><span class="val" id="vHue">0</span></div>
+      <div class="row"><label>Розмиття</label><input type="range" id="fBlur" min="0" max="20" value="0"><span class="val" id="vBlur">0</span></div>
+      <div class="row"><label>Сірість</label><input type="range" id="fGray" min="0" max="100" value="0"><span class="val" id="vGray">0</span></div>
+      <div class="row"><label>Сепія</label><input type="range" id="fSepia" min="0" max="100" value="0"><span class="val" id="vSepia">0</span></div>
+      <div class="row"><label>Інверсія</label><input type="range" id="fInvert" min="0" max="100" value="0"><span class="val" id="vInvert">0</span></div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnFiltersReset" style="flex:1">Скинути фільтри</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Відомості</h3>
+      <div class="meta" id="meta">
+        <div>Файл не обрано</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Смуга ескізів ================= -->
+<div class="thumbs" id="thumbs"></div>
+
+<!-- ================= Статус ================= -->
+<div class="status">
+  <span id="statusMsg" class="msg"></span>
+  <span class="grow"></span>
+  <span id="statusSize"></span>
+</div>
+
+<!-- Віртуальна файлова система -->
+<script src="../vfs.js"></script>
+<script>
+/* =====================================================================
+   Переглядач зображень для VFS
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+
+  /* ---------------- Стан ---------------- */
+  const state = {
+    items: [],       // [{ id, name, handle }] — зображення в поточній теці
+    index: -1,
+    handle: null,    // VFSFileHandle поточного файлу
+    file: null,      // File
+    url: null,       // objectURL
+    natural: { w: 1, h: 1 },
+    rotation: 0,     // 0 / 90 / 180 / 270
+    flipH: false,
+    flipV: false,
+    zoom: 1,         // масштаб (1 = 100%)
+    fit: true,       // режим «вписати»
+    panX: 0, panY: 0,
+    dirty: false,    // є незбережені зміни
+    filters: { bright: 100, contrast: 100, sat: 100, hue: 0, blur: 0, gray: 0, sepia: 0, invert: 0 }
+  };
+
+  const ZOOM_MIN = 0.05, ZOOM_MAX = 20;
+  const IMG_RE = /\.(png|jpe?g|gif|webp|bmp|ico|avif|svg)$/i;
+
+  /* ---------------- Елементи ---------------- */
+  const viewer = $('viewer'), img = $('img'), empty = $('empty'), thumbs = $('thumbs');
+  const statusMsg = $('statusMsg'), statusSize = $('statusSize');
+  const meta = $('meta'), zoomVal = $('zoomVal');
+
+  /* ---------------- Утиліти ---------------- */
+  let msgTimer = 0;
+  function say(text, kind) {
+    statusMsg.textContent = text || '';
+    statusMsg.className = 'msg' + (kind ? ' ' + kind : '');
+    clearTimeout(msgTimer);
+    if (text && kind !== 'err') msgTimer = setTimeout(() => { statusMsg.textContent = ''; }, 4000);
+  }
+  const fmtBytes = b => b < 1024 ? b + ' Б'
+    : b < 1048576 ? (b / 1024).toFixed(1) + ' КБ'
+    : (b / 1048576).toFixed(2) + ' МБ';
+
+  /* ---------------- Трансформація зображення ---------------- */
+  function buildFilter() {
+    const f = state.filters;
+    const parts = [];
+    if (f.bright !== 100) parts.push(`brightness(${f.bright}%)`);
+    if (f.contrast !== 100) parts.push(`contrast(${f.contrast}%)`);
+    if (f.sat !== 100) parts.push(`saturate(${f.sat}%)`);
+    if (f.hue) parts.push(`hue-rotate(${f.hue}deg)`);
+    if (f.blur) parts.push(`blur(${f.blur}px)`);
+    if (f.gray) parts.push(`grayscale(${f.gray}%)`);
+    if (f.sepia) parts.push(`sepia(${f.sepia}%)`);
+    if (f.invert) parts.push(`invert(${f.invert}%)`);
+    return parts.length ? parts.join(' ') : 'none';
+  }
+
+  function applyTransform() {
+    // Розмір зображення на екрані: базова ширина × масштаб
+    const w = state.natural.w * state.zoom;
+    const h = state.natural.h * state.zoom;
+    img.style.width = w + 'px';
+    img.style.height = h + 'px';
+    img.style.left = '50%';
+    img.style.top = '50%';
+    const rot = state.rotation;
+    const sx = state.flipH ? -1 : 1;
+    const sy = state.flipV ? -1 : 1;
+    img.style.transform =
+      `translate(-50%, -50%) translate(${state.panX}px, ${state.panY}px) ` +
+      `rotate(${rot}deg) scale(${sx}, ${sy})`;
+    img.style.filter = buildFilter();
+    zoomVal.textContent = Math.round(state.zoom * 100) + '%';
+  }
+
+  function fitToWindow() {
+    if (!state.file) return;
+    const pad = 32;
+    const vw = Math.max(1, viewer.clientWidth - pad);
+    const vh = Math.max(1, viewer.clientHeight - pad);
+    // при повороті на 90/270 міняємо місцями
+    const swap = state.rotation % 180 !== 0;
+    const iw = swap ? state.natural.h : state.natural.w;
+    const ih = swap ? state.natural.w : state.natural.h;
+    const z = Math.min(vw / iw, vh / ih);
+    state.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    state.fit = true;
+    state.panX = state.panY = 0;
+    applyTransform();
+  }
+
+  function setZoom(z, anchor) {
+    state.fit = false;
+    state.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    applyTransform();
+  }
+
+  function resetView() {
+    state.rotation = 0;
+    state.flipH = state.flipV = false;
+    state.panX = state.panY = 0;
+    state.fit = true;
+    state.dirty = false;
+    fitToWindow();
+    updateButtons();
+  }
+
+  function resetFilters() {
+    state.filters = { bright: 100, contrast: 100, sat: 100, hue: 0, blur: 0, gray: 0, sepia: 0, invert: 0 };
+    syncFilterInputs();
+    markDirty();
+    applyTransform();
+  }
+
+  const FILTER_KEYS = ['bright', 'contrast', 'sat', 'hue', 'blur', 'gray', 'sepia', 'invert'];
+  function syncFilterInputs() {
+    for (const k of FILTER_KEYS) {
+      const inp = $('f' + k[0].toUpperCase() + k.slice(1));
+      const val = $('v' + k[0].toUpperCase() + k.slice(1));
+      if (inp) inp.value = state.filters[k];
+      if (val) val.textContent = state.filters[k];
+    }
+  }
+
+  function markDirty() {
+    state.dirty = true;
+    updateButtons();
+  }
+
+  /* ---------------- Кнопки ---------------- */
+  function updateButtons() {
+    const has = !!state.file;
+    for (const id of ['btnRotL','btnRotR','btnFlipH','btnFlipV','btnZoomIn','btnZoomOut','btnFit','btnOne','btnReset','btnSaveAs']) {
+      const el = $(id);
+      if (el) el.disabled = !has;
+    }
+    $('btnPrev').disabled = state.items.length < 2;
+    $('btnNext').disabled = state.items.length < 2;
+  }
+
+  /* ---------------- Завантаження файлу ---------------- */
+  async function loadHandle(handle, opts) {
+    const o = opts || {};
+    try {
+      const file = await handle.getFile();
+      if (state.url) URL.revokeObjectURL(state.url);
+      state.handle = handle;
+      state.file = file;
+      state.url = URL.createObjectURL(file);
+      state.rotation = 0;
+      state.flipH = state.flipV = false;
+      state.panX = state.panY = 0;
+      state.dirty = false;
+
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = () => rej(new Error('Не вдалося декодувати зображення.'));
+        img.src = state.url;
+      });
+
+      state.natural.w = img.naturalWidth || 1;
+      state.natural.h = img.naturalHeight || 1;
+
+      img.style.display = '';
+      empty.style.display = 'none';
+
+      resetView();
+      updateMeta(file);
+      if (!o.keepMessage) say('Відкрито: ' + handle.name);
+      updateButtons();
+      highlightThumb();
+    } catch (e) {
+      say('Помилка відкриття: ' + (e && e.message || e), 'err');
+    }
+  }
+
+  function updateMeta(file) {
+    const info = [
+      ['Ім\'я', file.name],
+      ['Тип', file.type || '—'],
+      ['Розмір', fmtBytes(file.size)],
+      ['Роздільність', state.natural.w + ' × ' + state.natural.h + ' пікселів'],
+      ['Змінено', file.lastModified ? new Date(file.lastModified).toLocaleString('uk') : '—']
+    ];
+    meta.innerHTML = info.map(([k, v]) =>
+      `<div>${k}: <b class="ell" title="${String(v).replace(/"/g,'&quot;')}">${v}</b></div>`).join('');
+    statusSize.textContent = state.natural.w + '×' + state.natural.h + ' · ' + fmtBytes(file.size);
+  }
+
+  /* ---------------- Відкриття через діалог VFS ---------------- */
+  // Побудувати список зображень із тієї ж теки (щоб гортати) для набору файлів
+  async function openHandles(handles) {
+    if (!handles || !handles.length) return;
+    const first = handles[0];
+    state.items = [];
+    try {
+      const parts = await VFS.pathOf(first._id);     // напр. "C:\...\Pictures"
+      const dirPath = parts.replace(/\\[^\\]*$/, '') || 'C:\\';
+      const list = await VFS.readdir(dirPath);
+      const imgs = list.filter(n => n.kind === 'file' && IMG_RE.test(n.name))
+                        .sort((a, b) => a.name.localeCompare(b.name, 'uk', { numeric: true }));
+      const targetNames = new Set(handles.map(h => h.name));
+      for (const n of imgs) {
+        if (targetNames.has(n.name) || handles.length === 1) {
+          try {
+            const h = await VFS.getFileHandle(n.path);
+            state.items.push({ id: h._id, name: h.name, handle: h });
+          } catch (_) {}
+        }
+      }
+      // якщо не збіглося — усе одно додамо обрані
+      if (!state.items.length) {
+        for (const h of handles) state.items.push({ id: h._id, name: h.name, handle: h });
+      }
+    } catch (_) {
+      state.items = handles.map(h => ({ id: h._id, name: h.name, handle: h }));
+    }
+    let start = state.items.findIndex(it => it.id === first._id);
+    if (start < 0) start = 0;
+    await selectIndex(start);
+    await renderThumbs();
+  }
+
+  async function openPicker() {
+    if (!window.VFS || !window.VFS.__loaded) return say('VFS не завантажено (перевірте vfs.js)', 'err');
+    let handles;
+    try {
+      handles = await showOpenFilePicker({
+        id: 'imageViewer',
+        multiple: true,
+        types: [{
+          description: 'Зображення',
+          accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif', '.svg'] }
+        }]
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;      // користувач скасував
+      return say('Не вдалося відкрити: ' + (e && e.message || e), 'err');
+    }
+    await openHandles(handles);
+  }
+
+  // Викликається робочим столом для відкриття конкретного файлу (за id або шляхом)
+  window.vfsOpenFile = async function (path, id) {
+    if (!window.VFS || !window.VFS.__loaded) return;
+    try {
+      let handle = null;
+      if (path) handle = await VFS.getFileHandle(path);
+      else if (id != null) handle = await VFS.getFileHandle(await VFS.pathOf(id));
+      if (handle) await openHandles([handle]);
+    } catch (e) {
+      say('Помилка відкриття: ' + (e && e.message || e), 'err');
+    }
+  };
+
+  async function selectIndex(i) {
+    if (i < 0 || i >= state.items.length) return;
+    state.index = i;
+    await loadHandle(state.items[i].handle);
+    highlightThumb();
+  }
+
+  /* ---------------- Смуга ескізів ---------------- */
+  async function renderThumbs() {
+    thumbs.replaceChildren();
+    if (state.items.length < 2) return;
+    for (let i = 0; i < state.items.length; i++) {
+      const it = state.items[i];
+      const d = document.createElement('div');
+      d.className = 'thumb';
+      d.dataset.i = i;
+      d.title = it.name;
+      d.onclick = () => selectIndex(i);
+      thumbs.appendChild(d);
+      // лінива мініатюра
+      try {
+        const f = await it.handle.getFile();
+        const u = URL.createObjectURL(f);
+        const im = document.createElement('img');
+        im.src = u;
+        im.onload = () => { /* нічого */ };
+        im.onerror = () => { im.remove(); d.appendChild(Object.assign(document.createElement('span'), { textContent: it.name })); };
+        d.appendChild(im);
+      } catch (_) {
+        d.appendChild(Object.assign(document.createElement('span'), { textContent: it.name }));
+      }
+    }
+    highlightThumb();
+  }
+  function highlightThumb() {
+    [...thumbs.children].forEach((el, i) => el.classList.toggle('cur', i === state.index));
+    const cur = thumbs.children[state.index];
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  /* ---------------- Збереження ---------------- */
+  // Малює зображення з усіма трансформаціями/фільтрами у canvas і повертає Blob
+  async function renderToBlob() {
+    const swap = state.rotation % 180 !== 0;
+    const W = swap ? state.natural.h : state.natural.w;
+    const H = swap ? state.natural.w : state.natural.h;
+
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(W));
+    cv.height = Math.max(1, Math.round(H));
+    const ctx = cv.getContext('2d');
+
+    ctx.save();
+    ctx.translate(cv.width / 2, cv.height / 2);
+    ctx.rotate(state.rotation * Math.PI / 180);
+    ctx.scale(state.flipH ? -1 : 1, state.flipV ? -1 : 1);
+    ctx.filter = buildFilter();
+    ctx.drawImage(img, -state.natural.w / 2, -state.natural.h / 2, state.natural.w, state.natural.h);
+    ctx.restore();
+
+    const type = /image\/jpe?g/i.test(state.file.type) ? 'image/jpeg' : 'image/png';
+    const blob = await new Promise(r => cv.toBlob(r, type, 0.92));
+    return blob || new Blob([], { type });
+  }
+
+  function suggestName(ext) {
+    const base = state.handle ? state.handle.name.replace(/\.[^.]+$/, '') : 'image';
+    return base + '_edit' + (ext || '.png');
+  }
+
+  async function save() {
+    if (!state.handle || !state.file) return;
+    try {
+      say('Збереження…');
+      const blob = await renderToBlob();
+      const w = await state.handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      // оновити локальний File
+      state.file = await state.handle.getFile();
+      // скинути візуальні зміни (вони вже «впечені»)
+      const keep = { ...state.filters };
+      state.rotation = 0; state.flipH = state.flipV = false; state.panX = state.panY = 0;
+      state.dirty = false;
+      await new Promise((res, rej) => {
+        if (state.url) URL.revokeObjectURL(state.url);
+        state.url = URL.createObjectURL(state.file);
+        img.onload = res; img.onerror = rej; img.src = state.url;
+      });
+      state.natural.w = img.naturalWidth || state.natural.w;
+      state.natural.h = img.naturalHeight || state.natural.h;
+      fitToWindow();
+      updateMeta(state.file);
+      updateButtons();
+      say('Збережено у ' + state.handle.name, 'ok');
+    } catch (e) {
+      say('Помилка збереження: ' + (e && e.message || e), 'err');
+    }
+  }
+
+  async function saveAs() {
+    if (!state.file) return;
+    try {
+      const blob = await renderToBlob();
+      const ext = blob.type === 'image/jpeg' ? '.jpg' : '.png';
+      const h = await showSaveFilePicker({
+        id: 'imageViewerSave',
+        suggestedName: suggestName(ext),
+        types: [
+          { description: 'PNG', accept: { 'image/png': ['.png'] } },
+          { description: 'JPEG', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }
+        ]
+      });
+      const w = await h.createWritable();
+      await w.write(blob);
+      await w.close();
+      state.handle = h;
+      state.file = await h.getFile();
+      state.rotation = 0; state.flipH = state.flipV = false;
+      state.dirty = false;
+      await new Promise((res, rej) => {
+        if (state.url) URL.revokeObjectURL(state.url);
+        state.url = URL.createObjectURL(state.file);
+        img.onload = res; img.onerror = rej; img.src = state.url;
+      });
+      state.natural.w = img.naturalWidth || state.natural.w;
+      state.natural.h = img.naturalHeight || state.natural.h;
+      fitToWindow();
+      updateMeta(state.file);
+      updateButtons();
+      say('Збережено як ' + h.name, 'ok');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      say('Помилка збереження: ' + (e && e.message || e), 'err');
+    }
+  }
+
+  /* ---------------- Події: панель ---------------- */
+  $('btnOpen').onclick = openPicker;
+  $('btnSave').onclick = save;
+  $('btnSaveAs').onclick = saveAs;
+  $('btnPrev').onclick = () => selectIndex(state.index - 1 < 0 ? state.items.length - 1 : state.index - 1);
+  $('btnNext').onclick = () => selectIndex((state.index + 1) % state.items.length);
+
+  $('btnRotL').onclick = () => { state.rotation = (state.rotation + 270) % 360; markDirty(); state.fit ? fitToWindow() : applyTransform(); };
+  $('btnRotR').onclick = () => { state.rotation = (state.rotation + 90) % 360; markDirty(); state.fit ? fitToWindow() : applyTransform(); };
+  $('btnFlipH').onclick = () => { state.flipH = !state.flipH; markDirty(); applyTransform(); };
+  $('btnFlipV').onclick = () => { state.flipV = !state.flipV; markDirty(); applyTransform(); };
+
+  $('btnZoomIn').onclick = () => setZoom(state.zoom * 1.25);
+  $('btnZoomOut').onclick = () => setZoom(state.zoom / 1.25);
+  $('btnFit').onclick = fitToWindow;
+  $('btnOne').onclick = () => { state.panX = state.panY = 0; setZoom(1); };
+  $('btnReset').onclick = resetView;
+  $('btnFiltersReset').onclick = resetFilters;
+
+  // Фільтри
+  FILTER_KEYS.forEach(k => {
+    const inp = $('f' + k[0].toUpperCase() + k.slice(1));
+    const val = $('v' + k[0].toUpperCase() + k.slice(1));
+    if (!inp) return;
+    inp.addEventListener('input', () => {
+      state.filters[k] = +inp.value;
+      val.textContent = inp.value;
+      markDirty();
+      applyTransform();
+    });
+  });
+
+  /* ---------------- Миша: панорамування та зум ---------------- */
+  let dragging = false, lastX = 0, lastY = 0;
+  viewer.addEventListener('mousedown', e => {
+    if (!state.file || e.button !== 0) return;
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    viewer.classList.add('drag');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    state.panX += e.clientX - lastX;
+    state.panY += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => { dragging = false; viewer.classList.remove('drag'); });
+
+  viewer.addEventListener('wheel', e => {
+    if (!state.file) return;
+    e.preventDefault();
+    const k = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    setZoom(state.zoom * k);
+  }, { passive: false });
+
+  // Подвійний клік — перемкнути «вписати» / 1:1
+  viewer.addEventListener('dblclick', () => {
+    if (!state.file) return;
+    if (state.fit || Math.abs(state.zoom - 1) > 0.01) { state.panX = state.panY = 0; setZoom(1); }
+    else fitToWindow();
+  });
+
+  /* ---------------- Клавіатура ---------------- */
+  document.addEventListener('keydown', e => {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'arrowleft')  { $('btnPrev').click(); e.preventDefault(); }
+    else if (k === 'arrowright') { $('btnNext').click(); e.preventDefault(); }
+    else if (k === 'q') { $('btnRotL').click(); }
+    else if (k === 'e') { $('btnRotR').click(); }
+    else if (k === 'h') { $('btnFlipH').click(); }
+    else if (k === 'v') { $('btnFlipV').click(); }
+    else if (k === '+' || k === '=') { $('btnZoomIn').click(); }
+    else if (k === '-' || k === '_') { $('btnZoomOut').click(); }
+    else if (k === '0') { $('btnFit').click(); }
+    else if (k === '1') { $('btnOne').click(); }
+    else if (k === 'r') { $('btnReset').click(); }
+    else if (k === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); state.dirty ? save() : saveAs(); }
+    else if (k === 'o' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openPicker(); }
+  });
+
+  /* ---------------- Рядок меню ---------------- */
+  document.querySelectorAll('[data-menu]').forEach(item => {
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = item.classList.contains('open');
+      document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+      if (!open) item.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('[data-menu]').forEach(m => m.classList.remove('open'));
+  });
+
+  $('menuOpen').onclick = openPicker;
+  $('menuSave').onclick = save;
+  $('menuSaveAs').onclick = saveAs;
+  $('menuExit').onclick = () => { try { window.close(); } catch (_) {} };
+  $('menuResetView').onclick = resetView;
+  $('menuResetFilters').onclick = () => $('btnFiltersReset').click();
+  $('menuZoomIn').onclick = () => $('btnZoomIn').click();
+  $('menuZoomOut').onclick = () => $('btnZoomOut').click();
+  $('menuFit').onclick = () => $('btnFit').click();
+  $('menuOne').onclick = () => $('btnOne').click();
+  $('menuRotL').onclick = () => $('btnRotL').click();
+  $('menuRotR').onclick = () => $('btnRotR').click();
+  $('menuFlipH').onclick = () => $('btnFlipH').click();
+  $('menuFlipV').onclick = () => $('btnFlipV').click();
+  $('menuAbout').onclick = () => alert('Переглядач зображень для VFS.\nПерегляд, обертання, масштабування, фільтри та збереження змін.');
+
+  /* ---------------- Реакція на зміну розміру ---------------- */
+  let rt = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { if (state.file && state.fit) fitToWindow(); }, 80);
+  });
+
+  // Якщо файл змінили ззовні — підхопити оновлення
+  if (window.VFS && VFS.onChange) {
+    VFS.onChange(async () => {
+      if (!state.handle) return;
+      try {
+        const f = await state.handle.getFile();
+        if (f.lastModified !== state.file.lastModified && !state.dirty) {
+          await loadHandle(state.handle, { keepMessage: true });
+          say('Файл оновлено ззовні');
+        }
+      } catch (_) {}
+    });
+  }
+
+  /* ---------------- Старт ---------------- */
+  updateButtons();
+  if (!window.VFS || !window.VFS.__loaded) {
+    say('vfs.js не завантажено', 'err');
+    $('btnOpen').disabled = true;
+  }
+  say('Готово. Ctrl+O — відкрити зображення.');
+})();
+</script>
+</body>
+</html>

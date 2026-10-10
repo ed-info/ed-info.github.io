@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>ZIP Архіватор</title>
+<script src="jszip.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f0f0f0;
+    color: #202020;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 13px;
+    user-select: none;
+  }
+
+  /* ===== Рядок меню ===== */
+  .menubar {
+    background: #f5f5f5;
+    display: flex;
+    padding: 0;
+    border-bottom: 1px solid #d0d0d0;
+    align-items: stretch;
+    position: relative;
+    z-index: 50;
+  }
+  .menu-item {
+    position: relative;
+  }
+  .menu-item > button {
+    background: transparent;
+    border: none;
+    color: #202020;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .menu-item > button:hover,
+  .menu-item.open > button {
+    background: #d6e4f7;
+  }
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fbfbfb;
+    border: 1px solid #b0b0b0;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    min-width: 220px;
+    padding: 4px 0;
+    display: none;
+    z-index: 100;
+  }
+  .menu-item.open .dropdown { display: block; }
+  .dropdown button {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 6px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: #202020;
+  }
+  .dropdown button:hover:not(:disabled) { background: #d6e4f7; }
+  .dropdown button:disabled { color: #a0a0a0; cursor: default; }
+  .dropdown button .shortcut { color: #808080; margin-left: 20px; }
+  .dropdown .sep {
+    height: 1px;
+    background: #e0e0e0;
+    margin: 4px 8px;
+  }
+
+  /* ===== Панель інструментів ===== */
+  .toolbar {
+    background: linear-gradient(#fafafa, #ececec);
+    display: flex;
+    padding: 5px 8px;
+    gap: 4px;
+    border-bottom: 1px solid #d0d0d0;
+    align-items: center;
+  }
+  .tool-btn {
+    background: #e1e1e1;
+    border: 1px solid #adadad;
+    color: #1e1e1e;
+    padding: 5px 14px;
+    cursor: default;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 13px;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tool-btn:hover:not(:disabled) {
+    background: #e5f1fb;
+    border-color: #0078d7;
+  }
+  .tool-btn:active:not(:disabled) {
+    background: #cce4f7;
+    border-color: #0078d7;
+  }
+  .tool-btn:disabled { color: #9a9a9a; opacity: 0.5; cursor: default; }
+  .tool-sep {
+    width: 1px;
+    height: 22px;
+    background: #c8c8c8;
+    margin: 0 4px;
+  }
+
+  /* ===== Вікно архіву ===== */
+  .archive-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 6px;
+    background: #ffffff;
+    border: 1px solid #b0b0b0;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Адресна строка */
+  .address-bar {
+    background: #f5f5f5;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 12px;
+  }
+  .address-bar .label { color: #606060; }
+  .address-bar .value { color: #202020; font-weight: bold; }
+
+  /* Таблиця файлів */
+  .filelist {
+    flex: 1;
+    overflow: auto;
+    background: #ffffff;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    background: linear-gradient(#f5f5f5, #e8e8e8);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  th {
+    text-align: left;
+    padding: 6px 12px;
+    border-bottom: 1px solid #d0d0d0;
+    border-right: 1px solid #e5e5e5;
+    color: #303030;
+    font-weight: normal;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  th:last-child { border-right: none; }
+  th:hover { background: #e8f0fb; }
+  td {
+    padding: 4px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  tbody tr { cursor: default; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  tbody tr:hover { background: #eaf2fd; }
+  tbody tr.selected { background: #cfe0f7; }
+  tbody tr.selected:hover { background: #b8d0ec; }
+  .file-icon { margin-right: 6px; }
+  .empty-msg {
+    padding: 40px;
+    text-align: center;
+    color: #a0a0a0;
+    font-style: italic;
+  }
+
+  /* ===== Панель статусу ===== */
+  .statusbar {
+    background: #f5f5f5;
+    border-top: 1px solid #d0d0d0;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #404040;
+    display: flex;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .statusbar .cell {
+    padding: 2px 8px;
+    border-right: 1px solid #d0d0d0;
+  }
+  .statusbar .cell:last-child { border-right: none; }
+
+  /* ===== Модальне вікно ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #ffffff;
+    border: 1px solid #909090;
+    border-radius: 4px;
+    min-width: 400px;
+    max-width: 520px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 10px 14px;
+    background: linear-gradient(#f5f5f5, #e8e8e8);
+    border-bottom: 1px solid #d0d0d0;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #202020;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: #606060;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 6px;
+  }
+  .modal-close:hover { color: #000; }
+  .modal-body { padding: 14px 16px; }
+  .modal-body .prop-row {
+    display: flex;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+  }
+  .modal-body .prop-row:last-child { border-bottom: none; }
+  .prop-label { width: 150px; color: #606060; }
+  .prop-value { flex: 1; color: #202020; word-break: break-word; }
+
+  /* Прогрес */
+  .progress {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    flex-direction: column;
+    gap: 15px;
+    color: #303030;
+  }
+  .progress.show { display: flex; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 4px solid #cfe0f7;
+    border-top-color: #3a6fb0;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== Контекстне меню ===== */
+  .ctx-menu {
+    position: fixed;
+    min-width: 210px;
+    background: #fbfbfb;
+    border: 1px solid #b0b0b0;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    padding: 4px 0;
+    display: none;
+    z-index: 400;
+  }
+  .ctx-menu.show { display: block; }
+  .ctx-menu button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 6px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: #202020;
+  }
+  .ctx-menu button:hover:not(:disabled) { background: #d6e4f7; }
+  .ctx-menu button:disabled { color: #a0a0a0; cursor: default; }
+  .ctx-menu .sep { height: 1px; background: #e0e0e0; margin: 4px 8px; }
+
+  .hidden-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ===== Рядок меню ===== -->
+<div class="menubar">
+  <div class="menu-item" data-menu>
+    <button>Файл</button>
+    <div class="dropdown">
+      <button id="menuNew">Новий архів <span class="shortcut">Ctrl+N</span></button>
+      <button id="menuOpen">Відкрити... <span class="shortcut">Ctrl+O</span></button>
+      <div class="sep"></div>
+      <button id="menuSave">Зберегти як... <span class="shortcut">Ctrl+S</span></button>
+      <div class="sep"></div>
+      <button id="menuClose">Закрити архів</button>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu>
+    <button>Змінити</button>
+    <div class="dropdown">
+      <button id="menuAdd">Додати файли... <span class="shortcut">Ins</span></button>
+      <button id="menuDelete">Видалити з архіву <span class="shortcut">Del</span></button>
+      <div class="sep"></div>
+      <button id="menuExtract">Розпакувати все... <span class="shortcut">Ctrl+E</span></button>
+      <div class="sep"></div>
+      <button id="menuSelectAll">Виділити все</button>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu>
+    <button>Вигляд</button>
+    <div class="dropdown">
+      <button id="menuRefresh">Оновити <span class="shortcut">F5</span></button>
+      <button id="menuProps">Властивості архіву</button>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu>
+    <button>Довідка</button>
+    <div class="dropdown">
+      <button id="menuAbout">Про програму</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Панель інструментів ===== -->
+<div class="toolbar">
+  <button class="tool-btn" id="btnNew" title="Створити новий архів">📄 Новий</button>
+  <button class="tool-btn" id="btnOpen" title="Відкрити архів">📂 Відкрити</button>
+  <button class="tool-btn" id="btnSave" title="Зберегти архів" disabled>💾 Зберегти</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" id="btnAdd" title="Додати файли" disabled>➕ Додати</button>
+  <button class="tool-btn" id="btnDelete" title="Видалити вибране" disabled>🗑 Видалити</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" id="btnExtract" title="Розпакувати архів у теку" disabled>📤 Розпакувати</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" id="btnProps" title="Властивості" disabled>ℹ️ Властивості</button>
+</div>
+
+<!-- ===== Вікно архіву ===== -->
+<div class="archive-window">
+  <div class="address-bar">
+    <span class="label">Архів:</span>
+    <span class="value" id="archiveName">— не відкрито —</span>
+  </div>
+  <div class="filelist">
+    <table>
+      <thead>
+        <tr>
+          <th>Ім'я</th>
+          <th style="width:120px">Розмір</th>
+          <th style="width:90px">Стисн.</th>
+          <th style="width:170px">Дата зміни</th>
+        </tr>
+      </thead>
+      <tbody id="fileTbody">
+        <tr><td colspan="4" class="empty-msg">Архів порожній або не створено</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== Панель статусу ===== -->
+<div class="statusbar">
+  <span id="statusLeft">Готово</span>
+  <span id="statusRight">Файлів: 0</span>
+</div>
+
+<!-- ===== Модальне вікно властивостей ===== -->
+<div class="modal-overlay" id="propsOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="propsTitle">Властивості архіву</span>
+      <button class="modal-close" id="closeProps">×</button>
+    </div>
+    <div class="modal-body" id="propsBody"></div>
+  </div>
+</div>
+
+<!-- ===== Контекстне меню файлу архіву ===== -->
+<div class="ctx-menu" id="ctxMenu"></div>
+
+<!-- ===== Модальне вікно "Про програму" ===== -->
+<div class="modal-overlay" id="aboutOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Про програму</span>
+      <button class="modal-close" id="closeAbout">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="prop-row"><span class="prop-label">Назва:</span><span class="prop-value">ZIP Архіватор</span></div>
+      <div class="prop-row"><span class="prop-label">Версія:</span><span class="prop-value">1.0</span></div>
+      <div class="prop-row"><span class="prop-label">Рушій:</span><span class="prop-value">JSZip 3.10.1</span></div>
+      <div class="prop-row"><span class="prop-label">Метод:</span><span class="prop-value">DEFLATE</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Прогрес -->
+<div class="progress" id="progress">
+  <div class="spinner"></div>
+  <div id="progressText">Обробка...</div>
+</div>
+
+<!-- Уся робота з файлами відбувається через віртуальну файлову систему (VFS) -->
+
+<script>
+  // ===== Стан =====
+  let zip = new JSZip();
+  let archiveName = null;
+  let filesMeta = {};
+  let selectedFile = null;
+  let isArchiveLoaded = false;
+
+  // ===== DOM =====
+  const $ = id => document.getElementById(id);
+  const tbody = $('fileTbody');
+  const archiveNameEl = $('archiveName');
+  const statusLeft = $('statusLeft');
+  const statusRight = $('statusRight');
+
+  // ===== Утиліти =====
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 Б';
+    const k = 1024;
+    const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function formatDate(d) {
+    const dt = new Date(d);
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(dt.getDate())}.${pad(dt.getMonth()+1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+
+  function getFileIcon(name) {
+    if (name.endsWith('/')) return '📁';
+    const ext = name.split('.').pop().toLowerCase();
+    const map = {
+      png:'🖼', jpg:'🖼', jpeg:'🖼', gif:'🖼', svg:'🖼', webp:'🖼',
+      pdf:'📕', doc:'📘', docx:'📘', txt:'📄', md:'📄',
+      mp3:'🎵', wav:'🎵', mp4:'🎬', avi:'🎬', mkv:'🎬',
+      zip:'🗜', rar:'🗜', '7z':'🗜', js:'📜', html:'🌐', css:'🎨',
+      json:'📋', xml:'📋', exe:'⚙', dll:'⚙'
+    };
+    return map[ext] || '📄';
+  }
+
+  function showProgress(text = 'Обробка...') {
+    $('progressText').textContent = text;
+    $('progress').classList.add('show');
+  }
+  function hideProgress() {
+    $('progress').classList.remove('show');
+  }
+
+  function setStatus(text) {
+    statusLeft.textContent = text;
+  }
+
+  // ===== Оновлення UI =====
+  function refreshUI() {
+    const hasArchive = isArchiveLoaded;
+    $('btnAdd').disabled = !hasArchive;
+    $('btnDelete').disabled = !selectedFile || !hasArchive;
+    $('btnSave').disabled = !hasArchive;
+    $('btnProps').disabled = !hasArchive;
+    $('btnExtract').disabled = !hasArchive;
+
+    $('menuAdd').disabled = !hasArchive;
+    $('menuDelete').disabled = !selectedFile || !hasArchive;
+    $('menuSave').disabled = !hasArchive;
+    $('menuClose').disabled = !hasArchive;
+    $('menuSelectAll').disabled = !hasArchive;
+    $('menuProps').disabled = !hasArchive;
+    $('menuExtract').disabled = !hasArchive;
+
+    archiveNameEl.textContent = archiveName || '— не відкрито —';
+
+    const entries = [];
+    zip.forEach((relativePath, file) => {
+      if (file.dir) return;
+      const meta = filesMeta[relativePath] || {};
+      entries.push({
+        name: relativePath,
+        size: meta.size ?? 0,
+        compressedSize: meta.compressedSize ?? 0,
+        date: meta.date || new Date()
+      });
+    });
+
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (entries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-msg">Архів порожній або не створено</td></tr>`;
+    } else {
+      tbody.innerHTML = entries.map(e => {
+        const ratio = e.size > 0 && e.compressedSize > 0
+          ? Math.round((1 - e.compressedSize / e.size) * 100) + '%'
+          : '—';
+        const sel = e.name === selectedFile ? ' selected' : '';
+        return `<tr data-name="${escapeHtml(e.name)}" class="${sel}">
+          <td title="${escapeHtml(e.name)}"><span class="file-icon">${getFileIcon(e.name)}</span>${escapeHtml(e.name)}</td>
+          <td>${formatBytes(e.size)}</td>
+          <td>${ratio}</td>
+          <td>${formatDate(e.date)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    statusRight.textContent = `Файлів: ${entries.length}`;
+  }
+
+  // ===== Вибір у таблиці =====
+  tbody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr || !tr.dataset.name) selectedFile = null;
+    else selectedFile = tr.dataset.name;
+    refreshUI();
+  });
+
+  // ===== Меню: відкриття / закриття =====
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(item => {
+    const btn = item.querySelector('button');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = item.classList.contains('open');
+      menuItems.forEach(m => m.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+    item.addEventListener('mouseenter', () => {
+      // якщо якесь меню вже відкрите — перемикаємось на це
+      if (document.querySelector('.menu-item.open')) {
+        menuItems.forEach(m => m.classList.remove('open'));
+        item.classList.add('open');
+      }
+    });
+  });
+  document.addEventListener('click', () => {
+    menuItems.forEach(m => m.classList.remove('open'));
+  });
+
+  // ===== Створення нового архіву =====
+  function newArchive() {
+    zip = new JSZip();
+    filesMeta = {};
+    archiveName = 'новий_архів.zip';
+    selectedFile = null;
+    isArchiveLoaded = true;
+    setStatus('Створено новий архів');
+    refreshUI();
+  }
+
+  // ===== Відкриття архіву (через VFS) =====
+  const ZIP_TYPES = [{ description: 'ZIP-архіви', accept: { 'application/zip': ['.zip'] } }];
+
+  async function loadArchiveHandle(handle) {
+    showProgress('Читання архіву...');
+    try {
+      const file = await handle.getFile();
+      const arrayBuffer = await file.arrayBuffer();
+      const loadedZip = await JSZip.loadAsync(arrayBuffer);
+
+      zip = loadedZip;
+      archiveName = handle.name;
+      filesMeta = {};
+      selectedFile = null;
+      isArchiveLoaded = true;
+
+      const promises = [];
+      zip.forEach((name, entry) => {
+        if (entry.dir) return;
+        promises.push(
+          entry.async('uint8array').then(data => {
+            filesMeta[name] = {
+              size: data.length,
+              date: entry.date || new Date(),
+              compressedSize: 0
+            };
+          })
+        );
+      });
+      await Promise.all(promises);
+
+      setStatus(`Відкрито: ${handle.name}`);
+      refreshUI();
+    } catch (err) {
+      alert('Помилка відкриття архіву: ' + err.message);
+      setStatus('Помилка відкриття');
+    } finally {
+      hideProgress();
+    }
+  }
+
+  async function openArchive() {
+    let handle;
+    try {
+      [handle] = await showOpenFilePicker({ types: ZIP_TYPES, multiple: false });
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      alert('Не вдалося відкрити файл: ' + (err && err.message || err));
+      return;
+    }
+    await loadArchiveHandle(handle);
+  }
+
+  // Викликається робочим столом для відкриття конкретного архіву (за id або шляхом)
+  window.vfsOpenFile = async function (path, id) {
+    if (!window.VFS || !window.VFS.__loaded) return;
+    try {
+      let handle = null;
+      if (path) handle = await VFS.getFileHandle(path);
+      else if (id != null) handle = await VFS.getFileHandle(await VFS.pathOf(id));
+      if (handle) await loadArchiveHandle(handle);
+    } catch (err) {
+      alert('Не вдалося відкрити файл: ' + (err && err.message || err));
+    }
+  };
+
+  $('btnOpen').addEventListener('click', openArchive);
+  $('menuOpen').addEventListener('click', openArchive);
+
+
+  // ===== Додавання файлів (через VFS) =====
+  async function addFiles() {
+    let handles;
+    try {
+      handles = await showOpenFilePicker({ multiple: true });
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      alert('Не вдалося вибрати файли: ' + (err && err.message || err));
+      return;
+    }
+    if (!handles.length) return;
+
+    showProgress(`Додавання ${handles.length} файл(ів)...`);
+    try {
+      for (const handle of handles) {
+        const f = await handle.getFile();
+        const data = await f.arrayBuffer();
+        zip.file(f.name, data, { date: new Date(f.lastModified) });
+        filesMeta[f.name] = {
+          size: f.size,
+          date: new Date(f.lastModified),
+          compressedSize: 0
+        };
+      }
+      setStatus(`Додано ${handles.length} файл(ів)`);
+      refreshUI();
+    } catch (err) {
+      alert('Помилка додавання: ' + err.message);
+    } finally {
+      hideProgress();
+    }
+  }
+
+  $('btnAdd').addEventListener('click', addFiles);
+  $('menuAdd').addEventListener('click', addFiles);
+
+
+  // ===== Видалення =====
+  function deleteSelected() {
+    if (!selectedFile) return;
+    if (!confirm(`Видалити "${selectedFile}" з архіву?`)) return;
+
+    zip.remove(selectedFile);
+    delete filesMeta[selectedFile];
+    setStatus(`Видалено: ${selectedFile}`);
+    selectedFile = null;
+    refreshUI();
+  }
+  $('btnDelete').addEventListener('click', deleteSelected);
+  $('menuDelete').addEventListener('click', deleteSelected);
+
+  // ===== Розпакування =====
+  async function pickTargetDir() {
+    try {
+      return await showDirectoryPicker({ id: 'zipExtract', mode: 'readwrite' });
+    } catch (err) {
+      if (err && err.name === 'AbortError') return null;
+      alert('Не вдалося вибрати теку: ' + (err && err.message || err));
+      return null;
+    }
+  }
+
+  async function writeEntryToDir(rootHandle, dirHandle, path, file) {
+    const parts = path.split('/').filter(s => s && s !== '.' && s !== '..');
+    const name = parts.pop();
+    if (!name) return false;
+    let dir = dirHandle;
+    for (const seg of parts) dir = await dir.getDirectoryHandle(seg, { create: true });
+    const fh = await dir.getFileHandle(name, { create: true });
+    const w = await fh.createWritable();
+    await w.write(await file.async('uint8array'));
+    await w.close();
+    return true;
+  }
+
+  async function extractEntry(name) {
+    if (!name || !isArchiveLoaded) return;
+    const file = zip.file(name);
+    if (!file) return;
+    if (file.dir) { alert('Це тека, а не файл.'); return; }
+    const dir = await pickTargetDir();
+    if (!dir) return;
+    showProgress('Розпакування...');
+    try {
+      await writeEntryToDir(dir, dir, name, file);
+      setStatus(`Витягнуто: ${name.split('/').pop()}`);
+    } catch (err) {
+      alert('Помилка розпакування: ' + (err && err.message || err));
+    } finally {
+      hideProgress();
+    }
+  }
+
+  async function extractAll() {
+    if (!isArchiveLoaded) return;
+    const entries = [];
+    zip.forEach((p, f) => { if (!f.dir) entries.push([p, f]); });
+    if (!entries.length) { setStatus('Архів порожній'); return; }
+    const dir = await pickTargetDir();
+    if (!dir) return;
+    showProgress('Розпакування...');
+    try {
+      let done = 0;
+      for (const [p, f] of entries) {
+        if (await writeEntryToDir(dir, dir, p, f)) done++;
+        $('progressText').textContent = `Розпакування... ${done}/${entries.length}`;
+      }
+      setStatus(`Розпаковано файлів: ${done}`);
+    } catch (err) {
+      alert('Помилка розпакування: ' + (err && err.message || err));
+    } finally {
+      hideProgress();
+    }
+  }
+
+  $('btnExtract').addEventListener('click', extractAll);
+  $('menuExtract').addEventListener('click', extractAll);
+
+  // ===== Контекстне меню файлу архіву =====
+  const ctxMenu = $('ctxMenu');
+
+  function hideCtxMenu() { ctxMenu.classList.remove('show'); }
+
+  function showEntryMenu(x, y, name) {
+    const isDir = name.endsWith('/');
+    const items = [
+      { label: 'Витягти…', action: () => extractEntry(name), disabled: isDir },
+      { sep: true },
+      { label: 'Видалити з архіву', action: () => { selectedFile = name; deleteSelected(); } },
+      { label: 'Властивості', action: () => showEntryProperties(name) },
+      { sep: true },
+      { label: 'Розпакувати все…', action: extractAll }
+    ];
+    ctxMenu.innerHTML = '';
+    for (const it of items) {
+      if (it.sep) {
+        const s = document.createElement('div');
+        s.className = 'sep';
+        ctxMenu.appendChild(s);
+        continue;
+      }
+      const b = document.createElement('button');
+      b.textContent = it.label;
+      if (it.disabled) b.disabled = true;
+      b.addEventListener('click', () => { hideCtxMenu(); it.action(); });
+      ctxMenu.appendChild(b);
+    }
+    ctxMenu.classList.add('show');
+    const mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+    ctxMenu.style.left = Math.max(0, Math.min(x, window.innerWidth - mw - 4)) + 'px';
+    ctxMenu.style.top = Math.max(0, Math.min(y, window.innerHeight - mh - 4)) + 'px';
+  }
+
+  tbody.addEventListener('contextmenu', (e) => {
+    const tr = e.target.closest('tr[data-name]');
+    if (!tr) { hideCtxMenu(); return; }
+    e.preventDefault();
+    e.stopPropagation();
+    selectedFile = tr.dataset.name;
+    refreshUI();
+    showEntryMenu(e.clientX, e.clientY, selectedFile);
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#ctxMenu')) hideCtxMenu(); });
+  document.addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('tbody tr[data-name]')) hideCtxMenu();
+  }, true);
+  window.addEventListener('blur', hideCtxMenu);
+
+  // ===== Збереження =====
+  $('btnSave').addEventListener('click', saveArchive);
+  $('menuSave').addEventListener('click', saveArchive);
+
+  async function saveArchive() {
+    if (!isArchiveLoaded) return;
+    showProgress('Стиснення архіву...');
+    try {
+      const blob = await zip.generateAsync(
+        {
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        },
+        (meta) => {
+          $('progressText').textContent = `Стиснення... ${Math.round(meta.percent)}%`;
+        }
+      );
+
+      const totalCompressed = blob.size;
+      const totalOriginal = Object.values(filesMeta).reduce((s, m) => s + (m.size || 0), 0);
+      if (totalOriginal > 0) {
+        for (const name in filesMeta) {
+          const ratio = filesMeta[name].size / totalOriginal;
+          filesMeta[name].compressedSize = Math.round(totalCompressed * ratio);
+        }
+      }
+
+      const name = archiveName || 'архів.zip';
+      let handle;
+      try {
+        handle = await showSaveFilePicker({ suggestedName: name, types: ZIP_TYPES });
+      } catch (err) {
+        if (err && err.name === 'AbortError') { setStatus('Збереження скасовано'); return; }
+        throw err;
+      }
+
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();          // дані потрапляють у ВФС саме тут
+
+      archiveName = handle.name;
+      setStatus(`Збережено: ${archiveName} (${formatBytes(blob.size)})`);
+      refreshUI();
+    } catch (err) {
+      alert('Помилка збереження: ' + err.message);
+    } finally {
+      hideProgress();
+    }
+  }
+
+
+  // ===== Закрити архів =====
+  $('menuClose').addEventListener('click', () => {
+    if (isArchiveLoaded && !confirm('Закрити поточний архів? Незбережені зміни буде втрачено.')) return;
+    zip = new JSZip();
+    filesMeta = {};
+    archiveName = null;
+    selectedFile = null;
+    isArchiveLoaded = false;
+    setStatus('Архів закрито');
+    refreshUI();
+  });
+
+  // ===== Виділити все =====
+  $('menuSelectAll').addEventListener('click', () => {
+    setStatus('Виділення всіх файлів (поки лише перший)');
+    // Проста поведінка: виділяємо перший файл
+    const first = tbody.querySelector('tr[data-name]');
+    if (first) selectedFile = first.dataset.name;
+    refreshUI();
+  });
+
+  // ===== Оновити =====
+  $('menuRefresh').addEventListener('click', () => {
+    refreshUI();
+    setStatus('Оновлено');
+  });
+
+  // ===== Властивості =====
+  $('btnProps').addEventListener('click', showProperties);
+  $('menuProps').addEventListener('click', showProperties);
+
+  function showProperties() {
+    $('propsTitle').textContent = 'Властивості архіву';
+    const entries = [];
+    zip.forEach((name, file) => {
+      if (!file.dir) entries.push(name);
+    });
+
+    const totalOriginal = Object.values(filesMeta).reduce((s, m) => s + (m.size || 0), 0);
+    const totalCompressed = Object.values(filesMeta).reduce((s, m) => s + (m.compressedSize || 0), 0);
+
+    const ratio = totalOriginal > 0 && totalCompressed > 0
+      ? Math.round((1 - totalCompressed / totalOriginal) * 100) + '%'
+      : '— (не збережено)';
+
+    const html = `
+      <div class="prop-row"><span class="prop-label">Ім'я архіву:</span><span class="prop-value">${escapeHtml(archiveName || '—')}</span></div>
+      <div class="prop-row"><span class="prop-label">Кількість файлів:</span><span class="prop-value">${entries.length}</span></div>
+      <div class="prop-row"><span class="prop-label">Загальний розмір:</span><span class="prop-value">${formatBytes(totalOriginal)}</span></div>
+      <div class="prop-row"><span class="prop-label">Стиснутий розмір:</span><span class="prop-value">${totalCompressed > 0 ? formatBytes(totalCompressed) : '—'}</span></div>
+      <div class="prop-row"><span class="prop-label">Коефіцієнт стиснення:</span><span class="prop-value">${ratio}</span></div>
+      <div class="prop-row"><span class="prop-label">Метод стиснення:</span><span class="prop-value">DEFLATE</span></div>
+    `;
+    $('propsBody').innerHTML = html;
+    $('propsOverlay').classList.add('show');
+  }
+
+  function showEntryProperties(name) {
+    const file = zip.file(name);
+    const meta = filesMeta[name] || {};
+    const isDir = name.endsWith('/');
+    const size = meta.size != null ? meta.size : (file && !isDir ? undefined : 0);
+    const date = meta.date || (file && file.date) || null;
+    $('propsTitle').textContent = 'Властивості файлу';
+    $('propsBody').innerHTML = `
+      <div class="prop-row"><span class="prop-label">Ім'я:</span><span class="prop-value">${escapeHtml(name)}</span></div>
+      <div class="prop-row"><span class="prop-label">Тип:</span><span class="prop-value">${isDir ? 'Папка' : 'Файл'}</span></div>
+      <div class="prop-row"><span class="prop-label">Розмір:</span><span class="prop-value">${size != null ? formatBytes(size) : '—'}</span></div>
+      <div class="prop-row"><span class="prop-label">Стиснутий розмір:</span><span class="prop-value">${meta.compressedSize ? formatBytes(meta.compressedSize) : '—'}</span></div>
+      <div class="prop-row"><span class="prop-label">Дата зміни:</span><span class="prop-value">${date ? formatDate(date) : '—'}</span></div>
+    `;
+    $('propsOverlay').classList.add('show');
+  }
+
+  $('closeProps').addEventListener('click', () => $('propsOverlay').classList.remove('show'));
+  $('propsOverlay').addEventListener('click', (e) => {
+    if (e.target === $('propsOverlay')) $('propsOverlay').classList.remove('show');
+  });
+
+  // ===== Про програму =====
+  $('menuAbout').addEventListener('click', () => $('aboutOverlay').classList.add('show'));
+  $('closeAbout').addEventListener('click', () => $('aboutOverlay').classList.remove('show'));
+  $('aboutOverlay').addEventListener('click', (e) => {
+    if (e.target === $('aboutOverlay')) $('aboutOverlay').classList.remove('show');
+  });
+
+  // ===== Меню: Новий =====
+  $('menuNew').addEventListener('click', newArchive);
+  $('btnNew').addEventListener('click', newArchive);
+
+  // ===== Гарячі клавіші =====
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'n') { e.preventDefault(); newArchive(); }
+    if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openArchive(); }
+    if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveArchive(); }
+    if (e.ctrlKey && e.key === 'e') { e.preventDefault(); extractAll(); }
+    if (e.key === 'Delete' && selectedFile) { e.preventDefault(); deleteSelected(); }
+    if (e.key === 'Insert' && isArchiveLoaded) { e.preventDefault(); addFiles(); }
+    if (e.key === 'F5') { e.preventDefault(); refreshUI(); setStatus('Оновлено'); }
+    if (e.key === 'Escape') {
+      hideCtxMenu();
+      document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+    }
+  });
+
+  // ===== Ініціалізація =====
+  refreshUI();
+</script>
+</body>
+</html>
