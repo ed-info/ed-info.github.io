@@ -365,7 +365,6 @@
                     // Позначаємо сеанс як авторизований і запускаємо Робочий стіл
                     try { sessionStorage.setItem('virtuos_user', 'User'); } catch (_) {}
                     setTimeout(() => {
-                        if (history.replaceState) history.replaceState(null, '', 'index.html');
                         window.location.href = 'index.html';
                     }, 900);
                 } else {
@@ -405,13 +404,7 @@
                 }
             });
 
-            // Блокування переходу Назад
-            if (history.pushState) {
-                history.pushState(null, '', location.href);
-                window.addEventListener('popstate', function () {
-                    history.go(1);
-                }, false);
-            }
+
 
             startBootSequence();
         })();

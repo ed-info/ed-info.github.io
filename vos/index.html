@@ -5,18 +5,7 @@
 <title>ВіртуОС</title>
 <script>
   // Якщо користувач не увійшов — показуємо вікно запуску (екран входу)
-  try {
-    if (sessionStorage.getItem('virtuos_user') !== 'User') {
-      location.replace('boot.html');
-    } else {
-      if (history.pushState) {
-        history.pushState(null, '', location.href);
-        window.addEventListener('popstate', function () {
-          history.go(1);
-        }, false);
-      }
-    }
-  } catch (_) {}
+  try { if (sessionStorage.getItem('virtuos_user') !== 'User') location.replace('boot.html'); } catch (_) {}
 </script>
 <script src="vfs.js"></script>
 <style>
