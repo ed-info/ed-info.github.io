@@ -5,12 +5,16 @@
 <title>ВіртуОС</title>
 <script>
   // Якщо користувач не увійшов — показуємо вікно запуску (екран входу)
-  try { if (sessionStorage.getItem('virtuos_user') !== 'User') location.replace('boot.html'); } catch (_) {}
-  // Блокування переходу "Назад" до boot.html після входу
+  try {
+    if (sessionStorage.getItem('virtuos_user') !== 'User') {
+      location.replace('boot.html');
+    } else {
+      if (history.pushState) history.pushState(null, '', 'index.html');
+    }
+  } catch (_) {}
   if (history.pushState) {
-    history.pushState(null, '', location.href);
-    window.addEventListener('popstate', function (e) {
-      history.pushState(null, '', location.href);
+    window.addEventListener('popstate', function () {
+      history.pushState(null, '', 'index.html');
     }, false);
   }
 </script>

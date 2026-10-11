@@ -404,9 +404,9 @@
 
             // Блокування переходу Назад
             if (history.pushState) {
-                history.pushState(null, '', location.href);
+                history.pushState(null, '', 'index.html');
                 window.addEventListener('popstate', function () {
-                    history.pushState(null, '', location.href);
+                    history.pushState(null, '', 'index.html');
                 }, false);
             }
 
