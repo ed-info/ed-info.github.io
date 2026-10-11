@@ -7,6 +7,7 @@
   { "id": "paint",  "name": "Paint.exe",  "icon": "🎨", "url": "paint/index.html",  "w": 760, "h": 520 },
   { "id": "zipper", "name": "Zipper.exe", "icon": "🗄", "url": "zipper/index.html", "w": 760, "h": 520 },
   { "id": "cmd", "name": "Cmd.exe", "icon": "🖥", "url": "cmd/index.html", "w": 760, "h": 520 },
+  { "id": "tinypy", "name": "TinyPy.exe", "icon": "👨🏻‍💻", "url": "tinypy/index.html", "w": 760, "h": 600 },
   { "id": "viewer", "name": "Переглядач зображень", "icon": "🖼️", "url": "viewer/index.html", "w": 900, "h": 600 },
   { "id": "secureguard", "name": "SecureGuard", "icon": "🛡️", "url": "secureguard/index.html", "w": 820, "h": 560 }
 ]

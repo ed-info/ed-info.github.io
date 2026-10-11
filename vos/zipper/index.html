@@ -448,6 +448,7 @@
   let filesMeta = {};
   let selectedFile = null;
   let isArchiveLoaded = false;
+  let archiveSize = 0;   // розмір стисненого архіву (zip-файлу) в байтах; 0 — невідомо
 
   // ===== DOM =====
   const $ = id => document.getElementById(id);
@@ -590,6 +591,7 @@
     zip = new JSZip();
     filesMeta = {};
     archiveName = 'новий_архів.zip';
+    archiveSize = 0;
     selectedFile = null;
     isArchiveLoaded = true;
     setStatus('Створено новий архів');
@@ -608,6 +610,7 @@
 
       zip = loadedZip;
       archiveName = handle.name;
+      archiveSize = file.size;
       filesMeta = {};
       selectedFile = null;
       isArchiveLoaded = true;
@@ -617,10 +620,11 @@
         if (entry.dir) return;
         promises.push(
           entry.async('uint8array').then(data => {
+            const cd = entry._data;
             filesMeta[name] = {
               size: data.length,
               date: entry.date || new Date(),
-              compressedSize: 0
+              compressedSize: (cd && cd.compressedSize) || 0
             };
           })
         );
@@ -690,6 +694,7 @@
           compressedSize: 0
         };
       }
+      archiveSize = 0;
       setStatus(`Додано ${handles.length} файл(ів)`);
       refreshUI();
     } catch (err) {
@@ -710,6 +715,7 @@
 
     zip.remove(selectedFile);
     delete filesMeta[selectedFile];
+    archiveSize = 0;
     setStatus(`Видалено: ${selectedFile}`);
     selectedFile = null;
     refreshUI();
@@ -853,6 +859,7 @@
         }
       );
 
+      archiveSize = blob.size;
       const totalCompressed = blob.size;
       const totalOriginal = Object.values(filesMeta).reduce((s, m) => s + (m.size || 0), 0);
       if (totalOriginal > 0) {
@@ -892,6 +899,7 @@
     zip = new JSZip();
     filesMeta = {};
     archiveName = null;
+    archiveSize = 0;
     selectedFile = null;
     isArchiveLoaded = false;
     setStatus('Архів закрито');
@@ -917,7 +925,7 @@
   $('btnProps').addEventListener('click', showProperties);
   $('menuProps').addEventListener('click', showProperties);
 
-  function showProperties() {
+  async function showProperties() {
     $('propsTitle').textContent = 'Властивості архіву';
     const entries = [];
     zip.forEach((name, file) => {
@@ -925,7 +933,27 @@
     });
 
     const totalOriginal = Object.values(filesMeta).reduce((s, m) => s + (m.size || 0), 0);
-    const totalCompressed = Object.values(filesMeta).reduce((s, m) => s + (m.compressedSize || 0), 0);
+
+    // Розмір стисненого архіву: для відкритого чи збереженого zip відомий одразу,
+    // інакше обчислюємо, згенерувавши архів у пам'яті.
+    let totalCompressed = archiveSize;
+    if (totalCompressed === 0 && entries.length > 0) {
+      try {
+        const blob = await zip.generateAsync({
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        });
+        totalCompressed = blob.size;
+        archiveSize = blob.size;
+        if (totalOriginal > 0) {
+          for (const name in filesMeta) {
+            filesMeta[name].compressedSize =
+              Math.round(totalCompressed * (filesMeta[name].size || 0) / totalOriginal);
+          }
+        }
+      } catch (_) {}
+    }
 
     const ratio = totalOriginal > 0 && totalCompressed > 0
       ? Math.round((1 - totalCompressed / totalOriginal) * 100) + '%'

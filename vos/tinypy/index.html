@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>TinyPy</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: system-ui, sans-serif;
+    background: #1e1e2e; color: #eee;
+    display: flex; flex-direction: column; height: 100vh;
+    overflow: hidden;
+  }
+  .menubar {
+    display: flex; align-items: stretch;
+    background: #f3f4f6; border-bottom: 1px solid #d1d5db;
+    user-select: none; position: relative; z-index: 10;
+  }
+  .menubar .brand {
+    padding: 6px 14px; font-size: 14px; font-weight: 700;
+    color: #1f2937; display: flex; align-items: center;
+  }
+  .menubar .brand span { color: #2563eb; }
+  .menu { position: relative; }
+  .menu > button {
+    background: transparent; color: #1f2937; border: 0;
+    padding: 7px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  .menu > button:hover, .menu.open > button { background: #e5e7eb; }
+  .menu .dropdown {
+    display: none; position: absolute; top: 100%; left: 0;
+    background: #ffffff; border: 1px solid #d1d5db;
+    border-radius: 0 0 6px 6px; min-width: 230px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 50;
+    padding: 4px 0;
+  }
+  .menu.open .dropdown { display: block; }
+  .menu .dropdown button {
+    display: flex; justify-content: space-between; gap: 20px;
+    width: 100%; background: transparent; color: #1f2937;
+    border: 0; padding: 7px 14px; font-size: 13px;
+    font-family: inherit; cursor: pointer; text-align: left;
+  }
+  .menu .dropdown button:hover { background: #e5e7eb; }
+  .menu .dropdown button .key { color: #6b7280; font-size: 11px; }
+  .menu .dropdown hr { border: 0; border-top: 1px solid #e5e7eb; margin: 4px 0; }
+
+  .toolbar {
+    display: flex; gap: 4px; align-items: center;
+    background: #181825; border-bottom: 1px solid #313244;
+    padding: 4px 10px;
+  }
+  .toolbar button {
+    background: transparent; border: 1px solid transparent; border-radius: 6px;
+    width: 34px; height: 30px; font-size: 17px; line-height: 1;
+    cursor: pointer; font-family: inherit;
+  }
+  .toolbar button:hover { background: #313244; border-color: #45475a; }
+  .toolbar .sep { width: 1px; height: 20px; background: #45475a; margin: 0 6px; }
+  .status { font-size: 11px; color: #7f849c; margin-left: auto; padding: 0 6px; }
+
+  main {
+    flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: #313244; min-height: 0;
+  }
+  .pane { display: flex; flex-direction: column; min-height: 0; background: #1e1e2e; }
+  .pane h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    margin: 0; padding: 6px 14px; background: #181825; color: #7f849c;
+    border-bottom: 1px solid #313244;
+  }
+  .editor-wrap { flex: 1; position: relative; overflow: hidden; display: flex; min-height: 0; }
+  #gutter {
+    flex: 0 0 auto; background: #181825; color: #585b70;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14px; line-height: 1.55;
+    padding: 14px 8px 14px 12px;
+    text-align: right; user-select: none; overflow: hidden;
+    border-right: 1px solid #313244; min-width: 3ch;
+  }
+  #gutter .active { color: #89b4fa; }
+  #code {
+    flex: 1; resize: none; border: 0; outline: none; padding: 14px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px;
+    line-height: 1.55; background: #1e1e2e; color: #cdd6f4;
+    tab-size: 4; overflow: auto; white-space: pre; caret-color: #89b4fa;
+  }
+  #output {
+    flex: 1; overflow: auto; padding: 14px; margin: 0;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px;
+    line-height: 1.55; background: #1e1e2e; color: #a6e3a1;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  #output .err { color: #f38ba8; }
+  #output .info { color: #6c7086; }
+  #output .prompt { color: #f9e2af; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: transparent;
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: #1e1e2e; border: 1px solid #45475a;
+    border-radius: 10px; min-width: 380px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    overflow: hidden; animation: pop .15s ease-out;
+  }
+  @keyframes pop {
+    from { transform: scale(.94); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .modal header {
+    background: #181825; padding: 12px 16px;
+    font-size: 13px; color: #cdd6f4; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #313244;
+  }
+  .modal header .icon {
+    display: inline-block; width: 18px; height: 18px;
+    border-radius: 4px; background: #f9e2af; color: #11111b;
+    font-size: 11px; text-align: center; line-height: 18px;
+    font-weight: 700;
+  }
+  .modal .body { padding: 16px; }
+  .modal .body label {
+    display: block; font-size: 12px; color: #a6adc8;
+    margin-bottom: 8px; font-family: ui-monospace, monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .modal .body input {
+    width: 100%; padding: 9px 12px; border-radius: 6px;
+    border: 1px solid #45475a; background: #11111b; color: #cdd6f4;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14px; outline: none;
+  }
+  .modal .body input:focus { border-color: #89b4fa; }
+  .help-modal { min-width: 420px; }
+  .help-modal ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: #cdd6f4; }
+  .help-modal code { font-family: ui-monospace, Menlo, Consolas, monospace; color: #f9e2af; }
+  .modal footer {
+    padding: 12px 16px; display: flex; justify-content: flex-end;
+    gap: 8px; background: #181825; border-top: 1px solid #313244;
+  }
+  .modal footer button {
+    background: #89b4fa; color: #11111b; border: 0; border-radius: 6px;
+    padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
+  }
+  .modal footer button:hover { background: #b4befe; }
+  .modal footer button.ghost {
+    background: transparent; color: #a6adc8;
+    border: 1px solid #45475a; font-weight: 500;
+  }
+  .modal footer button.ghost:hover { background: #313244; color: #cdd6f4; }
+</style>
+</head>
+<body>
+
+<div class="menubar">
+  <div class="brand">Tiny<span>Py</span></div>
+
+  <div class="menu">
+    <button type="button">Файл</button>
+    <div class="dropdown">
+      <button type="button" data-action="new">Новий <span class="key">Ctrl+N</span></button>
+      <button type="button" data-action="example">Завантажити приклад</button>
+      <hr>
+      <button type="button" data-action="download">Зберегти як .py</button>
+      <button type="button" data-action="upload">Відкрити файл…</button>
+    </div>
+  </div>
+
+  <div class="menu">
+    <button type="button">Редактор</button>
+    <div class="dropdown">
+      <button type="button" data-action="clear-output">Очистити вивід <span class="key">Ctrl+L</span></button>
+      <button type="button" data-action="format">Форматувати відступи</button>
+      <hr>
+      <button type="button" data-action="clear-all">Очистити все</button>
+    </div>
+  </div>
+
+  <div class="menu">
+    <button type="button">Запуск</button>
+    <div class="dropdown">
+      <button type="button" data-action="run">Запустити <span class="key">Ctrl+Enter</span></button>
+      <button type="button" data-action="stop">Зупинити <span class="key">Esc</span></button>
+    </div>
+  </div>
+
+  <div class="menu">
+    <button type="button">Довідка</button>
+    <div class="dropdown">
+      <button type="button" data-action="help-syntax">Підтримуваний синтаксис</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toolbar">
+  <button type="button" id="runBtn" title="Запустити (Ctrl+Enter)">▶️</button>
+  <button type="button" data-action="stop" title="Зупинити (Esc)">⏹️</button>
+  <span class="sep"></span>
+  <button type="button" data-action="new" title="Новий (Ctrl+N)">📄</button>
+  <button type="button" data-action="upload" title="Відкрити файл">📂</button>
+  <button type="button" data-action="download" title="Зберегти як .py">💾</button>
+  <span class="sep"></span>
+  <button type="button" data-action="example" title="Завантажити приклад">🧪</button>
+  <button type="button" data-action="format" title="Форматувати відступи">✨</button>
+  <button type="button" id="clearBtn" title="Очистити вивід (Ctrl+L)">🧹</button>
+  <span class="sep"></span>
+  <button type="button" data-action="help-syntax" title="Підтримуваний синтаксис">❓</button>
+  <span class="status" id="status">Готово</span>
+</div>
+
+<main>
+  <section class="pane">
+    <h2>Редактор Python</h2>
+    <div class="editor-wrap">
+      <div id="gutter">1</div>
+      <textarea id="code" spellcheck="false"></textarea>
+    </div>
+  </section>
+  <section class="pane">
+    <h2>Результат</h2>
+    <pre id="output"></pre>
+  </section>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog">
+    <header><span class="icon">?</span><span>input()</span></header>
+    <div class="body">
+      <label id="modalPrompt">Введіть значення:</label>
+      <input type="text" id="modalInput" autocomplete="off">
+    </div>
+    <footer>
+      <button type="button" class="ghost" id="modalCancel">Скасувати</button>
+      <button type="button" id="modalOk">OK</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpBackdrop">
+  <div class="modal help-modal" role="dialog">
+    <header><span class="icon">?</span><span>Підтримуваний синтаксис</span></header>
+    <div class="body">
+      <ul>
+        <li><code>def</code>, <code>return</code></li>
+        <li><code>if</code> / <code>elif</code> / <code>else</code></li>
+        <li><code>for x in range(...)</code> / список / рядок</li>
+        <li><code>while</code>, <code>break</code>, <code>continue</code>, <code>pass</code></li>
+        <li><code># коментарі</code>, f-рядки</li>
+        <li><code>True</code> / <code>False</code> / <code>None</code></li>
+        <li><code>and</code> / <code>or</code> / <code>not</code></li>
+        <li>операції: <code>+ - * / // ** %</code></li>
+        <li>списки: <code>.append()</code>, <code>.sort()</code>, <code>in</code>, <code>len</code></li>
+        <li>функції: <code>print</code>, <code>input</code>, <code>len</code>, <code>range</code>, <code>str</code>, <code>int</code>, <code>float</code>, <code>abs</code>, <code>min</code>, <code>max</code>, <code>sum</code></li>
+      </ul>
+    </div>
+    <footer>
+      <button type="button" id="helpClose">Закрити</button>
+    </footer>
+  </div>
+</div>
+
+<input type="file" id="filePicker" accept=".py,.txt" style="display:none">
+
+<script>
+/* ============================================================
+   ПРИКЛАД
+   ============================================================ */
+const EXAMPLE = `# Приклад із input()
+name = input("Як вас звати? ")
+print("Привіт, " + name + "!")
+
+n = int(input("Введіть число N: "))
+total = 0
+for i in range(1, n + 1):
+    total = total + i
+print("Сума 1.." + str(n) + " =", total)
+
+def fact(n):
+    if n <= 1:
+        return 1
+    return n * fact(n - 1)
+
+print(str(n) + "! =", fact(n))
+
+squares = []
+for v in range(1, 6):
+    squares.append(v * v)
+print("Квадрати:", squares)
+`;
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const codeEl        = document.getElementById('code');
+const gutter        = document.getElementById('gutter');
+const outputEl      = document.getElementById('output');
+const statusEl      = document.getElementById('status');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalPrompt   = document.getElementById('modalPrompt');
+const modalInput    = document.getElementById('modalInput');
+const modalOk       = document.getElementById('modalOk');
+const modalCancel   = document.getElementById('modalCancel');
+const filePicker    = document.getElementById('filePicker');
+
+let stopRequested = false;
+let isRunning = false;
+
+/* ============================================================
+   ВИВІД
+   ============================================================ */
+function appendSpan(text, cls) {
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = text;
+  outputEl.appendChild(span);
+  outputEl.scrollTop = outputEl.scrollHeight;
+}
+function appendError(t) { appendSpan(t, 'err'); }
+function appendInfo(t)  { appendSpan(t, 'info'); }
+function appendPrompt(t){ appendSpan(t || '', 'prompt'); }
+function appendEcho(t)  { appendSpan(t + '\n', 'info'); }
+
+/* ============================================================
+   INPUT — дві стратегії
+   ============================================================ */
+let __inputResolve = null;
+
+function closeInputModal(value) {
+  modalBackdrop.classList.remove('show');
+  const r = __inputResolve;
+  __inputResolve = null;
+  if (r) r(value);
+}
+modalOk.addEventListener('click', () => closeInputModal(modalInput.value));
+modalCancel.addEventListener('click', () => closeInputModal(null));
+modalInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); closeInputModal(modalInput.value); }
+  if (e.key === 'Escape') { e.preventDefault(); closeInputModal(null); }
+});
+modalBackdrop.addEventListener('click', (e) => {
+  if (e.target === modalBackdrop) closeInputModal(null);
+});
+
+// Асинхронний input(): повертає Promise, а код користувача робить await.
+// (Блокувати головний потік через Atomics.wait неможливо — і сторінка зависала б.)
+function __py_input(prompt) {
+  if (stopRequested) return Promise.reject(new Error('Виконання зупинено'));
+  const p = (prompt == null ? '' : __py_str(prompt));
+  appendPrompt(p);
+
+  return new Promise((resolve, reject) => {
+    modalPrompt.textContent = p || 'Введіть значення:';
+    modalInput.value = '';
+    modalBackdrop.classList.add('show');
+    setTimeout(() => modalInput.focus(), 30);
+    __inputResolve = (v) => {
+      if (stopRequested) return reject(new Error('Виконання зупинено'));
+      if (v === null) return reject(new Error('input() скасовано'));
+      appendEcho(v);
+      resolve(v);
+    };
+  });
+}
+
+/* ============================================================
+   ТРАНСПІЛЯТОР — переписаний
+   ------------------------------------------------------------
+   Ідея: спочатку розбиваємо код на "логічні рядки" (з урахуванням
+   продовження через дужки), потім для кожного рядка обчислюємо
+   відступ і генеруємо блокову структуру через стек.
+   ============================================================ */
+
+// Розбиває код на логічні рядки (з об'єднанням продовжень у дужках)
+function splitLogicalLines(src) {
+  const rawLines = src.split('\n');
+  const logical = [];   // { indent, content, rawStart, rawCount }
+  let buf = null;
+  let depth = 0;
+  let strQuote = null;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const raw = rawLines[i];
+    const stripped = raw.replace(/\r$/, '');
+
+    if (buf === null) {
+      // перевіряємо, чи це "порожній" або коментар
+      const t = stripped.trim();
+      if (t === '' || t.startsWith('#')) {
+        logical.push({ indent: -1, content: '', isBlank: true });
+        continue;
+      }
+      buf = { indent: stripped.length - stripped.trimStart().length, content: stripped.trim(), start: i, count: 1 };
+      depth = 0;
+      strQuote = null;
+      for (let j = 0; j < buf.content.length; j++) {
+        const c = buf.content[j];
+        if (strQuote) {
+          if (c === '\\') { j++; continue; }
+          if (c === strQuote) strQuote = null;
+          continue;
+        }
+        if (c === '"' || c === "'") { strQuote = c; continue; }
+        if (c === '#' && depth === 0) break;
+        if ('([{'.includes(c)) depth++;
+        else if (')]}'.includes(c)) depth--;
+      }
+      if (depth <= 0 && strQuote === null) {
+        logical.push(buf);
+        buf = null;
+      }
+    } else {
+      // продовження: додаємо до buf
+      buf.content += '\n' + stripped.trim();
+      buf.count++;
+      for (let j = 0; j < stripped.length; j++) {
+        const c = stripped[j];
+        if (strQuote) {
+          if (c === '\\') { j++; continue; }
+          if (c === strQuote) strQuote = null;
+          continue;
+        }
+        if (c === '"' || c === "'") { strQuote = c; continue; }
+        if (c === '#' && depth === 0) break;
+        if ('([{'.includes(c)) depth++;
+        else if (')]}'.includes(c)) depth--;
+      }
+      if (depth <= 0 && strQuote === null) {
+        logical.push(buf);
+        buf = null;
+      }
+    }
+  }
+  if (buf !== null) logical.push(buf);
+  return logical;
+}
+
+function replaceOutsideStrings(s, regex, replacement) {
+  let result = '';
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '"' || c === "'") {
+      const quote = c;
+      result += c; i++;
+      while (i < s.length) {
+        if (s[i] === '\\') { result += s[i] + (s[i+1] || ''); i += 2; continue; }
+        if (s[i] === quote) { result += s[i]; i++; break; }
+        result += s[i]; i++;
+      }
+    } else {
+      let j = i;
+      while (j < s.length && s[j] !== '"' && s[j] !== "'") j++;
+      result += s.slice(i, j).replace(regex, replacement);
+      i = j;
+    }
+  }
+  return result;
+}
+
+function convertFStrings(s) {
+  return s.replace(/\bf(["'])((?:\\.|(?!\1).)*)\1/g, (m, q, body) => {
+    let inner = body.replace(/\\/g, '\\\\')
+      .replace(/\{([^}]*)\}/g, (mm, ex) => '${' + awaitUserCalls(ex.replace(/\binput\s*\(/g, 'await __py_input(')) + '}');
+    return '`' + inner.replace(/`/g, '\\`') + '`';
+  });
+}
+
+// імена функцій, оголошених через def (заповнюється в transpile)
+let __userFuncs = new Set();
+function awaitUserCalls(str) {
+  if (__userFuncs.size === 0) return str;
+  const names = Array.from(__userFuncs).join('|');
+  const re = new RegExp('(^|[^\\w.$])(' + names + ')(\\s*\\()', 'g');
+  return str.replace(re, '$1await $2$3');
+}
+
+function convertExpr(expr) {
+  let s = expr;
+
+  s = s.replace(/\bTrue\b/g, 'true')
+       .replace(/\bFalse\b/g, 'false')
+       .replace(/\bNone\b/g, 'null');
+
+  s = replaceOutsideStrings(s, /\band\b/g, '&&');
+  s = replaceOutsideStrings(s, /\bor\b/g, '||');
+  s = replaceOutsideStrings(s, /\bnot\s+/g, '!');
+
+  s = s.replace(/\bprint\s*\(/g, '__py_print(');
+  s = s.replace(/\binput\s*\(/g, 'await __py_input(');
+  s = s.replace(/\brange\s*\(/g, '__py_range(');
+  s = s.replace(/\blen\s*\(/g, '__py_len(');
+  s = s.replace(/\bstr\s*\(/g, '__py_str(');
+  s = s.replace(/\bint\s*\(/g, '__py_int(');
+  s = s.replace(/\bfloat\s*\(/g, '__py_float(');
+  s = s.replace(/\babs\s*\(/g, 'Math.abs(');
+  s = s.replace(/\bmin\s*\(/g, '__py_min(');
+  s = s.replace(/\bmax\s*\(/g, '__py_max(');
+  s = s.replace(/\bsum\s*\(/g, '__py_sum(');
+
+  s = s.replace(/\.append\s*\(/g, '.push(');
+  s = s.replace(/\.sort\s*\(\s*\)/g, '.sort((a,b)=>a-b)');
+
+  s = s.replace(/([A-Za-z0-9_\.\)\]]+)\s*\/\/\s*([A-Za-z0-9_\.\(\[]+)/g,
+                'Math.floor($1 / $2)');
+
+  s = replaceOutsideStrings(s, /[\s\S]+/g, (m) => awaitUserCalls(m));
+  s = convertFStrings(s);
+  return s;
+}
+
+// Повертає { js, opensBlock } — opensBlock=true, якщо це заголовок блоку
+function convertStatement(content) {
+  // def
+  let m = content.match(/^def\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*:\s*$/);
+  if (m) {
+    const params = m[2].split(',').map(p => p.trim()).filter(Boolean).join(', ');
+    return { js: `async function ${m[1]}(${params})`, opensBlock: true };
+  }
+
+  // if / elif / else
+  m = content.match(/^if\s+(.+?)\s*:\s*$/);
+  if (m) return { js: `if (${convertExpr(m[1])})`, opensBlock: true };
+  m = content.match(/^elif\s+(.+?)\s*:\s*$/);
+  if (m) return { js: `else if (${convertExpr(m[1])})`, opensBlock: true };
+  if (/^else\s*:\s*$/.test(content)) return { js: `else`, opensBlock: true };
+
+  // for
+  m = content.match(/^for\s+([A-Za-z_]\w*)\s+in\s+(.+?)\s*:\s*$/);
+  if (m) {
+    return { js: `for (let ${m[1]} of __py_iter(${convertExpr(m[2])}))`, opensBlock: true };
+  }
+
+  // while
+  m = content.match(/^while\s+(.+?)\s*:\s*$/);
+  if (m) return { js: `while (${convertExpr(m[1])})`, opensBlock: true };
+
+  // return
+  m = content.match(/^return\s*(.*)$/);
+  if (m) return { js: `return ${m[1].trim() ? convertExpr(m[1]) : ''}`, opensBlock: false };
+
+  // break / continue / pass
+  if (content === 'break') return { js: 'break', opensBlock: false };
+  if (content === 'continue') return { js: 'continue', opensBlock: false };
+  if (content === 'pass') return { js: '', opensBlock: false };
+
+  return { js: convertExpr(content), opensBlock: false };
+}
+
+function transpile(src) {
+  const logical = splitLogicalLines(src);
+
+  __userFuncs = new Set();
+  for (const e of logical) {
+    if (e.isBlank) continue;
+    const dm = e.content.match(/^def\s+([A-Za-z_]\w*)\s*\(/);
+    if (dm) __userFuncs.add(dm[1]);
+  }
+
+  let out = '';
+  // Стек: масив індексів-відступів, які "відкриті" на даний момент
+  const indentStack = [];
+
+  // Допоміжна: закрити всі блоки, чий відступ >= поточного
+  function closeBlocksDownTo(targetIndent) {
+    while (indentStack.length > 0 &&
+           indentStack[indentStack.length - 1] >= targetIndent) {
+      indentStack.pop();
+      out += '}\n';
+    }
+  }
+
+  for (const entry of logical) {
+    if (entry.isBlank) {
+      out += '\n';
+      continue;
+    }
+
+    const indent = entry.indent;
+
+    // Закриваємо блоки, чий відступ >= поточного
+    closeBlocksDownTo(indent);
+
+    const { js, opensBlock } = convertStatement(entry.content);
+
+    if (opensBlock) {
+      out += ' '.repeat(indent) + js + ' {\n';
+      indentStack.push(indent);
+    } else {
+      // звичайний рядок
+      out += ' '.repeat(indent) + js;
+      if (js !== '') out += ';';
+      out += '\n';
+    }
+  }
+
+  // Закриваємо всі залишкові блоки
+  while (indentStack.length > 0) {
+    indentStack.pop();
+    out += '}\n';
+  }
+
+  return out;
+}
+
+/* ============================================================
+   RUNTIME
+   ============================================================ */
+function __py_str(v) {
+  if (v === null || v === undefined) return 'None';
+  if (v === true) return 'True';
+  if (v === false) return 'False';
+  if (Array.isArray(v)) return '[' + v.map(x => __py_str(x)).join(', ') + ']';
+  if (typeof v === 'object') {
+    const pairs = Object.entries(v).map(([k, val]) => `'${k}': ${__py_str(val)}`);
+    return '{' + pairs.join(', ') + '}';
+  }
+  return String(v);
+}
+function __py_print(...args) {
+  appendSpan(args.map(a => __py_str(a)).join(' ') + '\n');
+}
+function __py_range(...args) {
+  let [start, stop, step] = [0, 0, 1];
+  if (args.length === 1) stop = args[0];
+  else if (args.length === 2) { start = args[0]; stop = args[1]; }
+  else if (args.length >= 3) { start = args[0]; stop = args[1]; step = args[2]; }
+  const out = [];
+  if (step > 0) for (let i = start; i < stop; i += step) out.push(i);
+  else if (step < 0) for (let i = start; i > stop; i += step) out.push(i);
+  return out;
+}
+function __py_iter(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') return v.split('');
+  if (typeof v === 'object' && v !== null) return Object.keys(v);
+  if (v && typeof v[Symbol.iterator] === 'function') return v;
+  return [];
+}
+function __py_len(v) {
+  if (typeof v === 'string' || Array.isArray(v)) return v.length;
+  if (v && typeof v === 'object') return Object.keys(v).length;
+  return 0;
+}
+function __py_int(v) {
+  if (typeof v === 'string') { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+  return Math.trunc(Number(v));
+}
+function __py_float(v) { return Number(v); }
+function __py_min(...a) { return Array.isArray(a[0]) ? Math.min(...a[0]) : Math.min(...a); }
+function __py_max(...a) { return Array.isArray(a[0]) ? Math.max(...a[0]) : Math.max(...a); }
+function __py_sum(arr) { return arr.reduce((s, x) => s + x, 0); }
+
+/* ============================================================
+   ЗАПУСК
+   ============================================================ */
+async function run() {
+  if (isRunning) return;
+  isRunning = true;
+  stopRequested = false;
+  outputEl.textContent = '';
+  setStatus('Виконується…', '#f9e2af');
+
+  const src = codeEl.value;
+  let js;
+  try {
+    js = transpile(src);
+  } catch (e) {
+    appendError('Помилка транспіляції: ' + e.message);
+    setStatus('Помилка', '#f38ba8');
+    isRunning = false;
+    return;
+  }
+
+  console.log('--- Згенерований JS ---\n' + js + '\n-----------------------');
+
+  const start = performance.now();
+
+  try {
+    const fn = new Function(
+      '__py_print','__py_input','__py_str','__py_range','__py_iter',
+      '__py_len','__py_int','__py_float','__py_min','__py_max','__py_sum',
+      'return (async () => {\n' + js + '\n})();'
+    );
+    await fn(
+      __py_print, __py_input, __py_str, __py_range, __py_iter,
+      __py_len, __py_int, __py_float, __py_min, __py_max, __py_sum
+    );
+    const elapsed = (performance.now() - start).toFixed(1);
+    appendInfo('\n— виконано за ' + elapsed + ' мс —');
+    setStatus('Готово', '#a6e3a1');
+  } catch (e) {
+    if (stopRequested) {
+      appendInfo('\n— виконання зупинено —');
+      setStatus('Зупинено', '#f9e2af');
+    } else {
+      appendError('Помилка виконання: ' + e.message);
+      setStatus('Помилка', '#f38ba8');
+    }
+  } finally {
+    isRunning = false;
+  }
+}
+
+function stopRun() {
+  if (!isRunning) return;
+  stopRequested = true;
+  if (modalBackdrop.classList.contains('show')) closeInputModal(null);
+}
+function setStatus(text, color) {
+  statusEl.textContent = text;
+  statusEl.style.color = color || '#7f849c';
+}
+
+/* ============================================================
+   НУМЕРАЦІЯ РЯДКІВ
+   ============================================================ */
+let currentLineCount = 0;
+
+function updateGutter() {
+  const lines = codeEl.value.split('\n').length;
+  const selStart = codeEl.value.slice(0, codeEl.selectionStart).split('\n').length;
+
+  if (lines !== currentLineCount) {
+    let html = '';
+    for (let i = 1; i <= lines; i++) {
+      html += '<div' + (i === selStart ? ' class="active"' : '') + '>' + i + '</div>';
+    }
+    gutter.innerHTML = html;
+    currentLineCount = lines;
+  } else {
+    const divs = gutter.children;
+    for (let i = 0; i < divs.length; i++) {
+      divs[i].className = (i + 1 === selStart) ? 'active' : '';
+    }
+  }
+  syncGutterScroll();
+}
+function syncGutterScroll() {
+  gutter.scrollTop = codeEl.scrollTop;
+}
+
+codeEl.addEventListener('input', updateGutter);
+codeEl.addEventListener('keyup', updateGutter);
+codeEl.addEventListener('click', updateGutter);
+codeEl.addEventListener('scroll', syncGutterScroll);
+codeEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    codeEl.value = codeEl.value.slice(0, s) + '    ' + codeEl.value.slice(en);
+    codeEl.selectionStart = codeEl.selectionEnd = s + 4;
+    updateGutter();
+  }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    run();
+  }
+});
+
+/* ============================================================
+   МЕНЮ
+   ============================================================ */
+document.querySelectorAll('.menu > button').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = btn.parentElement;
+    const wasOpen = menu.classList.contains('open');
+    document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+    if (!wasOpen) menu.classList.add('open');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+});
+document.querySelectorAll('.menu .dropdown button').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const action = btn.dataset.action;
+    document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+    handleAction(action);
+  });
+});
+
+const helpBackdrop = document.getElementById('helpBackdrop');
+function closeHelp() { helpBackdrop.classList.remove('show'); }
+document.getElementById('helpClose').addEventListener('click', closeHelp);
+helpBackdrop.addEventListener('click', (e) => { if (e.target === helpBackdrop) closeHelp(); });
+
+function handleAction(action) {
+  switch (action) {
+    case 'run': run(); break;
+    case 'stop': stopRun(); break;
+    case 'new':
+      codeEl.value = '# Новий файл\n';
+      updateGutter();
+      break;
+    case 'example':
+      codeEl.value = EXAMPLE;
+      updateGutter();
+      break;
+    case 'clear-output':
+      outputEl.textContent = '';
+      break;
+    case 'clear-all':
+      codeEl.value = '';
+      outputEl.textContent = '';
+      updateGutter();
+      break;
+    case 'download': {
+      const blob = new Blob([codeEl.value], { type: 'text/x-python' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'script.py';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      break;
+    }
+    case 'upload':
+      filePicker.click();
+      break;
+    case 'format':
+      codeEl.value = codeEl.value.split('\n').map(l => {
+        const m = l.match(/^(\s*)(.*)$/);
+        const indent = m[1].replace(/\t/g, '    ').length;
+        const fixed = ' '.repeat(Math.round(indent / 4) * 4);
+        return fixed + m[2];
+      }).join('\n');
+      updateGutter();
+      break;
+    case 'help-syntax':
+      helpBackdrop.classList.add('show');
+      break;
+  }
+}
+
+/* ============================================================
+   ФАЙЛ
+   ============================================================ */
+filePicker.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    codeEl.value = reader.result;
+    updateGutter();
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   КНОПКИ ТА ГАРЯЧІ КЛАВІШІ
+   ============================================================ */
+document.getElementById('runBtn').addEventListener('click', run);
+document.querySelectorAll('.toolbar button[data-action]').forEach(btn => {
+  btn.addEventListener('click', () => handleAction(btn.dataset.action));
+});
+document.getElementById('clearBtn').addEventListener('click', () => {
+  outputEl.textContent = '';
+});
+
+document.addEventListener('keydown', (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'Enter') { e.preventDefault(); run(); return; }
+  if (ctrl && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); handleAction('new'); return; }
+  if (ctrl && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); handleAction('clear-output'); return; }
+  if (e.key === 'Escape') {
+    if (helpBackdrop.classList.contains('show')) { closeHelp(); return; }
+    if (modalBackdrop.classList.contains('show')) return;
+    if (isRunning) stopRun();
+    document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+  }
+});
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+codeEl.value = EXAMPLE;
+updateGutter();
+
+</script>
+</body>
+</html>

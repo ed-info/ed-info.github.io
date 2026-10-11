@@ -133,7 +133,7 @@
   <span id="stCwd">C:\</span>
 </div>
 
-<script src="/vfs.js"></script>
+<script src="../vfs.js"></script>
 <script>
 /* =====================================================================
    Термінал (cmd-подібний) для віртуальної файлової системи VFS
@@ -762,7 +762,7 @@
 
   function cmdVer() {
     out('');
-    out('Віртуальна файлова система VFS [Версія 1.0]');
+    out('Програма-термінал для роботи в консолі');
     out('');
   }
 
@@ -1170,7 +1170,7 @@
 
   (async function boot() {
     if (!window.VFS || !window.VFS.__loaded) {
-      out('Помилка: vfs.js не завантажено (перевірте /vfs.js).', 'err');
+      out('Помилка: vfs.js не завантажено (перевірте ../vfs.js).', 'err');
       input.disabled = true;
       return;
     }
@@ -1178,7 +1178,7 @@
     state.cwd = 'C:\\';
     state.apps = await loadAppsList();
     updatePrompt();
-    out('Віртуальна файлова система VFS [Версія 1.0]');
+    out('Програма-термінал для роботи в консолі');
     blank();
     out('Введіть HELP для переліку команд.');
     blank();
