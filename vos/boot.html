@@ -402,6 +402,14 @@
                 }
             });
 
+            // Блокування переходу Назад
+            if (history.pushState) {
+                history.pushState(null, '', location.href);
+                window.addEventListener('popstate', function () {
+                    history.pushState(null, '', location.href);
+                }, false);
+            }
+
             startBootSequence();
         })();
     </script>
