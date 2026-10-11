@@ -407,9 +407,9 @@
 
             // Блокування переходу Назад
             if (history.pushState) {
-                history.pushState(null, '', 'index.html');
+                history.pushState(null, '', location.href);
                 window.addEventListener('popstate', function () {
-                    history.pushState(null, '', 'index.html');
+                    history.go(1);
                 }, false);
             }
 

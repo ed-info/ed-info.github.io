@@ -9,14 +9,14 @@
     if (sessionStorage.getItem('virtuos_user') !== 'User') {
       location.replace('boot.html');
     } else {
-      if (history.pushState) history.pushState(null, '', 'index.html');
+      if (history.pushState) {
+        history.pushState(null, '', location.href);
+        window.addEventListener('popstate', function () {
+          history.go(1);
+        }, false);
+      }
     }
   } catch (_) {}
-  if (history.pushState) {
-    window.addEventListener('popstate', function () {
-      history.pushState(null, '', 'index.html');
-    }, false);
-  }
 </script>
 <script src="vfs.js"></script>
 <style>
