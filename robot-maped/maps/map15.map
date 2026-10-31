@@ -1,0 +1,58 @@
+#map:def
+
+extra:
+tree@10,6
+tree@14,6
+tree@11,6
+tree@12,5
+tree@13,6
+tree@14,8
+tree@15,9
+tree@15,6
+tree@14,10
+tree@13,9
+tree@13,11
+tree@10,8
+tree@11,8
+tree@12,10
+tree@10,10
+tree@11,11
+tree@3,3
+tree@4,12
+tree@9,1
+tree@26,13
+tree@27,12
+tree@22,8
+tree@28,4
+tree@12,7
+hbridge@1,15
+hbridge@1,18
+vbridge@1,15
+vbridge@4,15
+tree@2,16
+
+paint:
+(w,|,17,11)(w,|,17,10)(w,|,17,9)(w,|,17,8)(w,|,17,7)(w,|,17,6)(w,|,17,5)
+(w,|,10,11)(w,|,10,10)(w,|,10,9)(w,|,10,8)(w,|,10,7)(w,|,10,6)(w,|,10,5)
+(w,-,10,5)(w,-,11,5)(w,-,12,5)(w,-,13,5)(w,-,14,5)(w,-,15,5)(w,-,16,5)
+
+map:
+
+
+           
+        CHHHHHHHHHHD
+        GMFFFFFFFFJI
+AHHHA   GI        GI   
+G   I   GI A    A BEQQQQQQQ
+G O AQQQBE                Q
+G                 CHDQQQQ Q
+AFFFAQQQCD        BJI   Q Q  CHHHHA
+        GI         GI   Q QQQA   *I
+        GI        CKI   Q       **I
+        GI A    A@GME   QQQQQA ***I
+        GI*CHHHHHHKI         BFFFFA
+        GLHKMFFFFFFE CHD
+        BFFFE        GOLHD
+                     BFJOI
+                       BE
+           

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <title>Редактор карт — WebRobot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+  <header class="menu-bar" id="menu-bar">
+    <div class="menu" data-menu>
+      <button type="button" class="menu-title">Файл</button>
+      <div class="menu-dropdown" role="menu">
+        <button type="button" class="menu-item" data-action="new" role="menuitem">Нова карта</button>
+        <button type="button" class="menu-item" data-action="open" role="menuitem">Отримати карту…</button>
+        <button type="button" class="menu-item" data-action="save" role="menuitem">Зберегти карту</button>
+        <button type="button" class="menu-item" data-action="world" role="menuitem">Створити світ…</button>
+        <div class="menu-sep"></div>
+        <div class="menu-label">Шаблон</div>
+        <button type="button" class="menu-item" data-template="16x11" role="menuitem">16 × 11 блоків</button>
+        <button type="button" class="menu-item" data-template="16x16" role="menuitem">16 × 16 блоків</button>
+        <button type="button" class="menu-item" data-template="18x16" role="menuitem">18 × 16 блоків</button>
+        <button type="button" class="menu-item" data-template="18x18" role="menuitem">18 × 18 блоків</button>
+      </div>
+    </div>
+
+    <div class="menu" data-menu>
+      <button type="button" class="menu-title">Вигляд</button>
+      <div class="menu-dropdown" role="menu">
+        <button type="button" class="menu-item skin-item" data-skin="defaultSkin" role="menuitem">
+          <span class="menu-check"></span><span>metal (default)</span>
+        </button>
+        <button type="button" class="menu-item skin-item" data-skin="grassSkin" role="menuitem">
+          <span class="menu-check"></span><span>grass</span>
+        </button>
+        <button type="button" class="menu-item skin-item" data-skin="dessertSkin" role="menuitem">
+          <span class="menu-check"></span><span>desert</span>
+        </button>
+        <button type="button" class="menu-item skin-item" data-skin="legoSkin" role="menuitem">
+          <span class="menu-check"></span><span>lego</span>
+        </button>
+        <button type="button" class="menu-item skin-item" data-skin="starMindSkin" role="menuitem">
+          <span class="menu-check"></span><span>star</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="menu" data-menu>
+      <button type="button" class="menu-title">Обмеження</button>
+      <div class="menu-dropdown" role="menu">
+        <button type="button" class="menu-item code-limit-item" data-codelimit="0" role="menuitem">
+          <span class="menu-check"></span><span>Необмежено</span>
+        </button>
+        <div class="menu-sep"></div>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="10" role="menuitem">
+          <span class="menu-check"></span><span>10 рядків</span>
+        </button>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="20" role="menuitem">
+          <span class="menu-check"></span><span>20 рядків</span>
+        </button>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="30" role="menuitem">
+          <span class="menu-check"></span><span>30 рядків</span>
+        </button>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="40" role="menuitem">
+          <span class="menu-check"></span><span>40 рядків</span>
+        </button>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="50" role="menuitem">
+          <span class="menu-check"></span><span>50 рядків</span>
+        </button>
+        <button type="button" class="menu-item code-limit-item" data-codelimit="100" role="menuitem">
+          <span class="menu-check"></span><span>100 рядків</span>
+        </button>
+        <div class="menu-sep"></div>
+        <button type="button" class="menu-item code-limit-item" data-codelimit-custom role="menuitem">
+          <span class="menu-check"></span><span>Інша кількість…</span>
+        </button>
+      </div>
+    </div>
+
+    <button type="button" class="menu-title standalone" data-action="help">Довідка</button>
+
+    <div class="menu-bar-spacer"></div>
+    <span class="doc-name" id="doc-name" title="Назва карти">нова-карта.map</span>
+    <a class="app-link" href="runide.html" title="Повернутися до застосунку">← До застосунку</a>
+  </header>
+
+  <main class="editor-layout">
+    <aside class="palette-panel">
+      <div class="panel-head">
+        <span>Блоки</span>
+        <span class="palette-skin" id="palette-skin">metal</span>
+      </div>
+      <div class="direction-bar">
+        <button type="button" class="rotate-btn" id="rotate-left" title="Повернути робота ліворуч на 90°">
+          <img src="img/rotate-left.png" alt="Повернути ліворуч">
+        </button>
+        <div class="direction-view">
+          <img class="direction-preview" id="direction-preview" src="img/robot.png" alt="Робот">
+          <span class="direction-text">Напрям робота<br><b id="direction-name">північ</b></span>
+        </div>
+        <button type="button" class="rotate-btn" id="rotate-right" title="Повернути робота праворуч на 90°">
+          <img src="img/rotate-right.png" alt="Повернути праворуч">
+        </button>
+      </div>
+      <div class="palette-scroll">
+        <div class="block-list" id="block-list">
+          <p class="palette-empty">Завантаження блоків…</p>
+        </div>
+        <div class="palette-sep"></div>
+        <button type="button" class="block-item delete-item" id="delete-block" title="Видалити блок з карти">
+          <span class="block-thumb delete-thumb" aria-hidden="true">🗑</span>
+          <span class="block-name">Видалити</span>
+        </button>
+      </div>
+    </aside>
+
+    <section class="editor-panel">
+      <div class="panel-head">
+        <span>Редактор</span>
+        <span class="cursor-info" id="cursor-info">Клітинка: —</span>
+        <span class="size-info" id="size-info">16 × 11 блоків</span>
+        <span class="code-info" id="code-info" title="Обмеження кількості рядків коду">Код: необмежено</span>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="map-canvas" width="640" height="440" aria-label="Поле карти"></canvas>
+      </div>
+      <div class="editor-status" id="editor-status">Виберіть блок на панелі ліворуч.</div>
+    </section>
+  </main>
+
+  <input type="file" id="file-input" accept=".map,text/plain" hidden>
+  <input type="file" id="world-file-input" accept=".map,text/plain" multiple hidden>
+  <div id="modal-root"></div>
+
+  <script src="js/editor.js"></script>
+</body>
+</html>

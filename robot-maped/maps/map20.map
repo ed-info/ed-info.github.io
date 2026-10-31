@@ -1,0 +1,37 @@
+# Map file for RoboMind
+# (Lines that start with '#' are comments)
+#
+# The tiles are:
+#   A..Z    Tiles A through Z
+#   @       Start
+#   *       Goal
+
+paint:
+{(w,-,2,2),(b,.,2,3)}
+
+map:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AA  O                                                                 AA
+A  *     A      Q                                                      A
+A  @     P            *      P                             Q           A
+AO       A                                   *                         A
+A   CD                                                                 A
+A  CKLHD         PPP                     AAAAAAA                       A
+A  BFJNI                     AAAAAAAAAAAAAAAAAAAAAA                    A
+A    BFE         PPP            QA                                     A
+A                                A                                     A
+A  Q           A                 A      O                              A
+A              A                 A                   O                 A
+A            AAAQ                A                                     A
+A   *          AAAAAAA           A                                     A
+A      P   P        AA           A        CD                           A
+A      A   A                             CKLHD                         A
+A     OO   OO                            BFJNI                         A
+A    OO  P  OO           *                 BFE              A          A
+A    OO     OO                                              A          A
+A     OOOOOOOO                                              A          A
+A                                             *             A          A
+A                     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA     A          A
+A         O                                                 A          A
+A                                                           A          A
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

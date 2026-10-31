@@ -1,0 +1,14 @@
+#mapdef
+# Map 3: zigzag
+map:
+CHHHHHHHHHHHHHHD
+G              I
+G    AAAAAAAAAAI
+G  @           I
+GAAAAAAAAAAA   I
+G              I
+G    AAAAAAAAAAI
+G              I
+GAAAAAAAAAAA   I
+G *            I
+BFFFFFFFFFFFFFFE

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <title>Середовище для навчання програмуванню</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Заголовок вікна з картою: кнопки лише з піктограмами */
+    .map-panel-head { display: flex; align-items: center; gap: 8px; }
+    .map-toolbar-left { display: flex; gap: 4px; }
+    .map-toolbar-center { flex: 1; display: flex; justify-content: center; }
+    .map-toolbar-right { display: flex; gap: 4px; }
+    .map-toolbar { display: flex; gap: 4px; }
+    .head-spacer { flex: 1; align-self: stretch; min-height: 24px; }
+    /* Червоний рядок-межа, коли карта задає codelimit */
+    .code-end { color: #d32f2f; font-weight: 700; }
+    .icon-btn { min-width: 32px; padding: 2px 8px; line-height: 1.3; text-align: center; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="toolbar">
+      <label class="file-btn">
+        Карта<input type="file" id="file-map" accept=".map">
+      </label>
+
+      <button id="btn-edit-maps" class="btn" type="button" title="Відкрити поточну карту в редакторі (нова вкладка)">🗺️ Редагувати карти</button>
+
+      <span class="sep"></span>
+
+      <select id="speed" title="Швидкість руху робота">
+        <option value="slow">Повільно</option>
+        <option value="normal" selected>Нормально</option>
+        <option value="fast">Швидко</option>
+      </select>
+
+      <select id="skin" title="Скін (оформлення світу)">
+        <option value="dessertSkin">Пустеля</option>
+        <option value="grassSkin">Трава</option>
+        <option value="starMindSkin">Зорі</option>
+        <option value="legoSkin">LEGO</option>
+        <option value="defaultSkin">Стандартний</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel code-panel">
+      <div class="panel-head">
+        <span>Програма</span>
+        <span id="code-limit" class="status" hidden></span>
+        <span id="status" class="status">Готово.</span>
+      </div>
+
+      <div class="editor-wrap">
+        <pre id="highlight" class="editor-layer" aria-hidden="true"></pre>
+        <textarea id="editor" class="editor-layer" spellcheck="false"
+                  placeholder="from robot import *&#10;&#10;forward(2)&#10;right()"></textarea>
+      </div>
+
+      <div class="console-wrap">
+        <div id="console" class="console"></div>
+      </div>
+
+      <details class="help">
+        <summary>Довідка</summary>
+        <div class="help-body">
+          <p>Програма пишеться на <b>Python</b> і виконується рушієм Skulpt.
+             Можливості робота дає модуль <code>robot</code>:</p>
+          <p><code>from robot import *</code> — або <code>import robot</code>
+             і тоді <code>robot.forward(2)</code>.</p>
+          <p><b>Рух:</b> <code>forward(n)</code>, <code>backward(n)</code>,
+             <code>left()</code>, <code>right()</code>,
+             <code>north(n)</code>, <code>south(n)</code>,
+             <code>east(n)</code>, <code>west(n)</code></p>
+          <p><b>Фарбування:</b> <code>paintWhite()</code>, <code>paintBlack()</code>
+             вмикають режим малювання сліду, який триває до
+             <code>stopPainting()</code></p>
+          <p><b>Energon:</b> <code>pickUp()</code></p>
+          <p><b>Зір:</b> <code>frontIsObstacle()</code>, <code>frontIsClear()</code>,
+             <code>frontIsEnergon()</code>, <code>frontIsWhite()</code>,
+             <code>frontIsBlack()</code> — так само для <code>left…</code> і
+             <code>right…</code></p>
+          <p><b>Стан:</b> <code>position()</code>, <code>direction()</code>,
+             <code>EnergonLeft()</code>, <code>collected()</code>,
+             <code>EnergonTotal()</code></p>
+          <p><b>Швидкість:</b> <code>setSpeed(v)</code> — рівень 0–10
+             (0 найповільніше, 10 найшвидше); <code>getSpeed()</code>
+             повертає поточний рівень.</p>
+          <p><b>Скін:</b> <code>skin("grass")</code> — перемикає оформлення
+             карти; назви: <code>grass</code>, <code>desert</code>,
+             <code>mind</code>, <code>lego</code>, <code>default</code>.</p>
+          <p><b>Збір Energon:</b> під час <code>pickUp()</code> змінна
+             <code>collect</code> збільшується на 1 (її ж показує
+             <code>collected()</code>). Коли зібрано всі Energon — з'являється
+             вікно з привітанням.</p>
+          <p><b>Зіткнення:</b> при наїзді на перешкоду виникає
+             <code>CollisionError</code> і програма зупиняється.
+             Перехопити можна так:
+             <code>try: forward(10)<br>except robot.CollisionError: pass</code></p>
+          <p>Приклад:</p>
+          <pre class="help-code">from robot import *
+
+paintWhite()
+for _ in range(4):
+    forward(2)
+    right()
+stopPainting()</pre>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <script src="vendor/skulpt/skulpt.js"></script>
+  <script src="vendor/skulpt/skulpt-stdlib.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/app.js"></script>
+   <!--
+   Вікно з полем (модальна панель 800x600, перетягується за заголовок)
+   створюється динамічно скриптом app.js при завантаженні бібліотеки robot.
+   -->
+
+</body>
+</html>

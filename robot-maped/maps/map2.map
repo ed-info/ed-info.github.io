@@ -1,0 +1,14 @@
+#mapdef
+# Map 2: vertical wall with a gap
+map:
+CHHHHHHHHHHHHHHD
+G              I
+G              I
+G      CD      I
+G   @  GI   *  I
+G      GI      I
+G      BE      I
+G    QQ        I
+G              I
+G              I
+BFFFFFFFFFFFFFFE

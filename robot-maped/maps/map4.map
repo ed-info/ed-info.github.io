@@ -1,0 +1,14 @@
+#mapdef
+# Map 4: pond and obstacles
+map:
+CHHHHHHHHHHHHHHD
+G              I
+G              I
+G  @      CD   I
+G    PP   GI   I
+G         BE   I
+G     OO       I
+G     OO       I
+G   S     P *  I
+G              I
+BFFFFFFFFFFFFFFE

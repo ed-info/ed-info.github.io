@@ -1,0 +1,475 @@
+/* Стилі веб-версії (темна тема, як в оригіналі). */
+
+:root {
+  --bg: #111318;
+  --panel: #454444;
+  --panel-dark: #383737;
+  --line: #595757;
+  --text: #eeeeee;
+  --muted: #a6a6a6;
+  --accent: #e6bf27;
+  --accent-2: #a6e067;
+  --error: #e05a5a;
+  --code-font: Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+  --ui-font: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui-font);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- верхня панель --- */
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--panel-dark);
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+}
+
+.btn {
+  background: #5b5a5a;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:hover { background: #6a6969; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background: var(--accent-2);
+  border-color: #7cb544;
+  color: #1d2a12;
+  font-weight: 600;
+}
+
+.btn.primary:hover { background: #b4ec76; }
+
+.file-btn {
+  display: inline-block;
+  background: #5b5a5a;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.file-btn:hover { background: #6a6969; }
+.file-btn input { display: none; }
+
+select {
+  background: #5b5a5a;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font: inherit;
+}
+
+/* --- макет --- */
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+}
+
+.panel-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--panel-dark);
+  border-bottom: 1px solid var(--line);
+  border-radius: 5px 5px 0 0;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* --- робоча область: редактор програми --- */
+
+.code-panel > .editor-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.world-panel { min-height: 0; }
+
+/* --- вікно з картою (модальна панель 800×600) --- */
+
+.map-panel {
+  position: fixed;
+  top: 60px;
+  left: 12px;
+  width: 800px;
+  height: 600px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-dark);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .7);
+  overflow: hidden;
+}
+
+.map-panel[hidden] { display: none; }
+
+.map-panel-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: var(--panel-dark);
+  border-bottom: 1px solid var(--line);
+  cursor: move;
+  user-select: none;
+}
+
+.map-panel-title {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.map-panel-name {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- кнопки вибору карти (map1..mapN) --- */
+
+.map-toolbar .sep {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+
+.map-picker {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.map-pages {
+  display: flex;
+  gap: 3px;
+}
+
+.map-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #1b5e20;
+  border-radius: 50%;
+  background: #2e7d32;
+  color: #fff;
+  font: bold 11px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.map-btn:hover { background: #388e3c; }
+.map-btn:active { transform: translateY(1px); }
+
+.map-btn.active {
+  background: #7fd88f;
+  border-color: #c8e6c9;
+  color: #14401a;
+}
+
+.map-arrow {
+  width: 20px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9a9a9a;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map-arrow:hover:not(:disabled) { color: #fff; }
+.map-arrow:disabled { opacity: .3; cursor: default; }
+
+.map-panel .field-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;              /* смуги прокручування, коли карта більша за вікно */
+}
+
+.field-sizer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#field {
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+/* --- привітальне вікно --- */
+
+.congrats {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 14, .78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.congrats[hidden] { display: none; }
+
+.congrats-box {
+  width: 420px;
+  padding: 26px 28px 22px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+}
+
+.congrats-box h1 {
+  margin: 10px 0 6px;
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.congrats .medals {
+  font-size: 34px;
+  letter-spacing: 6px;
+  line-height: 1.2;
+}
+
+.congrats .trophy {
+  font-size: 64px;
+  line-height: 1.1;
+  margin: 6px 0 2px;
+}
+
+.congrats-note {
+  margin: 4px 0 16px;
+  color: var(--muted);
+}
+
+.field-wrap {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+  background: #0b0b12;
+}
+
+
+
+#field {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.btn.tiny {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.status {
+  margin-left: auto;
+  padding: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status.error { color: var(--error); }
+
+/* --- списки карт і прикладів --- */
+
+/* --- редактор --- */
+
+.code-panel { min-height: 0; }
+
+.editor-wrap {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  background: var(--panel-dark);
+}
+
+.editor-layer {
+  margin: 0;
+  padding: 10px 12px;
+  font-family: var(--code-font);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+  word-wrap: normal;
+  tab-size: 4;
+}
+
+#highlight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--text);
+}
+
+#editor {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+  outline: none;
+  overflow: hidden;
+}
+
+.tok-keyword { color: #e6bf27; }
+.tok-number { color: #a6e067; }
+.tok-comment { color: #7c7c7c; font-style: italic; }
+
+/* --- консоль виводу --- */
+
+.console-wrap {
+  flex: none;
+  height: 190px;
+  border-bottom: 1px solid var(--line);
+  background: #1d1f24;
+  overflow: hidden;
+  display: flex;
+}
+
+.console {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--code-font);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #d6e2b8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- довідка --- */
+
+.help {
+  flex: none;
+  border-top: 1px solid var(--line);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.help summary {
+  cursor: pointer;
+  color: var(--accent-2);
+}
+
+.help-body {
+  max-height: 240px;
+  overflow: auto;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.help-body p { margin: 6px 0; }
+.help-body b { color: var(--text); }
+.help-body code {
+  font-family: var(--code-font);
+  background: #2f2f2f;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--accent);
+}
+
+.help-code {
+  font-family: var(--code-font);
+  background: #2f2f2f;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  overflow-x: auto;
+  color: #d6e2b8;
+}
+
+@media (max-width: 900px) {
+  .console-wrap { height: 130px; }
+}

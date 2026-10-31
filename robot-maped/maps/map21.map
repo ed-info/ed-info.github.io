@@ -1,0 +1,39 @@
+# Map file for RoboMind
+# (Lines that start with '#' are comments)
+#
+# The tiles are:
+#   A..Z    Tiles A through Z
+#   *       Start
+#
+# Paint strokes kan be added in the according list
+# by adding tuples of the form: ([color],[type],[x],[y])
+#
+# [color] :   w = white
+#             b = black
+# [type]  :   . = single dot
+#             - = horizontal stroke to the right
+#             | = vertical stroke down
+# [x]     :   integer horizontal position
+# [y]     :   integer vertical position
+ 
+paint:
+{}
+
+map:
+CHHHHHHHHHHHHHHHHHHHHHD
+GMFFFFFFFFFFFFFFFFFFFJI
+GI               A  *GI
+GI AAAA AAAAAAAA A AAGI
+GI    A A      A   A GI
+GIAAAAA A PPP AAAAAA GI
+GI      A POP        GI
+GI AAAAAA PPP AAAAAA GI   
+GI            A      GI   
+GIAAAAAAAAA AAA AAAAAGI
+GI       A    A      GI
+GI A AAA AAAA AAAAAA GI
+GI A A A      A      GI
+GI A A A AAAAAA  AAAAGI
+GI A@A        A      GI
+GLHHHHHHHHHHHHHHHHHHHKI
+BFFFFFFFFFFFFFFFFFFFFFE  

@@ -1,0 +1,32 @@
+#map:def
+
+extra:
+palm@3,3
+palm@1,7
+palm@9,1
+palm@1,17
+palm@11,6
+palm@14,12
+palm@24,6
+vbridge@8,9
+vbridge@19,9
+
+map:
+
+
+
+        CHHHHHHHHHHD
+        GMFFFFFFFFJI
+        GI        GI
+        GI        GI AHHA
+AHHHHHA GI     Q  GI GRRI
+G     A GI     *Q GI GRRI   
+G     BA E        B AAFFAP  
+GQQ Q                    A 
+G   Q       @            A  
+G Q  QCA D        C AAHHAP
+G *Q  A GI        GI GRRI
+AFFFFFA GI        GI GRRI
+        GI        GI AFFA
+        GLHHHHHHHHKI
+        BFFFFFFFFFFE
