@@ -1,397 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
- <title>Все для вчителя інформатики</title>
- <link rel="icon" type="image/x-icon" href="/img/im.png">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Все для вчителя інформатики</title>
+<meta name="description" content="Нормативні документи, навчальні програми, безпека та програмне забезпечення для вчителя інформатики. Актуально на 2026/2027 навчальний рік.">
+<link rel="icon" type="image/png" href="img/im.png">
 <style>
+:root{
+  --bg:#EDF2F8;--surface:#FFFFFF;--ink:#0F1E33;--muted:#58697F;--line:#D3DDEA;
+  --accent:#1555C4;--accent-soft:#E3ECFC;--hero:#0D2A52;--hero-ink:#FFFFFF;--hero-kicker:#8ED0FF;
+  --new-bg:#D8F4E9;--new-ink:#06684B;--old-bg:#FFEFC7;--old-ink:#7A5100;
+  --radius:14px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0A1220;--surface:#121D31;--ink:#E7EEF8;--muted:#9AA9C0;--line:#24344F;
+    --accent:#7FAEFF;--accent-soft:#1B2C4C;--hero:#0B1D3A;
+    --new-bg:#0F3B2E;--new-ink:#7FE3BE;--old-bg:#3F3010;--old-ink:#F0C466;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.6 var(--font)}
+[hidden]{display:none!important}
+.wrap{width:min(1180px,100% - 2rem);margin-inline:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
 
-#myUL {
-  list-style-type: none;
+/* hero */
+.hero{background:var(--hero);color:var(--hero-ink);padding:clamp(1.75rem,5vw,3.5rem) 0 clamp(1.5rem,4vw,2.5rem);
+  background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:28px 28px}
+.kicker{margin:0 0 .5rem;color:var(--hero-kicker);font-size:.9rem;font-weight:600}
+.hero h1{margin:0;font-size:clamp(1.9rem,5.6vw,3.4rem);line-height:1.08;letter-spacing:-.02em;font-weight:800;max-width:18ch}
+.lead{margin:.9rem 0 1.4rem;max-width:56ch;font-size:clamp(1rem,2.4vw,1.15rem);color:rgba(255,255,255,.82)}
+.search{display:block;max-width:640px}
+.search input{width:100%;height:52px;padding:0 1.1rem;border:2px solid transparent;border-radius:12px;
+  background:#fff;color:#0F1E33;font:inherit;font-size:1rem}
+.search input::placeholder{color:#6A7A90}
+.search input:focus-visible{outline:3px solid var(--hero-kicker);outline-offset:2px}
+
+/* layout */
+.layout{display:grid;grid-template-columns:1fr;gap:0;padding-bottom:3rem}
+.toc{position:sticky;top:0;z-index:20;display:flex;gap:.5rem;overflow-x:auto;padding:.65rem 1rem;margin:0 -1rem 1rem;
+  background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.toc a{flex:none;display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .8rem;min-height:40px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.9rem;font-weight:600;white-space:nowrap}
+.toc a span{font-size:.75rem;font-weight:700;color:var(--muted)}
+.toc a.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.toc a.on span{color:rgba(255,255,255,.85)}
+main section{scroll-margin-top:72px;margin-bottom:2rem}
+main h2{margin:1.25rem 0 .8rem;padding-left:.75rem;border-left:5px solid var(--accent);font-size:clamp(1.25rem,3.4vw,1.6rem);line-height:1.25;letter-spacing:-.01em}
+
+@media (min-width:900px){
+  .layout{grid-template-columns:270px minmax(0,1fr);gap:2.5rem;padding-top:1.75rem}
+  .toc{top:1.25rem;align-self:start;flex-direction:column;gap:.3rem;overflow:visible;margin:0;padding:0;border:0;background:none;max-height:calc(100vh - 2.5rem);overflow-y:auto}
+  .toc a{display:flex;justify-content:space-between;border-radius:10px;background:transparent;border:1px solid transparent;white-space:normal;padding:.55rem .75rem}
+  .toc a:hover{background:var(--surface);border-color:var(--line)}
+  main section{scroll-margin-top:20px}
+  main h2:first-child{margin-top:0}
 }
 
-#myUL {
-  margin: 0;
-  padding: 0;
+/* groups */
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:0 0 .7rem;overflow:hidden}
+.grp summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:.7rem;min-height:52px;padding:.7rem 1rem;font-weight:700;font-size:1.02rem;-webkit-user-select:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary::before{content:"";flex:none;width:.55rem;height:.55rem;border-right:2.5px solid var(--accent);border-bottom:2.5px solid var(--accent);transform:rotate(-45deg);transition:transform .15s}
+.grp[open] summary::before{transform:rotate(45deg)}
+.grp summary:hover{background:var(--accent-soft)}
+.gt{flex:1}
+.n{flex:none;min-width:1.9rem;text-align:center;padding:.1rem .55rem;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:.8rem;font-weight:700}
+ul.docs,ul.tools{margin:0;padding:0;list-style:none}
+ul.docs li{padding:.8rem 1rem;border-top:1px solid var(--line);overflow-wrap:anywhere}
+ul.docs li.is-old{opacity:.78}
+ul.docs a{color:var(--accent);text-underline-offset:3px;text-decoration-thickness:1px}
+ul.docs a:hover{text-decoration-thickness:2px}
+.pill{display:inline-block;margin-right:.5rem;padding:.05rem .55rem;border-radius:999px;font-style:normal;font-size:.72rem;font-weight:700;vertical-align:.1em}
+.p-new{background:var(--new-bg);color:var(--new-ink)}
+.p-old{background:var(--old-bg);color:var(--old-ink)}
+ul.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.6rem;padding:.9rem 1rem 1rem;border-top:1px solid var(--line)}
+a.tool{display:flex;flex-direction:column;gap:.1rem;height:100%;padding:.7rem .85rem;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none;background:var(--bg)}
+a.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
+a.tool b{font-weight:700;overflow-wrap:anywhere}
+a.tool small{color:var(--muted);font-size:.8rem;overflow-wrap:anywhere}
+#empty{padding:1.5rem;text-align:center;color:var(--muted)}
+.foot{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+@media (max-width:480px){
+  .grp summary{padding:.6rem .85rem}
+  ul.docs li{padding:.75rem .85rem}
+  ul.tools{grid-template-columns:1fr 1fr;padding:.75rem}
 }
+@media print{.toc,.search,.hero{display:none}.grp{break-inside:avoid}details:not([open])>ul{display:block}}
 
-.caret {
-  cursor: pointer;
-  -webkit-user-select: none; /* Safari 3.1+ */
-  -moz-user-select: none; /* Firefox 2+ */
-  -ms-user-select: none; /* IE 10+ */
-  user-select: none;
-}
+.hero h1.logo{max-width:630px;margin:0}
+.logo img{display:block;width:100%;height:auto;border-radius:16px;border:3px solid rgba(255,255,255,.9)}
 
-.caret::before {
-  content: "\276F";
-  color: green;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-.caret-down::before {
-  -ms-transform: rotate(90deg); /* IE 9 */
-  -webkit-transform: rotate(90deg); /* Safari */'
-  transform: rotate(90deg);  
-}
-
-.nested {
-  display: none;
-}
-
-.active {
-  display: block;
-}
-body {
-  font-family: Arial, sans-serif;
-}
 </style>
 </head>
 <body>
-<img src="header.png" alt=""> 
-	
-<h2>Нормативні документи</h2>
-
-<ul id="myUL">
-  <li><span class="caret">Закони України</span>
-
-<ul class="nested">
-<li>Закон України &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/2145-19">Про освіту</a>&rdquo; (від 05.09.2017 № 2145-VIII)</li>
-
-<li>Закон України &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/463-20">Про повну загальну середню освіту</a>&rdquo; (редакція від 16.01.2020)</li>
-
-<li>Закон України &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/2704-19#Text" rel="noopener noreferrer" target="_blank">Про забезпечення функціонування української мови як державної</a>&ldquo;</li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Постанови Кабінету Міністрів України</span>
-
-<ul class="nested">
-<li>Постанова Кабінету Міністрів України від 21 серпня 2019 р. № 800 &ldquo;<a href="http://it.moippo.mk.ua/wp-content/uploads/2019/08/Порядок-підвищення-кваліфікації.doc">Про порядок підвищення кваліфікації педагогічних і науково-педагогічних працівників&rdquo;</a></li>
-
-<li><a href="https://www.schoollife.org.ua/polozhennya-pro-sertyfikatsiyu-pedagogichnyh-pratsivnykiv/">Положення про сертифікацію педагогічних працівників</a> від 27 грудня 2018 р. № 1190</li>
-
-<li>Постанова Кабінету Міністрів України &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/1392-2011-%D0%BF#Text">Про затвердження Державного стандарту базової і повної загальної середньої освіти</a>&rdquo; (від 23 листопада 2011 р. № 1392)</li>
-
-<li>Постанова Кабінету Міністрів України &ldquo;<a href="https://www.kmu.gov.ua/npas/pro-deyaki-pitannya-derzhavnih-standartiv-povnoyi-zagalnoyi-serednoyi-osviti-i300920-898">Про деякі питання державних стандартів повної загальної середньої освіти</a>&rdquo; (від 30 вересня 2020 р. № 898)</li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Накази і листи МОНУ</span>
-
-<ul class="nested">
-<li>Наказ МОНУ № 455 від 20.12.1993&nbsp; (редакція від 26.04.2000 № 73) &ldquo;<a href="https://zakon3.rada.gov.ua/laws/show/z0121-94">Типові правила внутрішнього розпорядку для працівників державних навчально-виховних закладів України</a>&ldquo;</li>
-
-<li>Наказ МОНУ № 601 від 20.07.2004&nbsp; &ldquo;<a href="http://zakon2.rada.gov.ua/laws/show/z1121-04" rel="noopener noreferrer" target="_blank">Положення про навчальні кабінети загальноосвітніх навчальних закладів</a>&ldquo;.</li>
-
-<li>Наказ МОН №1205 від 06 грудня 2010 року &ldquo;<a href="http://osvita.ua/legislation/Ser_osv/12914/" rel="noopener noreferrer" target="_blank">Про затвердження Типових штатних нормативів загальноосвітніх навчальних закладів. Зареєстровано в Міністерстві юстиції України 22 грудня 2010 року за №1308/18603</a>&ldquo;.</li>
-
-<li>Наказ МОНМСУ № 1060 від 01.10.2012&nbsp; &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/z1695-12">Про затвердження Положення про електронні освітні ресурси</a>&ldquo;.</li>
-
-<li>Наказ МОНУ № 903 від  02.12.2004&nbsp; &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/z0044-05#Text">Про затвердження Правил використання комп&rsquo;ютерних програм у навчальних закладах </a>&ldquo;.</li>
-
-<li>Лист МОНУ  №1/11-1927 від 06.05.2004&nbsp; &ldquo;<a href="https://1drv.ms/w/s!AoXakQgXHM50meJbgjGCPUfrEEWW_Q?e=R1KjLv">Методичні рекомендації щодо облаштування і використання кабінету інформатики та інформаційно-комунікаційних технологій загальноосвітніх навчальних закладів</a>&ldquo;.</li>
-
-<li>Наказ МОНУ № 614 від 21.06.2010&nbsp; &ldquo;<a href="https://zakon.rada.gov.ua/rada/show/v0614290-10#Text">Вимоги до специфікації навчальних комп&rsquo;ютерних комплексів для оснащення кабінетів інформатики та інформаційно-комунікаційних технологій навчання системи загальної середньої освіти</a>&ldquo;</li>
-
-<li>Наказ МОНУ № 128 від 20.02.2002 &ldquo;<a href="http://it.moippo.mk.ua/wp-content/uploads/2019/07/MON_128.doc">Про затвердження Нормативів наповнюваності груп дошкільних навчальних закладів (ясел-садків) компенсуючого типу, класів спеціальних загальноосвітніх шкіл (шкіл-інтернатів), груп подовженого дня і виховних груп загальноосвітніх навчальнихзакладів усіх типів та Порядку поділу класів на групи при вивченні окремих предметів у загальноосвітніх навчальних закладах</a>&ldquo;</li>
-
-<li>Наказ МОНУ № 1440 від 02.11.2017 &ldquo;<a href="https://zakon.rada.gov.ua/laws/show/z0055-18#n14">Про затвердження Типового переліку комп&rsquo;ютерного обладнання для закладів дошкільної, загальної середньої та професійної (професійно-технічної) освіти</a>&ldquo;</li>
-
-<li>Наказ МОНУ № 752 від 30.05.2019 &ldquo;<a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE33580.html">Про внесення змін до наказу Міністерства освіти і науки України від 02 листопада 2017 року № 1440</a>&ldquo;</li>
-
-<li><a href="https://zakon.rada.gov.ua/laws/show/z0100-18#Text" rel="noopener noreferrer" target="_blank">Наказ МОНУ № 1669 від 26.12.2017 &ldquo;Про затвердження Положення про організацію роботи з охорони праці та безпеки життєдіяльності учасників освітнього процесу в установах і закладах освіти&rdquo;</a></li>
-
-<li><a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE31960.html">Наказ МСПУ № 207 від 14.02.2018 &nbsp;&ldquo;Про затвердження Вимог щодо безпеки та захисту здоров&rsquo;я працівників під час роботи з екранними пристроями&rdquo;</a></li>
-
-<li><a href="https://www.schoollife.org.ua/pro-zatverdzhennya-instruktsiyi-z-dilovodstva-u-zakladah-zagalnoyi-serednoyi-osvity/">Інструкція з діловодства у закладах загальної середньої освіти</a></li>
-
-<li><a href="https://www.pedrada.com.ua/article/1298-qqq-17-m5-17-05-2017-chi-vse-klasno-u-klasnomu-jurnal?fbclid=IwAR13mKKDFnTK8lQ-pISzgSlCn7a3xmRRw43O9Q1RWG2tcT5sGLSBVJI2wXA#_=_">Інструкції та вимоги до ведення класних журналів</a></li>
-
-<li><a href="https://osvita.ua/legislation/Ser_osv/66556/">Лист МОН № 1/9-683 від 04.11.19 року &ldquo;Щодо підвищення кваліфікації та атестації педагогічних працівників&rdquo;</a> (мінімальні вимоги щодо обсягу (кількості годин) підвищення кваліфікації педагогічних працівників)</li>
-
-<li><a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE35394.html?fbclid=IwAR1YTQ2WsMjVVuHP_weQOaiBpSizUuQUhRLCZIJhLyHq9ekp7ZYFFjlGwd0">Наказ МОЗ України &ldquo;Про затвердження Санітарного регламенту для закладів загальної середньої освіти&rdquo;</a> (№ 2205 від 25.09.2020, зареєстровано в МЮУ 10.11.2020 за № 1111/35394)</li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Перелік документів кабінету інформатики</span>
-
-<ul class="nested">
-
-<li>Лист МОН України № 1/9-497 від 17.07.2013 &ldquo;<a href="https://drive.google.com/file/d/0B_9y-vB0qL9_MlNLWjJBVllHcU0/view?usp=sharing" rel="noopener noreferrer" target="_blank">Про використання Інструктивно-методичних матеріалів з питань створення безпечних умов для роботи у кабінетах інформатики та інформаційно-комунікаційних технологій загальноосвітніх навчальних закладів</a>&ldquo;.</li>
-
-<li><a href="http://kabinetiks.blogspot.com/2013/07/blog-post_2.html">Акт введення в експлуатацію</a> (оформлюють під час створення чи переобладнання кабінету до складу комісії входять представники відповідних органів державного нагляду&nbsp;&mdash; охорони праці, пожежної безпеки та ін.)</li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_Z3Y2Nkt1REdWeVU/view?usp=sharing" rel="noopener noreferrer" target="_blank">Акт дозволу на проведення занять, який оформлюється щорічно на початку навчального року </a>(оформлюють перед початком нового навчального року)</li>
-
-<li>Акт перевірки заземлення.</li>
-
-<li>Схеми ЛОМ класу, школи</li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_cVRrSGJzOEVxQjg/view?usp=sharing" rel="noopener noreferrer" target="_blank">Журнал проведення інструктажу з питань охорони праці.</a></li>
-
-<li>Інструкції щодо роботи учнів на робочому місці (готується ґрунтуючись на &laquo;Положенні про кабінет обчислювальної техніки&raquo; та виписки з СанПіН).</li>
-
-<li>Інструкція з питань охорони праці (готується ґрунтуючись на &laquo;Правилах безпеки під час навчання в кабінетах інформатики ЗНЗ&raquo;).</li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_UWNUYkxTRVB3WlU/view?usp=sharing" rel="noopener noreferrer" target="_blank">Інструкція з протипожежної безпеки та гасіння пожежі.</a></li>
-
-<li>Копія наказу керівника навчального закладу щодо призначення завідуючого кабінетом.</li>
-
-<li>Посадова інструкція вчителя інформатики</li>
-
-<li><a href="http://tokmakmvo.osvita.zp.ua/Informat/zrazok/11_inventarna-kniga.doc">Інвентарна книга кабінету</a>.</li>
-
-<li>План евакуації з кабінету у аварійних ситуаціях.</li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_Yk9PbGRYX1JVQmM/view?usp=sharing" rel="noopener noreferrer" target="_blank">Положення про кабінет інформатики та інформаційно-комунікаційних технологій навчання загальноосвітніх навчальних закладів </a>(наказ МОН від 20.05.2004 № 407)</li>
-
-<li><a href="http://it.moippo.mk.ua/wp-content/uploads/2019/07/сан_паспорт.doc">Санітарний паспорт кабінету</a>.</li>
-
-<li><a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE35394.html?fbclid=IwAR1YTQ2WsMjVVuHP_weQOaiBpSizUuQUhRLCZIJhLyHq9ekp7ZYFFjlGwd0">Санітарні правила та норми при проведенні занять із комп&rsquo;ютерною технікою</a> (Наказ МОЗ України &ldquo;Про затвердження Санітарного регламенту для закладів загальної середньої освіти&rdquo;)</li>
-
-<li>Список учнів з порушенням зору (підготовлений медичним працівником школи).</li>
-
-<li>Опис вправ для зняття зорової та фізичної втоми.</li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_V2pGUUdBN0NUVFE/view?usp=sharing" rel="noopener noreferrer" target="_blank">Графік роботи кабінету.</a></li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_VnpxcVA3UHAwZGM/view?usp=sharing" rel="noopener noreferrer" target="_blank">План роботи в кабінеті на поточний навчальний рік.</a></li>
-
-<li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_VTh0ODRwMGM5ZWs/view?usp=sharing" rel="noopener noreferrer" target="_blank">Паспорт кабінету </a>(У зв&rsquo;язку з втратою чинності ДСанПіН 5.5.6.009-98 цілком обґрунтованим буде оформлення паспорта кабінету інформатики за формою, що подана в додатку 1 до Положення про навчальні кабінети з природничо-математичних предметів загальноосвітніх навчальних закладів)</li>
-
-<li><a href="https://it.moippo.mk.ua/metodychni-rekomendatsii/">Методичні рекомендації щодо викладання інформатики у поточному навчальному році.</a></li>
-
-<li><a href="https://zakon.rada.gov.ua/laws/show/1392-2011-%D0%BF#Text">Про затвердження Державного стандарту базової і повної загальної середньої освіти</a></li>
-
-<li><a href="http://files.sajt-vchitelya-informatiki33.webnode.com.ua/200000035-02f3303ee9/%D0%9A%D0%BD%D0%B8%D0%B3%D0%B0%20%D0%BE%D0%B1%D0%BB%D1%96%D0%BA%D1%83%20%D1%81%D1%82%D0%B0%D0%BD%D1%83%20%D0%BD%D0%B0%D0%B2%D1%87%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%B8%D1%87%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B7%D0%B0%D0%B1%D0%B5%D0%B7%D0%BF%D0%B5%D1%87%D0%B5%D0%BD%D0%BD%D1%8F%20%D0%BA%D0%B0%D0%B1%D1%96%D0%BD%D0%B5%D1%82%D1%83%20%D1%96%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82%D0%B8%D0%BA%D0%B8%20.doc">Книга обліку стану навчально-методичного забезпечення кабінету інформатики</a> (Додаток до п. 5.3 розділу Положення про кабінет інформатики та інформаційно-комунікаційних технологій навчання ЗНЗ)</li>
-
-<li><a href="http://mmk-informatika.ck.sch.in.ua/Files/downloads/%D0%9A%D0%B0%D1%80%D1%82%D0%BE%D1%82%D0%B5%D0%BA%D0%B0%20%D0%B5%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%BD%D0%B8%D1%85%20%D0%B7%D0%B0%D1%81%D0%BE%D0%B1%D1%96%D0%B2%20%D0%BD%D0%B0%D0%B2%D1%87%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D1%80%D0%B8%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%BD%D1%8F%20(%D0%95%D0%97%D0%9D%D0%9F).doc">Картотека електронних засобів навчального призначення</a> (ЕЗНП)</li>
-</ul>
-
-<h2>Навчальні програми</h2>
-<ul id="myUL">
-  <li><span class="caret">Молодша школа</span>
-
-<ul class="nested">
-<li><u><a href="http://surl.li/dkqx" target="_blank" rel="noopener" data-cke-saved-href="http://surl.li/dkqx">Типові освітні програми&nbsp; для 1, 2 класу НУШ</a> (авт. Р.Б. Шиян), (авт. О.Я. Савченко)&nbsp;</u>&nbsp;</li>
-<li>Типова освітня програма&nbsp; для 3,4&nbsp; класу НУШ: <a href="http://surl.li/acexs" target="_blank" rel="noopener" data-cke-saved-href="http://surl.li/acexs">авт. О.Я. Савченко</a>&nbsp;</li>
-<li>Типова освітня програма&nbsp; для 3,4&nbsp; класу НУШ<strong><em>: </em></strong><u><a href="http://surl.li/acexu" target="_blank" rel="noopener" data-cke-saved-href="http://surl.li/acexu">авт. Р.Б. Шиян</a></u></li>
-</ul>
-<ul id="myUL">
-  <li><span class="caret">Модельні програми 5-6 клас</span>
-  <ul class="nested">
-<li><a href="https://drive.google.com/file/d/11eaTWGqRcI5SxsO35VFrTV3ipNaUu5X6/view?usp=sharing" rel="nofollow" data-cke-saved-href="https://drive.google.com/file/d/11eaTWGqRcI5SxsO35VFrTV3ipNaUu5X6/view?usp=sharing">Модельна навчальна програма. &laquo;Інформатика. 5-6 клас&raquo;&nbsp;для закладів загальної середньої освіти (авт. Морзе Н. В., Барна О. В.).</a></li>
-<li><a href="https://drive.google.com/file/d/1tmA53rTR7bsQLtduONUKceE18wkLFzRZ/view?usp=sharing" rel="nofollow" data-cke-saved-href="https://drive.google.com/file/d/1tmA53rTR7bsQLtduONUKceE18wkLFzRZ/view?usp=sharing">Модельна навчальна програма. &laquo;Інформатика. 5-6 клас&raquo; для закладів загальної середньої освіти (авт.&nbsp; Ривкінд Й. Я., Лисенко Т. І., Чернікова Л. А., Шакотько В. В.).</a></li>
-<li><a href="https://drive.google.com/file/d/1ZKZUrVH6lGjvpKq_tJglAIDU-vcdETLY/view?usp=sharing" rel="nofollow" data-cke-saved-href="https://drive.google.com/file/d/1ZKZUrVH6lGjvpKq_tJglAIDU-vcdETLY/view?usp=sharing">Модельна навчальна програма. &laquo;Інформатика. 5-6 клас&raquo; для закладів загальної середньої освіти (авт.&nbsp; Пасічник О. В., Чернікова Л. А.).</a></li>
-<li><a href="https://drive.google.com/file/d/1Y1xKl0ZD2yrJO2bug5X85GZL80MTJfLx/view?usp=sharing" rel="nofollow" data-cke-saved-href="https://drive.google.com/file/d/1Y1xKl0ZD2yrJO2bug5X85GZL80MTJfLx/view?usp=sharing">Модельна навчальна програма. &laquo;Інформатика. 5-6 клас&raquo; для закладів загальної середньої освіти (авт. Завадський І. О., Коршунова О. В.,&nbsp; Лапінський В. В.).</a></li>
-<li><a href="https://drive.google.com/file/d/11_xkaD5J_ozoPfFHKiGD2cvu5aMDrLqg/view?usp=sharing" rel="nofollow" data-cke-saved-href="https://drive.google.com/file/d/11_xkaD5J_ozoPfFHKiGD2cvu5aMDrLqg/view?usp=sharing">Модельна навчальна програма &laquo;Інформатика. 5-6 класи&raquo; для закладів загальної середньої освіти (авт. Радченко С.&nbsp;С., Боровцова Є.&nbsp;В.).</a></li>
-<li><a href="https://drive.google.com/file/d/1NUm7sfPU-YwIPrhaCqI4Q7Q78MZwCUFi/view?usp=sharing" target="_blank" rel="noopener noreferrer" data-cke-saved-href="https://drive.google.com/file/d/1NUm7sfPU-YwIPrhaCqI4Q7Q78MZwCUFi/view?usp=sharing">Модельна навчальна програма. &laquo;Інформатика. 5-6 клас&raquo; для закладів загальної середньої освіти (авт. Козак Л. З., Ворожбит А. В.)</a></li>
-</ul>
-<ul id="myUL">
-  <li><span class="caret">Основна школа</span>
-  <ul class="nested">
-<li><span style="text-decoration: underline;"><a class="fr-file js-added-span" href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-5-9-klas/onovlennya-12-2017/8-informatika.docx" target="_blank" rel="noopener noreferrer">Інформатика для учнів 5-9 класів, які вивчали інформатику у 2-4 класах</a></span></li>
-<li><span style="text-decoration: underline;"><a class="fr-file js-added-span" href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-5-9-klas/informatika.pdf" target="_blank" rel="noopener noreferrer">Інформатика</a>.</span>&nbsp;Навчальна програма для 8-9 класів для загальноосвітніх навчальних закладів (класів) з поглибленим вивченням окремих предметів (за новим Державним стандартом базової і повної загальної середньої освіти</li>
-</ul>
-<ul id="myUL">
-  <li><span class="caret">Старша школа</span>
-  <ul class="nested">
-<li><span style="text-decoration: underline;"><a class="fr-file" href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-10-11-klas/2018-2019/informatika-standart-10-11.docx" target="_blank" rel="noopener">Рівень стандарту</a></span></li>
-<li><span style="text-decoration: underline;"><a href="https://drive.google.com/open?id=1iCTQS2xFU3X_ucQYpUadeywCzR2CMKpC" target="_blank" rel="noopener">Програми та грифи курсів за вибором від Cisco</a></span></li>
-<li><span style="text-decoration: underline;"><a href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-10-11-klas/2018-2019/01/10-11-profilniy-riven.docx" target="_blank" rel="noopener">Профільний рівень</a></span></li>
-</ul>
-<h2>Перелік підручників та навчальних посібників</h2>
-<ul id="myUL">
-  <li><span class="caret">Молодша школа</span>
-
-<ul class="nested">
-<li><a href="https://goo.gl/Zgfw1C">Перелік навчальних програм, підручників та навчально-методичних посібників, рекомендованих МОН України для використання у початкових класах закладів загальної середньої освіти з навчанням українською мовою</a></li>
-</ul>
-<ul id="myUL">
-  <li><span class="caret">Основна та старша школа</span>
-
-<ul class="nested">
-<li><a href="https://goo.gl/93BNko">Перелік навчальних програм, підручників та навчально-методичних посібників, рекомендованих МОН України для використання в 5-11 класах закладів загальної середньої освіти з навчанням українською мовою</a></li>
-</ul>
-
-<h2>Безпека та охорона праці</h2>
-<ul id="myUL">
-  <li><span class="caret">Правила безпеки</span>
-
-<ul class="nested">
-<li><a href="https://zakon2.rada.gov.ua/laws/show/z1229-16">Правила пожежної безпеки для закладів, установ і організацій системи освіти України</a>&rdquo;</li>
-<li><a href="http://forca.com.ua/knigi/pravila/pravila-bezpechnoi-ekspluatacii-elektroustanovok-spozhivachiv.html">Правила безпечної експлуатації електроустановок споживачів</a>&rdquo; (ДНАОП 0.00-1.21-98)</li>
-<li><a href="https://zakon.rada.gov.ua/laws/show/z0620-04">Правила безпеки під час навчання в кабінетах інформатики навчальних закладів системи загальної середньої освіти</a>&rdquo;</li>
-<li><a href="https://zakon.rada.gov.ua/laws/show/z1093-01">Положення про порядок розслідування нещасних випадків, що сталися під час навчально-виховного процесу в навчальних закладах</a>&ldquo;</li>
-</ul>
-<ul id="myUL">
-  <li><span class="caret">Інструктажі</span>
-
-<ul class="nested">
-<li><a href="https://studfiles.net/preview/5192333/">Програма первинного інструктажу з питань охорони праці з учнями в кабінеті</a></li>
-<li><a href="http://www.osvitacv.com/index.php/2011-01-11-15-03-48/health/miscellaneous/24894-2013-04-03-10-24-14">Порядок проведення та реєстрації інструктажів з безпеки життєдіяльності</a></li>
-<li><a href="http://osvita.ua/legislation/Ser_osv/41707/" rel="noopener noreferrer" target="_blank">Про використання Методичних матеріалів щодо організації навчання і перевірки знань, проведення інструктажів з питань охорони праці, безпеки життєдіяльності</a>&ldquo;.</li>
-</ul>
-
-<h2>Програмне забезпечення</h2>
-<ul id="myUL">
-  <li><span class="caret">Початкова школа</span>
-
-<ul class="nested">
-	<li><a href="https://gcompris.net/index-uk.html" note-status="expanded" tooltip="&lt;b&gt;GCompris&lt;/b&gt;&lt;br/&gt;https://gcompris.net/index-uk.html" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/466/367/favicon/net.gcompris.favicon.png" width="16" /> GCompris</a></li>
-	<li><a href="http://www.schoolsplay.org/" note-status="expanded" tooltip="&lt;b&gt;Childsplay&lt;/b&gt;&lt;br/&gt;http://www.schoolsplay.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/000/001/favicon/default.png" width="16" /> Childsplay </a></li>
-	<li><a href="https://www.kidlo.com/games/&amp;hl=uk&amp;gl=US" note-status="expanded" tooltip="&lt;b&gt;Kidlo&lt;/b&gt;&lt;br/&gt;https://www.kidlo.com/games/&amp;hl=uk&amp;gl=US" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/889/504/favicon/com.google.play.favicon.png" width="16" /> Kidlo <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Офісні застосунки</span>
-
-<ul class="nested">
-	<li><a href="https://www.wps.com/" note-status="expanded" tooltip="&lt;b&gt;WPS Office&lt;/b&gt;&lt;br/&gt;https://www.wps.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/270/117/favicon/com.wps.favicon.png" width="16" /> WPS Office</a></li>
-	<li><a href="https://uk.libreoffice.org/" note-status="expanded" tooltip="&lt;b&gt;LibreOffice Suite&lt;/b&gt;&lt;br/&gt;https://uk.libreoffice.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/007/864/830/favicon/org.libreoffice.uk.favicon.png" width="16" /> LibreOffice Suite</a></li>
-	<li><a href="https://www.freeoffice.com/en/" note-status="expanded" tooltip="&lt;b&gt;SoftMaker FreeOffice&lt;/b&gt;&lt;br/&gt;https://www.freeoffice.com/en/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/652/057/favicon/com.freeoffice.favicon.png" width="16" /> SoftMaker FreeOffice</a></li>
-	<li><a href="https://docs.google.com/" note-status="expanded" tooltip="&lt;b&gt;Google Docs&lt;/b&gt;&lt;br/&gt;https://docs.google.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/000/195/favicon/com.google.favicon.png" width="16" /> Google Docs <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://office.microsoft.com/en-us/web-apps/" note-status="expanded" tooltip="&lt;b&gt;Free Microsoft Office Online&lt;/b&gt;&lt;br/&gt;https://office.microsoft.com/en-us/web-apps/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/002/828/favicon/com.microsoft.office.favicon.png" width="16" /> Free Microsoft Office Online<img alt="" height="16" width="16" src="img/im.png" /></a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Вебпереглядачі</span>
-
-<ul class="nested">
-	<li><a href="https://www.mozilla.org/firefox" note-status="expanded" tooltip="&lt;b&gt;Firefox&lt;/b&gt;&lt;br/&gt;https://www.mozilla.org/firefox" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/000/486/favicon/org.mozilla.favicon.png" width="16" /> Firefox</a></li>
-	<li><a href="https://www.google.com/intl/uk/chrome/" note-status="expanded" tooltip="&lt;b&gt;Google Chrome&lt;/b&gt;&lt;br/&gt;https://www.google.com/intl/uk/chrome/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/005/016/favicon/com.google.favicon.png" width="16" /> Google Chrome</a></li>
-	<li><a href="https://www.slimjet.com/" note-status="expanded" tooltip="&lt;b&gt;SlimJet&lt;/b&gt;&lt;br/&gt;https://www.slimjet.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/090/579/favicon/com.slimjet.favicon.png" width="16" /> SlimJet</a></li>
-	<li><a href="https://brave.com/" note-status="expanded" tooltip="&lt;b&gt;Brave&lt;/b&gt;&lt;br/&gt;https://brave.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/001/565/208/favicon/com.brave.favicon.png" width="16" /> Brave</a></li>
-	<li><a href="https://vivaldi.com/" note-status="expanded" tooltip="&lt;b&gt;Vivaldi Browser&lt;/b&gt;&lt;br/&gt;https://vivaldi.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/286/843/favicon/com.vivaldi.favicon.png" width="16" /> Vivaldi Browser</a></li>
-	<li><a href="https://opera.com/" note-status="expanded" tooltip="&lt;b&gt;Opera&lt;/b&gt;&lt;br/&gt;https://opera.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/002/119/favicon/com.opera.favicon.png" width="16" /> Opera</a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Растрова графіка</span>
-
-<ul class="nested">
-	<li><a href="https://www.gimp.org/" note-status="expanded" tooltip="&lt;b&gt;GIMP&lt;/b&gt;&lt;br/&gt;https://www.gimp.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/022/188/favicon/org.gimp.favicon.png" width="16" /> GIMP</a></li>
-	<li><a href="https://www.getpaint.net/" note-status="expanded" tooltip="&lt;b&gt;Paint.NET&lt;/b&gt;&lt;br/&gt;https://www.getpaint.net/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/052/362/favicon/net.getpaint.favicon.png" width="16" /> Paint.NET </a></li>
-	<li><a href="https://www.photopea.com/" note-status="expanded" tooltip="&lt;b&gt;Photopea&lt;/b&gt;&lt;br/&gt;https://www.photopea.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/269/096/favicon/com.photopea.favicon.png" width="16" /> Photopea <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://pixlr.com/" note-status="expanded" tooltip="&lt;b&gt;Pixlr&lt;/b&gt;&lt;br/&gt;https://pixlr.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/001/411/favicon/com.pixlr.favicon.png" width="16" /> Pixlr <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://www.adobe.com/express/feature/image/editor" note-status="expanded" tooltip="&lt;b&gt;Adobe Online Photo Editor&lt;/b&gt;&lt;br/&gt;https://www.adobe.com/express/feature/image/editor" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/000/311/favicon/com.adobe.favicon.png" width="16" /> Adobe Online Photo Editor <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://www.pizap.com/" note-status="expanded" tooltip="&lt;b&gt;piZap&lt;/b&gt;&lt;br/&gt;https://www.pizap.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/016/004/favicon/com.pizap.favicon.png" width="16" /> piZap </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Векторна графіка</a></span>
-
-<ul class="nested">
-	<li><a href="https://inkscape.org/" note-status="expanded" tooltip="&lt;b&gt;Inkscape&lt;/b&gt;&lt;br/&gt;https://inkscape.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/043/760/favicon/org.inkscape.favicon.png" width="16" /> Inkscape </a></li>
-	<li><a href="https://www.libreoffice.org/discover/draw/" note-status="expanded" tooltip="&lt;b&gt;Draw | LibreOffice&lt;/b&gt;&lt;br/&gt;https://www.libreoffice.org/discover/draw/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/066/227/favicon/org.libreoffice.favicon.png" width="16" /> Draw | LibreOffice </a></li>
-	<li><a href="http://designer.io/" note-status="expanded" tooltip="&lt;b&gt;Gravit Designer&lt;/b&gt;&lt;br/&gt;http://designer.io/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/002/853/159/favicon/io.designer.favicon.png" width="16" /> Gravit Designer <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://vectr.com/" note-status="expanded" tooltip="&lt;b&gt;Vectr&lt;/b&gt;&lt;br/&gt;https://vectr.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/001/301/884/favicon/com.vectr.favicon.png" width="16" /> Vectr <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://svg-edit.github.io/svgedit/" note-status="expanded" tooltip="&lt;b&gt;SVGedit&lt;/b&gt;&lt;br/&gt;https://svg-edit.github.io/svgedit/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/001/778/378/favicon/io.github.svg-edit.favicon.png" width="16" /> SVGedit <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Комп&#39;ютерна анімація</span>
-
-<ul class="nested">
-	<li><a href="https://www.synfig.org/" note-status="expanded" tooltip="&lt;b&gt;Synfig&lt;/b&gt;&lt;br/&gt;https://www.synfig.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/159/096/favicon/org.synfig.favicon.png" width="16" /> Synfig </a></li>
-	<li><a href="https://opentoonz.github.io/e/" note-status="expanded" tooltip="&lt;b&gt;OpenToonz&lt;/b&gt;&lt;br/&gt;https://opentoonz.github.io/e/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/001/707/992/favicon/io.github.opentoonz.favicon.png" width="16" /> OpenToonz </a></li>
-	<li><a href="https://pencil2d.github.io/" note-status="expanded" tooltip="&lt;b&gt;Pencil2D&lt;/b&gt;&lt;br/&gt;https://pencil2d.github.io/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/002/813/772/favicon/io.github.pencil2d.favicon.png" width="16" /> Pencil2D </a></li>
-	<li><a href="http://animeeffects.org/en/" note-status="expanded" tooltip="&lt;b&gt;AnimeEffects&lt;/b&gt;&lt;br/&gt;http://animeeffects.org/en/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="http://www.animeeffects.org/favicon.ico" width="16" /> AnimeEffects </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Алгоритмізація</a></span>
-
-<ul class="nested">
-	<li><a href="https://smart-blocks.github.io/#/libros" note-status="expanded" tooltip="&lt;b&gt;Розумні блоки - Pilas Bloques&lt;/b&gt;&lt;br/&gt;https://smart-blocks.github.io/#/libros" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/007/864/821/favicon/io.github.smart-blocks.favicon.png" width="16" /> Розумні блоки - Pilas Bloques <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://gromko.github.io/svitlobot/" note-status="expanded" tooltip="&lt;b&gt;СвітлоБот 1.0&lt;/b&gt;&lt;br/&gt;https://gromko.github.io/svitlobot/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/228/764/favicon/io.github.favicon.png" width="16" /> СвітлоБот 1.0 <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="http://i4ds.github.io/CargoBot/?state=1" note-status="expanded" tooltip="&lt;b&gt;Cargo-Bot&lt;/b&gt;&lt;br/&gt;http://i4ds.github.io/CargoBot/?state=1" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/228/764/favicon/io.github.favicon.png" width="16" /> Cargo-Bot <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://runabase.com/" note-status="expanded" tooltip="&lt;b&gt;Runabase&lt;/b&gt;&lt;br/&gt;https://runabase.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/006/314/657/favicon/com.runabase.favicon.png" width="16" /> Runabase </a></li>
-	<li><a href="https://blockly.games/?lang=uk" note-status="expanded" tooltip="&lt;b&gt;Blockly Games&lt;/b&gt;&lt;br/&gt;https://blockly.games/?lang=uk" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/006/935/468/favicon/games.blockly.favicon.png" width="16" /> Blockly Games <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Основи програмування</span>
-
-<ul class="nested">
-	<li><a href="https://scratch.mit.edu/" note-status="expanded" tooltip="&lt;b&gt;Scratch&lt;/b&gt;&lt;br/&gt;https://scratch.mit.edu/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/052/368/favicon/edu.mit.scratch.favicon.png" width="16" /> Scratch <img alt="" height="16" width="16" src="img/im.png" /></a></li>
-	<li><a href="https://edublocks.org/" note-status="expanded" tooltip="&lt;b&gt;EduBlocks&lt;/b&gt;&lt;br/&gt;https://edublocks.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/003/771/015/favicon/org.edublocks.favicon.png" width="16" /> EduBlocks </a></li>
-	<li><a href="http://snap.berkeley.edu/" note-status="expanded" tooltip="&lt;b&gt;Snap!&lt;/b&gt;&lt;br/&gt;http://snap.berkeley.edu/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/466/743/favicon/edu.berkeley.snap.favicon.png" width="16" /> Snap! </a></li>
-	<li><a href="http://blockly.ru/index.html" note-status="expanded" tooltip="&lt;b&gt;Blockly&lt;/b&gt;&lt;br/&gt;http://blockly.ru/index.html" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/005/064/371/favicon/ru.blockly.favicon.png" width="16" /> Blockly </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Програмування - Python</a></span>
-
-<ul class="nested">
-	<li><a href="https://lightbot.com/" note-status="expanded" tooltip="&lt;b&gt;Thonny&lt;/b&gt;&lt;br/&gt;https://lightbot.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/374/807/favicon/com.lightbot.favicon.png" width="16" /> Thonny </a></li>
-	<li><a href="https://codewith.mu/" note-status="expanded" tooltip="&lt;b&gt;Code With Mu&lt;/b&gt;&lt;br/&gt;https://codewith.mu/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/005/157/039/favicon/mu.codewith.favicon.png" width="16" /> Code With Mu </a></li>
-	<li><a href="https://www.jetbrains.com/pycharm/" note-status="expanded" tooltip="&lt;b&gt;PyCharm&lt;/b&gt;&lt;br/&gt;https://www.jetbrains.com/pycharm/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/032/815/favicon/com.jetbrains.favicon.png" width="16" /> PyCharm </a></li>
-	<li><a href="https://docs.python.org/2/library/idle.html" note-status="expanded" tooltip="&lt;b&gt;IDLE&lt;/b&gt;&lt;br/&gt;https://docs.python.org/2/library/idle.html" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/002/050/favicon/org.python.docs.favicon.png" width="16" /> IDLE </a></li>
-	<li><a href="http://pythonide.blogspot.com/" note-status="expanded" tooltip="&lt;b&gt;SPE IDE - Stani's Python Editor&lt;/b&gt;&lt;br/&gt;http://pythonide.blogspot.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/002/220/225/favicon/com.blogspot.pythonide.favicon.png" width="16" /> SPE IDE - Stani&#39;s Python Editor </a></li>
-</ul>
-
-
-<ul id="myUL">
-  <li><span class="caret">Програмування - Pascal</span>
-
-<ul class="nested">
-	<li><a href="https://www.freepascal.org/" note-status="expanded" tooltip="&lt;b&gt;Free Pascal&lt;/b&gt;&lt;br/&gt;https://www.freepascal.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/086/144/favicon/org.freepascal.favicon.png" width="16" /> Free Pascal </a></li>
-	<li><a href="https://www.lazarus-ide.org/" note-status="expanded" tooltip="&lt;b&gt;Lazarus&lt;/b&gt;&lt;br/&gt;https://www.lazarus-ide.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/001/431/722/favicon/org.lazarus-ide.favicon.png" width="16" /> Lazarus </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Бази даних</span>
-
-<ul class="nested">
-	<li><a href="https://www.libreoffice.org/discover/base/" note-status="expanded" tooltip="&lt;b&gt;Base | LibreOffice&lt;/b&gt;&lt;br/&gt;https://www.libreoffice.org/discover/base/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/066/227/favicon/org.libreoffice.favicon.png" width="16" /> Base | LibreOffice </a></li>
-	<li><a href="https://www.valentina-db.com/ru/valentina-studio-overview" note-status="expanded" tooltip="&lt;b&gt;ValentinaDB Studio&lt;/b&gt;&lt;br/&gt;https://www.valentina-db.com/ru/valentina-studio-overview" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/477/282/favicon/com.valentina-db.favicon.png" width="16" /> ValentinaDB Studio </a></li>
-	<li><a href="https://quintadb.com/" note-status="expanded" tooltip="&lt;b&gt;QuintaDB&lt;/b&gt;&lt;br/&gt;https://quintadb.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/007/057/690/favicon/com.quintadb.favicon.png" width="16" /> QuintaDB </a></li>
-	<li><a href="https://runabase.com/" note-status="expanded" tooltip="&lt;b&gt;Runabase&lt;/b&gt;&lt;br/&gt;https://runabase.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/006/314/657/favicon/com.runabase.favicon.png" width="16" /> Runabase </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">3D-моделювання</span>
-
-<ul class="nested">
-	<li><a href="https://www.blender.org/" note-status="expanded" tooltip="&lt;b&gt;Blender&lt;/b&gt;&lt;br/&gt;https://www.blender.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/025/523/favicon/org.blender.favicon.png" width="16" /> Blender </a></li>
-	<li><a href="http://www.k-3d.org/" note-status="expanded" tooltip="&lt;b&gt;K-3D&lt;/b&gt;&lt;br/&gt;http://www.k-3d.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/492/247/favicon/org.k-3d.favicon.png" width="16" /> K-3D </a></li>
-	<li><a href="http://amabilis.com/" note-status="expanded" tooltip="&lt;b&gt;3D Crafter&lt;/b&gt;&lt;br/&gt;http://amabilis.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/085/621/favicon/com.amabilis.favicon.png" width="16" /> 3D Crafter </a></li>
-	<li><a href="https://www.rocket3f.com/" note-status="expanded" tooltip="&lt;b&gt;Rocket 3F&lt;/b&gt;&lt;br/&gt;https://www.rocket3f.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/003/490/926/favicon/com.rocket3f.favicon.png" width="16" /> Rocket 3F </a></li>
-	<li><a href="http://www.artofillusion.org/" note-status="expanded" tooltip="&lt;b&gt;Art of Illusion&lt;/b&gt;&lt;br/&gt;http://www.artofillusion.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/499/913/favicon/org.artofillusion.favicon.png" width="16" /> Art of Illusion </a></li>
-	<li><a href="https://www.tinkercad.com/" note-status="expanded" tooltip="&lt;b&gt;Tinkercad&lt;/b&gt;&lt;br/&gt;https://www.tinkercad.com/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/000/001/favicon/default.png" width="16" /> Tinkercad </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Програмування - Processing</span>
-
-<ul class="nested">
-	<li><a href="https://processing.org/" note-status="expanded" tooltip="&lt;b&gt;Processing&lt;/b&gt;&lt;br/&gt;https://processing.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/016/534/favicon/org.processing.favicon.png" width="16" /> Processing </a></li>
-	<li><a href="https://p5js.org/" note-status="expanded" tooltip="&lt;b&gt;p5.js&lt;/b&gt;&lt;br/&gt;https://p5js.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/273/085/favicon/org.p5js.favicon.png" width="16" /> p5.js </a></li>
-	<li><a href="https://py.processing.org/" note-status="expanded" tooltip="&lt;b&gt;PyProcessing&lt;/b&gt;&lt;br/&gt;https://py.processing.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/000/520/337/favicon/org.processing.py.favicon.png" width="16" /> PyProcessing </a></li>
-</ul>
-
-<ul id="myUL">
-  <li><span class="caret">Адміністрування класу</span>
-
-<ul class="nested">
-	<li><a href="https://veyon.io/" note-status="expanded" tooltip="&lt;b&gt;Veyon&lt;/b&gt;&lt;br/&gt;https://veyon.io/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="https://s3.amazonaws.com/topdesk/icons/iconfiles/004/284/924/favicon/io.veyon.favicon.png" width="16" /> Veyon </a></li>
-	<li><a href="http://www.epoptes.org/" note-status="expanded" tooltip="&lt;b&gt;Epoptes&lt;/b&gt;&lt;br/&gt;http://www.epoptes.org/" tooltip-position="pointer" tooltip-wrap="true" xtn-notice="false"><img alt="" height="16" src="//s3.amazonaws.com/topdesk/icons/iconfiles/000/581/746/favicon/org.epoptes.favicon.png" width="16" /> Epoptes</a></li>
-</ul>
-
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Оновлено 11.11.2026 · 2026/2027 н.р.</p>
+    <h1 class="logo"><img src="header.png" width="630" height="147" alt="Все для вчителя інформатики"></h1>
+    <p class="lead">Нормативні документи, програми, вимоги безпеки та корисні програми — в одному місці.</p>
+    <label class="search"><span class="sr">Пошук за сторінкою</span>
+      <input id="q" type="search" placeholder="Пошук: санітарний регламент, Python, 10 клас…" autocomplete="off"></label>
+  </div>
+</header>
+<div class="layout wrap">
+  <nav class="toc" aria-label="Розділи"><a href="#s0">Актуально на 2026/27 н.р.<span>19</span></a><a href="#s1">Нормативні документи<span>26</span></a><a href="#s2">Документація кабінету інформатики<span>25</span></a><a href="#s3">Навчальні програми<span>30</span></a><a href="#s4">Перелік підручників та навчальних посібників<span>3</span></a><a href="#s5">Безпека та охорона праці<span>7</span></a><a href="#s6">Програмне забезпечення<span>63</span></a></nav>
+  <main id="main">
+    <section id="s0"><h2>Актуально на 2026/27 н.р.</h2><details class="grp" open><summary><span class="gt">Організація навчального року</span><span class="n">6</span></summary><ul class="docs"><li><em class="pill p-new">нове</em><a href="https://osvita.ua/legislation/Ser_osv/97470/" target="_blank" rel="noopener">Лист МОН від 28.07.2026 № 1/16209-26 «Про організований початок 2026/2027 навчального року в закладах загальної середньої освіти»</a> (навчальний рік триває з 01.09.2026 до 30.06.2027 — постанова КМУ від 01.07.2026 № 847)</li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/legislation/Ser_osv/97692/" target="_blank" rel="noopener">Лист МОН від 17.08.2026 № 1/17756-26 «Про інструктивно-методичні рекомендації щодо викладання навчальних предметів / інтегрованих курсів у 2026/2027 навчальному році»</a></li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/school/metod-rekom/97810/" target="_blank" rel="noopener">Інформатика. Методичні рекомендації для вчителів на 2026/27 рік</a></li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/school/metod-rekom/97802/" target="_blank" rel="noopener">Загальні методичні рекомендації для вчителів на 2026/27 рік</a></li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/legislation/Ser_osv/97996/" target="_blank" rel="noopener">Лист МОН від 23.09.2026 № 1/20585-26: інструктивно-методичні рекомендації щодо І–ІІ етапів Всеукраїнських учнівських олімпіад у 2026/2027 н.р.</a></li><li><em class="pill p-new">нове</em><a href="https://mon.gov.ua/news/mon-i-mintsyfra-rozrobyly-proiekt-rekomendatsii-iz-vykorystannia-shi-v-shkolakh" target="_blank" rel="noopener">Рекомендації МОН і Мінцифри щодо використання штучного інтелекту в школах</a> (проєкт, 2024)</li></ul></details><details class="grp"><summary><span class="gt">Здоров’я та безпека під час війни</span><span class="n">4</span></summary><ul class="docs"><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/z1111-20" target="_blank" rel="noopener">Санітарний регламент для закладів загальної середньої освіти</a> (наказ МОЗ від 25.09.2020 № 2205; зі змінами — наказ МОЗ від 01.08.2022 № 1371 та від 29.10.2025 № 1638)</li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/school/consult/97885/" target="_blank" rel="noopener">Навчання в школах в умовах воєнного стану: рекомендації МОН</a></li><li><em class="pill p-new">нове</em><a href="https://osvita.ua/doc/files/news/979/97943/6ab62a347730e588217385.pdf" target="_blank" rel="noopener">Рекомендації МОН щодо організації роботи закладів освіти в осінньо-зимовий період 2026/27</a></li><li><em class="pill p-new">нове</em><a href="https://mon.gov.ua/news/uriad-vyznachyv-priorytetni-zavdannia-dlia-hromad-shchodo-orhanizatsii-navchannia-pid-chas-tryvalykh-povitrianykh-tryvoh" target="_blank" rel="noopener">Уряд визначив пріоритетні завдання щодо організації навчання під час тривалих повітряних тривог</a> (15.10.2026)</li></ul></details><details class="grp"><summary><span class="gt">Профільна школа з 01.09.2027</span><span class="n">9</span></summary><ul class="docs"><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/851-2024-%D0%BF" target="_blank" rel="noopener">Державний стандарт профільної середньої освіти</a> (постанова КМУ від липня 2024 р. № 851; застосовується з 1 вересня 2027 р.)</li><li><em class="pill p-new">нове</em><a href="https://mon.gov.ua/static-objects/mon/uploads/public/683/95d/9ae/68395d9ae9d69699766188.pdf" target="_blank" rel="noopener">Типова освітня програма для 10–12 класів (академічне спрямування)</a> (10 клас — з 2027/2028 н.р., 11 — з 2028/2029, 12 — з 2029/2030)</li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/profilna/mnp/2025/mnp-x-nformatika-10-12-poglibleniix-arbuzov-zabaznova-2-1.pdf" target="_blank" rel="noopener">Інформатика. 10–12 клас. Поглиблений рівень (Арзубов М. О., Забазнова А. О.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/07/29/informatychna-osvitnia-haluz/modelna-navcalna-programa-navcalnogo-predmeta-informatika-10-12-klasi-pogliblenii-riven-dlia-zakladiv-zagalnoyi-serednyoyi-osviti-avt-krutiak-n-o.pdf" target="_blank" rel="noopener">Інформатика. 10–12 клас. Поглиблений рівень (Крутяк Н. О.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/08/24/informatychna-oh/modelna-programa-z-informatiki-10-klasosnovnii-riven-gromko-buligina-kovalenko-recic.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Громко Г. Ю., Булигіна Л. В., Коваленко О. І., Речич Н. В.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/04/rivkind-mnp-informatika-10-klas-osnovnii-riven.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Ривкінд Й. Я., Лисенко Т. І., Чернікова Л. А., Шакотько В. В.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/04/modelna-navcalna-programa-navcalnogo-predmeta-informatika-10-klas-osnovnii-riven-dlia-zzso-avt-bondarenko-o-o-ta-in.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Бондаренко О. О., Ластовецький В. В., Пилипчук О. П., Шестопалов Є. А.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/03/mnp-informatika-10-klas-osnovnii-riven-zavadskii-tverdoxlib.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Завадський І. О., Твердохліб І. А.)</a></li><li><em class="pill p-new">нове</em>Експериментальний проєкт з упровадження профільної освіти (постанова КМУ від 26.08.2025 № 1058): 150 академічних ліцеїв працюють за новою моделлю 10–12 класів з 01.09.2026</li></ul></details></section><section id="s1"><h2>Нормативні документи</h2><details class="grp"><summary><span class="gt">Закони України</span><span class="n">3</span></summary><ul class="docs"><li>Закон України “<a href="https://zakon.rada.gov.ua/laws/show/2145-19" target="_blank" rel="noopener">Про освіту</a>” (від 05.09.2017 № 2145-VIII)</li><li>Закон України “<a href="https://zakon.rada.gov.ua/laws/show/463-20" target="_blank" rel="noopener">Про повну загальну середню освіту</a>” (редакція від 16.01.2020)</li><li>Закон України “<a href="https://zakon.rada.gov.ua/laws/show/2704-19#Text" target="_blank" rel="noopener">Про забезпечення функціонування української мови як державної</a>”</li></ul></details><details class="grp"><summary><span class="gt">Постанови Кабінету Міністрів України</span><span class="n">6</span></summary><ul class="docs"><li>Постанова Кабінету Міністрів України від 21 серпня 2019 р. № 800 “<a href="https://zakon.rada.gov.ua/laws/show/800-2019-%D0%BF" target="_blank" rel="noopener">Про порядок підвищення кваліфікації педагогічних і науково-педагогічних працівників”</a></li><li><a href="https://www.schoollife.org.ua/polozhennya-pro-sertyfikatsiyu-pedagogichnyh-pratsivnykiv/" target="_blank" rel="noopener">Положення про сертифікацію педагогічних працівників</a> від 27 грудня 2018 р. № 1190</li><li>Постанова Кабінету Міністрів України “<a href="https://zakon.rada.gov.ua/laws/show/1392-2011-%D0%BF#Text" target="_blank" rel="noopener">Про затвердження Державного стандарту базової і повної загальної середньої освіти</a>” (від 23 листопада 2011 р. № 1392; для 10–11 класів діє до запровадження стандарту профільної освіти)</li><li>Постанова Кабінету Міністрів України “<a href="https://zakon.rada.gov.ua/laws/show/898-2020-%D0%BF" target="_blank" rel="noopener">Про затвердження Державного стандарту базової середньої освіти</a>” (від 30 вересня 2020 р. № 898)</li><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/87-2018-%D0%BF" target="_blank" rel="noopener">Державний стандарт початкової освіти</a> (постанова КМУ від 21.02.2018 № 87, зі змінами)</li><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/851-2024-%D0%BF" target="_blank" rel="noopener">Державний стандарт профільної середньої освіти</a> (постанова КМУ № 851, з 01.09.2027)</li></ul></details><details class="grp"><summary><span class="gt">Накази і листи МОНУ</span><span class="n">17</span></summary><ul class="docs"><li>Наказ МОНУ № 455 від 20.12.1993 (редакція від 26.04.2000 № 73) “<a href="https://zakon3.rada.gov.ua/laws/show/z0121-94" target="_blank" rel="noopener">Типові правила внутрішнього розпорядку для працівників державних навчально-виховних закладів України</a>”</li><li>Наказ МОНУ № 601 від 20.07.2004 “<a href="http://zakon2.rada.gov.ua/laws/show/z1121-04" target="_blank" rel="noopener">Положення про навчальні кабінети загальноосвітніх навчальних закладів</a>”.</li><li>Наказ МОН №1205 від 06 грудня 2010 року “<a href="http://osvita.ua/legislation/Ser_osv/12914/" target="_blank" rel="noopener">Про затвердження Типових штатних нормативів загальноосвітніх навчальних закладів. Зареєстровано в Міністерстві юстиції України 22 грудня 2010 року за №1308/18603</a>”.</li><li>Наказ МОНМСУ № 1060 від 01.10.2012 “<a href="https://zakon.rada.gov.ua/laws/show/z1695-12" target="_blank" rel="noopener">Про затвердження Положення про електронні освітні ресурси</a>”.</li><li>Наказ МОНУ № 903 від 02.12.2004 “<a href="https://zakon.rada.gov.ua/laws/show/z0044-05#Text" target="_blank" rel="noopener">Про затвердження Правил використання комп’ютерних програм у навчальних закладах </a>”.</li><li>Лист МОНУ №1/11-1927 від 06.05.2004 “<a href="https://1drv.ms/w/s!AoXakQgXHM50meJbgjGCPUfrEEWW_Q?e=R1KjLv" target="_blank" rel="noopener">Методичні рекомендації щодо облаштування і використання кабінету інформатики та інформаційно-комунікаційних технологій загальноосвітніх навчальних закладів</a>”.</li><li>Наказ МОНУ № 614 від 21.06.2010 “<a href="https://zakon.rada.gov.ua/rada/show/v0614290-10#Text" target="_blank" rel="noopener">Вимоги до специфікації навчальних комп’ютерних комплексів для оснащення кабінетів інформатики та інформаційно-комунікаційних технологій навчання системи загальної середньої освіти</a>”</li><li>Наказ МОНУ № 128 від 20.02.2002 “<a href="http://it.moippo.mk.ua/wp-content/uploads/2019/07/MON_128.doc" target="_blank" rel="noopener">Про затвердження Нормативів наповнюваності груп дошкільних навчальних закладів (ясел-садків) компенсуючого типу, класів спеціальних загальноосвітніх шкіл (шкіл-інтернатів), груп подовженого дня і виховних груп загальноосвітніх навчальнихзакладів усіх типів та Порядку поділу класів на групи при вивченні окремих предметів у загальноосвітніх навчальних закладах</a>”</li><li>Наказ МОНУ № 1440 від 02.11.2017 “<a href="https://zakon.rada.gov.ua/laws/show/z0055-18#n14" target="_blank" rel="noopener">Про затвердження Типового переліку комп’ютерного обладнання для закладів дошкільної, загальної середньої та професійної (професійно-технічної) освіти</a>”</li><li>Наказ МОНУ № 752 від 30.05.2019 “<a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE33580.html" target="_blank" rel="noopener">Про внесення змін до наказу Міністерства освіти і науки України від 02 листопада 2017 року № 1440</a>”</li><li><a href="https://zakon.rada.gov.ua/laws/show/z0100-18#Text" target="_blank" rel="noopener">Наказ МОНУ № 1669 від 26.12.2017 “Про затвердження Положення про організацію роботи з охорони праці та безпеки життєдіяльності учасників освітнього процесу в установах і закладах освіти”</a></li><li><a href="http://search.ligazakon.ua/l_doc2.nsf/link1/RE31960.html" target="_blank" rel="noopener">Наказ МСПУ № 207 від 14.02.2018 “Про затвердження Вимог щодо безпеки та захисту здоров’я працівників під час роботи з екранними пристроями”</a></li><li><a href="https://www.schoollife.org.ua/pro-zatverdzhennya-instruktsiyi-z-dilovodstva-u-zakladah-zagalnoyi-serednoyi-osvity/" target="_blank" rel="noopener">Інструкція з діловодства у закладах загальної середньої освіти</a></li><li><a href="https://www.pedrada.com.ua/article/1298-qqq-17-m5-17-05-2017-chi-vse-klasno-u-klasnomu-jurnal?fbclid=IwAR13mKKDFnTK8lQ-pISzgSlCn7a3xmRRw43O9Q1RWG2tcT5sGLSBVJI2wXA#_=_" target="_blank" rel="noopener">Інструкції та вимоги до ведення класних журналів</a></li><li><a href="https://osvita.ua/legislation/Ser_osv/66556/" target="_blank" rel="noopener">Лист МОН № 1/9-683 від 04.11.19 року “Щодо підвищення кваліфікації та атестації педагогічних працівників”</a> (мінімальні вимоги щодо обсягу (кількості годин) підвищення кваліфікації педагогічних працівників)</li><li><a href="https://zakon.rada.gov.ua/laws/show/z1111-20" target="_blank" rel="noopener">Наказ МОЗ України “Про затвердження Санітарного регламенту для закладів загальної середньої освіти”</a> (№ 2205 від 25.09.2020, зареєстровано в МЮУ 10.11.2020 за № 1111/35394; зі змінами: наказ МОЗ від 01.08.2022 № 1371, наказ МОЗ від 29.10.2025 № 1638)</li><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/z1649-22" target="_blank" rel="noopener">Положення про атестацію педагогічних працівників</a> (наказ МОН від 09.09.2022 № 805 у редакції наказу від 10.09.2024 № 1277, зі змінами 2026 р.)</li></ul></details></section><section id="s2"><h2>Документація кабінету інформатики</h2><details class="grp"><summary><span class="gt">Перелік документів кабінету інформатики</span><span class="n">25</span></summary><ul class="docs"><li>Лист МОН України № 1/9-497 від 17.07.2013 “<a href="https://drive.google.com/file/d/0B_9y-vB0qL9_MlNLWjJBVllHcU0/view?usp=sharing" target="_blank" rel="noopener">Про використання Інструктивно-методичних матеріалів з питань створення безпечних умов для роботи у кабінетах інформатики та інформаційно-комунікаційних технологій загальноосвітніх навчальних закладів</a>”.</li><li><a href="http://kabinetiks.blogspot.com/2013/07/blog-post_2.html" target="_blank" rel="noopener">Акт введення в експлуатацію</a> (оформлюють під час створення чи переобладнання кабінету до складу комісії входять представники відповідних органів державного нагляду &mdash; охорони праці, пожежної безпеки та ін.)</li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_Z3Y2Nkt1REdWeVU/view?usp=sharing" target="_blank" rel="noopener">Акт дозволу на проведення занять, який оформлюється щорічно на початку навчального року </a>(оформлюють перед початком нового навчального року)</li><li>Акт перевірки заземлення.</li><li>Схеми ЛОМ класу, школи</li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_cVRrSGJzOEVxQjg/view?usp=sharing" target="_blank" rel="noopener">Журнал проведення інструктажу з питань охорони праці.</a></li><li>Інструкції щодо роботи учнів на робочому місці (готується ґрунтуючись на «Положенні про кабінет обчислювальної техніки» та виписки з СанПіН).</li><li>Інструкція з питань охорони праці (готується ґрунтуючись на «Правилах безпеки під час навчання в кабінетах інформатики ЗНЗ»).</li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_UWNUYkxTRVB3WlU/view?usp=sharing" target="_blank" rel="noopener">Інструкція з протипожежної безпеки та гасіння пожежі.</a></li><li>Копія наказу керівника навчального закладу щодо призначення завідуючого кабінетом.</li><li>Посадова інструкція вчителя інформатики</li><li><a href="http://tokmakmvo.osvita.zp.ua/Informat/zrazok/11_inventarna-kniga.doc" target="_blank" rel="noopener">Інвентарна книга кабінету</a>.</li><li>План евакуації з кабінету у аварійних ситуаціях.</li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_Yk9PbGRYX1JVQmM/view?usp=sharing" target="_blank" rel="noopener">Положення про кабінет інформатики та інформаційно-комунікаційних технологій навчання загальноосвітніх навчальних закладів </a>(наказ МОН від 20.05.2004 № 407)</li><li><a href="http://it.moippo.mk.ua/wp-content/uploads/2019/07/сан_паспорт.doc" target="_blank" rel="noopener">Санітарний паспорт кабінету</a>.</li><li><a href="https://zakon.rada.gov.ua/laws/show/z1111-20" target="_blank" rel="noopener">Санітарні правила та норми при проведенні занять із комп’ютерною технікою</a> (Наказ МОЗ України “Про затвердження Санітарного регламенту для закладів загальної середньої освіти”)</li><li>Список учнів з порушенням зору (підготовлений медичним працівником школи).</li><li>Опис вправ для зняття зорової та фізичної втоми.</li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_V2pGUUdBN0NUVFE/view?usp=sharing" target="_blank" rel="noopener">Графік роботи кабінету.</a></li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_VnpxcVA3UHAwZGM/view?usp=sharing" target="_blank" rel="noopener">План роботи в кабінеті на поточний навчальний рік.</a></li><li><a href="https://drive.google.com/file/d/0B_9y-vB0qL9_VTh0ODRwMGM5ZWs/view?usp=sharing" target="_blank" rel="noopener">Паспорт кабінету </a>(У зв’язку з втратою чинності ДСанПіН 5.5.6.009-98 цілком обґрунтованим буде оформлення паспорта кабінету інформатики за формою, що подана в додатку 1 до Положення про навчальні кабінети з природничо-математичних предметів загальноосвітніх навчальних закладів)</li><li><a href="https://osvita.ua/school/metod-rekom/97810/" target="_blank" rel="noopener">Методичні рекомендації щодо викладання інформатики у 2026/2027 навчальному році.</a></li><li><a href="https://zakon.rada.gov.ua/laws/show/1392-2011-%D0%BF#Text" target="_blank" rel="noopener">Про затвердження Державного стандарту базової і повної загальної середньої освіти</a></li><li><a href="http://files.sajt-vchitelya-informatiki33.webnode.com.ua/200000035-02f3303ee9/%D0%9A%D0%BD%D0%B8%D0%B3%D0%B0%20%D0%BE%D0%B1%D0%BB%D1%96%D0%BA%D1%83%20%D1%81%D1%82%D0%B0%D0%BD%D1%83%20%D0%BD%D0%B0%D0%B2%D1%87%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%B8%D1%87%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B7%D0%B0%D0%B1%D0%B5%D0%B7%D0%BF%D0%B5%D1%87%D0%B5%D0%BD%D0%BD%D1%8F%20%D0%BA%D0%B0%D0%B1%D1%96%D0%BD%D0%B5%D1%82%D1%83%20%D1%96%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82%D0%B8%D0%BA%D0%B8%20.doc" target="_blank" rel="noopener">Книга обліку стану навчально-методичного забезпечення кабінету інформатики</a> (Додаток до п. 5.3 розділу Положення про кабінет інформатики та інформаційно-комунікаційних технологій навчання ЗНЗ)</li><li><a href="http://mmk-informatika.ck.sch.in.ua/Files/downloads/%D0%9A%D0%B0%D1%80%D1%82%D0%BE%D1%82%D0%B5%D0%BA%D0%B0%20%D0%B5%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%BD%D0%B8%D1%85%20%D0%B7%D0%B0%D1%81%D0%BE%D0%B1%D1%96%D0%B2%20%D0%BD%D0%B0%D0%B2%D1%87%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D1%80%D0%B8%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%BD%D1%8F%20(%D0%95%D0%97%D0%9D%D0%9F).doc" target="_blank" rel="noopener">Картотека електронних засобів навчального призначення</a> (ЕЗНП)</li></ul></details></section><section id="s3"><h2>Навчальні програми</h2><details class="grp"><summary><span class="gt">Молодша школа</span><span class="n">3</span></summary><ul class="docs"><li><a href="http://surl.li/dkqx" target="_blank" rel="noopener">Типові освітні програми для 1, 2 класу НУШ</a> (авт. Р.Б. Шиян), (авт. О.Я. Савченко)</li><li>Типова освітня програма для 3,4 класу НУШ: <a href="http://surl.li/acexs" target="_blank" rel="noopener">авт. О.Я. Савченко</a></li><li>Типова освітня програма для 3,4 класу НУШ: <a href="http://surl.li/acexu" target="_blank" rel="noopener">авт. Р.Б. Шиян</a></li></ul></details><details class="grp"><summary><span class="gt">Модельні програми 5–6 класи (НУШ)</span><span class="n">7</span></summary><ul class="docs"><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6-kl.Zavadskyy.ta.in.27.09.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Завадський та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6-kl.Morze.Barna.14.07.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Морзе та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6-kl.Pasichnyk.Chernikova.14.07.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Пасічник та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6-kl.Radchenko.Borovtsova.14.07.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Радченко та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6-kl.Ryvkind.ta.in.14.07.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Ривкінд та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2021/14.07/Model.navch.prohr.5-9.klas.NUSH-poetap.z.2022/Inform.osv.haluz.5-6-kl/Inform.5-6.kl.Kozak.17.12.pdf" target="_blank" rel="noopener">Інформатика 5–6 кл. Козак</a></li><li><em class="pill p-new">нове</em><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/04/01/programa-informatika-5-6.pdf" target="_blank" rel="noopener">Інформатика для 5–6 класів спеціальних закладів загальної середньої освіти для дітей із порушеннями зору (незрячих дітей), Гребенюк Т. та ін.</a></li></ul></details><details class="grp"><summary><span class="gt">Модельні програми 7–9 класи (НУШ, 2023)</span><span class="n">6</span></summary><ul class="docs"><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/16.08.2023/Informatyka.7-9%20kl.Ryvkind.ta.in.16.08.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Ривкінд та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/16.08.2023/Informatyka.7-9%20kl.Zavadskyy.ta.in.16.08.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Завадський та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/Informatyka.7-9.kl.Morze.ta.in.12.09.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Морзе та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/Informatyka.7-9.kl.Bondarenko.ta.in.25.09.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Бондаренко та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/Informatyka.7-9.kl.Pasichnyk.ta.in.26.09.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Пасічник та ін.</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2023/Model.navch.prohr.5-9.klas/Inform.osv.haluz.2023/Informatyka.7-9.kl.Hromko.ta.in.21.12.2023.pdf" target="_blank" rel="noopener">Інформатика 7–9 кл. Громко та ін.</a></li></ul></details><details class="grp"><summary><span class="gt">Модельні програми 10–12 класи (профільна школа, з 2027/2028 н.р.)</span><span class="n">7</span></summary><ul class="docs"><li><a href="https://mon.gov.ua/static-objects/mon/uploads/public/683/95d/9ae/68395d9ae9d69699766188.pdf" target="_blank" rel="noopener">Типова освітня програма для 10–12 класів (академічне спрямування)</a> (10 клас — з 2027/2028 н.р.)</li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/profilna/mnp/2025/mnp-x-nformatika-10-12-poglibleniix-arbuzov-zabaznova-2-1.pdf" target="_blank" rel="noopener">Інформатика. 10–12 клас. Поглиблений рівень (Арзубов М. О., Забазнова А. О.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/07/29/informatychna-osvitnia-haluz/modelna-navcalna-programa-navcalnogo-predmeta-informatika-10-12-klasi-pogliblenii-riven-dlia-zakladiv-zagalnoyi-serednyoyi-osviti-avt-krutiak-n-o.pdf" target="_blank" rel="noopener">Інформатика. 10–12 клас. Поглиблений рівень (Крутяк Н. О.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/08/24/informatychna-oh/modelna-programa-z-informatiki-10-klasosnovnii-riven-gromko-buligina-kovalenko-recic.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Громко Г. Ю., Булигіна Л. В., Коваленко О. І., Речич Н. В.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/04/rivkind-mnp-informatika-10-klas-osnovnii-riven.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Ривкінд Й. Я., Лисенко Т. І., Чернікова Л. А., Шакотько В. В.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/04/modelna-navcalna-programa-navcalnogo-predmeta-informatika-10-klas-osnovnii-riven-dlia-zzso-avt-bondarenko-o-o-ta-in.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Бондаренко О. О., Ластовецький В. В., Пилипчук О. П., Шестопалов Є. А.)</a></li><li><a href="https://mon.gov.ua/static-objects/mon/sites/1/zagalna%20serednya/Navchalni.prohramy/2026/mnp/03/mnp-informatika-10-klas-osnovnii-riven-zavadskii-tverdoxlib.pdf" target="_blank" rel="noopener">Інформатика. 10 клас. Основний рівень (Завадський І. О., Твердохліб І. А.)</a></li></ul></details><details class="grp"><summary><span class="gt">Основна школа 5–9 класи (НУШ)</span><span class="n">2</span></summary><ul class="docs"><li><em class="pill p-new">нове</em><a href="https://zakon.rada.gov.ua/laws/show/898-2020-%D0%BF" target="_blank" rel="noopener">Державний стандарт базової середньої освіти</a> (постанова КМУ від 30.09.2020 № 898) — чинний у 2026/27 н.р. для 5–9 класів</li><li><em class="pill p-new">нове</em>Типова освітня програма для 5–9 класів закладів загальної середньої освіти (наказ МОН від 19.02.2021 № 235, зі змінами)</li></ul></details><details class="grp"><summary><span class="gt">Основна школа — програми 2017 р. (архів)</span><span class="n">2</span></summary><ul class="docs"><li class="is-old"><em class="pill p-old">архів</em><a href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-5-9-klas/onovlennya-12-2017/8-informatika.docx" target="_blank" rel="noopener">Інформатика для учнів 5-9 класів, які вивчали інформатику у 2-4 класах</a></li><li class="is-old"><em class="pill p-old">архів</em><a href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-5-9-klas/informatika.pdf" target="_blank" rel="noopener">Інформатика</a>. Навчальна програма для 8-9 класів для загальноосвітніх навчальних закладів (класів) з поглибленим вивченням окремих предметів (за новим Державним стандартом базової і повної загальної середньої освіти</li></ul></details><details class="grp"><summary><span class="gt">Старша школа (10–11 класи, чинні у 2026/27 н.р.)</span><span class="n">3</span></summary><ul class="docs"><li><a href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-10-11-klas/2018-2019/informatika-standart-10-11.docx" target="_blank" rel="noopener">Рівень стандарту</a></li><li><a href="https://drive.google.com/open?id=1iCTQS2xFU3X_ucQYpUadeywCzR2CMKpC" target="_blank" rel="noopener">Програми та грифи курсів за вибором від Cisco</a></li><li><a href="https://mon.gov.ua/storage/app/media/zagalna%20serednya/programy-10-11-klas/2018-2019/01/10-11-profilniy-riven.docx" target="_blank" rel="noopener">Профільний рівень</a></li></ul></details></section><section id="s4"><h2>Перелік підручників та навчальних посібників</h2><details class="grp"><summary><span class="gt">Електронні підручники і переліки МОН</span><span class="n">2</span></summary><ul class="docs"><li><em class="pill p-new">нове</em><a href="https://lib.imzo.gov.ua/" target="_blank" rel="noopener">Електронна бібліотека підручників ІМЗО (електронні версії підручників з грифом МОН)</a></li><li><em class="pill p-new">нове</em><a href="https://imzo.gov.ua/pidruchniki/" target="_blank" rel="noopener">Підручники: конкурсний відбір, переліки рекомендованих підручників (ІМЗО)</a></li></ul></details><details class="grp"><summary><span class="gt">Архівні переліки (посилання goo.gl більше не працюють)</span><span class="n">1</span></summary><ul class="docs"><li class="is-old"><em class="pill p-old">архів</em>Перелік навчальних програм, підручників та навчально-методичних посібників для початкових класів і для 5–11 класів — актуальні переліки шукайте на сайтах МОН та ІМЗО (див. вище)</li></ul></details></section><section id="s5"><h2>Безпека та охорона праці</h2><details class="grp"><summary><span class="gt">Правила безпеки</span><span class="n">4</span></summary><ul class="docs"><li><a href="https://zakon2.rada.gov.ua/laws/show/z1229-16" target="_blank" rel="noopener">Правила пожежної безпеки для закладів, установ і організацій системи освіти України</a></li><li><a href="http://forca.com.ua/knigi/pravila/pravila-bezpechnoi-ekspluatacii-elektroustanovok-spozhivachiv.html" target="_blank" rel="noopener">Правила безпечної експлуатації електроустановок споживачів</a> (ДНАОП 0.00-1.21-98)</li><li><a href="https://zakon.rada.gov.ua/laws/show/z0620-04" target="_blank" rel="noopener">Правила безпеки під час навчання в кабінетах інформатики навчальних закладів системи загальної середньої освіти</a></li><li><a href="https://zakon.rada.gov.ua/laws/show/z1093-01" target="_blank" rel="noopener">Положення про порядок розслідування нещасних випадків, що сталися під час навчально-виховного процесу в навчальних закладах</a></li></ul></details><details class="grp"><summary><span class="gt">Інструктажі</span><span class="n">3</span></summary><ul class="docs"><li><a href="https://studfiles.net/preview/5192333/" target="_blank" rel="noopener">Програма первинного інструктажу з питань охорони праці з учнями в кабінеті</a></li><li><a href="http://www.osvitacv.com/index.php/2011-01-11-15-03-48/health/miscellaneous/24894-2013-04-03-10-24-14" target="_blank" rel="noopener">Порядок проведення та реєстрації інструктажів з безпеки життєдіяльності</a></li><li><a href="http://osvita.ua/legislation/Ser_osv/41707/" target="_blank" rel="noopener">Про використання Методичних матеріалів щодо організації навчання і перевірки знань, проведення інструктажів з питань охорони праці, безпеки життєдіяльності</a>.</li></ul></details></section><section id="s6"><h2>Програмне забезпечення</h2><details class="grp"><summary><span class="gt">Початкова школа</span><span class="n">3</span></summary><ul class="tools"><li><a class="tool" href="https://gcompris.net/index-uk.html" target="_blank" rel="noopener"><b>GCompris</b><small>gcompris.net</small></a></li><li><a class="tool" href="http://www.schoolsplay.org/" target="_blank" rel="noopener"><b>Childsplay</b><small>schoolsplay.org</small></a></li><li><a class="tool" href="https://www.kidlo.com/games/&amp;amp;hl=uk&amp;amp;gl=US" target="_blank" rel="noopener"><b>Kidlo</b><small>kidlo.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Офісні застосунки</span><span class="n">5</span></summary><ul class="tools"><li><a class="tool" href="https://www.wps.com/" target="_blank" rel="noopener"><b>WPS Office</b><small>wps.com</small></a></li><li><a class="tool" href="https://uk.libreoffice.org/" target="_blank" rel="noopener"><b>LibreOffice Suite</b><small>uk.libreoffice.org</small></a></li><li><a class="tool" href="https://www.freeoffice.com/en/" target="_blank" rel="noopener"><b>SoftMaker FreeOffice</b><small>freeoffice.com</small></a></li><li><a class="tool" href="https://docs.google.com/" target="_blank" rel="noopener"><b>Google Docs</b><small>docs.google.com</small></a></li><li><a class="tool" href="https://office.microsoft.com/en-us/web-apps/" target="_blank" rel="noopener"><b>Free Microsoft Office Online</b><small>office.microsoft.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Вебпереглядачі</span><span class="n">6</span></summary><ul class="tools"><li><a class="tool" href="https://www.mozilla.org/firefox" target="_blank" rel="noopener"><b>Firefox</b><small>mozilla.org</small></a></li><li><a class="tool" href="https://www.google.com/intl/uk/chrome/" target="_blank" rel="noopener"><b>Google Chrome</b><small>google.com</small></a></li><li><a class="tool" href="https://www.slimjet.com/" target="_blank" rel="noopener"><b>SlimJet</b><small>slimjet.com</small></a></li><li><a class="tool" href="https://brave.com/" target="_blank" rel="noopener"><b>Brave</b><small>brave.com</small></a></li><li><a class="tool" href="https://vivaldi.com/" target="_blank" rel="noopener"><b>Vivaldi Browser</b><small>vivaldi.com</small></a></li><li><a class="tool" href="https://opera.com/" target="_blank" rel="noopener"><b>Opera</b><small>opera.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Растрова графіка</span><span class="n">6</span></summary><ul class="tools"><li><a class="tool" href="https://www.gimp.org/" target="_blank" rel="noopener"><b>GIMP</b><small>gimp.org</small></a></li><li><a class="tool" href="https://www.getpaint.net/" target="_blank" rel="noopener"><b>Paint.NET</b><small>getpaint.net</small></a></li><li><a class="tool" href="https://www.photopea.com/" target="_blank" rel="noopener"><b>Photopea</b><small>photopea.com</small></a></li><li><a class="tool" href="https://pixlr.com/" target="_blank" rel="noopener"><b>Pixlr</b><small>pixlr.com</small></a></li><li><a class="tool" href="https://www.adobe.com/express/feature/image/editor" target="_blank" rel="noopener"><b>Adobe Online Photo Editor</b><small>adobe.com</small></a></li><li><a class="tool" href="https://www.pizap.com/" target="_blank" rel="noopener"><b>piZap</b><small>pizap.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Векторна графіка</span><span class="n">5</span></summary><ul class="tools"><li><a class="tool" href="https://inkscape.org/" target="_blank" rel="noopener"><b>Inkscape</b><small>inkscape.org</small></a></li><li><a class="tool" href="https://www.libreoffice.org/discover/draw/" target="_blank" rel="noopener"><b>Draw | LibreOffice</b><small>libreoffice.org</small></a></li><li><a class="tool" href="http://designer.io/" target="_blank" rel="noopener"><b>Gravit Designer</b><small>designer.io</small></a></li><li><a class="tool" href="https://vectr.com/" target="_blank" rel="noopener"><b>Vectr</b><small>vectr.com</small></a></li><li><a class="tool" href="https://svg-edit.github.io/svgedit/" target="_blank" rel="noopener"><b>SVGedit</b><small>svg-edit.github.io</small></a></li></ul></details><details class="grp"><summary><span class="gt">Комп’ютерна анімація</span><span class="n">4</span></summary><ul class="tools"><li><a class="tool" href="https://www.synfig.org/" target="_blank" rel="noopener"><b>Synfig</b><small>synfig.org</small></a></li><li><a class="tool" href="https://opentoonz.github.io/e/" target="_blank" rel="noopener"><b>OpenToonz</b><small>opentoonz.github.io</small></a></li><li><a class="tool" href="https://pencil2d.github.io/" target="_blank" rel="noopener"><b>Pencil2D</b><small>pencil2d.github.io</small></a></li><li><a class="tool" href="http://animeeffects.org/en/" target="_blank" rel="noopener"><b>AnimeEffects</b><small>animeeffects.org</small></a></li></ul></details><details class="grp"><summary><span class="gt">Алгоритмізація</span><span class="n">5</span></summary><ul class="tools"><li><a class="tool" href="https://smart-blocks.github.io/#/libros" target="_blank" rel="noopener"><b>Розумні блоки - Pilas Bloques</b><small>smart-blocks.github.io</small></a></li><li><a class="tool" href="https://gromko.github.io/svitlobot/" target="_blank" rel="noopener"><b>СвітлоБот 1.0</b><small>gromko.github.io</small></a></li><li><a class="tool" href="http://i4ds.github.io/CargoBot/?state=1" target="_blank" rel="noopener"><b>Cargo-Bot</b><small>i4ds.github.io</small></a></li><li><a class="tool" href="https://runabase.com/" target="_blank" rel="noopener"><b>Runabase</b><small>runabase.com</small></a></li><li><a class="tool" href="https://blockly.games/?lang=uk" target="_blank" rel="noopener"><b>Blockly Games</b><small>blockly.games</small></a></li></ul></details><details class="grp"><summary><span class="gt">Основи програмування</span><span class="n">5</span></summary><ul class="tools"><li><a class="tool" href="https://scratch.mit.edu/" target="_blank" rel="noopener"><b>Scratch</b><small>scratch.mit.edu</small></a></li><li><a class="tool" href="https://edublocks.org/" target="_blank" rel="noopener"><b>EduBlocks</b><small>edublocks.org</small></a></li><li><a class="tool" href="http://snap.berkeley.edu/" target="_blank" rel="noopener"><b>Snap!</b><small>snap.berkeley.edu</small></a></li><li><a class="tool" href="https://developers.google.com/blockly" target="_blank" rel="noopener"><b>Blockly</b><small>developers.google.com</small></a></li><li><a class="tool" href="https://www.makecode.com/" target="_blank" rel="noopener"><b>Microsoft MakeCode</b><small>makecode.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Програмування — Python</span><span class="n">7</span></summary><ul class="tools"><li><a class="tool" href="https://thonny.org/" target="_blank" rel="noopener"><b>Thonny</b><small>thonny.org</small></a></li><li><a class="tool" href="https://codewith.mu/" target="_blank" rel="noopener"><b>Code With Mu</b><small>codewith.mu</small></a></li><li><a class="tool" href="https://www.jetbrains.com/pycharm/" target="_blank" rel="noopener"><b>PyCharm</b><small>jetbrains.com</small></a></li><li><a class="tool" href="https://docs.python.org/3/library/idle.html" target="_blank" rel="noopener"><b>IDLE</b><small>docs.python.org</small></a></li><li><a class="tool" href="http://pythonide.blogspot.com/" target="_blank" rel="noopener"><b>SPE IDE - Stani&#39;s Python Editor</b><small>pythonide.blogspot.com</small></a></li><li><a class="tool" href="https://www.python.org/" target="_blank" rel="noopener"><b>Python (офіційний сайт)</b><small>python.org</small></a></li><li><a class="tool" href="https://code.visualstudio.com/" target="_blank" rel="noopener"><b>Visual Studio Code</b><small>code.visualstudio.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Програмування — Pascal</span><span class="n">2</span></summary><ul class="tools"><li><a class="tool" href="https://www.freepascal.org/" target="_blank" rel="noopener"><b>Free Pascal</b><small>freepascal.org</small></a></li><li><a class="tool" href="https://www.lazarus-ide.org/" target="_blank" rel="noopener"><b>Lazarus</b><small>lazarus-ide.org</small></a></li></ul></details><details class="grp"><summary><span class="gt">Бази даних</span><span class="n">4</span></summary><ul class="tools"><li><a class="tool" href="https://www.libreoffice.org/discover/base/" target="_blank" rel="noopener"><b>Base | LibreOffice</b><small>libreoffice.org</small></a></li><li><a class="tool" href="https://www.valentina-db.com/ru/valentina-studio-overview" target="_blank" rel="noopener"><b>ValentinaDB Studio</b><small>valentina-db.com</small></a></li><li><a class="tool" href="https://quintadb.com/" target="_blank" rel="noopener"><b>QuintaDB</b><small>quintadb.com</small></a></li><li><a class="tool" href="https://runabase.com/" target="_blank" rel="noopener"><b>Runabase</b><small>runabase.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">3D-моделювання</span><span class="n">6</span></summary><ul class="tools"><li><a class="tool" href="https://www.blender.org/" target="_blank" rel="noopener"><b>Blender</b><small>blender.org</small></a></li><li><a class="tool" href="http://www.k-3d.org/" target="_blank" rel="noopener"><b>K-3D</b><small>k-3d.org</small></a></li><li><a class="tool" href="http://amabilis.com/" target="_blank" rel="noopener"><b>3D Crafter</b><small>amabilis.com</small></a></li><li><a class="tool" href="https://www.rocket3f.com/" target="_blank" rel="noopener"><b>Rocket 3F</b><small>rocket3f.com</small></a></li><li><a class="tool" href="http://www.artofillusion.org/" target="_blank" rel="noopener"><b>Art of Illusion</b><small>artofillusion.org</small></a></li><li><a class="tool" href="https://www.tinkercad.com/" target="_blank" rel="noopener"><b>Tinkercad</b><small>tinkercad.com</small></a></li></ul></details><details class="grp"><summary><span class="gt">Програмування — Processing</span><span class="n">3</span></summary><ul class="tools"><li><a class="tool" href="https://processing.org/" target="_blank" rel="noopener"><b>Processing</b><small>processing.org</small></a></li><li><a class="tool" href="https://p5js.org/" target="_blank" rel="noopener"><b>p5.js</b><small>p5js.org</small></a></li><li><a class="tool" href="https://py.processing.org/" target="_blank" rel="noopener"><b>PyProcessing</b><small>py.processing.org</small></a></li></ul></details><details class="grp"><summary><span class="gt">Адміністрування класу</span><span class="n">2</span></summary><ul class="tools"><li><a class="tool" href="https://veyon.io/" target="_blank" rel="noopener"><b>Veyon</b><small>veyon.io</small></a></li><li><a class="tool" href="http://www.epoptes.org/" target="_blank" rel="noopener"><b>Epoptes</b><small>epoptes.org</small></a></li></ul></details></section>
+    <p id="empty" hidden>Нічого не знайдено. Спробуйте коротший запит.</p>
+    <footer class="foot">Посилання ведуть на зовнішні сайти — якщо документ змінився, перевіряйте чинну редакцію на zakon.rada.gov.ua.</footer>
+  </main>
+</div>
 <script>
-var toggler = document.getElementsByClassName("caret");
-var i;
-
-for (i = 0; i < toggler.length; i++) {
-  toggler[i].addEventListener("click", function() {
-    this.parentElement.querySelector(".nested").classList.toggle("active");
-    this.classList.toggle("caret-down");
+(function () {
+  var q = document.getElementById('q');
+  var empty = document.getElementById('empty');
+  var secs = Array.prototype.slice.call(document.querySelectorAll('main section'));
+  var norm = function (s) { return s.toLowerCase().replace(/’|'/g, "'"); };
+  secs.forEach(function (s) {
+    s.querySelectorAll('details.grp').forEach(function (d) { d.dataset.open = d.open ? '1' : '0'; });
   });
-}
-</script>
+  function run() {
+    var v = norm(q.value.trim()), any = false;
+    secs.forEach(function (sec) {
+      var sv = false;
+      sec.querySelectorAll('details.grp').forEach(function (d) {
+        var gv = false;
+        d.querySelectorAll('li').forEach(function (li) {
+          var a = li.querySelector('a');
+          var ok = !v || norm(li.textContent + ' ' + (a ? a.href : '')).indexOf(v) > -1;
+          li.hidden = !ok;
+          if (ok) gv = true;
+        });
+        d.hidden = !gv;
+        if (gv) sv = true;
+        d.open = v ? gv : d.dataset.open === '1';
+      });
+      sec.hidden = !sv;
+      if (sv) any = true;
+    });
+    empty.hidden = any;
+  }
+  q.addEventListener('input', run);
 
+  var links = document.querySelectorAll('.toc a');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.toggle('on', l.getAttribute('href') === '#' + e.target.id); });
+          var cur = document.querySelector('.toc a.on');
+          if (cur && window.innerWidth < 900) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    secs.forEach(function (s) { io.observe(s); });
+  }
+})();
+
+</script>
 </body>
 </html>
