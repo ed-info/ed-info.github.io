@@ -1,0 +1,181 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta http-equiv="content-language" content="en-us">
+<meta name="Author" content="Chris Rippel">
+<title>Мишоловки</title>
+    <link rel="StyleSheet" href="mousing.css" type="text/css" />
+	<script language="JavaScript" type="text/javascript" src="sniffer.js"> 
+</script>
+<script type="text/javascript" language="JavaScript">
+    //<![CDATA[
+<!--
+var numChecked=0;
+var b1 = new Image(24,24);
+var b2 = new Image(24,24);
+var b3 = new Image(24,24);
+var b4 = new Image(24,24);
+var b5 = new Image(24,24);
+var b6 = new Image(24,24);
+var b7 = new Image(24,24);
+var b8 = new Image(24,24);
+var b9 = new Image(24,24);
+var b10 = new Image(24,24);
+var b11 = new Image(24,24);
+ 
+b1.src="images/b1a.gif";
+b2.src="images/b2a.gif";
+b3.src="images/b3a.gif";
+b4.src="images/b4a.gif";
+b5.src="images/b5a.gif";
+b6.src="images/b6a.gif";
+b7.src="images/b7a.gif";
+b8.src="images/b8a.gif";
+b9.src="images/b9a.gif";
+b10.src="images/b10a.gif";
+b11.src="images/b11a.gif";
+ 
+var check = new Image(32,32);
+check.src = "images/checkmark2.gif";
+var cont = new Image(132,24);
+cont.src = "images/continue.gif";
+ 
+var but = new Array(12);
+for (i=0;i<12;i++){
+but[i]=false;
+}
+ 
+function setCheck(theImage){
+if (but[theImage]==false){
+but[theImage] = true;
+var target = eval("document.but" + theImage);
+target.src="images/checkmark2.gif";
+numChecked++;
+if (numChecked==11) document.advance.src="images/continue.gif"
+}
+}
+ 
+function testChecks(){
+if (numChecked==11)
+window.location="m23.htm";
+}
+function changePic(whichpic,theSource){
+document[whichpic].src="images/"+theSource;
+}
+   //-->
+    //]]>
+        </script>
+  </head>
+   <body>
+   <img src="Mousercise_files/mouse.png" align="right">
+		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
+			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
+		</div>
+		<div class="mborder">
+<table width="80%">
+<tr>
+<td colspan="11">
+Натисніть кожну кнопку, щоб перейти до наступної сторінки.<br /><br /></td>
+</tr>
+<tr>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\"  onClick=\"javascript:setCheck(1)\" onMousedown=\"changePic(\'b1\',\'b1a.gif\')\" onMouseUp=\"changePic(\'b1\',\'b1b.gif\')\" onMouseOut=\"changePic(\'b1\',\'b1b.gif\')\">' + '<img src=\"images/b1b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b1\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/b1b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b1\" onClick=\"javascript:setCheck(1)\" ' + 'onMousedown=\"changePic(\'b1\',\'b1a.gif\')\" onMouseUp=\"changePic(\'b1\',\'b1b.gif\')\" onMouseOut=\"changePic(\'b1\',\'b1b.gif\')\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\"  onClick=\"setCheck(2)\" onMouseDown=\"changePic(\'b2\',\'b2a.gif\')\" onMouseUp=\"changePic(\'b2\',\'b2b.gif\')\" ' + 'onMouseOut=\"changePic(\'b2\',\'b2b.gif\')\"><img src=\"images/b2b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b2\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/b2b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b2\" ' + 'onClick=\"setCheck(2)\" onMouseDown=\"changePic(\'b2\',\'b2a.gif\')\" onMouseUp=\"changePic(\'b2\',\'b2b.gif\')\" onMouseOut=\"changePic(\'b2\',\'b2b.gif\')\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(3)\" onMouseDown=\"changePic(\'b3\',\'b3a.gif\')\" onMouseUp=\"changePic(\'b3\',\'b3b.gif\')\" ' + 'onMouseOut=\"changePic(\'b3\',\'b3b.gif\')\"><img src=\"images/b3b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b3\" border=\"0\" /></a>');}
+else {document.write('<img src=\"images/b3b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b3\" onClick=\"setCheck(3)\" onMouseDown=\"changePic(\'b3\',\'b3a.gif\')\" ' + 'onMouseUp=\"changePic(\'b3\',\'b3b.gif\')\" onMouseOut=\"changePic(\'b3\',\'b3b.gif\')\" />')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(4)\" onMouseDown=\"changePic(\'b4\',\'b4a.gif\')\" onMouseUp=\"changePic(\'b4\',\'b4b.gif\')\" ' + 'onMouseOut=\"changePic(\'b4\',\'b4b.gif\')\"><img src=\"images/b4b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b4\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b4b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b4\" onClick=\"setCheck(4)\" onMouseDown=\"changePic(\'b4\',\'b4a.gif\')\" onMouseUp=\"changePic(\'b4\',\'b4b.gif\')\" ' + 'onMouseOut=\"changePic(\'b4\',\'b4b.gif\')\" /> ')}
+-->
+</script></td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(5)\" onMouseDown=\"changePic(\'b5\',\'b5a.gif\')\" onMouseUp=\"changePic(\'b5\',\'b5b.gif\')\" ' + 'onMouseOut=\"changePic(\'b5\',\'b5b.gif\')\"><img src=\"images/b5b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b5\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b5b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b5\" onClick=\"setCheck(5)\" onMouseDown=\"changePic(\'b5\',\'b5a.gif\')\" ' + 'onMouseUp=\"changePic(\'b5\',\'b5b.gif\')\" onMouseOut=\"changePic(\'b5\',\'b5b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(6)\" onMouseDown=\"changePic(\'b6\',\'b6a.gif\')\" onMouseUp=\"changePic(\'b6\',\'b6b.gif\')\" ' + 'onMouseOut=\"changePic(\'b6\',\'b6b.gif\')\"><img src=\"images/b6b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b6\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b6b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b6\" onClick=\"setCheck(6)\" onMouseDown=\"changePic(\'b6\',\'b6a.gif\')\" ' + 'onMouseUp=\"changePic(\'b6\',\'b6b.gif\')\" onMouseOut=\"changePic(\'b6\',\'b6b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(7)\" onMouseDown=\"changePic(\'b7\',\'b7a.gif\')\" onMouseUp=\"changePic(\'b7\',\'b7b.gif\')\" ' + 'onMouseOut=\"changePic(\'b7\',\'b7b.gif\')\"><img src=\"images/b7b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b7\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b7b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b7\" onClick=\"setCheck(7)\" onMouseDown=\"changePic(\'b7\',\'b7a.gif\')\" ' + 'onMouseUp=\"changePic(\'b7\',\'b7b.gif\')\" onMouseOut=\"changePic(\'b7\',\'b7b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(8)\" onMouseDown=\"changePic(\'b8\',\'b8a.gif\')\" onMouseUp=\"changePic(\'b8\',\'b8b.gif\')\" ' + 'onMouseOut=\"changePic(\'b8\',\'b8b.gif\')\"><img src=\"images/b8b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b8\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b8b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b8\" onClick=\"setCheck(8)\" onMouseDown=\"changePic(\'b8\',\'b8a.gif\')\" ' + 'onMouseUp=\"changePic(\'b8\',\'b8b.gif\')\" onMouseOut=\"changePic(\'b8\',\'b8b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(9)\" onMouseDown=\"changePic(\'b9\',\'b9a.gif\')\" onMouseUp=\"changePic(\'b9\',\'b9b.gif\')\" ' + 'onMouseOut=\"changePic(\'b9\',\'b9b.gif\')\"><img src=\"images/b9b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b9\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b9b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b9\" onClick=\"setCheck(9)\" onMouseDown=\"changePic(\'b9\',\'b9a.gif\')\" ' + 'onMouseUp=\"changePic(\'b9\',\'b9b.gif\')\" onMouseOut=\"changePic(\'b9\',\'b9b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(10)\" onMouseDown=\"changePic(\'b10\',\'b10a.gif\')\" onMouseUp=\"changePic(\'b10\',\'b10b.gif\')\" onMouseOut=\"changePic(\'b10\',\'b10b.gif\')\"><img src=\"images/b10b.gif\" width=\"24\" ' + 'height=\"22\" alt=\"button\" name=\"b10\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b10b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b10\" onClick=\"setCheck(10)\" onMouseDown=\"changePic(\'b10\',\'b10a.gif\')\" ' + 'onMouseUp=\"changePic(\'b10\',\'b10b.gif\')\" onMouseOut=\"changePic(\'b10\',\'b10b.gif\')\" /> ')}
+-->
+</script>
+</td>
+<td align="center" valign="middle"><script language="JavaScript" type="text/javascript"> 
+<!--
+if (ns4){document.write('<a href=\"javascript:void(0);\" onClick=\"setCheck(11)\" onMouseDown=\"changePic(\'b11\',\'b11a.gif\')\" onMouseUp=\"changePic(\'b11\',\'b11b.gif\')\" ' + 'onMouseOut=\"changePic(\'b11\',\'b11b.gif\')\"><img src=\"images/b11b.gif\" width=\"24\" height=\"22\" alt=\"button\" name=\"b11\" border=\"0\" /></a> ');}
+else {document.write('<img src=\"images/b11b.gif\" width=\"24\" height=\"24\" alt=\"button\" name=\"b11\" onClick=\"setCheck(11)\" onMouseDown=\"changePic(\'b11\',\'b11a.gif\')\" onMouseUp=\"changePic(\'b11\',\'b11b.gif\')\" onMouseOut=\"changePic(\'b11\',\'b11b.gif\')\" /> ')}
+-->
+</script>
+</td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but1" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but2" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but3" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but4" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but5" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but6" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but7" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but8" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but9" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but10" /></td>
+<td align="center" valign="middle"><img src="images/spacer.gif" width="32" height="32" alt="" name="but11" /></td>
+</tr>
+<tr>
+<td colspan="11" align="center">
+<p>&nbsp;</p>
+<a href="javascript:testChecks()"><img src="images/spacer.gif" width="132" height="24" name="advance" alt="" border="0" /></a></td>
+</tr>
+</table>
+  </body>
+ 
+</html>
+
