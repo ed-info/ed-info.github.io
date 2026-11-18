@@ -1,0 +1,45 @@
+body {
+	font-family: arial,sans-serif;
+	font-weight: normal;
+	color: black;
+	background-color: white;
+	padding: 20px;
+}
+
+td {
+	font-family: arial,sans-serif;
+	font-weight: normal;
+	color: black; 
+}
+
+a, a:visited {
+	color: #0066CC;
+}
+
+.emph1 {
+	font-family: arial,sans-serif;
+	font-weight: bold;
+	color: #ff0000;
+}
+
+.emph2 {
+	font-family: arial,sans-serif;
+	font-size: 1.3em;
+	font-weight: bold;
+	color: #ff3300;
+}
+
+.emph3 {
+	font-family: arial,sans-serif;
+	font-weight: bold;
+	color: black;
+	text-decoration: underline;
+}
+
+.bigger {
+	font-size: 1.2em;
+}
+
+.smaller {
+	font-size: .8em;
+}
