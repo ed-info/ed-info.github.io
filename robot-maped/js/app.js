@@ -73,6 +73,7 @@
     mapWindowOpen: true, // чи відкрите вікно карти
     codeLimit: null,     // допустима кількість рядків коду (секція codelimit: карти)
     mapSkin: null,       // скін, заданий картою (секція skin:)
+    fog: false,          // туман над картою
   };
 
   // Значення секції skin: у файлі карти → назви скінів застосунку.
@@ -173,6 +174,8 @@
     el.canvas = document.getElementById("field");
     el.congrats = document.getElementById("congrats");
     el.congratsOk = document.getElementById("btn-congrats-ok");
+    el.fogBtn = document.getElementById("btn-fog");
+    el.fogLayer = document.getElementById("fog-layer");
 
     state.renderer = new RM.Renderer(el.canvas, skinPath("dessertSkin"), {
       files: [],
@@ -344,6 +347,19 @@
   function applySkin(name) {
     var skin = state.skins[name];
     state.renderer.setSkin(skinPath(name), skin ? skin.files : []);
+  }
+
+  /** Вмикає або вимикає туман над картою. */
+  function applyFog(on) {
+    state.fog = !!on;
+    if (el.fogLayer) el.fogLayer.hidden = !state.fog;
+    if (el.fogBtn) {
+      el.fogBtn.setAttribute("aria-pressed", state.fog ? "true" : "false");
+      el.fogBtn.title = state.fog
+        ? "Вимкнути туман над картою"
+        : "Увімкнути туман над картою";
+    }
+    localStorage.setItem("app.fog", state.fog ? "1" : "0");
   }
 
   // Короткі назви скінів для команди skin() → теки в gfx/skins/.
@@ -889,6 +905,13 @@
     global.addEventListener("resize", function () { state.renderer.paint(); });
 
     bindPanelDrag();
+
+    // Туман вмикається/вимикається кнопкою після вибору скіну.
+    el.fogBtn.addEventListener("click", function () {
+      applyFog(!state.fog);
+    });
+    // Стан туману зберігається в localStorage.
+    applyFog(localStorage.getItem("app.fog") === "1");
 
     el.loadMap.addEventListener("change", function (e) {
       var file = e.target.files[0];

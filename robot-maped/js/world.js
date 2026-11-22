@@ -534,7 +534,8 @@
             '<button id="btn-congrats-ok" class="btn primary">Чудово</button>' +
           '</div>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      '<div id="fog-layer" class="fog-layer" aria-hidden="true" hidden></div>';
     document.body.appendChild(panel);
   };
 })(typeof window !== "undefined" ? window : this);

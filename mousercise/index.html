@@ -1,42 +1,177 @@
-<!--?xml version="1.0" encoding="utf-8"?-->
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta http-equiv="content-language" content="en-us">
-    <meta name="Author" content="Palm Beach County Library System">
-    <title>Мишоловки</title>
-    <link rel="StyleSheet" href="m18_files/mousing.css" type="text/css">
- 
-  </head>
-	<body>
-		<img src="Mousercise_files/mouse.png" align="right">
-		<div style="background-color:#cac; color:#404; padding:5px; margin-bottom:30px; border-bottom:3px solid #404">
-			<span style="font-size:20pt; font-weight:bold">Мишоловки</span>
-		</div>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Мишоловки — гра для відпрацювання навичок роботи з комп'ютерною мишею">
+  <title>Мишоловки</title>
+  <link rel="icon" href="mouse.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app" id="app">
 
-			<div id="welcome" style="display: block;" align="center">
-				
-				<div style="width:800px">
-					<h1>Вітаємо в Мишоловках!</h1>
-					<img src="Mousercise_files/runningmouse.gif"><br>
-					<p name="intro" style="display: block;">Ці вправи допоможуть вам
- відпрацювати навички роботи з комп'ютерною мишею та керування основними елементами
- графічного інтерфейсу програм. Mousercise створено Крісом Ріппелем для бібліотек Канзасу.  
-Клацніть кнопку нижче щоб розпочати.</p>
-				</div>
+    <!-- ================= ЕКРАН ВІТАЛЬНЯ ================= -->
+    <section class="screen start-screen" id="startScreen">
+      <div class="start-card">
+        <div class="start-logo" id="startLogo" aria-hidden="true"></div>
+        <div class="start-copy">
+          <p class="eyebrow">Навчальна гра для дітей та дорослих</p>
+          <h1>Мишоловки</h1>
+          <p class="lead">
+            Привіт! Я твій тренер - Мишо-мишка. Разом ми пройдемо 40 веселих вправ і навчимося
+            впевнено керувати комп'ютерною мишею: клацати, перетягувати, прокручувати
+            та знаходити потрібні елементи на екрані.
+          </p>
+          <div class="start-actions">
+            <button class="btn btn-primary btn-lg" id="btnStart">
+              <span class="btn-icon">▶</span> Розпочнемо
+            </button>
+            <button class="btn btn-ghost" id="btnContinue" hidden>
+              <span class="btn-icon">↻</span> Продовжити
+            </button>
+          </div>
+          <p class="hint-line" id="savedInfo" hidden></p>
+          <div class="level-picker" id="levelPicker">
+            <div class="picker-head">
+              <b>Обрати вправу</b>
+              <span id="completedInfo">Пройдено 0 із 40</span>
+            </div>
+            <div class="level-grid" id="levelGrid" aria-label="Вправи"></div>
+            <div class="picker-legend">
+              <span><i class="legend-dot"></i> не пройдено</span>
+              <span><i class="legend-dot done"></i> пройдено</span>
+            </div>            
+          </div>
+          <div class="features">
+            <div class="feature"><span class="feature-icon">🎯</span><b>40 вправ</b><small>від найпростіших клацань до використання меню</small></div>
+            <div class="feature"><span class="feature-icon">🖱️</span><b>Практика</b><small>кожна нова вправа — розвиток нової навички</small></div>
+            <div class="feature"><span class="feature-icon">🏆</span><b>Сертифікат</b><small>наприкінці кожного учасника чекає нагорода</small></div>
+          </div>
+        </div>
+      </div>
+      <p class="credits">
+        Графічна версія гри «Мишоловки». Оригінал створено Крісом Ріппелем
+        для бібліотек Канзасу.
+      </p>
+    </section>
 
+    <!-- ================= ІГРОВИЙ ЕКРАН ================= -->
+    <section class="screen game-screen" id="gameScreen" hidden>
+      <header class="hud">
+        <button class="icon-btn" id="btnHome" title="На початок" aria-label="На початок">🏠</button>
+        <div class="hud-progress">
+          <div class="hud-progress-top">
+            <span id="levelLabel">Вправа 1</span>
+            <span id="levelCounter">1 / 40</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <div class="hud-tools">
+          <span class="done-badge" id="doneBadge" title="Пройдено вправ">✓ 0</span>
+          <button class="icon-btn" id="btnSound" title="Звук" aria-label="Перемкнути звук">🔊</button>
+          <button class="icon-btn" id="btnHint" title="Підказка" aria-label="Підказка">💡</button>
+          <button class="icon-btn" id="btnRetry" title="Повторити вправу" aria-label="Повторити вправу">↺</button>
+        </div>
+      </header>
 
-				<div name="start" style="display: block;" align="center">
-					<table><tbody><tr>
-						<td>
-							<button onclick="location.href = 'm1.html';" style="height:100px; width:150px"><img src="Mousercise_files/practice.png"><br><span style="font-size:1.5em; font-weight:bold">Розпочнемо</span></button>
-						</td>						
-					</tr></tbody></table>
-				</div>
-			</div>
+      <div class="stage-wrap">
+        <aside class="mascot-panel" aria-hidden="true">
+          <div class="mascot-art" id="mascotArt"></div>
+          <div class="speech" id="speech">Клацни по сиру!</div>
+        </aside>
+        <main class="stage" id="stage" aria-live="polite"></main>
+      </div>
 
-					
-		</div> <!-- end <div id="stages"> -->
-	
+      <div class="hint-bar" id="hintBar" hidden></div>
+    </section>
 
-</body></html>
+    <!-- ================= ФІНАЛЬНИЙ ЕКРАН ================= -->
+    <section class="screen finish-screen" id="finishScreen" hidden>
+      <div class="finish-card">
+        <div class="finish-top">
+          <div class="trophy" id="trophyArt" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Фініш!</p>
+            <h2>Це надзвичайний успіх!</h2>
+            <p class="lead">Ви пройшли всі «мишоловки». Було не складно, чи не так?</p>
+          </div>
+        </div>
+        <form class="name-form" id="nameForm">
+          <label for="fname">Ваше ім'я</label>
+          <input id="fname" name="fname" type="text" maxlength="24" placeholder="Наприклад, Оlena" autocomplete="given-name">
+          <label for="lname">Ваше прізвище</label>
+          <input id="lname" name="lname" type="text" maxlength="24" placeholder="Наприклад, Коваленко" autocomplete="family-name">
+          <button class="btn btn-primary" type="submit">Отримати сертифікат</button>
+        </form>
+        <div class="certificate" id="certificate" hidden>
+          <div class="cert-corner tl" aria-hidden="true"></div>
+          <div class="cert-corner tr" aria-hidden="true"></div>
+          <div class="cert-corner bl" aria-hidden="true"></div>
+          <div class="cert-corner br" aria-hidden="true"></div>
+          <div class="cert-watermark" aria-hidden="true"></div>
+          <div class="cert-inner">
+            <div class="cert-laurel-wrap" id="certLaurel" aria-hidden="true"></div>
+            <div class="cert-ribbon">
+              <img src="gold-ribbon.png" alt="">
+            </div>
+            <div class="cert-divider" aria-hidden="true">✦</div>
+            <h3>Мишоловки</h3>
+            <p class="cert-subtitle">Школа спритних пальців</p>
+            <p class="cert-text">Цим сертифікатом підтверджується, що</p>
+            <p class="cert-name" id="certName">Неназвана особа</p>
+            <p class="cert-text">успішно пройшов(ла) всі 40 вправ і став(ла) справжнім майстром миші.</p>
+            <p class="cert-stats" id="certStats"></p>
+            <div class="cert-bottom">
+              <div class="cert-date-block">
+                <span class="cert-label">Дата видачі</span>
+                <b class="cert-date" id="certDate"></b>
+                <span class="cert-serial" id="certSerial"></span>
+              </div>
+              <div class="cert-sign-block">
+                <div class="cert-sign-script"><img src="sign.png" alt="Підпис Мишо-мишки"></div>
+                <div class="cert-sign-line"></div>
+                <span class="cert-label">Мишо-мишка, головний тренер</span>
+              </div>
+              <div class="cert-seal-wrap" id="certSeal" aria-hidden="true">
+                <img class="cert-seal" src="gold-stamp.png" alt="Золота печатка">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="finish-actions" id="finishActions" hidden>
+          <button class="btn btn-ghost" id="btnPrint">🖨️ Друк сертифіката</button>
+          <button class="btn btn-ghost" id="btnAgain">↻ Грати ще раз</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= СПЛИВНЕ ВІКНО ================= -->
+    <div class="modal-overlay" id="modalOverlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-icon" id="modalIcon">!</div>
+        <h3 id="modalTitle">Увага!</h3>
+        <p id="modalText">Натисніть «Гаразд», щоб продовжити.</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="btnModalOk">Гаразд</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= УСПІХ ================= -->
+    <div class="success-overlay" id="successOverlay" hidden>
+      <div class="success-card">
+        <div class="success-check">✓</div>
+        <p>Гарна робота!</p>
+        <small id="successSub">Переходимо до наступної вправи…</small>
+      </div>
+    </div>
+
+    <canvas id="confetti" aria-hidden="true"></canvas>
+  </div>
+
+  <script src="graphics.js"></script>
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

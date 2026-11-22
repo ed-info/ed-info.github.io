@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-6T689D/Oilf1zE3+fhHFbq55APU37y/z7vIkQZVzwv4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' * data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ЄWriter</title>
+    <meta
+      name="description"
+      content="ЄWriter (ewriter) is a web-based word processor for everything from quick notes to full-length documents. No server, no account — your documents never leave your computer."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ЄWriter (ewriter) — Word processor in your browser" />
+    <meta
+      property="og:description"
+      content="ЄWriter (ewriter) is a web-based word processor for everything from quick notes to full-length documents. No server, no account — your documents never leave your computer."
+    />
+    <meta property="og:image" content="./icon-512.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta name="theme-color" content="#e6e9eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#2f2f31" media="(prefers-color-scheme: dark)" />
+    <!-- The saved theme's background and a hidden intro from the first paint, before the
+         app's module loads; colours match --color-bg in src/styles/global.css. -->
+    <script>
+      try {
+        const t = localStorage.getItem('edentext-theme');
+        document.documentElement.dataset.theme = t === 'light' || t === 'dark' || t === 'allBlack' ? t
+          : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      } catch {}
+      document.documentElement.classList.add('js');
+      // The picked language's catalog loads beside the app's module, not after it; the
+      // build fills in the files (vite.config.ts), the choice follows appLanguage.ts.
+      try {
+        const catalogs = {"de":"./assets/de-Bgye-7Qd.js","el":"./assets/el-ZiX5MSg0.js","es":"./assets/es-BSzyKF-U.js","fr":"./assets/fr-DkY8JdVq.js","id":"./assets/id-Dje7ZrXU.js","it":"./assets/it-C3BOPT-X.js","ja":"./assets/ja-DoyW_6G9.js","pt":"./assets/pt-Cjd3nTsS.js","ru":"./assets/ru-CUZYAYja.js","uk":"./assets/uk-tqjGoF6k.js","zh-Hans":"./assets/zh-Hans-DKegUkMO.js","zh-Hant":"./assets/zh-Hant-BCZlO0Dk.js"};
+        let l = localStorage.getItem('edentext-app-language');
+        if (!(l in catalogs)) {
+          const tag = (navigator.language || 'en').toLowerCase();
+          l = /^zh(-|$)/.test(tag) ? (/^zh-(hant|tw|hk|mo)\b/.test(tag) ? 'zh-Hant' : 'zh-Hans') : tag.slice(0, 2);
+        }
+        if (Object.hasOwn(catalogs, l)) {
+          document.head.append(Object.assign(document.createElement('link'), { rel: 'modulepreload', crossOrigin: '', href: catalogs[l] }));
+        }
+      } catch {}
+      // The installation's presets are asked for now, while the app's module still loads,
+      // so the start does not wait a round trip for them (hostConfig.svelte.ts reads it).
+      if (/^https?:$/.test(location.protocol)) {
+        window.__edentextConfig = fetch('edentext.config.json', { cache: 'no-cache', signal: AbortSignal.timeout(2000) })
+          .then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      }
+    </script>
+    <style>html[data-theme=light]{background:#e6e9eb}html[data-theme=dark]{background:#2f2f31}html[data-theme=allBlack]{background:#0d1117}html.js #static-intro{display:none}</style>
+    <script type="module" crossorigin src="./assets/index-gAAFqHtS.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-COiEfhsA.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-CRU31frY.css">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Static copy for crawlers and noscript; removed in main.ts before the app mounts. -->
+      <div id="static-intro">
+        <h1>ЄWriter (ewriter) — word processor in your browser</h1>
+        <p>
+          ЄWriter (ewriter) is a web-based word processor for learning and working with text documents.
+          No server, no account — your documents never leave your computer.
+          It opens and saves real <code>.odt</code> and <code>.docx</code> files and works in the browser.
+        </p>
+
+      </div>
+    </div>
+  </body>
+</html>

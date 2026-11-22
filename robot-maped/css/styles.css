@@ -169,6 +169,8 @@ select {
 .map-panel[hidden] { display: none; }
 
 .map-panel-head {
+  position: relative;
+  z-index: 10;
   flex: none;
   display: flex;
   align-items: center;
@@ -178,6 +180,36 @@ select {
   border-bottom: 1px solid var(--line);
   cursor: move;
   user-select: none;
+}
+
+/* --- туман над картою --- */
+
+.fog-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fog-layer[hidden] { display: none; }
+
+/* Зображення більше за панель і повільно дрейфує, тому країв не видно. */
+.fog-layer::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  background-image: url("../img/fog.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: translate3d(-6%, -5%, 0) scale(1.05);
+  animation: fog-drift 36s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes fog-drift {
+  from { transform: translate3d(-6%, -5%, 0) scale(1.05) rotate(-1deg); }
+  to   { transform: translate3d(6%, 5%, 0) scale(1.12) rotate(1deg); }
 }
 
 .map-panel-title {
