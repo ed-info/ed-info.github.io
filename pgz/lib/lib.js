@@ -966,13 +966,15 @@ runCode: function(runMode) {
         }, PythonIDE.handleError);
     }; // start
     // 🔥 PRELOAD → START, з перевіркою
-    if (window.PGZ_PRELOAD_COMPLETE) {
-        // Якщо вже завантажено раніше - запускаємо одразу
-        start();
-    } else {
-        // Якщо ще не завантажено - завантажуємо і потім запускаємо
-        preloadImages().then(start);
-    }
+    // Перечитуємо /images при кожному запуску, щоб підхопити зображення,
+    // імпортовані/змінені/видалені після попереднього запуску.
+    // Кеш очищуємо на місці: pgzrun тримає посилання на цей самий об'єкт.
+    Object.keys(PGZ_IMAGE_CACHE).forEach(k => delete PGZ_IMAGE_CACHE[k]);
+    Object.keys(PGZ_IMAGE_PROMISES).forEach(k => delete PGZ_IMAGE_PROMISES[k]);
+    window.PGZ_PRELOAD_COMPLETE = false;
+    preloadImages()
+        .catch(err => console.warn("Preload failed:", err))
+        .then(start);
 },
 handleError: function(err) {
     PythonIDE.running = false;
