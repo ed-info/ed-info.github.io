@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f6c4a" />
+    <meta name="application-name" content="ЄTabler" />
+    <link rel="icon" type="image/png" id="app-favicon" />
+    <title>ЄTabler — Книга1</title>
+    <!-- Luckysheet bundles jQuery inside its plugin bundle; it must be global before the app module runs. -->
+    <script src="./vendor/plugin.js"></script>
+    <script type="module" crossorigin src="./assets/index-UF5AQLya.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DCL3ZZOU.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <nav class="tabs" id="ribbon-tabs" role="tablist" aria-label="Вкладки стрічки">
+        <button class="tab tab--file" role="tab" aria-selected="false" data-tab="file">ФАЙЛ</button>
+
+        <div class="quick-access" role="toolbar" aria-label="Швидкий доступ">
+          <button class="icon-button" data-action="save" title="Зберегти (Ctrl+S)" aria-label="Зберегти">
+            <span data-ui-icon="save"></span>
+          </button>
+          <button class="icon-button" data-action="undo" title="Скасувати (Ctrl+Z)" aria-label="Скасувати">
+            <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M4 12h9a6 6 0 0 1 0 12"/></svg>
+          </button>
+          <button class="icon-button" data-action="redo" title="Повторити (Ctrl+Y)" aria-label="Повторити">
+            <svg viewBox="0 0 24 24"><path d="m15 7 5 5-5 5"/><path d="M20 12h-9a6 6 0 0 0 0 12"/></svg>
+          </button>
+        </div>
+
+        <button class="tab-collapse" title="Згорнути/розгорнути стрічку" data-action="toggle-ribbon" aria-label="Згорнути або розгорнути стрічку">
+          <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="tabs__divider" aria-hidden="true"></div>
+
+        <div class="tabs__items" id="ribbon-tab-items"></div>
+
+        <div class="tabs__spacer" aria-hidden="true"></div>
+
+        <label class="tabs__search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="global-search" type="search" placeholder="Пошук (Alt+Q)" aria-label="Пошук у книжці" />
+        </label>
+
+        <div class="tabs__title">
+          <input id="workbook-name" type="text" value="Книга1" aria-label="Назва книги" spellcheck="false" />
+          <span class="tabs__saved" id="save-indicator">Збережено</span>
+        </div>
+
+        <button class="tabs__settings" data-action="help-settings" title="Налаштування" aria-label="Налаштування">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span>Налаштування</span>
+        </button>
+
+        <button class="tabs__brand" id="app-icon-button" data-action="about" title="Про ЄTabler" aria-label="Про ЄTabler">
+          <img class="brand-mark" id="app-icon" alt="ЄTabler" />
+        </button>
+      </nav>
+
+      <section class="ribbon" id="ribbon" aria-label="Стрічка інструментів"></section>
+
+      <main class="workbook" id="workbook">
+        <div id="luckysheet"></div>
+      </main>
+
+      <footer class="statusbar">
+        <div class="statusbar__left">
+          <span class="status-dot"></span>
+          <span id="status-message">Готовий</span>
+        </div>
+        <div class="statusbar__stats" id="selection-stats"></div>
+        <div class="statusbar__right">
+          <div class="view-buttons" role="group" aria-label="Режим перегляду">
+            <button class="view-button active" data-view="normal" title="Звичайний режим" aria-label="Звичайний режим">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16"/></svg>
+            </button>
+            <button class="view-button" data-view="print" title="Перегляд друку" aria-label="Перегляд друку">
+              <svg viewBox="0 0 24 24"><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg>
+            </button>
+            <button class="view-button" data-view="breaks" title="Розриви сторінки" aria-label="Розриви сторінки">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg>
+            </button>
+          </div>
+          <div class="zoom-control">
+            <button class="zoom-button" data-action="zoom-out" title="Зменшити" aria-label="Зменшити">−</button>
+            <input id="zoom-range" type="range" min="50" max="150" step="10" value="100" aria-label="Масштаб" />
+            <button class="zoom-button" data-action="zoom-in" title="Збільшити" aria-label="Збільшити">+</button>
+            <button class="zoom-value" id="zoom-value" data-action="zoom-reset" title="Скинути масштаб">100%</button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <div class="backdrop" id="file-backdrop" hidden></div>
+    <aside class="file-panel" id="file-panel" hidden aria-label="Меню Файл"></aside>
+
+    <div class="popover-root" id="popover-root"></div>
+    <div class="modal-root" id="modal-root"></div>
+    <div class="toast-root" id="toast-root" aria-live="polite"></div>
+
+  </body>
+</html>
