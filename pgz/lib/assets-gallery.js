@@ -24,7 +24,7 @@ function closeImportModal() {
 
 async function loadExternalFiles() {
   try {
-    const response = await fetch('https://ed-info.github.io/images/files.txt');
+    const response = await fetch('../gallery/images.txt');
     if (!response.ok) throw new Error('Не вдалося завантажити files.txt');
     const text = await response.text();
     externalFiles = text
@@ -82,7 +82,7 @@ function loadCategory(category) {
   // Завантажуємо прев’ю послідовно (щоб не перевантажувати)
   container.innerHTML = '';
   filesInCategory.forEach(file => {
-    const url = `https://ed-info.github.io/${file}`;
+    const url = `../gallery/${file}`;
     const item = document.createElement('div');
     item.style.textAlign = 'center';
     item.style.cursor = 'pointer';
